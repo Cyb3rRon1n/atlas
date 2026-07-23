@@ -1,4 +1,5 @@
 import typer
+from atlas.discovery import run_discovery
 from rich.console import Console
 
 from atlas import __version__
@@ -77,6 +78,12 @@ def discover():
         "[bold purple]Atlas Discovery[/bold purple]"
     )
 
-    console.print(
-        "Discovery engine coming soon..."
-    )
+    data = run_discovery()
+
+    for section, values in data.items():
+
+        console.print(
+            f"\n[bold cyan]{section.upper()}[/bold cyan]"
+        )
+
+        console.print(values)

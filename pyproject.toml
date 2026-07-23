@@ -37,7 +37,8 @@ dependencies = [
     "pydantic",
     "psutil",
     "pyyaml",
-    "docker"
+    "docker",
+    "proxmoxer"
 ]
 
 [project.urls]

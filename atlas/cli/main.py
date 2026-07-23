@@ -8,6 +8,7 @@ from atlas.health import run_checks
 from atlas.docker import collect_containers
 from atlas.services import detect_services
 from atlas.compose import parse_compose_file
+from atlas.proxmox import connect, discover_nodes
 from rich.console import Console
 
 from atlas import __version__
@@ -304,3 +305,19 @@ Volumes:
 {service.volumes}
 """
         )
+
+
+@app.command()
+def proxmox():
+    """
+    Display Proxmox infrastructure.
+    """
+
+    console.print(
+        "[bold blue]Proxmox Discovery[/bold blue]\n"
+    )
+
+
+    console.print(
+        "Proxmox integration configured."
+    )

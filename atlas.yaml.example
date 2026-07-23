@@ -1,0 +1,10 @@
+atlas:
+  name: atlas-node
+
+discovery:
+  hardware: true
+  storage: true
+  network: true
+
+inventory:
+  directory: inventory/generated

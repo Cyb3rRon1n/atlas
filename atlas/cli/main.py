@@ -1,6 +1,7 @@
 import typer
 from atlas.discovery import run_discovery
 from atlas.inventory import save_inventory
+from atlas.config import load_config
 from rich.console import Console
 
 from atlas import __version__
@@ -89,4 +90,21 @@ def discover():
 
     console.print(
         f"[cyan]Inventory saved:[/cyan] {inventory_file}"
+    )
+
+
+@app.command()
+def config():
+    """
+    Display Atlas configuration.
+    """
+
+    settings = load_config()
+
+    console.print(
+        "[bold cyan]Atlas Configuration[/bold cyan]"
+    )
+
+    console.print(
+        settings.model_dump()
     )

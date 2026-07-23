@@ -148,3 +148,10 @@ site/
 *.backup
 *.old
 
+# ==========================
+
+# Ignore Real Configuration
+
+# ==========================
+
+atlas.yaml

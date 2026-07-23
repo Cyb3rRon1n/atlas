@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "atlas-homelab"
+version = "0.1.0-alpha"
+description = "AI-powered operations platform for self-hosted infrastructure."
+readme = "README.md"
+requires-python = ">=3.11"
+
+authors = [
+{name = "Atlas Contributors"}
+]
+
+license = {file = "LICENSE"}
+
+keywords = [
+"homelab",
+"ai",
+"automation",
+"docker",
+"proxmox",
+"infrastructure",
+"self-hosting"
+]
+
+classifiers = [
+"Development Status :: 3 - Alpha",
+"Programming Language :: Python :: 3",
+"Operating System :: POSIX :: Linux"
+]
+
+dependencies = [
+"typer",
+"rich",
+"pydantic",
+"psutil"
+]
+
+[project.urls]
+Homepage = "https://github.com/Cyb3rRon1n/atlas"
+Repository = "https://github.com/Cyb3rRon1n/atlas"
+
+[project.scripts]
+atlas = "atlas.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["atlas"]
+

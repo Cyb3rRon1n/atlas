@@ -1,6 +1,8 @@
 import typer
 from atlas.discovery import run_discovery
 from atlas.inventory import save_inventory
+from atlas.inventory import load_inventory
+from atlas.reporting.generator import generate_report
 from atlas.config import load_config
 from rich.console import Console
 
@@ -107,4 +109,36 @@ def config():
 
     console.print(
         settings.model_dump()
+    )
+
+
+@app.command()
+def report():
+    """
+    Generate Atlas infrastructure report.
+    """
+
+    inventory = load_inventory()
+
+    if not inventory:
+        console.print(
+            "[yellow]No inventory found.[/yellow]"
+        )
+
+        console.print(
+            "Run: atlas discover"
+        )
+
+        return
+
+    output = generate_report(
+        inventory
+    )
+
+    console.print(
+        "[green]✓ Report generated[/green]"
+    )
+
+    console.print(
+        f"Saved: {output}"
     )

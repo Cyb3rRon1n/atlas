@@ -7,6 +7,7 @@ from atlas.config import load_config
 from atlas.health import run_checks
 from atlas.docker import collect_containers
 from atlas.services import detect_services
+from atlas.compose import parse_compose_file
 from rich.console import Console
 
 from atlas import __version__
@@ -253,5 +254,53 @@ Container:
 
 Status:
 {service['status']}
+"""
+        )
+
+
+@app.command()
+def compose(path: str = "docker-compose.yml"):
+    """
+    Analyze a Docker Compose file.
+    """
+
+    console.print(
+        "[bold blue]Compose Analysis[/bold blue]\n"
+    )
+
+
+    project = parse_compose_file(
+        path
+    )
+
+
+    if not project:
+
+        console.print(
+            "[yellow]No compose file found[/yellow]"
+        )
+
+        return
+
+
+    console.print(
+        f"Project: {project.name}\n"
+    )
+
+
+    for service in project.services:
+
+        console.print(
+            f"""
+[cyan]{service.name}[/cyan]
+
+Image:
+{service.image}
+
+Ports:
+{service.ports}
+
+Volumes:
+{service.volumes}
 """
         )

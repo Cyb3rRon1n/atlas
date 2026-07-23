@@ -6,6 +6,7 @@ from atlas.reporting.generator import generate_report
 from atlas.config import load_config
 from atlas.health import run_checks
 from atlas.docker import collect_containers
+from atlas.services import detect_services
 from rich.console import Console
 
 from atlas import __version__
@@ -195,5 +196,62 @@ Status:
 
 ID:
 {container['id']}
+"""
+        )
+
+
+@app.command()
+def services():
+    """
+    Detect known homelab services.
+    """
+
+    from atlas.docker import collect_containers
+
+
+    console.print(
+        "[bold blue]Atlas Services[/bold blue]\n"
+    )
+
+
+    docker = collect_containers()
+
+
+    if not docker["available"]:
+        console.print(
+            "[yellow]Docker unavailable[/yellow]"
+        )
+        return
+
+
+    services = detect_services(
+        docker["containers"]
+    )
+
+
+    if not services:
+        console.print(
+            "No recognized services found."
+        )
+        return
+
+
+    for service in services:
+
+        console.print(
+            f"""
+[cyan]{service['name']}[/cyan]
+
+Category:
+{service['category']}
+
+Purpose:
+{service['purpose']}
+
+Container:
+{service['container']}
+
+Status:
+{service['status']}
 """
         )

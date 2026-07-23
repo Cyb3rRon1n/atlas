@@ -32,10 +32,11 @@ classifiers = [
 ]
 
 dependencies = [
-"typer",
-"rich",
-"pydantic",
-"psutil"
+    "typer",
+    "rich",
+    "pydantic",
+    "psutil",
+    "pyyaml"
 ]
 
 [project.urls]

@@ -8,3 +8,15 @@ discovery:
 
 inventory:
   directory: inventory/generated
+
+# Atlas Configuration
+
+proxmox:
+
+  enabled: false
+
+  host: ""
+
+  user: ""
+
+  verify_ssl: false

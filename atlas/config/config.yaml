@@ -1,0 +1,11 @@
+proxmox:
+
+  enabled: false
+
+  host: ""
+
+  user: ""
+
+  password: ""
+
+  verify_ssl: false

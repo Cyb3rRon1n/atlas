@@ -36,7 +36,8 @@ dependencies = [
     "rich",
     "pydantic",
     "psutil",
-    "pyyaml"
+    "pyyaml",
+    "docker"
 ]
 
 [project.urls]

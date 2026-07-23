@@ -1,0 +1,150 @@
+# ==========================
+
+# Atlas Project
+
+# ==========================
+
+# Environment variables / secrets
+
+.env
+.env.*
+!.env.example
+
+# Credentials
+
+*.key
+*.pem
+*.crt
+secrets/
+credentials/
+
+# ==========================
+
+# Python
+
+# ==========================
+
+**pycache**/
+*.py[cod]
+*$py.class
+
+*.egg-info/
+dist/
+build/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+
+.venv/
+venv/
+env/
+
+# ==========================
+
+# Development Tools
+
+# ==========================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ==========================
+
+# Operating System
+
+# ==========================
+
+.DS_Store
+Thumbs.db
+
+# ==========================
+
+# Logs
+
+# ==========================
+
+*.log
+logs/
+
+# ==========================
+
+# Atlas Local Data
+
+# ==========================
+
+# Local discoveries
+
+inventory/local/
+inventory/generated/
+
+# Local reports
+
+reports/
+
+# Cache
+
+.cache/
+
+# Temporary files
+
+tmp/
+temp/
+
+# ==========================
+
+# AI / Model Data
+
+# ==========================
+
+# Local model files
+
+models/
+*.gguf
+*.bin
+*.safetensors
+
+# AI cache
+
+ai-cache/
+
+# ==========================
+
+# Docker
+
+# ==========================
+
+docker/.env
+docker/*/data/
+
+# ==========================
+
+# Testing
+
+# ==========================
+
+.coverage
+htmlcov/
+
+# ==========================
+
+# Documentation Builds
+
+# ==========================
+
+site/
+
+# ==========================
+
+# Backup Files
+
+# ==========================
+
+*.bak
+*.backup
+*.old
+

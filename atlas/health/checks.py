@@ -41,12 +41,18 @@ def check_storage():
 
 def check_docker():
 
-    docker = shutil.which("docker")
+    from atlas.docker import collect_containers
+
+    result = collect_containers()
 
     return {
         "name": "Docker",
-        "status": docker is not None,
-        "details": docker or "not installed",
+        "status": result["available"],
+        "details": (
+            f"{len(result['containers'])} containers"
+            if result["available"]
+            else "not available"
+        ),
     }
 
 

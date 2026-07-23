@@ -5,6 +5,7 @@ from atlas.inventory import load_inventory
 from atlas.reporting.generator import generate_report
 from atlas.config import load_config
 from atlas.health import run_checks
+from atlas.docker import collect_containers
 from rich.console import Console
 
 from atlas import __version__
@@ -144,3 +145,55 @@ def report():
     console.print(
         f"Saved: {output}"
     )
+
+
+@app.command()
+def docker():
+    """
+    Display Docker container status.
+    """
+
+    console.print(
+        "[bold blue]Docker Status[/bold blue]\n"
+    )
+
+    data = collect_containers()
+
+
+    if not data["available"]:
+
+        console.print(
+            "[yellow]! Docker unavailable[/yellow]"
+        )
+
+        return
+
+
+    containers = data["containers"]
+
+
+    if not containers:
+
+        console.print(
+            "No containers found."
+        )
+
+        return
+
+
+    for container in containers:
+
+        console.print(
+            f"""
+[cyan]{container['name']}[/cyan]
+
+Image:
+{container['image']}
+
+Status:
+{container['status']}
+
+ID:
+{container['id']}
+"""
+        )

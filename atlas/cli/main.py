@@ -4,6 +4,7 @@ from atlas.inventory import save_inventory
 from atlas.inventory import load_inventory
 from atlas.reporting.generator import generate_report
 from atlas.config import load_config
+from atlas.health import run_checks
 from rich.console import Console
 
 from atlas import __version__
@@ -50,25 +51,26 @@ def status():
 @app.command()
 def doctor():
     """
-    Run basic Atlas diagnostics.
+    Run Atlas health checks.
     """
 
     console.print(
-        "[bold cyan]Atlas Doctor[/bold cyan]"
+        "[bold cyan]Atlas Doctor[/bold cyan]\n"
     )
 
-    checks = [
-        ("Python", True),
-        ("Configuration", True),
-        ("Inventory", False),
-    ]
+    results = run_checks()
 
-    for name, result in checks:
-        symbol = "✓" if result else "!"
-        color = "green" if result else "yellow"
+    for check in results:
+
+        if check["status"]:
+            symbol = "[green]✓[/green]"
+        else:
+            symbol = "[yellow]![/yellow]"
 
         console.print(
-            f"[{color}]{symbol}[/{color}] {name}"
+            f"{symbol} "
+            f"{check['name']}: "
+            f"{check['details']}"
         )
 
 

@@ -1,5 +1,6 @@
 import typer
 from atlas.discovery import run_discovery
+from atlas.inventory import save_inventory
 from rich.console import Console
 
 from atlas import __version__
@@ -80,10 +81,12 @@ def discover():
 
     data = run_discovery()
 
-    for section, values in data.items():
+    inventory_file = save_inventory(data)
 
-        console.print(
-            f"\n[bold cyan]{section.upper()}[/bold cyan]"
-        )
+    console.print(
+        "\n[green]✓ Discovery complete[/green]"
+    )
 
-        console.print(values)
+    console.print(
+        f"[cyan]Inventory saved:[/cyan] {inventory_file}"
+    )

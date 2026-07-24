@@ -1,8 +1,8 @@
 from atlas.core.context import AtlasContext
 from atlas.config import load_config
 from atlas.events import EventBus
-from atlas.listeners import EventLogger
-
+from atlas.listeners import EventLogger, DatabaseListener
+from atlas.listeners.database import DatabaseListener
 
 class AtlasRuntime:
     """
@@ -32,10 +32,18 @@ class AtlasRuntime:
             self.events
         )
 
-        self.listeners.append(
-            logger
+        database = DatabaseListener()
+
+        database.register(
+            self.events
         )
 
+        self.listeners.extend(
+            [
+                logger,
+                database,
+            ]
+        )
 
     def get_context(self):
 

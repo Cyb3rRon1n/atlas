@@ -9,6 +9,7 @@
 .env
 .env.*
 !.env.example
+#PROXMOX_PASSWORD=yourpassword
 
 # Credentials
 

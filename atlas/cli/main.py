@@ -21,6 +21,74 @@ app = typer.Typer(
 
 console = Console()
 
+proxmox_app = typer.Typer(
+    name="proxmox",
+    help="Manage Proxmox infrastructure."
+)
+
+@proxmox_app.command()
+def scan():
+    """
+    Scan Proxmox infrastructure.
+    """
+
+    console.print(
+        "[bold blue]Atlas Proxmox Scan[/bold blue]\n"
+    )
+
+    settings = load_config()
+
+    proxmox_settings = settings.proxmox
+
+
+    if not proxmox_settings.enabled:
+
+        console.print(
+            "[yellow]Proxmox integration disabled.[/yellow]"
+        )
+
+        console.print(
+            "Enable it in atlas.yaml"
+        )
+
+        return
+
+
+    client = connect(
+        proxmox_settings.host,
+        proxmox_settings.user,
+        verify_ssl=proxmox_settings.verify_ssl
+    )
+
+
+    if not client:
+
+        console.print(
+            "[red]Unable to connect to Proxmox.[/red]"
+        )
+
+        return
+
+
+    nodes = discover_nodes(client)
+
+
+    console.print(
+        "[green]✓ Proxmox discovery complete[/green]\n"
+    )
+
+
+    for node in nodes:
+
+        console.print(
+            f"""
+Node:
+{node['name']}
+
+Status:
+{node['status']}
+"""
+        )
 
 @app.command()
 def version():
@@ -307,17 +375,11 @@ Volumes:
         )
 
 
-@app.command()
-def proxmox():
-    """
-    Display Proxmox infrastructure.
-    """
 
-    console.print(
-        "[bold blue]Proxmox Discovery[/bold blue]\n"
-    )
+app.add_typer(
+    proxmox_app
+)
 
 
-    console.print(
-        "Proxmox integration configured."
-    )
+if __name__ == "__main__":
+    app()

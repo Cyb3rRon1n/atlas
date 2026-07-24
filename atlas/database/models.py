@@ -27,3 +27,17 @@ class EventRecord(Base):
         default=datetime.utcnow
     )
 
+
+class EnvironmentRecord(Base):
+
+    __tablename__ = "environment"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True
+    )
+
+    data: Mapped[str]
+
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow
+    )

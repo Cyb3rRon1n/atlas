@@ -3,13 +3,13 @@ import json
 from sqlalchemy.orm import Session
 
 from atlas.database.engine import engine
-from atlas.database.models import EventRecord
+from atlas.database.models import EventRecord, EnvironmentRecord
 from atlas.events import AtlasEvent
 
 
 class KnowledgeStore:
     """
-    Stores Atlas events permanently.
+    Stores Atlas knowledge permanently.
     """
 
     def save_event(
@@ -24,6 +24,24 @@ class KnowledgeStore:
                 source=event.source,
                 payload=json.dumps(
                     event.payload
+                )
+            )
+
+            session.add(record)
+
+            session.commit()
+
+
+    def save_environment(
+        self,
+        environment
+    ):
+
+        with Session(engine) as session:
+
+            record = EnvironmentRecord(
+                data=json.dumps(
+                    environment.summary()
                 )
             )
 

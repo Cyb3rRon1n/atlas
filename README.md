@@ -55,6 +55,11 @@ Atlas is currently progressing through its foundation and intelligence architect
 
 Atlas is built around a modular event-driven architecture.
 
+graph TD
+    A[Atlas CLI] --> B[Atlas Runtime]
+    B --> C[Plugins]
+    B --> D[Event Bus]
+    B --> E[Knowledge Store]
 
 The architecture is designed to allow new capabilities to be added without rewriting the core system.
 
@@ -452,22 +457,10 @@ Atlas aims to become an intelligent operations platform for self-hosted infrastr
 
 The long-term vision:
 
-Observe
-
-|
-
-Understand
-
-|
-
-Recommend
-
-|
-
-Automate
-
-|
-
-Optimize
+graph TD
+    A[Observe] --> B[Understand]
+    B --> C[Recommend]
+    C --> D[Automate]
+    D --> E[Optimize]
 
 Atlas is being built as a foundation for infrastructure intelligence.

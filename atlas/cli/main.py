@@ -9,6 +9,8 @@ from atlas.docker import collect_containers
 from atlas.services import detect_services
 from atlas.compose import parse_compose_file
 from atlas.proxmox import connect, discover_nodes
+from atlas.core import AtlasRuntime
+from atlas.plugins import PluginManager
 from rich.console import Console
 
 from atlas import __version__
@@ -374,6 +376,40 @@ Volumes:
 """
         )
 
+@app.command()
+def runtime():
+    """
+    Display Atlas runtime information.
+    """
+
+    runtime = AtlasRuntime()
+
+    ctx = runtime.get_context()
+
+    console.print("[bold blue]Atlas Runtime[/bold blue]\n")
+
+    console.print(ctx)
+
+@app.command()
+def plugins():
+    """
+    Display registered Atlas plugins.
+    """
+
+    manager = PluginManager()
+
+    console.print("[bold blue]Atlas Plugins[/bold blue]\n")
+
+    plugins = manager.get_plugins()
+
+    if not plugins:
+        console.print("No plugins registered.")
+        return
+
+    for plugin in plugins:
+        console.print(
+            f"{plugin.name} ({plugin.version})"
+        )
 
 
 app.add_typer(

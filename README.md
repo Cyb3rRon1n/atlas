@@ -1,349 +1,438 @@
 # Atlas
 
-> **Know Your Homelab.**
->
-> *An AI-powered platform that discovers, documents, understands, and assists in managing self-hosted infrastructure.*
+**AI-powered operations platform for self-hosted infrastructure.**
 
----
+Atlas is an extensible infrastructure intelligence platform designed to discover, understand, and eventually automate self-hosted environments.
 
-## Vision
+The goal of Atlas is to provide a unified operational layer for homelabs, private clouds, and self-managed infrastructure by combining:
 
-Modern homelabs are powerful—but they quickly become difficult to maintain.
+- Infrastructure discovery
+- Operational inventory
+- Service awareness
+- Event-driven architecture
+- Persistent infrastructure knowledge
+- Plugin-based extensibility
+- AI-assisted operations
 
-Virtual machines multiply. Docker containers accumulate. Storage expands. Documentation becomes outdated. Six months later, it's hard to remember why something was configured a certain way or whether changing it will break another service.
-
-Atlas was created to solve that problem.
-
-Rather than acting as another dashboard or a collection of Docker Compose files, Atlas aims to become an AI-assisted operations platform that continuously builds an understanding of your infrastructure.
-
-The long-term goal is simple:
-
-> **Build a homelab that understands itself.**
-
----
-
-# What is Atlas?
-
-Atlas is an open-source platform designed to help self-hosted environments become easier to understand, maintain, and improve.
-
-Atlas combines:
-
-* Infrastructure discovery
-* Documentation generation
-* Inventory management
-* Operational guidance
-* Resource analysis
-* AI-assisted administration
-* Safe automation workflows
-
-Instead of asking:
-
-> "How do I install another container?"
-
-Atlas helps answer questions like:
-
-* What hardware do I actually have?
-* Which containers are using the most resources?
-* Can my server handle another workload?
-* Why is Jellyfin buffering?
-* What changed since last week?
-* Which services depend on this container?
-* What should I back up before making this change?
-
----
-
-# Project Goals
-
-## Discover
-
-Automatically inspect your environment.
-
-* Hardware
-* Storage
-* Network
-* Docker
-* Virtual machines
-* Services
-* Applications
-
----
-
-## Document
-
-Keep documentation synchronized with reality.
-
-* Infrastructure inventory
-* Hardware profiles
-* Network topology
-* Storage layout
-* Service catalog
-* Architectural decisions
-* Change history
-
----
-
-## Understand
-
-Build a complete picture of your infrastructure.
-
-Atlas should understand:
-
-* What exists
-* Why it exists
-* How it connects
-* What depends on it
-* How healthy it is
-
----
-
-## Assist
-
-Provide context-aware recommendations before changes are made.
-
-Examples include:
-
-* Resource planning
-* Capacity forecasting
-* Service deployment guidance
-* Troubleshooting assistance
-* Performance optimization
-* Backup planning
-
----
-
-## Automate
-
-Only after the environment is understood.
-
-Automation in Atlas follows a simple philosophy:
-
-> **Understand first. Automate carefully.**
-
----
-
-# Core Principles
-
-## Documentation First
-
-Infrastructure that isn't documented becomes difficult to maintain.
-
-Atlas treats documentation as part of the infrastructure—not an afterthought.
-
----
-
-## Explain Every Recommendation
-
-Atlas should always explain:
-
-* Why a recommendation is being made
-* Expected impact
-* Potential risks
-* Rollback considerations
-
----
-
-## Human Approval
-
-Atlas is designed to assist operators—not replace them.
-
-Destructive or high-impact actions should require explicit approval.
-
----
-
-## Local-First
-
-Whenever practical, Atlas is designed to work with locally hosted services and models.
-
-Examples include:
-
-* Ollama
-* Local LLMs
-* Self-hosted monitoring
-* Self-hosted media services
-
----
-
-## Modular Architecture
-
-Users should be able to adopt Atlas incrementally.
-
-Use only the components you need.
-
----
-
-# Planned Architecture
-
-```text
-                    Physical Server
-                           │
-                    Proxmox VE
-                           │
-                  Ubuntu Server VM
-                           │
-                    Docker Compose
-                           │
-      ┌───────────────┬───────────────┬───────────────┐
-      │               │               │
-   AI Platform     Media Stack     Monitoring
-      │               │               │
-   Ollama         Jellyfin        Grafana
-   Open WebUI     Sonarr          Prometheus
-   n8n            Radarr          Uptime Kuma
-   Atlas          Prowlarr
-                  Bazarr
-                  Jellyseerr
-```
-
----
-
-# Roadmap
-
-## Phase 1 — Foundation
-
-* Project structure
-* Documentation
-* CLI framework
-* Repository setup
-
----
-
-## Phase 2 — Discovery
-
-* Hardware discovery
-* Docker discovery
-* Storage discovery
-* Network discovery
-* Inventory generation
-
----
-
-## Phase 3 — Intelligence
-
-* Knowledge base
-* Infrastructure understanding
-* Documentation synchronization
-* Resource recommendations
-
----
-
-## Phase 4 — Operations
-
-* Docker integrations
-* Proxmox integrations
-* Monitoring integrations
-* Safe operational workflows
-
----
-
-## Phase 5 — AI Assistance
-
-* Local AI integration
-* Context-aware conversations
-* Deployment planning
-* Troubleshooting assistance
-
----
-
-## Phase 6 — Automation
-
-* Scheduled maintenance
-* Health reporting
-* Capacity forecasting
-* Documentation updates
-* Approved operational tasks
-
----
-
-# Planned Features
-
-## Infrastructure
-
-* Proxmox
-* Docker
-* Docker Compose
-* Linux
-* Networking
-* Storage
-
-## AI
-
-* Local language models
-* Retrieval-Augmented Generation (RAG)
-* Multi-agent architecture
-* Knowledge graph
-* Context-aware assistance
-
-## Media
-
-* Jellyfin
-* Sonarr
-* Radarr
-* Prowlarr
-* Bazarr
-* Jellyseerr
-
-## Monitoring
-
-* Grafana
-* Prometheus
-* Uptime Kuma
-
-## Documentation
-
-* Markdown generation
-* Inventory synchronization
-* Architecture diagrams
-* Decision logs
-* Change history
+Atlas is currently under active development.
 
 ---
 
 # Project Status
 
-Atlas is currently in early development.
+Atlas is currently progressing through its foundation and intelligence architecture phases.
 
-The initial focus is building a solid foundation:
+## Implemented
 
-* Repository structure
-* Documentation
-* Discovery engine
-* CLI framework
-* Inventory system
+✅ Python CLI application  
+✅ Configuration management  
+✅ Hardware discovery  
+✅ Operating system discovery  
+✅ Storage discovery  
+✅ Network discovery  
+✅ Inventory generation  
+✅ Reporting engine  
+✅ Docker discovery  
+✅ Service detection  
+✅ Docker Compose analysis  
+✅ Proxmox integration foundation  
+✅ Plugin architecture  
+✅ Event-driven system  
+✅ Persistent operational history  
+✅ Knowledge storage layer  
 
-Automation and AI-driven operations will be added incrementally as the platform matures.
+## In Development
+
+🚧 AI analysis engine  
+🚧 Infrastructure recommendations  
+🚧 Automated operational workflows  
+🚧 Agent-based capabilities  
+🚧 Advanced monitoring integrations  
+
+---
+
+# Architecture
+
+Atlas is built around a modular event-driven architecture.
+
+
+The architecture is designed to allow new capabilities to be added without rewriting the core system.
+
+---
+
+# Features
+
+## Infrastructure Discovery
+
+Atlas can inspect the host system and generate infrastructure inventory.
+
+Current discovery includes:
+
+- Host information
+- Operating system details
+- CPU information
+- Memory statistics
+- Storage devices
+- Filesystem usage
+- Network information
+
+Run:
+
+atlas discover
+
+Inventory is saved to:
+
+inventory/generated/system-inventory.yaml
+
+---
+
+# Inventory System
+
+Atlas stores discovered infrastructure information as structured inventory.
+
+Inventory provides the foundation for:
+
+- Reporting
+- Analysis
+- Change detection
+- Future automation
+
+---
+
+# Docker Integration
+
+Atlas can inspect Docker environments.
+
+Run:
+
+atlas docker
+
+Provides visibility into:
+
+- Containers
+- Images
+- Container status
+- Container IDs
+
+Atlas can also identify known services.
+
+Run:
+
+atlas services
+
+Example:
+
+Atlas Services
+
+Service:
+Plex
+
+Category:
+Media
+
+Container:
+plex
+
+Status:
+running
+
+---
+
+# Docker Compose Analysis
+
+Atlas can analyze Docker Compose files.
+
+Run:
+
+atlas compose
+
+Provides visibility into:
+
+- Services
+- Images
+- Ports
+- Volumes
+
+---
+
+# Proxmox Integration
+
+Atlas includes the foundation for Proxmox infrastructure discovery.
+
+Run:
+
+atlas proxmox scan
+
+Current capabilities:
+
+- Proxmox configuration support
+- Connection framework
+- Node discovery foundation
+
+Future versions will expand this into:
+
+- Virtual machine inventory
+- Container inventory
+- Resource monitoring
+- Change detection
+
+---
+
+# Plugin Architecture
+
+Atlas uses a plugin-based design.
+
+Plugins extend Atlas with:
+
+- Discovery providers
+- Infrastructure integrations
+- Monitoring systems
+- Automation capabilities
+
+Current plugin system supports:
+
+- Plugin registration
+- Plugin discovery
+- Plugin initialization
+- Plugin events
+
+Run:
+
+atlas plugins
+
+Example output:
+
+Atlas Plugins
+
+Docker (0.1.0)
+
+---
+
+# Event System
+
+Atlas uses an internal event bus.
+
+Events allow components to communicate without direct dependencies.
+
+Example:
+
+Discovery Engine
+
+        |
+
+        v
+
+atlas.discovery.completed
+
+        |
+
+        v
+
+Knowledge Store
+
+Current events include:
+
+- atlas.plugin.loaded
+- atlas.discovery.completed
+
+---
+
+# Operational Memory
+
+Atlas maintains persistent operational history.
+
+Run:
+
+atlas history
+
+Atlas stores:
+
+- Plugin events
+- Discovery events
+- Operational data
+- Infrastructure observations
+
+This memory layer provides the foundation for future intelligence features.
+
+---
+
+# CLI Reference
+
+Current commands:
+
+## Status
+
+atlas status
+
+Displays Atlas status information.
+
+---
+
+## Doctor
+
+atlas doctor
+
+Runs Atlas health checks.
+
+---
+
+## Configuration
+
+atlas config
+
+Displays Atlas configuration.
+
+---
+
+## Discovery
+
+atlas discover
+
+Discovers infrastructure information and generates inventory.
+
+---
+
+## Reporting
+
+atlas report
+
+Generates infrastructure reports.
+
+---
+
+## Docker
+
+atlas docker
+
+Displays Docker container information.
+
+---
+
+## Services
+
+atlas services
+
+Detects known infrastructure services.
+
+---
+
+## Compose
+
+atlas compose
+
+Analyzes Docker Compose files.
+
+---
+
+## Plugins
+
+atlas plugins
+
+Displays registered Atlas plugins.
+
+---
+
+## History
+
+atlas history
+
+Displays operational event history.
+
+---
+
+# Installation
+
+Clone the repository:
+
+git clone https://github.com/Cyb3rRon1n/atlas.git
+
+Enter the project:
+
+cd atlas
+
+Create a virtual environment:
+
+python -m venv .venv
+
+Activate:
+
+source .venv/bin/activate
+
+Install:
+
+pip install -e .
+
+Verify:
+
+atlas version
+
+---
+
+# Configuration
+
+Atlas uses YAML configuration.
+
+Example:
+
+atlas:
+  name: sentinel
+
+discovery:
+  hardware: true
+  storage: true
+  network: true
+
+inventory:
+  directory: inventory/generated
+
+---
+
+# Development
+
+Atlas development follows incremental milestones.
+
+Current development priorities:
+
+1. Core architecture
+2. Discovery framework
+3. Plugin ecosystem
+4. Operational memory
+5. Intelligence layer
+6. Automation framework
+
+---
+
+# Documentation
+
+Additional documentation:
+
+docs/
+
+- ATLAS_CONTEXT.md
+- ARCHITECTURE.md
+- HOMELAB_DESIGN.md
+- SERVICE_CATALOG.md
+- AI_BOOTSTRAP.md
 
 ---
 
 # Contributing
 
-Contributions are welcome.
+Contributions, ideas, and discussions are welcome.
 
-Whether you're interested in:
+Please read:
 
-* Python development
-* Documentation
-* Infrastructure
-* Docker
-* Proxmox
-* Monitoring
-* AI
-* Testing
+CONTRIBUTING.md
 
-there are many ways to help shape Atlas.
-
-See `CONTRIBUTING.md` for guidelines.
+before submitting changes.
 
 ---
 
-# Philosophy
+# Security
 
-Atlas is built around one question:
+Security issues should be reported according to:
 
-> **"Does this help the platform understand the infrastructure better?"**
-
-If the answer is yes, it probably belongs.
-
-If not, it should be reconsidered.
+SECURITY.md
 
 ---
 
@@ -351,20 +440,34 @@ If not, it should be reconsidered.
 
 Atlas is released under the MIT License.
 
-See the `LICENSE` file for details.
+See:
+
+LICENSE
 
 ---
 
-# The Journey
+# Vision
 
-Atlas started as a personal homelab project.
+Atlas aims to become an intelligent operations platform for self-hosted infrastructure.
 
-It evolved into a vision for a platform that combines infrastructure management, documentation, and local AI into a single, cohesive system.
+The long-term vision:
 
-If Atlas helps someone build a homelab that is easier to understand, maintain, and enjoy, then it has achieved its purpose.
+Observe
 
----
+|
 
-**Welcome to Atlas.**
+Understand
 
-**Know Your Homelab.**
+|
+
+Recommend
+
+|
+
+Automate
+
+|
+
+Optimize
+
+Atlas is being built as a foundation for infrastructure intelligence.

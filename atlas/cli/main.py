@@ -13,7 +13,9 @@ from atlas.plugins import PluginManager
 from rich.console import Console
 from atlas.events import AtlasEvent
 from atlas.knowledge.queries import KnowledgeQueries
+from atlas.knowledge.store import KnowledgeStore
 from atlas.core.application import application
+from atlas.intelligence.context import AtlasEnvironmentContext
 
 from atlas import __version__
 
@@ -165,6 +167,16 @@ def discover():
     inventory_file = save_inventory(data)
 
     runtime = application.runtime
+
+    runtime.environment.ingest_discovery(
+        data
+    )
+
+    store = KnowledgeStore()
+
+    store.save_environment(
+        runtime.environment
+    )
 
     runtime.events.publish(
         AtlasEvent(
@@ -394,7 +406,7 @@ def runtime():
     Display Atlas runtime information.
     """
 
-    runtime = AtlasRuntime()
+    runtime = application.runtime
 
     ctx = runtime.get_context()
 
@@ -487,8 +499,35 @@ Payload:
 """
         )
 
+@app.command()
+def intelligence():
+    """
+    Display Atlas intelligence context.
+    """
 
+    query = KnowledgeQueries()
 
+    environment = query.latest_environment()
+
+    console.print(
+        "[bold blue]Atlas Intelligence[/bold blue]\n"
+    )
+
+    if not environment:
+
+        console.print(
+            "[yellow]No environment data found.[/yellow]"
+        )
+
+        console.print(
+            "Run: atlas discover"
+        )
+
+        return
+
+    console.print(
+        environment
+    )
 
 app.add_typer(
     proxmox_app

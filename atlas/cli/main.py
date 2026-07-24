@@ -10,8 +10,11 @@ from atlas.services import detect_services
 from atlas.compose import parse_compose_file
 from atlas.proxmox import connect, discover_nodes
 from atlas.plugins import PluginManager
-from atlas.core import AtlasRuntime
 from rich.console import Console
+from atlas.events import AtlasEvent
+from atlas.knowledge.queries import KnowledgeQueries
+from atlas.core.application import application
+
 from atlas import __version__
 
 
@@ -160,6 +163,16 @@ def discover():
     data = run_discovery()
 
     inventory_file = save_inventory(data)
+
+    runtime = application.runtime
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.discovery.completed",
+            source="DiscoveryEngine",
+            payload=data
+        )
+    )
 
     console.print(
         "\n[green]✓ Discovery complete[/green]"
@@ -395,7 +408,7 @@ def plugins():
     Display registered Atlas plugins.
     """
 
-    runtime = AtlasRuntime()
+    runtime = application.runtime
 
     manager = PluginManager()
 
@@ -418,7 +431,7 @@ def discover_plugins():
     Run discovery through all registered plugins.
     """
 
-    runtime = AtlasRuntime()
+    runtime = application.runtime
 
     manager = PluginManager()
 
@@ -428,6 +441,52 @@ def discover_plugins():
 
     data = manager.discover_all()
     console.print(data)
+
+@app.command()
+def history(
+    limit: int = 10
+):
+    """
+    Display Atlas historical events.
+    """
+
+    console.print(
+        "[bold blue]Atlas History[/bold blue]\n"
+    )
+
+    query = KnowledgeQueries()
+
+    events = query.recent_events(
+        limit
+    )
+
+    if not events:
+
+        console.print(
+            "No historical events found."
+        )
+
+        return
+
+
+    for event in events:
+
+        console.print(
+            f"""
+[cyan]{event.created_at}[/cyan]
+
+Event:
+{event.event_type}
+
+Source:
+{event.source}
+
+Payload:
+{event.payload}
+
+"""
+        )
+
 
 
 

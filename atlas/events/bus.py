@@ -9,15 +9,38 @@ class EventBus:
     """
 
     def __init__(self):
+
         self._subscribers = defaultdict(list)
 
-    def subscribe(self, event_type, callback):
-        self._subscribers[event_type].append(callback)
 
-    def publish(self, event: AtlasEvent):
+    def subscribe(
+        self,
+        event_type,
+        callback
+    ):
 
-        for callback in self._subscribers.get(
-            event.event_type,
-            []
-        ):
+        self._subscribers[event_type].append(
+            callback
+        )
+
+
+    def publish(
+        self,
+        event: AtlasEvent
+    ):
+
+        listeners = (
+            self._subscribers.get(
+                event.event_type,
+                []
+            )
+            +
+            self._subscribers.get(
+                "*",
+                []
+            )
+        )
+
+        for callback in listeners:
+
             callback(event)

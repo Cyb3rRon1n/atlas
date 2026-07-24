@@ -1,0 +1,15 @@
+services:
+
+  jellyfin:
+    image: jellyfin/jellyfin
+    ports:
+      - "8096:8096"
+    volumes:
+      - ./config:/config
+      - ./media:/media
+
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr
+    ports:
+      - "8989:8989"

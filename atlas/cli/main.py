@@ -728,8 +728,17 @@ def analyze():
         )
 
         console.print(
-            f"  {recommendation.detail}\n"
+            f"  {recommendation.detail}"
         )
+
+        if recommendation.action:
+
+            console.print(
+                f"\n  [cyan]→ Suggested:[/cyan] atlas restart "
+                f"{recommendation.action.target}"
+            )
+
+        console.print()
 
     store = KnowledgeStore()
 

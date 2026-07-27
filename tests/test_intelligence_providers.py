@@ -18,7 +18,14 @@ SAMPLE_RESPONSE_JSON = json.dumps({
         {
             "title": "Enable swap",
             "detail": "No swap device was detected on sentinel.",
-            "severity": "warning"
+            "severity": "warning",
+            "action": None
+        },
+        {
+            "title": "Container 'plex' looks unhealthy",
+            "detail": "Restarted 4 times in the last hour.",
+            "severity": "warning",
+            "action": {"type": "restart_container", "target": "plex"}
         }
     ]
 })
@@ -56,9 +63,19 @@ class TestAnthropicProvider:
                 kwargs["messages"][0]["content"]
             ) == SAMPLE_CONTEXT
 
+            recommendation_schema = (
+                kwargs["output_config"]["format"]["schema"]
+                ["properties"]["recommendations"]["items"]
+            )
+            assert "action" in recommendation_schema["properties"]
+            assert "action" in recommendation_schema["required"]
+
             assert result.summary == "One host, lightly loaded."
-            assert len(result.recommendations) == 1
+            assert len(result.recommendations) == 2
             assert result.recommendations[0].severity == "warning"
+            assert result.recommendations[0].action is None
+            assert result.recommendations[1].action.type == "restart_container"
+            assert result.recommendations[1].action.target == "plex"
 
     def test_refusal_raises_provider_error(self):
 
@@ -154,6 +171,7 @@ class TestOllamaProvider:
             assert kwargs["json"]["format"]["type"] == "object"
 
             assert result.summary == "One host, lightly loaded."
+            assert result.recommendations[1].action.target == "plex"
 
     def test_connection_error_maps_to_provider_error(self):
 

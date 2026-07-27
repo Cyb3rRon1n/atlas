@@ -67,7 +67,14 @@ class KnowledgeStore:
                         {
                             "title": item.title,
                             "detail": item.detail,
-                            "severity": item.severity
+                            "severity": item.severity,
+                            "action": (
+                                {
+                                    "type": item.action.type,
+                                    "target": item.action.target
+                                }
+                                if item.action else None
+                            )
                         }
                         for item in result.recommendations
                     ]

@@ -69,3 +69,17 @@ def test_analyze_with_no_environment_short_circuits_without_api_call(
     assert result.exit_code == 0
     assert "No environment data found." in result.output
     assert "Run: atlas discover" in result.output
+
+
+def test_proxmox_scan_when_disabled_does_not_attempt_connection(isolated_cwd):
+    """
+    proxmox.enabled defaults to false, so this exercises the fast exit
+    path without needing a real (or mocked) Proxmox server - this is
+    also the path that regression-tests the bug where scan() used to
+    call connect() without passing the configured password at all.
+    """
+
+    result = runner.invoke(app, ["proxmox", "scan"])
+
+    assert result.exit_code == 0
+    assert "Proxmox integration disabled." in result.output

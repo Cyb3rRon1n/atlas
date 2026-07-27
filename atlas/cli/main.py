@@ -8,7 +8,7 @@ from atlas.health import run_checks
 from atlas.docker import collect_containers
 from atlas.services import detect_services
 from atlas.compose import parse_compose_file
-from atlas.proxmox import connect, discover_nodes
+from atlas.proxmox import connect, discover_nodes, discover_resources
 from atlas.plugins import PluginManager
 from rich.console import Console
 from atlas.events import AtlasEvent
@@ -65,6 +65,9 @@ def scan():
     client = connect(
         proxmox_settings.host,
         proxmox_settings.user,
+        password=proxmox_settings.password,
+        token_name=proxmox_settings.token_name,
+        token_value=proxmox_settings.token_value,
         verify_ssl=proxmox_settings.verify_ssl
     )
 
@@ -79,6 +82,7 @@ def scan():
 
 
     nodes = discover_nodes(client)
+    guests = discover_resources(client)
 
 
     console.print(
@@ -97,6 +101,51 @@ Status:
 {node['status']}
 """
         )
+
+
+    for guest in guests:
+
+        console.print(
+            f"""
+Guest:
+{guest['name']} ({guest['type']}, id {guest['vmid']})
+
+Node:
+{guest['node']}
+
+Status:
+{guest['status']}
+
+CPU / Memory:
+{guest['cpu']} / {guest['mem']}
+"""
+        )
+
+    data = {
+        "nodes": nodes,
+        "guests": guests
+    }
+
+    runtime = application.runtime
+
+    runtime.environment.update(
+        "virtualization",
+        data
+    )
+
+    store = KnowledgeStore()
+
+    store.save_environment(
+        runtime.environment
+    )
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.proxmox.scan.completed",
+            source="ProxmoxScan",
+            payload=data
+        )
+    )
 
 @app.command()
 def version():

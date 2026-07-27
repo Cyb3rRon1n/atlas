@@ -1,0 +1,47 @@
+site_name: Atlas
+site_description: AI-powered operations platform for self-hosted infrastructure.
+repo_url: https://github.com/Cyb3rRon1n/atlas
+repo_name: Cyb3rRon1n/atlas
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - content.action.edit
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started/index.md
+  - Architecture: architecture/index.md
+  - CLI Reference: cli-reference.md
+  - Configuration: configuration.md
+  - Deployment: deployment/index.md
+  - Service Catalog: service-catalog.md
+  - Roadmap: roadmap.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format

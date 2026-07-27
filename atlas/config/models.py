@@ -16,6 +16,8 @@ class ProxmoxConfig(BaseModel):
     host: str = ""
     user: str = ""
     password: str = ""
+    token_name: str = ""
+    token_value: str = ""
     verify_ssl: bool = False
 
 

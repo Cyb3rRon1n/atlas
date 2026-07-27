@@ -118,7 +118,7 @@ Atlas can parse a Docker Compose file (`atlas compose`) to surface its services,
 
 ### Proxmox Integration
 
-Atlas includes the foundation for Proxmox infrastructure discovery (`atlas proxmox scan`): configuration support, a connection framework, and node discovery. Planned expansion includes virtual machine and container inventory, resource monitoring, and change detection.
+Atlas can connect to a Proxmox cluster and inventory it (`atlas proxmox scan`): node status, and every VM and container across the cluster (name, node, status, CPU/memory usage). Authentication supports either an API token (`token_name`/`token_value`, recommended — see [Configuration](#configuration)) or a password. Results feed into the same environment context as `atlas discover`, so `atlas analyze` can reason about your virtualization layer too. Planned expansion includes resource-usage trending and change detection over time.
 
 ### Plugin Architecture
 
@@ -186,13 +186,22 @@ discovery:
 inventory:
   directory: inventory/generated
 
+proxmox:
+  enabled: true
+  host: 192.168.1.10
+  user: atlas@pve
+  token_name: atlas-token   # preferred: a scoped API token generated in the Proxmox UI
+  token_value: ""
+  # password: ""            # fallback if not using a token
+  verify_ssl: false
+
 intelligence:
   provider: anthropic   # or "ollama"
   model: claude-opus-5  # or an Ollama model name, e.g. llama3.1
   ollama_host: http://localhost:11434
 ```
 
-The Anthropic provider reads its API key from the `ANTHROPIC_API_KEY` environment variable — it is never stored in `atlas.yaml`.
+The Anthropic provider reads its API key from the `ANTHROPIC_API_KEY` environment variable — it is never stored in `atlas.yaml`. For Proxmox, prefer a scoped API token over the account password: create one in the Proxmox UI under **Datacenter → Permissions → API Tokens**, and grant it only the privileges Atlas needs (read access is enough for `atlas proxmox scan`).
 
 ---
 

@@ -40,7 +40,8 @@ dependencies = [
     "docker",
     "proxmoxer",
     "anthropic",
-    "requests"
+    "requests",
+    "sqlalchemy"
 ]
 
 [project.optional-dependencies]

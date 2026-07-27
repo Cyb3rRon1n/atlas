@@ -86,12 +86,13 @@ def test_proxmox_scan_when_disabled_does_not_attempt_connection(isolated_cwd):
     assert "Proxmox integration disabled." in result.output
 
 
-def test_discover_plugins_persists_results_to_environment(isolated_cwd, temp_db):
+def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
     """
-    Regression test for the discovery-unification gap: discover-plugins
-    used to just print its results and discard them. This checks the
-    data actually lands in the knowledge store, not just that the
-    command exits cleanly.
+    atlas discover now runs built-in discovery and plugin discovery in
+    one pass. This checks both halves land in the same saved
+    environment snapshot, not just that the command exits cleanly -
+    the whole point of merging discover-plugins into discover was that
+    one command produces one complete picture.
     """
 
     fake_container = MagicMock()
@@ -100,18 +101,27 @@ def test_discover_plugins_persists_results_to_environment(isolated_cwd, temp_db)
     fake_container.status = "running"
     fake_container.short_id = "abc123"
 
-    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+    with (
+        patch(
+            "atlas.discovery.network.socket.gethostbyname_ex",
+            return_value=("sentinel", [], ["192.168.1.10"])
+        ),
+        patch("atlas.docker.manager.docker.from_env") as mock_from_env
+    ):
 
         mock_from_env.return_value.containers.list.return_value = [
             fake_container
         ]
 
-        result = runner.invoke(app, ["discover-plugins"])
+        result = runner.invoke(app, ["discover"])
 
     assert result.exit_code == 0
-    assert "Plugin discovery complete" in result.output
+    assert "Discovery complete" in result.output
+    assert "Plugins discovered:" in result.output
 
     environment = KnowledgeQueries().latest_environment()
 
+    assert "hostname" in environment["system"]
+    assert "cpu" in environment["hardware"]
     assert environment["containers"]["Docker"]["available"] is True
     assert environment["containers"]["Docker"]["containers"][0]["name"] == "plex"

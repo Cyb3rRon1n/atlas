@@ -24,14 +24,14 @@ graph TD
 
 Atlas persists to a local SQLite database (`inventory/atlas.db`): every event, the latest environment snapshot, and every AI analysis result. Reads and writes are split — a store component writes, a queries component reads (`latest_environment()`, `latest_analysis()`, `recent_events()`) — so the two responsibilities stay separable as more consumers show up.
 
-## Discovery: two commands, one shared store
+## Discovery: built-in and plugins, one command
 
-Atlas has two ways of gathering information about your environment:
+Atlas gathers information about your environment two ways, both run by a single `atlas discover`:
 
-- **Built-in discovery** — the synchronous path behind `atlas discover`: it directly collects system, hardware, storage, and network information and merges the results.
-- **Plugins** — an extensible architecture (`atlas plugins`, `atlas discover-plugins`) where each plugin declares `initialize()` and `discover()`. Currently ships with a Docker plugin.
+- **Built-in discovery** — the synchronous path that directly collects system, hardware, storage, and network information and merges the results.
+- **Plugins** — an extensible architecture (`atlas plugins` lists what's registered) where each plugin declares `initialize()` and `discover()`. Currently ships with a Docker plugin.
 
-Both now feed the same environment context, knowledge store, and event bus — `atlas discover-plugins` results land in `AtlasEnvironmentContext.containers`, the same as `atlas discover` and `atlas proxmox scan` populate their own fields, so `atlas analyze` can reason about whatever plugins found too. What's still separate is the *command*: `atlas discover` doesn't itself run plugins, so you run both if you want the full picture in one sitting. See the [Roadmap](../roadmap.md).
+`atlas discover` runs both in one pass: built-in results populate `AtlasEnvironmentContext`'s system/hardware/storage/network fields, plugin results land in `AtlasEnvironmentContext.containers` (keyed by plugin name), and both are saved to the knowledge store together — so `atlas analyze` sees the complete picture from one command, the same way `atlas proxmox scan` populates its own field. Adding a new discovery source means writing an `AtlasPlugin` subclass; it's picked up automatically the next time `atlas discover` runs, no wiring changes needed.
 
 ## AI analysis
 

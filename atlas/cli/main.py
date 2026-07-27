@@ -223,6 +223,19 @@ def discover():
         data
     )
 
+    manager = PluginManager()
+
+    manager.load_plugins()
+
+    manager.initialize(runtime)
+
+    plugin_data = manager.discover_all()
+
+    runtime.environment.update(
+        "containers",
+        plugin_data
+    )
+
     store = KnowledgeStore()
 
     store.save_environment(
@@ -237,12 +250,24 @@ def discover():
         )
     )
 
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.plugins.discovery.completed",
+            source="PluginManager",
+            payload=plugin_data
+        )
+    )
+
     console.print(
         "\n[green]✓ Discovery complete[/green]"
     )
 
     console.print(
         f"[cyan]Inventory saved:[/cyan] {inventory_file}"
+    )
+
+    console.print(
+        f"[cyan]Plugins discovered:[/cyan] {list(plugin_data.keys())}"
     )
 
 
@@ -487,46 +512,6 @@ def plugins():
         console.print(
             f"✓ {plugin.name} ({plugin.version})"
         )
-
-@app.command()
-def discover_plugins():
-    """
-    Run discovery through all registered plugins.
-    """
-
-    runtime = application.runtime
-
-    manager = PluginManager()
-
-    manager.load_plugins()
-
-    manager.initialize(runtime)
-
-    data = manager.discover_all()
-    console.print(data)
-
-    runtime.environment.update(
-        "containers",
-        data
-    )
-
-    store = KnowledgeStore()
-
-    store.save_environment(
-        runtime.environment
-    )
-
-    runtime.events.publish(
-        AtlasEvent(
-            event_type="atlas.plugins.discovery.completed",
-            source="PluginManager",
-            payload=data
-        )
-    )
-
-    console.print(
-        "\n[green]✓ Plugin discovery complete[/green]"
-    )
 
 @app.command()
 def history(

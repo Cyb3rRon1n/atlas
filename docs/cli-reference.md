@@ -1,6 +1,6 @@
 # CLI Reference
 
-All 16 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
+All 15 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
 
 ## Status & health
 
@@ -16,7 +16,7 @@ All 16 current Atlas commands. Run `atlas <command> --help` for any command-spec
 
 | Command | Description |
 |---|---|
-| `atlas discover` | Discover infrastructure information and generate inventory. |
+| `atlas discover` | Discover infrastructure information — built-in (system, hardware, storage, network) and every registered plugin — in one pass, and generate inventory. |
 | `atlas report` | Generate an infrastructure report from the latest inventory. |
 | `atlas docker` | Display Docker container status. |
 | `atlas services` | Detect known homelab services running in Docker (see [Service Catalog](service-catalog.md)). |
@@ -27,8 +27,7 @@ All 16 current Atlas commands. Run `atlas <command> --help` for any command-spec
 
 | Command | Description |
 |---|---|
-| `atlas plugins` | Display registered Atlas plugins. |
-| `atlas discover-plugins` | Run discovery through all registered plugins. |
+| `atlas plugins` | Display registered Atlas plugins. Running their discovery is folded into `atlas discover` (see above). |
 
 ## Knowledge & AI
 

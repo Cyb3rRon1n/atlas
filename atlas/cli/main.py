@@ -505,6 +505,29 @@ def discover_plugins():
     data = manager.discover_all()
     console.print(data)
 
+    runtime.environment.update(
+        "containers",
+        data
+    )
+
+    store = KnowledgeStore()
+
+    store.save_environment(
+        runtime.environment
+    )
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.plugins.discovery.completed",
+            source="PluginManager",
+            payload=data
+        )
+    )
+
+    console.print(
+        "\n[green]✓ Plugin discovery complete[/green]"
+    )
+
 @app.command()
 def history(
     limit: int = 10

@@ -1,8 +1,9 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
 from atlas.cli.main import app
+from atlas.knowledge.queries import KnowledgeQueries
 
 
 runner = CliRunner()
@@ -83,3 +84,34 @@ def test_proxmox_scan_when_disabled_does_not_attempt_connection(isolated_cwd):
 
     assert result.exit_code == 0
     assert "Proxmox integration disabled." in result.output
+
+
+def test_discover_plugins_persists_results_to_environment(isolated_cwd, temp_db):
+    """
+    Regression test for the discovery-unification gap: discover-plugins
+    used to just print its results and discard them. This checks the
+    data actually lands in the knowledge store, not just that the
+    command exits cleanly.
+    """
+
+    fake_container = MagicMock()
+    fake_container.name = "plex"
+    fake_container.image.tags = ["plexinc/pms-docker"]
+    fake_container.status = "running"
+    fake_container.short_id = "abc123"
+
+    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+
+        mock_from_env.return_value.containers.list.return_value = [
+            fake_container
+        ]
+
+        result = runner.invoke(app, ["discover-plugins"])
+
+    assert result.exit_code == 0
+    assert "Plugin discovery complete" in result.output
+
+    environment = KnowledgeQueries().latest_environment()
+
+    assert environment["containers"]["Docker"]["available"] is True
+    assert environment["containers"]["Docker"]["containers"][0]["name"] == "plex"

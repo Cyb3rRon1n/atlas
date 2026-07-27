@@ -207,14 +207,16 @@ The Anthropic provider reads its API key from the `ANTHROPIC_API_KEY` environmen
 
 ## Documentation
 
-The full documentation site — architecture, CLI reference, configuration reference, deployment model, service catalog, and roadmap — lives under [`docs/`](docs/) and is built with [MkDocs Material](https://squidfunk.github.io/mkdocs-material/). Browse it locally:
+The full documentation site — architecture, CLI reference, configuration reference, deployment model, service catalog, and roadmap — is live at **[cyb3rron1n.github.io/atlas](https://cyb3rron1n.github.io/atlas/)**, built from [`docs/`](docs/) with [MkDocs Material](https://squidfunk.github.io/mkdocs-material/).
+
+To browse it locally, or after editing a page:
 
 ```bash
 pip install -e ".[docs]"
 mkdocs serve
 ```
 
-A `docs.yml` GitHub Actions workflow deploys the built site to GitHub Pages on every push to `main`, once Pages is enabled for this repository.
+Redeploying the live site is manual (`.github/workflows/docs.yml`, triggered via `gh workflow run docs.yml` or the Actions tab) rather than automatic on every push, so a docs edit doesn't go live until you choose to publish it.
 
 ---
 

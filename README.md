@@ -176,8 +176,7 @@ graph TD
 Atlas uses YAML configuration, loaded from `atlas.yaml` in the working directory:
 
 ```yaml
-atlas:
-  name: sentinel
+name: sentinel
 
 discovery:
   hardware: true

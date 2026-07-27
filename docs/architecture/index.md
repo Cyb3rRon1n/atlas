@@ -41,3 +41,13 @@ Atlas gathers information about your environment two ways, both run by a single 
 - **Ollama** — any locally-run model, for a fully self-hosted setup consistent with Atlas's local-first philosophy.
 
 The provider is selected in [configuration](../configuration.md#intelligence) and built through a small factory, so adding a third backend later doesn't touch the analysis logic itself.
+
+## Approval-gated actions
+
+Every command so far has been read-only. `atlas restart <name>` is the first exception — the first thing Atlas can *do* to your infrastructure rather than just report on it — and it's built to a deliberately narrow, safety-first shape rather than a general "action framework," since there's only one action to generalize from so far:
+
+- **Pure result-dict functions** — `get_container_info()` / `restart_container()` (`atlas/docker/manager.py`) never raise Docker exceptions up to the caller; they return `{"found"/"success": bool, ...}`, the same style `collect_containers()` already used. The CLI layer only interprets plain dicts.
+- **Unconditional confirmation** — the CLI command shows what will happen (current container state, what restart means, that in-container state is lost but volumes aren't) and gates on `typer.confirm()`, which defaults to *no*. There's no `--yes` bypass in this first pass; convenience loses to safety until there's a real reason to add one.
+- **Logged like everything else** — the action publishes an event (`atlas.action.container_restarted`) on the same event bus discovery uses, so it's persisted to the knowledge store the same way, visible via `atlas history`, with no special-cased storage code.
+
+Any future action (Proxmox VM control, container removal, etc.) should follow this same shape. A generic action registry is intentionally not built yet — see the [Roadmap](../roadmap.md).

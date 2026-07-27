@@ -79,6 +79,7 @@ atlas analyze    # sends the latest snapshot to an AI provider for a summary + r
 | `atlas discover` | Discover infrastructure information (including registered plugins) and generate inventory. |
 | `atlas report` | Generate an infrastructure report from the latest inventory. |
 | `atlas docker` | Display Docker container status. |
+| `atlas restart <name>` | Restart a Docker container. Prompts for confirmation before acting. |
 | `atlas services` | Detect known homelab services running in Docker. |
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure (requires `proxmox.enabled: true`). |
@@ -110,6 +111,8 @@ Category: Media
 Container: plex
 Status:   running
 ```
+
+Atlas can also act, not just observe: `atlas restart <name>` restarts a container after showing you its current state and asking for confirmation. This is Atlas's first automation capability — see [Deployment](https://cyb3rron1n.github.io/atlas/deployment/) for the safety principle behind approval-gated actions.
 
 ### Docker Compose Analysis
 

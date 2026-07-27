@@ -2,9 +2,10 @@ annotated-doc==0.0.4
 annotated-types==0.7.0
 anthropic==0.120.0
 anyio==4.14.2
--e git+ssh://git@github.com/Cyb3rRon1n/atlas.git@619ed0ff342811f15850ed909acd871d09c88d51#egg=atlas_homelab
+-e git+ssh://git@github.com/Cyb3rRon1n/atlas.git@f606892332c8036acbca45b0bab9d185f9a9c5c2#egg=atlas_homelab
 certifi==2026.7.22
 charset-normalizer==3.4.9
+coverage==7.15.2
 distro==1.9.0
 docker==7.2.0
 docstring_parser==0.18.0
@@ -25,6 +26,7 @@ pydantic==2.13.4
 pydantic_core==2.46.4
 Pygments==2.20.0
 pytest==9.1.1
+pytest-cov==7.1.0
 PyYAML==6.0.3
 requests==2.34.2
 rich==15.0.0

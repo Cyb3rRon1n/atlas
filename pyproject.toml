@@ -43,6 +43,9 @@ dependencies = [
     "requests"
 ]
 
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov"]
+
 [project.urls]
 Homepage = "https://github.com/Cyb3rRon1n/atlas"
 Repository = "https://github.com/Cyb3rRon1n/atlas"

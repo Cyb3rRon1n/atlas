@@ -5,26 +5,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Setup (editable install pulls in all deps from pyproject.toml)
+# Setup — use the [dev] extra, not requirements.txt (see Testing note below)
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -e ".[dev]"
 
 # Run the CLI
 atlas <command>            # e.g. atlas discover, atlas analyze, atlas doctor
 python -m atlas.cli.main <command>   # equivalent, for running from source without reinstalling
 
-# Tests (pytest, no config beyond auto-detected rootdir; tests/ currently only covers atlas/intelligence)
+# Tests (pytest, no config beyond auto-detected rootdir)
 python -m pytest tests/
-python -m pytest tests/test_intelligence_providers.py -v
+python -m pytest tests/test_discovery.py -v
 python -m pytest tests/test_intelligence_providers.py::TestAnthropicProvider::test_refusal_raises_provider_error
+python -m pytest tests/ --cov=atlas --cov-report=term-missing   # coverage, matches CI
 
-# requirements.txt is a pip-freeze lockfile regenerated from the venv, not hand-edited:
+# requirements.txt is a pip-freeze lockfile regenerated from the venv, not hand-edited,
+# and is NOT used for install (see Testing note below):
 pip install <new-package>
 pip freeze > requirements.txt
 ```
 
-There is no configured linter, formatter, or CI workflow (no `.github/workflows`) — nothing enforces style automatically.
+There is no configured linter or formatter — nothing enforces style automatically. CI (`.github/workflows/ci.yml`) runs the test suite on Python 3.11/3.12 for every push/PR to `main`; it does not gate on a coverage threshold.
+
+**Testing note:** `requirements.txt` is a `pip freeze` dump that includes a self-referential editable install line (`-e git+ssh://...`) — this only works on a machine with SSH access to the repo, so CI (and any fresh clone) must install via `pip install -e ".[dev]"` against the checked-out tree, never `pip install -r requirements.txt`. Most tests rely on two `tests/conftest.py` fixtures rather than hitting real state: `isolated_cwd` (chdirs into a temp dir, since a real local `atlas.yaml` exists and `load_config()`/file-writing code reads/writes relative to cwd) and `temp_db` (points `KnowledgeStore`/`KnowledgeQueries` at a throwaway SQLite file instead of the committed `inventory/atlas.db` — done by monkeypatching the `engine` name in both `atlas.knowledge.store` and `atlas.knowledge.queries`, since each did `from atlas.database.engine import engine`, a local name binding). Docker- and hostname-resolution-dependent code (`atlas/docker/manager.py`, `atlas/discovery/network.py`) is mocked in tests rather than relying on ambient environment state, since GitHub-hosted runners have a live Docker daemon and CI network namespaces can't always resolve their own hostname.
 
 ## Architecture
 

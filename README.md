@@ -82,7 +82,7 @@ atlas analyze    # sends the latest snapshot to an AI provider for a summary + r
 | `atlas restart <name>` | Restart a Docker container. Prompts for confirmation before acting. |
 | `atlas services` | Detect known homelab services running in Docker. |
 | `atlas compose` | Analyze a Docker Compose file. |
-| `atlas proxmox scan` | Scan Proxmox infrastructure (requires `proxmox.enabled: true`). |
+| `atlas proxmox scan` | Scan Proxmox infrastructure and report changes since the last scan (requires `proxmox.enabled: true`). |
 | `atlas plugins` | Display registered Atlas plugins. |
 | `atlas history` | Display recorded operational events. |
 | `atlas intelligence` | Display the latest stored environment context. |
@@ -120,7 +120,7 @@ Atlas can parse a Docker Compose file (`atlas compose`) to surface its services,
 
 ### Proxmox Integration
 
-Atlas can connect to a Proxmox cluster and inventory it (`atlas proxmox scan`): node status, and every VM and container across the cluster (name, node, status, CPU/memory usage). Authentication supports either an API token (`token_name`/`token_value`, recommended — see [Configuration](#configuration)) or a password. Results feed into the same environment context as `atlas discover`, so `atlas analyze` can reason about your virtualization layer too. Planned expansion includes resource-usage trending and change detection over time.
+Atlas can connect to a Proxmox cluster and inventory it (`atlas proxmox scan`): node status, and every VM and container across the cluster (name, node, status, CPU/memory usage). Authentication supports either an API token (`token_name`/`token_value`, recommended — see [Configuration](#configuration)) or a password. Results feed into the same environment context as `atlas discover`, so `atlas analyze` can reason about your virtualization layer too. Each scan also reports what changed since the last one — nodes or guests added, removed, or with a different status. Planned expansion includes resource-usage trending over time.
 
 ### Plugin Architecture
 

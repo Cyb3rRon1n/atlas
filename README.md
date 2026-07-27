@@ -76,14 +76,13 @@ atlas analyze    # sends the latest snapshot to an AI provider for a summary + r
 | `atlas status` | Display current Atlas status. |
 | `atlas doctor` | Run Atlas health checks. |
 | `atlas config` | Display the active Atlas configuration. |
-| `atlas discover` | Discover infrastructure information and generate inventory. |
+| `atlas discover` | Discover infrastructure information (including registered plugins) and generate inventory. |
 | `atlas report` | Generate an infrastructure report from the latest inventory. |
 | `atlas docker` | Display Docker container status. |
 | `atlas services` | Detect known homelab services running in Docker. |
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure (requires `proxmox.enabled: true`). |
 | `atlas plugins` | Display registered Atlas plugins. |
-| `atlas discover-plugins` | Run discovery through all registered plugins. |
 | `atlas history` | Display recorded operational events. |
 | `atlas intelligence` | Display the latest stored environment context. |
 | `atlas analyze` | Analyze the latest environment snapshot with AI and print a summary plus recommendations. |

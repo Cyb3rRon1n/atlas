@@ -46,6 +46,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov"]
+docs = ["mkdocs-material"]
 
 [project.urls]
 Homepage = "https://github.com/Cyb3rRon1n/atlas"

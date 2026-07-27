@@ -1,6 +1,6 @@
 # CLI Reference
 
-All 15 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
+All 16 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
 
 ## Status & health
 
@@ -28,6 +28,14 @@ All 15 current Atlas commands. Run `atlas <command> --help` for any command-spec
 | Command | Description |
 |---|---|
 | `atlas plugins` | Display registered Atlas plugins. Running their discovery is folded into `atlas discover` (see above). |
+
+## Actions
+
+Commands that change infrastructure rather than just observe it. All are approval-gated — see [Architecture](architecture/index.md#approval-gated-actions).
+
+| Command | Description |
+|---|---|
+| `atlas restart <name>` | Restart a Docker container. Shows the container's current state and asks for confirmation before acting. |
 
 ## Knowledge & AI
 

@@ -5,7 +5,7 @@ from atlas.inventory import load_inventory
 from atlas.reporting.generator import generate_report
 from atlas.config import load_config
 from atlas.health import run_checks
-from atlas.docker import collect_containers
+from atlas.docker import collect_containers, get_container_info, restart_container
 from atlas.services import detect_services
 from atlas.compose import parse_compose_file
 from atlas.proxmox import connect, discover_nodes, discover_resources
@@ -370,6 +370,72 @@ ID:
 {container['id']}
 """
         )
+
+
+@app.command()
+def restart(name: str):
+    """
+    Restart a Docker container (requires confirmation).
+    """
+
+    console.print(
+        "[bold blue]Atlas Restart[/bold blue]\n"
+    )
+
+    info = get_container_info(name)
+
+    if not info["found"]:
+
+        console.print(
+            f"[red]{info['error']}[/red]"
+        )
+
+        return
+
+    console.print(f"Container: {info['name']}")
+    console.print(f"Image: {info['image']}")
+    console.print(f"Current status: {info['status']}\n")
+
+    console.print(
+        "This will restart the container. Any unsaved in-container "
+        "state is lost; the container's own persistent volumes are "
+        "unaffected.\n"
+    )
+
+    if not typer.confirm("Proceed?"):
+
+        console.print(
+            "[yellow]Cancelled.[/yellow]"
+        )
+
+        return
+
+    result = restart_container(name)
+
+    runtime = application.runtime
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.action.container_restarted",
+            source="RestartAction",
+            payload={
+                "container": name,
+                "result": result
+            }
+        )
+    )
+
+    if not result["success"]:
+
+        console.print(
+            f"\n[red]Restart failed: {result['error']}[/red]"
+        )
+
+        return
+
+    console.print(
+        f"\n[green]✓ Container '{name}' restarted[/green]"
+    )
 
 
 @app.command()

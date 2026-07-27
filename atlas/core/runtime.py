@@ -2,6 +2,7 @@ from atlas.core.context import AtlasContext
 from atlas.config import load_config
 from atlas.events import EventBus
 from atlas.intelligence.context import AtlasEnvironmentContext
+from atlas.listeners import DatabaseListener
 
 
 class AtlasRuntime:
@@ -20,6 +21,8 @@ class AtlasRuntime:
         self.environment = AtlasEnvironmentContext()
 
         self.events = EventBus()
+
+        DatabaseListener().register(self.events)
 
 
     def get_context(self):

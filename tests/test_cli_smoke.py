@@ -125,3 +125,45 @@ def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
     assert "cpu" in environment["hardware"]
     assert environment["containers"]["Docker"]["available"] is True
     assert environment["containers"]["Docker"]["containers"][0]["name"] == "plex"
+
+
+def test_restart_declined_does_not_restart_container(isolated_cwd, temp_db):
+
+    fake_container = MagicMock()
+    fake_container.name = "plex"
+    fake_container.image.tags = ["plexinc/pms-docker"]
+    fake_container.status = "exited"
+
+    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+
+        mock_from_env.return_value.containers.get.return_value = fake_container
+
+        result = runner.invoke(app, ["restart", "plex"], input="n\n")
+
+    assert result.exit_code == 0
+    assert "Cancelled." in result.output
+    fake_container.restart.assert_not_called()
+
+
+def test_restart_confirmed_restarts_container_and_logs_event(
+    isolated_cwd, temp_db
+):
+
+    fake_container = MagicMock()
+    fake_container.name = "plex"
+    fake_container.image.tags = ["plexinc/pms-docker"]
+    fake_container.status = "exited"
+
+    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+
+        mock_from_env.return_value.containers.get.return_value = fake_container
+
+        result = runner.invoke(app, ["restart", "plex"], input="y\n")
+
+    assert result.exit_code == 0
+    assert "restarted" in result.output
+    fake_container.restart.assert_called_once_with()
+
+    events = KnowledgeQueries().recent_events()
+
+    assert events[0].event_type == "atlas.action.container_restarted"

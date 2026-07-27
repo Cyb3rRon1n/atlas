@@ -2,6 +2,7 @@ import json
 
 from sqlalchemy.orm import Session
 
+from atlas.database import initialize_database
 from atlas.database.engine import engine
 from atlas.database.models import EventRecord, EnvironmentRecord, AnalysisRecord
 from atlas.events import AtlasEvent
@@ -17,6 +18,8 @@ class KnowledgeStore:
         self,
         event: AtlasEvent
     ):
+
+        initialize_database(engine)
 
         with Session(engine) as session:
 
@@ -38,6 +41,8 @@ class KnowledgeStore:
         environment
     ):
 
+        initialize_database(engine)
+
         with Session(engine) as session:
 
             record = EnvironmentRecord(
@@ -57,6 +62,8 @@ class KnowledgeStore:
         provider: str,
         model: str
     ):
+
+        initialize_database(engine)
 
         with Session(engine) as session:
 

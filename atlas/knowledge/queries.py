@@ -2,6 +2,7 @@ import json
 
 from sqlalchemy.orm import Session
 
+from atlas.database import initialize_database
 from atlas.database.engine import engine
 from atlas.database.models import (
     EventRecord,
@@ -20,6 +21,8 @@ class KnowledgeQueries:
         limit: int = 10
     ):
 
+        initialize_database(engine)
+
         with Session(engine) as session:
 
             return (
@@ -33,6 +36,8 @@ class KnowledgeQueries:
 
 
     def latest_environment(self):
+
+        initialize_database(engine)
 
         with Session(engine) as session:
 
@@ -53,6 +58,8 @@ class KnowledgeQueries:
 
 
     def latest_analysis(self):
+
+        initialize_database(engine)
 
         with Session(engine) as session:
 

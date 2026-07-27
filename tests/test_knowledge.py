@@ -1,3 +1,7 @@
+from sqlalchemy import create_engine
+
+import atlas.knowledge.queries as queries_module
+import atlas.knowledge.store as store_module
 from atlas.events import AtlasEvent
 from atlas.intelligence.context import AtlasEnvironmentContext
 from atlas.intelligence.providers.base import (
@@ -102,3 +106,33 @@ def test_save_and_query_analysis(temp_db):
             "action": {"type": "restart_container", "target": "plex"}
         }
     ]
+
+
+def test_store_and_queries_self_heal_a_database_with_no_tables(tmp_path, monkeypatch):
+    """
+    Regression test: the committed inventory/atlas.db once predated
+    AnalysisRecord and was missing the 'analysis' table entirely, and
+    nothing called initialize_database() automatically - so the first
+    real save_analysis()/latest_analysis() call crashed with
+    'no such table: analysis'. Every KnowledgeStore/KnowledgeQueries
+    method now self-heals by creating any missing tables on first use.
+    """
+
+    engine = create_engine(
+        f"sqlite:///{tmp_path / 'no-tables-yet.db'}"
+    )
+
+    monkeypatch.setattr(store_module, "engine", engine)
+    monkeypatch.setattr(queries_module, "engine", engine)
+
+    assert KnowledgeQueries().latest_analysis() is None
+
+    KnowledgeStore().save_analysis(
+        AnalysisResult(summary="ok", recommendations=[]),
+        provider="anthropic",
+        model="claude-opus-5"
+    )
+
+    assert KnowledgeQueries().latest_analysis()["summary"] == "ok"
+
+    engine.dispose()

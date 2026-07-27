@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 from atlas.database.engine import engine
 from atlas.database.models import (
     EventRecord,
-    EnvironmentRecord
+    EnvironmentRecord,
+    AnalysisRecord
 )
 
 
@@ -49,3 +50,29 @@ class KnowledgeQueries:
             return json.loads(
                 record.data
             )
+
+
+    def latest_analysis(self):
+
+        with Session(engine) as session:
+
+            record = (
+                session.query(AnalysisRecord)
+                .order_by(
+                    AnalysisRecord.created_at.desc()
+                )
+                .first()
+            )
+
+            if not record:
+                return None
+
+            return {
+                "summary": record.summary,
+                "recommendations": json.loads(
+                    record.recommendations
+                ),
+                "provider": record.provider,
+                "model": record.model,
+                "created_at": str(record.created_at)
+            }

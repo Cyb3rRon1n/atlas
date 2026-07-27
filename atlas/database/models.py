@@ -41,3 +41,24 @@ class EnvironmentRecord(Base):
     created_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow
     )
+
+
+class AnalysisRecord(Base):
+
+    __tablename__ = "analysis"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True
+    )
+
+    summary: Mapped[str]
+
+    recommendations: Mapped[str]
+
+    provider: Mapped[str]
+
+    model: Mapped[str]
+
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow
+    )

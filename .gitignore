@@ -83,6 +83,10 @@ logs/
 inventory/local/
 inventory/generated/
 
+# Operational database - grows a new row on every command run,
+# self-heals its schema on first use (see atlas.database.initialize_database)
+inventory/atlas.db
+
 # Local reports
 
 reports/

@@ -8,7 +8,7 @@ All 17 current Atlas commands. Run `atlas <command> --help` for any command-spec
 |---|---|
 | `atlas version` | Display the Atlas version. |
 | `atlas status` | Display current Atlas status. |
-| `atlas doctor` | Run Atlas health checks (Python, memory, storage, Docker, inventory). |
+| `atlas doctor` | Run Atlas health checks (Python, memory, storage, Docker, inventory) plus readiness checks for the optional integrations (Proxmox, AI provider, Prometheus) against the current `atlas.yaml`. |
 | `atlas config` | Display the active Atlas configuration. |
 | `atlas runtime` | Display Atlas runtime information. |
 

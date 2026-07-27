@@ -1,8 +1,11 @@
+import os
 import platform
 import shutil
 from pathlib import Path
 
 import psutil
+
+from atlas.config import load_config
 
 
 def check_python():
@@ -73,7 +76,94 @@ def check_inventory():
     }
 
 
+def check_proxmox(config):
+
+    proxmox = config.proxmox
+
+    if not proxmox.enabled:
+        return {
+            "name": "Proxmox",
+            "status": True,
+            "details": "disabled",
+        }
+
+    has_host = bool(proxmox.host)
+
+    has_auth = bool(
+        proxmox.token_name and proxmox.token_value
+    ) or bool(proxmox.password)
+
+    healthy = has_host and has_auth
+
+    return {
+        "name": "Proxmox",
+        "status": healthy,
+        "details": (
+            "enabled, host and credentials configured"
+            if healthy
+            else "enabled but missing host or credentials"
+        ),
+    }
+
+
+def check_intelligence(config):
+
+    provider = config.intelligence.provider
+
+    if provider == "anthropic":
+
+        healthy = bool(os.environ.get("ANTHROPIC_API_KEY"))
+
+        details = (
+            "anthropic, ANTHROPIC_API_KEY set"
+            if healthy
+            else "anthropic, ANTHROPIC_API_KEY not set"
+        )
+
+    elif provider == "ollama":
+
+        healthy = True
+        details = f"ollama, {config.intelligence.ollama_host}"
+
+    else:
+
+        healthy = False
+        details = f"unknown provider '{provider}'"
+
+    return {
+        "name": "Intelligence",
+        "status": healthy,
+        "details": details,
+    }
+
+
+def check_monitoring(config):
+
+    monitoring = config.monitoring
+
+    if not monitoring.enabled:
+        return {
+            "name": "Monitoring",
+            "status": True,
+            "details": "disabled",
+        }
+
+    healthy = bool(monitoring.prometheus_url)
+
+    return {
+        "name": "Monitoring",
+        "status": healthy,
+        "details": (
+            f"enabled, {monitoring.prometheus_url}"
+            if healthy
+            else "enabled but no prometheus_url configured"
+        ),
+    }
+
+
 def run_checks():
+
+    config = load_config()
 
     return [
         check_python(),
@@ -81,4 +171,7 @@ def run_checks():
         check_storage(),
         check_docker(),
         check_inventory(),
+        check_proxmox(config),
+        check_intelligence(config),
+        check_monitoring(config),
     ]

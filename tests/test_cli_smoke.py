@@ -153,6 +153,100 @@ def test_proxmox_scan_when_disabled_does_not_attempt_connection(isolated_cwd):
     assert "Proxmox integration disabled." in result.output
 
 
+PROXMOX_ENABLED_ATLAS_YAML = (
+    "proxmox:\n"
+    "  enabled: true\n"
+    "  host: proxmox.local\n"
+    "  user: root@pam\n"
+    "  password: hunter2\n"
+)
+
+
+def test_proxmox_scan_first_run_prints_no_changes_section(isolated_cwd, temp_db):
+    """
+    With no prior environment saved, there's no baseline to diff
+    against - the changes section should be skipped entirely rather
+    than claiming "no changes" (which implies a comparison happened).
+    """
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+
+    with (
+        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch(
+            "atlas.cli.main.discover_nodes",
+            return_value=[{"name": "pve1", "status": "online"}]
+        ),
+        patch(
+            "atlas.cli.main.discover_resources",
+            return_value=[
+                {
+                    "vmid": 100, "name": "plex", "node": "pve1", "type": "qemu",
+                    "status": "running", "cpu": 0.1, "maxcpu": 4, "mem": 100,
+                    "maxmem": 1000, "disk": 0, "maxdisk": 0, "uptime": 10
+                }
+            ]
+        )
+    ):
+
+        result = runner.invoke(app, ["proxmox", "scan"])
+
+    assert result.exit_code == 0
+    assert "Changes since last scan" not in result.output
+    assert "No changes since last scan." not in result.output
+
+
+def test_proxmox_scan_second_run_reports_changes(isolated_cwd, temp_db):
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+
+    first_guests = [
+        {
+            "vmid": 100, "name": "plex", "node": "pve1", "type": "qemu",
+            "status": "running", "cpu": 0.1, "maxcpu": 4, "mem": 100,
+            "maxmem": 1000, "disk": 0, "maxdisk": 0, "uptime": 10
+        }
+    ]
+
+    second_guests = [
+        {
+            "vmid": 100, "name": "plex", "node": "pve1", "type": "qemu",
+            "status": "stopped", "cpu": 0.0, "maxcpu": 4, "mem": 0,
+            "maxmem": 1000, "disk": 0, "maxdisk": 0, "uptime": 0
+        }
+    ]
+
+    with (
+        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch(
+            "atlas.cli.main.discover_nodes",
+            return_value=[{"name": "pve1", "status": "online"}]
+        ),
+        patch(
+            "atlas.cli.main.discover_resources",
+            side_effect=[first_guests, second_guests]
+        )
+    ):
+
+        first_result = runner.invoke(app, ["proxmox", "scan"])
+        second_result = runner.invoke(app, ["proxmox", "scan"])
+
+    assert first_result.exit_code == 0
+    assert second_result.exit_code == 0
+
+    assert "Changes since last scan:" in second_result.output
+    assert (
+        "Guest 'plex' (100) status changed: running → stopped"
+        in second_result.output
+    )
+
+    event_types = [
+        event.event_type for event in KnowledgeQueries().recent_events()
+    ]
+
+    assert "atlas.proxmox.changes_detected" in event_types
+
+
 def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
     """
     atlas discover now runs built-in discovery and plugin discovery in

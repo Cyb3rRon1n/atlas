@@ -8,7 +8,13 @@ from atlas.health import run_checks
 from atlas.docker import collect_containers, get_container_info, restart_container
 from atlas.services import detect_services
 from atlas.compose import parse_compose_file
-from atlas.proxmox import connect, discover_nodes, discover_resources
+from atlas.proxmox import (
+    connect,
+    discover_nodes,
+    discover_resources,
+    diff_virtualization,
+    format_change,
+)
 from atlas.plugins import PluginManager
 from rich.console import Console
 from atlas.events import AtlasEvent
@@ -60,6 +66,9 @@ def scan():
         )
 
         return
+
+
+    previous = KnowledgeQueries().latest_environment()
 
 
     client = connect(
@@ -126,7 +135,39 @@ CPU / Memory:
         "guests": guests
     }
 
+    previous_virtualization = (
+        previous.get("virtualization") if previous else None
+    )
+
+    changes = diff_virtualization(previous_virtualization, data)
+
     runtime = application.runtime
+
+    if previous_virtualization:
+
+        console.print()
+
+        if changes:
+
+            console.print("[bold]Changes since last scan:[/bold]\n")
+
+            for change in changes:
+
+                console.print(format_change(change))
+
+            console.print()
+
+            runtime.events.publish(
+                AtlasEvent(
+                    event_type="atlas.proxmox.changes_detected",
+                    source="ProxmoxScan",
+                    payload={"changes": changes}
+                )
+            )
+
+        else:
+
+            console.print("No changes since last scan.\n")
 
     runtime.environment.update(
         "virtualization",

@@ -21,7 +21,7 @@ All 16 current Atlas commands. Run `atlas <command> --help` for any command-spec
 | `atlas docker` | Display Docker container status. |
 | `atlas services` | Detect known homelab services running in Docker (see [Service Catalog](service-catalog.md)). |
 | `atlas compose` | Analyze a Docker Compose file. |
-| `atlas proxmox scan` | Scan Proxmox infrastructure — nodes, VMs, and containers (requires `proxmox.enabled: true`, see [Configuration](configuration.md#proxmox)). |
+| `atlas proxmox scan` | Scan Proxmox infrastructure — nodes, VMs, and containers — and report what changed since the last scan (requires `proxmox.enabled: true`, see [Configuration](configuration.md#proxmox)). |
 
 ## Plugins
 

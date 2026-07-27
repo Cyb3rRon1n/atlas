@@ -16,6 +16,8 @@ from atlas.knowledge.queries import KnowledgeQueries
 from atlas.knowledge.store import KnowledgeStore
 from atlas.core.application import application
 from atlas.intelligence.context import AtlasEnvironmentContext
+from atlas.intelligence.analyzer import AtlasAnalyzer
+from atlas.intelligence.providers import AIProviderError, get_provider
 
 from atlas import __version__
 
@@ -528,6 +530,106 @@ def intelligence():
     console.print(
         environment
     )
+
+
+@app.command()
+def analyze():
+    """
+    Analyze the latest environment snapshot with AI and
+    produce a summary and recommendations.
+    """
+
+    console.print(
+        "[bold blue]Atlas Analysis[/bold blue]\n"
+    )
+
+    query = KnowledgeQueries()
+
+    environment = query.latest_environment()
+
+    if not environment:
+
+        console.print(
+            "[yellow]No environment data found.[/yellow]"
+        )
+
+        console.print(
+            "Run: atlas discover"
+        )
+
+        return
+
+    settings = load_config()
+
+    try:
+
+        provider = get_provider(settings.intelligence)
+
+        analyzer = AtlasAnalyzer(provider)
+
+        result = analyzer.analyze(environment)
+
+    except AIProviderError as error:
+
+        console.print(
+            f"[red]Analysis failed:[/red] {error}"
+        )
+
+        return
+
+    console.print(
+        f"{result.summary}\n"
+    )
+
+    severity_styles = {
+        "critical": "bold red",
+        "warning": "yellow",
+        "info": "cyan"
+    }
+
+    if not result.recommendations:
+
+        console.print(
+            "[green]No recommendations at this time.[/green]"
+        )
+
+    for recommendation in result.recommendations:
+
+        style = severity_styles.get(
+            recommendation.severity, "white"
+        )
+
+        console.print(
+            f"[{style}]● {recommendation.title}[/{style}] "
+            f"({recommendation.severity})"
+        )
+
+        console.print(
+            f"  {recommendation.detail}\n"
+        )
+
+    store = KnowledgeStore()
+
+    store.save_analysis(
+        result,
+        provider=settings.intelligence.provider,
+        model=settings.intelligence.model
+    )
+
+    runtime = application.runtime
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.analysis.completed",
+            source="AtlasAnalyzer",
+            payload={
+                "provider": settings.intelligence.provider,
+                "model": settings.intelligence.model,
+                "recommendation_count": len(result.recommendations)
+            }
+        )
+    )
+
 
 app.add_typer(
     proxmox_app

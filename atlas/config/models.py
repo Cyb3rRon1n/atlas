@@ -19,8 +19,15 @@ class ProxmoxConfig(BaseModel):
     verify_ssl: bool = False
 
 
+class IntelligenceConfig(BaseModel):
+    provider: str = "anthropic"
+    model: str = "claude-opus-5"
+    ollama_host: str = "http://localhost:11434"
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
     inventory: InventoryConfig = InventoryConfig()
     proxmox: ProxmoxConfig = ProxmoxConfig()
+    intelligence: IntelligenceConfig = IntelligenceConfig()

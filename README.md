@@ -40,11 +40,10 @@ Atlas is currently progressing through its foundation and intelligence architect
 ✅ Event-driven system  
 ✅ Persistent operational history  
 ✅ Knowledge storage layer  
+✅ AI analysis engine (pluggable Anthropic / Ollama providers)  
 
 ## In Development
 
-🚧 AI analysis engine  
-🚧 Infrastructure recommendations  
 🚧 Automated operational workflows  
 🚧 Agent-based capabilities  
 🚧 Advanced monitoring integrations  
@@ -345,6 +344,16 @@ Displays operational event history.
 
 ---
 
+## Analyze
+
+atlas analyze
+
+Sends the latest discovered environment snapshot to the configured AI
+provider and prints a plain-language summary plus concrete
+recommendations. Requires a prior `atlas discover` run.
+
+---
+
 # Installation
 
 Clone the repository:
@@ -389,6 +398,14 @@ discovery:
 
 inventory:
   directory: inventory/generated
+
+intelligence:
+  provider: anthropic   # or "ollama"
+  model: claude-opus-5  # or an Ollama model name, e.g. llama3.1
+  ollama_host: http://localhost:11434
+
+The Anthropic provider reads its API key from the `ANTHROPIC_API_KEY`
+environment variable — it is never stored in `atlas.yaml`.
 
 ---
 

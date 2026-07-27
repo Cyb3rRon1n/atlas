@@ -3,8 +3,9 @@ import json
 from sqlalchemy.orm import Session
 
 from atlas.database.engine import engine
-from atlas.database.models import EventRecord, EnvironmentRecord
+from atlas.database.models import EventRecord, EnvironmentRecord, AnalysisRecord
 from atlas.events import AtlasEvent
+from atlas.intelligence.providers import AnalysisResult
 
 
 class KnowledgeStore:
@@ -43,6 +44,36 @@ class KnowledgeStore:
                 data=json.dumps(
                     environment.summary()
                 )
+            )
+
+            session.add(record)
+
+            session.commit()
+
+
+    def save_analysis(
+        self,
+        result: AnalysisResult,
+        provider: str,
+        model: str
+    ):
+
+        with Session(engine) as session:
+
+            record = AnalysisRecord(
+                summary=result.summary,
+                recommendations=json.dumps(
+                    [
+                        {
+                            "title": item.title,
+                            "detail": item.detail,
+                            "severity": item.severity
+                        }
+                        for item in result.recommendations
+                    ]
+                ),
+                provider=provider,
+                model=model
             )
 
             session.add(record)

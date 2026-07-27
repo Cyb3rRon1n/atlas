@@ -74,7 +74,7 @@ atlas analyze    # sends the latest snapshot to an AI provider for a summary + r
 |---|---|
 | `atlas version` | Display the Atlas version. |
 | `atlas status` | Display current Atlas status. |
-| `atlas doctor` | Run Atlas health checks. |
+| `atlas doctor` | Run Atlas health checks, including readiness of Proxmox/AI/Prometheus integrations. |
 | `atlas config` | Display the active Atlas configuration. |
 | `atlas discover` | Discover infrastructure information (including registered plugins) and generate inventory. |
 | `atlas report` | Generate an infrastructure report from the latest inventory. |

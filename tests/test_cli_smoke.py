@@ -72,6 +72,73 @@ def test_analyze_with_no_environment_short_circuits_without_api_call(
     assert "Run: atlas discover" in result.output
 
 
+def test_analyze_prints_suggested_action_for_known_container_only(
+    isolated_cwd, temp_db
+):
+    """
+    Seeds an environment with one known container ('plex'), then has
+    the (mocked) AI provider return one recommendation targeting that
+    real container and one targeting a container Atlas never observed
+    ('ghost'). Only the grounded suggestion should be printed - this
+    exercises the real AtlasAnalyzer cross-check, not a mocked one.
+    """
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.intelligence.providers.base import (
+        AIProvider,
+        AnalysisResult,
+        Recommendation,
+        SuggestedAction,
+    )
+    from atlas.knowledge.store import KnowledgeStore
+
+    environment = AtlasEnvironmentContext()
+
+    environment.update(
+        "containers",
+        {"Docker": {"available": True, "containers": [{"name": "plex"}]}}
+    )
+
+    KnowledgeStore().save_environment(environment)
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context):
+
+            return AnalysisResult(
+                summary="One host, lightly loaded.",
+                recommendations=[
+                    Recommendation(
+                        title="Container 'plex' looks unhealthy",
+                        detail="Restarted 4 times in the last hour.",
+                        severity="warning",
+                        action=SuggestedAction(
+                            type="restart_container", target="plex"
+                        )
+                    ),
+                    Recommendation(
+                        title="Container 'ghost' looks unhealthy",
+                        detail="This container was never actually observed.",
+                        severity="warning",
+                        action=SuggestedAction(
+                            type="restart_container", target="ghost"
+                        )
+                    ),
+                ]
+            )
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ):
+
+        result = runner.invoke(app, ["analyze"])
+
+    assert result.exit_code == 0
+    assert "Suggested: atlas restart plex" in result.output
+    assert "atlas restart ghost" not in result.output
+
+
 def test_proxmox_scan_when_disabled_does_not_attempt_connection(isolated_cwd):
     """
     proxmox.enabled defaults to false, so this exercises the fast exit

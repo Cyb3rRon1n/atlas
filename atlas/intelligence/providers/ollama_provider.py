@@ -8,7 +8,7 @@ from atlas.intelligence.providers.base import (
     AIProvider,
     AIProviderError,
     AnalysisResult,
-    Recommendation,
+    recommendation_from_dict,
 )
 
 
@@ -74,7 +74,7 @@ class OllamaProvider(AIProvider):
         return AnalysisResult(
             summary=data["summary"],
             recommendations=[
-                Recommendation(**item)
+                recommendation_from_dict(item)
                 for item in data["recommendations"]
             ]
         )

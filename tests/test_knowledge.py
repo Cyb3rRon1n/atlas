@@ -1,6 +1,10 @@
 from atlas.events import AtlasEvent
 from atlas.intelligence.context import AtlasEnvironmentContext
-from atlas.intelligence.providers.base import AnalysisResult, Recommendation
+from atlas.intelligence.providers.base import (
+    AnalysisResult,
+    Recommendation,
+    SuggestedAction,
+)
 from atlas.knowledge.queries import KnowledgeQueries
 from atlas.knowledge.store import KnowledgeStore
 
@@ -63,6 +67,12 @@ def test_save_and_query_analysis(temp_db):
                 title="Add monitoring",
                 detail="No monitoring stack detected.",
                 severity="info"
+            ),
+            Recommendation(
+                title="Container 'plex' looks unhealthy",
+                detail="Restarted 4 times in the last hour.",
+                severity="warning",
+                action=SuggestedAction(type="restart_container", target="plex")
             )
         ]
     )
@@ -82,6 +92,13 @@ def test_save_and_query_analysis(temp_db):
         {
             "title": "Add monitoring",
             "detail": "No monitoring stack detected.",
-            "severity": "info"
+            "severity": "info",
+            "action": None
+        },
+        {
+            "title": "Container 'plex' looks unhealthy",
+            "detail": "Restarted 4 times in the last hour.",
+            "severity": "warning",
+            "action": {"type": "restart_container", "target": "plex"}
         }
     ]

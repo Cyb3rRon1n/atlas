@@ -27,9 +27,15 @@ class IntelligenceConfig(BaseModel):
     ollama_host: str = "http://localhost:11434"
 
 
+class MonitoringConfig(BaseModel):
+    enabled: bool = False
+    prometheus_url: str = "http://localhost:9090"
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
     inventory: InventoryConfig = InventoryConfig()
     proxmox: ProxmoxConfig = ProxmoxConfig()
     intelligence: IntelligenceConfig = IntelligenceConfig()
+    monitoring: MonitoringConfig = MonitoringConfig()

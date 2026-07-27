@@ -26,6 +26,10 @@ intelligence:
   provider: anthropic
   model: claude-opus-5
   ollama_host: http://localhost:11434
+
+monitoring:
+  enabled: false
+  prometheus_url: http://localhost:9090
 ```
 
 ## `name`
@@ -75,3 +79,14 @@ Controls the AI backend behind `atlas analyze`.
 | `ollama_host` | `http://localhost:11434` | Only used when `provider: ollama` |
 
 The Anthropic provider reads its API key from the `ANTHROPIC_API_KEY` environment variable — it is never stored in `atlas.yaml`.
+
+## `monitoring`
+
+Controls `atlas monitor`.
+
+| Field | Default | Description |
+|---|---|---|
+| `enabled` | `false` | Must be `true` for `atlas monitor` to attempt a connection |
+| `prometheus_url` | `http://localhost:9090` | Base URL of an existing Prometheus server |
+
+The default metric queries assume [`node_exporter`](https://github.com/prometheus/node_exporter) is running on the monitored host and being scraped by Prometheus — install and configure it there for `atlas monitor` to return real CPU/memory/disk figures. If Prometheus is reachable but `node_exporter` isn't set up yet, `atlas monitor` still runs; each affected metric just reports as unavailable rather than failing the whole command.

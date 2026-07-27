@@ -1,0 +1,123 @@
+from unittest.mock import MagicMock, patch
+
+import pytest
+import requests
+
+from atlas.monitoring.client import PrometheusUnavailableError, query_prometheus
+from atlas.monitoring.collector import collect_metrics
+
+
+def _fake_response(status="success", result=None):
+
+    response = MagicMock()
+    response.json.return_value = {
+        "status": status,
+        "data": {"result": result if result is not None else []}
+    }
+
+    return response
+
+
+class TestQueryPrometheus:
+
+    def test_returns_parsed_value_on_success(self):
+
+        response = _fake_response(
+            result=[{"metric": {}, "value": [1234567890, "12.34"]}]
+        )
+
+        with patch("requests.get", return_value=response):
+            value = query_prometheus("http://localhost:9090", "up")
+
+        assert value == 12.34
+
+    def test_returns_none_when_result_is_empty(self):
+
+        response = _fake_response(result=[])
+
+        with patch("requests.get", return_value=response):
+            value = query_prometheus("http://localhost:9090", "up")
+
+        assert value is None
+
+    def test_raises_when_connection_fails(self):
+
+        with patch(
+            "requests.get",
+            side_effect=requests.exceptions.ConnectionError()
+        ):
+
+            with pytest.raises(PrometheusUnavailableError):
+                query_prometheus("http://localhost:9090", "up")
+
+    def test_raises_when_status_is_not_success(self):
+
+        response = _fake_response(status="error")
+
+        with patch("requests.get", return_value=response):
+
+            with pytest.raises(PrometheusUnavailableError):
+                query_prometheus("http://localhost:9090", "up")
+
+    def test_strips_trailing_slash_from_base_url(self):
+
+        response = _fake_response(
+            result=[{"value": [0, "1"]}]
+        )
+
+        with patch("requests.get", return_value=response) as mock_get:
+            query_prometheus("http://localhost:9090/", "up")
+
+        args, kwargs = mock_get.call_args
+        assert args[0] == "http://localhost:9090/api/v1/query"
+
+
+class TestCollectMetrics:
+
+    def test_available_false_when_prometheus_unreachable(self):
+
+        with patch(
+            "atlas.monitoring.collector.query_prometheus",
+            side_effect=PrometheusUnavailableError("connection refused")
+        ):
+
+            result = collect_metrics("http://localhost:9090")
+
+        assert result == {"available": False, "metrics": {}}
+
+    def test_available_true_with_all_metrics_present(self):
+
+        with patch(
+            "atlas.monitoring.collector.query_prometheus",
+            side_effect=[12.3, 45.6, 78.9]
+        ):
+
+            result = collect_metrics("http://localhost:9090")
+
+        assert result == {
+            "available": True,
+            "metrics": {
+                "cpu_percent": 12.3,
+                "memory_percent": 45.6,
+                "disk_percent": 78.9
+            }
+        }
+
+    def test_available_true_with_some_metrics_missing(self):
+        """
+        Prometheus reachable, but not every exporter is set up yet -
+        a real scenario since node_exporter isn't guaranteed to be
+        running just because Prometheus is.
+        """
+
+        with patch(
+            "atlas.monitoring.collector.query_prometheus",
+            side_effect=[12.3, None, None]
+        ):
+
+            result = collect_metrics("http://localhost:9090")
+
+        assert result["available"] is True
+        assert result["metrics"]["cpu_percent"] == 12.3
+        assert result["metrics"]["memory_percent"] is None
+        assert result["metrics"]["disk_percent"] is None

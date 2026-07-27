@@ -16,6 +16,7 @@ from atlas.proxmox import (
     format_change,
 )
 from atlas.plugins import PluginManager
+from atlas.monitoring import collect_metrics
 from rich.console import Console
 from atlas.events import AtlasEvent
 from atlas.knowledge.queries import KnowledgeQueries
@@ -186,6 +187,86 @@ CPU / Memory:
             source="ProxmoxScan",
             payload=data
         )
+    )
+
+@app.command()
+def monitor():
+    """
+    Query Prometheus for host metrics.
+    """
+
+    console.print(
+        "[bold blue]Atlas Monitoring[/bold blue]\n"
+    )
+
+    settings = load_config()
+
+    monitoring_settings = settings.monitoring
+
+
+    if not monitoring_settings.enabled:
+
+        console.print(
+            "[yellow]Monitoring integration disabled.[/yellow]"
+        )
+
+        console.print(
+            "Enable it in atlas.yaml"
+        )
+
+        return
+
+
+    data = collect_metrics(
+        monitoring_settings.prometheus_url
+    )
+
+
+    if not data["available"]:
+
+        console.print(
+            "[red]Unable to reach Prometheus.[/red]"
+        )
+
+        return
+
+
+    metrics = data["metrics"]
+
+    for name, value in metrics.items():
+
+        display = (
+            f"{value:.1f}%" if value is not None else "unavailable"
+        )
+
+        console.print(
+            f"{name}: {display}"
+        )
+
+
+    runtime = application.runtime
+
+    runtime.environment.update(
+        "monitoring",
+        data
+    )
+
+    store = KnowledgeStore()
+
+    store.save_environment(
+        runtime.environment
+    )
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.monitoring.scan.completed",
+            source="MonitoringScan",
+            payload=data
+        )
+    )
+
+    console.print(
+        "\n[green]✓ Monitoring scan complete[/green]"
     )
 
 @app.command()

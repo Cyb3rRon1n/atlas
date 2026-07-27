@@ -247,6 +247,52 @@ def test_proxmox_scan_second_run_reports_changes(isolated_cwd, temp_db):
     assert "atlas.proxmox.changes_detected" in event_types
 
 
+def test_monitor_when_disabled_does_not_attempt_connection(isolated_cwd):
+    """
+    monitoring.enabled defaults to false - this is the actual
+    experience today, since no Prometheus is configured yet.
+    """
+
+    result = runner.invoke(app, ["monitor"])
+
+    assert result.exit_code == 0
+    assert "Monitoring integration disabled." in result.output
+
+
+def test_monitor_when_enabled_saves_metrics_to_environment(
+    isolated_cwd, temp_db
+):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "monitoring:\n"
+        "  enabled: true\n"
+        "  prometheus_url: http://localhost:9090\n"
+    )
+
+    def fake_get(url, params=None, timeout=None):
+
+        response = MagicMock()
+
+        response.json.return_value = {
+            "status": "success",
+            "data": {"result": [{"value": [0, "12.3"]}]}
+        }
+
+        return response
+
+    with patch("requests.get", side_effect=fake_get):
+
+        result = runner.invoke(app, ["monitor"])
+
+    assert result.exit_code == 0
+    assert "Monitoring scan complete" in result.output
+
+    environment = KnowledgeQueries().latest_environment()
+
+    assert environment["monitoring"]["available"] is True
+    assert environment["monitoring"]["metrics"]["cpu_percent"] == 12.3
+
+
 def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
     """
     atlas discover now runs built-in discovery and plugin discovery in

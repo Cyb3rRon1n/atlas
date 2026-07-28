@@ -38,7 +38,7 @@ def test_init_declining_every_integration_writes_minimal_config(isolated_cwd):
     result = runner.invoke(
         app,
         ["init"],
-        input="sentinel\nn\nanthropic\nclaude-opus-5\nn\n"
+        input="sentinel\nn\nanthropic\nclaude-opus-5\nn\ny\n"
     )
 
     assert result.exit_code == 0
@@ -65,7 +65,7 @@ def test_init_with_proxmox_token_auth_redacts_secret_from_log(isolated_cwd):
             "sentinel\n"
             "y\n192.168.1.10\natlas@pve\ny\natlas-token\nsupersecret\nn\n"
             "anthropic\nclaude-opus-5\n"
-            "n\n"
+            "n\ny\n"
         )
     )
 
@@ -75,6 +75,10 @@ def test_init_with_proxmox_token_auth_redacts_secret_from_log(isolated_cwd):
 
     assert "token_value: supersecret" in written
     assert "host: 192.168.1.10" in written
+    # The review screen shows the length, not the value - the value itself
+    # is expected in result.output too (it's the terminal session, not
+    # hidden input); the file this test name is actually about is the log.
+    assert "11 characters entered" in result.output
 
     log_text = (
         list((isolated_cwd / "logs").glob("atlas-init-*.log"))[0].read_text()
@@ -93,7 +97,7 @@ def test_init_with_proxmox_password_auth(isolated_cwd):
             "sentinel\n"
             "y\n192.168.1.10\natlas@pve\nn\nhunter2\nn\n"
             "anthropic\nclaude-opus-5\n"
-            "n\n"
+            "n\ny\n"
         )
     )
 
@@ -113,7 +117,7 @@ def test_init_with_ollama_provider(isolated_cwd):
         input=(
             "sentinel\nn\n"
             "ollama\nhttp://localhost:11434\nllama3.1\n"
-            "n\n"
+            "n\ny\n"
         )
     )
 
@@ -130,7 +134,7 @@ def test_init_reprompts_on_invalid_provider(isolated_cwd):
     result = runner.invoke(
         app,
         ["init"],
-        input="sentinel\nn\nbogus\nanthropic\nclaude-opus-5\nn\n"
+        input="sentinel\nn\nbogus\nanthropic\nclaude-opus-5\nn\ny\n"
     )
 
     assert result.exit_code == 0
@@ -160,7 +164,7 @@ def test_init_confirms_overwrite_of_existing_config(isolated_cwd):
     result = runner.invoke(
         app,
         ["init"],
-        input="y\nreplaced\nn\nanthropic\nclaude-opus-5\nn\n"
+        input="y\nreplaced\nn\nanthropic\nclaude-opus-5\nn\ny\n"
     )
 
     assert result.exit_code == 0
@@ -168,6 +172,26 @@ def test_init_confirms_overwrite_of_existing_config(isolated_cwd):
     written = (isolated_cwd / "atlas.yaml").read_text()
 
     assert "name: replaced" in written
+
+
+def test_init_declining_review_writes_nothing(isolated_cwd):
+    """
+    The review screen is the safety net for input that looked garbled
+    while typing (e.g. a terminal that doesn't render backspace
+    cleanly) - declining it must leave no atlas.yaml and no log,
+    same as declining anything else.
+    """
+
+    result = runner.invoke(
+        app,
+        ["init"],
+        input="sentinel\nn\nanthropic\nclaude-opus-5\nn\nn\n"
+    )
+
+    assert result.exit_code == 0
+    assert "Cancelled - nothing written." in result.output
+    assert not (isolated_cwd / "atlas.yaml").exists()
+    assert not (isolated_cwd / "logs").exists()
 
 
 def test_doctor(isolated_cwd):

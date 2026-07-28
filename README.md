@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/logo.svg" alt="Atlas logo" width="120">
+</p>
+
 # Atlas
 
 **AI-powered operations platform for self-hosted infrastructure.**

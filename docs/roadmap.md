@@ -25,7 +25,10 @@
 
 ## In progress / next
 
-- **Verification against real infrastructure.** Proxmox, both AI providers (Anthropic/Ollama), and Prometheus are real, tested code — but every test so far has been against mocks, never the actual live systems, since none existed in the development environment. This is tracked as its own milestone rather than left implicit: it gets checked off integration-by-integration as each is actually run against real hardware, distinct from "built and unit-tested." `atlas doctor`'s readiness checks confirm config is *present*, not that the target is actually reachable — that's still what this milestone covers.
+- **Verification against real infrastructure.** Proxmox, both AI providers (Anthropic/Ollama), and Prometheus are real, tested code — but every test so far had been against mocks, never the actual live systems, since none existed in the development environment. This is tracked as its own milestone rather than left implicit: checked off integration-by-integration as each is actually run against real hardware, distinct from "built and unit-tested." `atlas doctor`'s readiness checks confirm config is *present*, not that the target is actually reachable — that's what this milestone covers.
+  - ✅ **Proxmox discovery** — `atlas proxmox scan` run against a real Proxmox VE host for the first time, found the real node correctly. `atlas proxmox restart` still untested (no guest exists yet to restart against).
+  - ⬜ AI providers (Anthropic/Ollama) — `atlas analyze` not yet run against a real API key or a real Ollama instance.
+  - ⬜ Prometheus — `atlas monitor` not yet run against a real Prometheus server.
 - **Broader automation framework** — the action *registry* is real now (two dicts, above), but there's still no generic `atlas/actions/` framework where an action is its own pluggable unit; each action is still its own CLI command plus its own manager module, by convention rather than structure. A third action (container removal, VM start/stop, etc.) is what would force that next layer.
 - **Deeper monitoring** — container-level metrics (cAdvisor), threshold/alerting on the metrics `atlas monitor` already collects, and wiring monitoring data into the change-detection pattern built for Proxmox. All deferred until there's a real Prometheus to validate against.
 - Agent-based capabilities

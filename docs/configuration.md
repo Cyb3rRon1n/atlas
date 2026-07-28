@@ -70,7 +70,7 @@ See [Deployment](deployment/index.md) for why a scoped API token is preferred ov
 
 If both a token and a password are configured, the token is used.
 
-Read access is enough for `atlas proxmox scan`. `atlas proxmox restart <vmid>` needs additional write/power-management permission on the token or account — consult Proxmox's own permission documentation for your version (search for the guest power-management privilege, commonly `VM.PowerMgmt`) rather than assuming a specific role covers it, since this hasn't been confirmed against a live Proxmox instance — see [Deployment](deployment/index.md).
+Read access (the built-in `PVEAuditor` role) is enough for `atlas proxmox scan`. `atlas proxmox restart <vmid>` needs additional power-management permission on top of that — confirmed against a real Proxmox instance, granting the built-in `PVEVMUser` role (which includes `VM.PowerMgmt`) at path `/` is enough. If the token has **Privilege Separation** enabled (Proxmox's default), that permission has to be granted to the token identity itself (`user@realm!tokenid`), not just the user — see [Deployment](deployment/index.md) for the exact gotcha and fix.
 
 ## `intelligence`
 

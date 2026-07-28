@@ -2,6 +2,8 @@
 
 Atlas uses YAML configuration, loaded from `atlas.yaml` in the current working directory. If the file doesn't exist, Atlas runs on defaults (safe — no Proxmox connection is attempted, discovery is fully enabled, the Anthropic provider is assumed but nothing is contacted until you run `atlas analyze`).
 
+Run `atlas init` to generate this file interactively instead of writing it by hand — it only prompts for the fields below that actually vary per deployment (Proxmox, AI provider, Prometheus), leaves `discovery`/`inventory` at their defaults, and logs the session to `logs/` for troubleshooting. The reference below is for editing the result by hand, or understanding what each field does.
+
 ```yaml
 name: sentinel
 

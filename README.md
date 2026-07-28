@@ -58,6 +58,12 @@ pip install -e .
 atlas version
 ```
 
+Generate `atlas.yaml` interactively (optional — Atlas runs on safe defaults without one):
+
+```bash
+atlas init
+```
+
 Run a first discovery pass and inspect the results:
 
 ```bash
@@ -75,6 +81,7 @@ atlas analyze    # sends the latest snapshot to an AI provider for a summary + r
 | `atlas version` | Display the Atlas version. |
 | `atlas status` | Display current Atlas status. |
 | `atlas doctor` | Run Atlas health checks, including readiness of Proxmox/AI/Prometheus integrations. |
+| `atlas init` | Interactively generate `atlas.yaml`, logging the session to `logs/`. |
 | `atlas config` | Display the active Atlas configuration. |
 | `atlas discover` | Discover infrastructure information (including registered plugins) and generate inventory. |
 | `atlas report` | Generate an infrastructure report from the latest inventory. |

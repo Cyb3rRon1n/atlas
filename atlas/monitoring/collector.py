@@ -48,3 +48,24 @@ def collect_metrics(base_url: str):
         "available": True,
         "metrics": metrics
     }
+
+
+def evaluate_thresholds(metrics: dict, thresholds: dict) -> dict:
+    """
+    Returns {metric_name: bool} for whether each metric is at or above
+    its configured threshold. A metric that's None (no data for that
+    query) or has no configured threshold is left out entirely - can't
+    flag what wasn't collected, and a metric without a threshold isn't
+    "not exceeded", it's not evaluated.
+    """
+
+    exceeded = {}
+
+    for name, value in metrics.items():
+
+        threshold = thresholds.get(name)
+
+        if value is not None and threshold is not None:
+            exceeded[name] = value >= threshold
+
+    return exceeded

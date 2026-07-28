@@ -21,7 +21,7 @@ from atlas.proxmox import (
     restart_guest,
 )
 from atlas.plugins import PluginManager
-from atlas.monitoring import collect_metrics
+from atlas.monitoring import collect_metrics, evaluate_thresholds
 from rich.console import Console
 from atlas.events import AtlasEvent
 from atlas.knowledge.queries import KnowledgeQueries
@@ -343,15 +343,36 @@ def monitor():
 
     metrics = data["metrics"]
 
+    thresholds = {
+        "cpu_percent": monitoring_settings.cpu_threshold,
+        "memory_percent": monitoring_settings.memory_threshold,
+        "disk_percent": monitoring_settings.disk_threshold,
+    }
+
+    exceeded = evaluate_thresholds(metrics, thresholds)
+
     for name, value in metrics.items():
 
-        display = (
-            f"{value:.1f}%" if value is not None else "unavailable"
-        )
+        if value is None:
 
-        console.print(
-            f"{name}: {display}"
-        )
+            console.print(
+                f"{name}: unavailable"
+            )
+
+            continue
+
+        if exceeded.get(name):
+
+            console.print(
+                f"[yellow]![/yellow] {name}: {value:.1f}% "
+                f"(threshold: {thresholds[name]:.1f}%)"
+            )
+
+        else:
+
+            console.print(
+                f"[green]✓[/green] {name}: {value:.1f}%"
+            )
 
 
     runtime = application.runtime
@@ -374,6 +395,22 @@ def monitor():
             payload=data
         )
     )
+
+    if any(exceeded.values()):
+
+        runtime.events.publish(
+            AtlasEvent(
+                event_type="atlas.monitoring.threshold_exceeded",
+                source="MonitoringScan",
+                payload={
+                    "metrics": metrics,
+                    "thresholds": thresholds,
+                    "exceeded": [
+                        name for name, over in exceeded.items() if over
+                    ]
+                }
+            )
+        )
 
     console.print(
         "\n[green]✓ Monitoring scan complete[/green]"

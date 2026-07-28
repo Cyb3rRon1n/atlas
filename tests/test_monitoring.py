@@ -4,7 +4,7 @@ import pytest
 import requests
 
 from atlas.monitoring.client import PrometheusUnavailableError, query_prometheus
-from atlas.monitoring.collector import collect_metrics
+from atlas.monitoring.collector import collect_metrics, evaluate_thresholds
 
 
 def _fake_response(status="success", result=None):
@@ -121,3 +121,64 @@ class TestCollectMetrics:
         assert result["metrics"]["cpu_percent"] == 12.3
         assert result["metrics"]["memory_percent"] is None
         assert result["metrics"]["disk_percent"] is None
+
+
+class TestEvaluateThresholds:
+
+    def test_flags_metric_at_or_above_its_threshold(self):
+
+        exceeded = evaluate_thresholds(
+            {"cpu_percent": 92.0},
+            {"cpu_percent": 90.0}
+        )
+
+        assert exceeded == {"cpu_percent": True}
+
+    def test_does_not_flag_metric_below_its_threshold(self):
+
+        exceeded = evaluate_thresholds(
+            {"cpu_percent": 45.0},
+            {"cpu_percent": 90.0}
+        )
+
+        assert exceeded == {"cpu_percent": False}
+
+    def test_value_exactly_at_threshold_counts_as_exceeded(self):
+
+        exceeded = evaluate_thresholds(
+            {"cpu_percent": 90.0},
+            {"cpu_percent": 90.0}
+        )
+
+        assert exceeded == {"cpu_percent": True}
+
+    def test_none_value_is_left_out_rather_than_flagged(self):
+        """
+        Can't threshold-check a metric that has no data - that's a
+        different kind of "unavailable" than "under the limit".
+        """
+
+        exceeded = evaluate_thresholds(
+            {"cpu_percent": None},
+            {"cpu_percent": 90.0}
+        )
+
+        assert exceeded == {}
+
+    def test_metric_with_no_configured_threshold_is_left_out(self):
+
+        exceeded = evaluate_thresholds(
+            {"cpu_percent": 99.0},
+            {}
+        )
+
+        assert exceeded == {}
+
+    def test_evaluates_multiple_metrics_independently(self):
+
+        exceeded = evaluate_thresholds(
+            {"cpu_percent": 92.0, "memory_percent": 40.0, "disk_percent": None},
+            {"cpu_percent": 90.0, "memory_percent": 90.0, "disk_percent": 90.0}
+        )
+
+        assert exceeded == {"cpu_percent": True, "memory_percent": False}

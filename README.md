@@ -120,7 +120,7 @@ Representative output, not a literal capture — field names and formatting matc
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure and report changes since the last scan (requires `proxmox.enabled: true`). |
 | `atlas proxmox restart <vmid>` | Restart a Proxmox VM or LXC guest. Prompts for confirmation before acting. |
-| `atlas monitor` | Query Prometheus for host metrics (requires `monitoring.enabled: true`). |
+| `atlas monitor` | Query Prometheus for host metrics and flag any at or above their configured threshold (requires `monitoring.enabled: true`). |
 | `atlas plugins` | Display registered Atlas plugins. |
 | `atlas history` | Display recorded operational events. |
 | `atlas intelligence` | Display the latest stored environment context. |
@@ -170,7 +170,7 @@ Atlas can connect to a Proxmox cluster and inventory it (`atlas proxmox scan`): 
 
 ### Monitoring
 
-Atlas can query an existing [Prometheus](https://prometheus.io/) server for host metrics (`atlas monitor`) — CPU, memory, and disk usage, via the standard [`node_exporter`](https://github.com/prometheus/node_exporter) metrics. Like the rest of Atlas's integrations, it's Atlas reaching out on command, not a `/metrics` endpoint you'd point Prometheus at. If Prometheus is reachable but a given exporter isn't set up yet, the affected metric reports as unavailable rather than failing the whole scan. Disabled by default — see [Configuration](#configuration).
+Atlas can query an existing [Prometheus](https://prometheus.io/) server for host metrics (`atlas monitor`) — CPU, memory, and disk usage, via the standard [`node_exporter`](https://github.com/prometheus/node_exporter) metrics. Like the rest of Atlas's integrations, it's Atlas reaching out on command, not a `/metrics` endpoint you'd point Prometheus at. If Prometheus is reachable but a given exporter isn't set up yet, the affected metric reports as unavailable rather than failing the whole scan. Each metric is checked against a configurable threshold (90% by default) and flagged if it's at or above it, and a threshold crossing is logged as its own event. Disabled by default — see [Configuration](#configuration).
 
 ### Plugin Architecture
 

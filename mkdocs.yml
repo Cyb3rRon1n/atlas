@@ -4,6 +4,12 @@ repo_url: https://github.com/Cyb3rRon1n/atlas
 repo_name: Cyb3rRon1n/atlas
 edit_uri: edit/main/docs/
 
+# chat-history/ is a raw build-log transcript kept in the repo for reference,
+# not meant to be published as a site page - exclude_docs (not just leaving
+# it out of nav) keeps MkDocs from building it into site/ at all.
+exclude_docs: |
+  chat-history/
+
 theme:
   name: material
   palette:

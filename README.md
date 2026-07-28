@@ -129,6 +129,14 @@ Run `atlas <command> --help` for command-specific options.
 
 ## Features
 
+### Guided Setup
+
+Getting `atlas.yaml` in place doesn't require hand-editing YAML: `atlas init` walks you through the fields that actually vary per deployment — instance name, Proxmox connection, AI provider, Prometheus — and leaves everything else at sensible defaults. `ANTHROPIC_API_KEY` is never prompted for or written to disk. A final review screen shows exactly what was captured before anything is saved (a real safety net if terminal input ever looks garbled while typing), and every run is logged to `logs/` — with secrets redacted — for troubleshooting and record-keeping.
+
+### Health Checks
+
+`atlas doctor` answers "is this actually ready to use" at a glance: standard environment checks (Python, memory, storage, Docker, inventory) plus readiness checks for every optional integration — is Proxmox configured with credentials, is `ANTHROPIC_API_KEY` set, is a Prometheus URL present. These are presence checks, not live connection attempts, so `doctor` stays fast and never hangs waiting on a network call. A disabled integration reports healthy; only "enabled but missing what it needs" gets flagged.
+
 ### Infrastructure Discovery
 
 Atlas inspects the host system and generates a structured infrastructure inventory covering host information, OS details, CPU and memory, storage devices and filesystem usage, and network information. Discovered data is saved to `inventory/generated/system-inventory.yaml` (`atlas discover`) and feeds reporting, analysis, change detection, and future automation.

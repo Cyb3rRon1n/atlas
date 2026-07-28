@@ -47,7 +47,7 @@ If there's no baseline at all (first-ever scan, or an environment that was never
 
 The result distinguishes two kinds of "nothing here": if Prometheus itself can't be reached, `query_prometheus()` raises `PrometheusUnavailableError` and `collect_metrics()` returns `{"available": False, "metrics": {}}` — a real outage. If Prometheus is reachable but one specific query has no data (e.g. `node_exporter` isn't installed yet even though Prometheus is), that individual metric is `None` while `available` stays `True` and the other metrics still populate. Results are saved into `AtlasEnvironmentContext.monitoring` the same way Proxmox uses its own field, and `atlas.monitoring.scan.completed` publishes on every scan.
 
-**Note on verification:** unlike the Docker and Proxmox integrations, this was built and tested against mocked HTTP responses matching Prometheus's documented API shape, not against a live Prometheus instance — none exists in this environment yet. The request/response handling is solid; the specific PromQL queries haven't been confirmed against a real `node_exporter`.
+**Note on verification:** now confirmed against a real Prometheus instance (Docker, `prom/prometheus` + `prom/node-exporter`) — all three default PromQL queries resolved against real metric names and returned real values, alongside the Docker and Proxmox integrations.
 
 ## AI analysis
 

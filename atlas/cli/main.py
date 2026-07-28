@@ -461,7 +461,7 @@ def init():
     log_lines = ["Atlas init started"]
 
     name = typer.prompt(
-        "Instance name",
+        "Instance name (just a label for this Atlas install)",
         default="atlas-node"
     )
 
@@ -471,15 +471,36 @@ def init():
 
     proxmox = ProxmoxConfig()
 
+    console.print(
+        "[dim]Proxmox: connects to a Proxmox server you already have "
+        "running - Atlas does not install Proxmox itself.[/dim]"
+    )
+
     if typer.confirm("Configure Proxmox integration?"):
 
-        host = typer.prompt("Proxmox host")
-        user = typer.prompt("Proxmox user", default="atlas@pve")
+        host = typer.prompt(
+            "Proxmox host (its IP address or hostname, e.g. 192.168.1.103)"
+        )
+
+        user = typer.prompt(
+            "Proxmox user (the user the token/password below belongs to)",
+            default="atlas@pve"
+        )
 
         if typer.confirm("Use an API token instead of a password?", default=True):
 
+            console.print(
+                "[dim]From the Proxmox UI: Datacenter -> Permissions -> "
+                "API Tokens.[/dim]"
+            )
+
             token_name = typer.prompt("Token name")
-            token_value = typer.prompt("Token value", hide_input=True)
+
+            token_value = typer.prompt(
+                "Token value (typed here, visible as you type - this "
+                "prompt does not hide input)"
+            )
+
             password = ""
             auth = "token"
 
@@ -487,7 +508,12 @@ def init():
 
             token_name = ""
             token_value = ""
-            password = typer.prompt("Password", hide_input=True)
+
+            password = typer.prompt(
+                "Password (visible as you type - this prompt does not "
+                "hide input)"
+            )
+
             auth = "password"
 
         verify_ssl = typer.confirm("Verify TLS certificate?", default=False)
@@ -513,6 +539,13 @@ def init():
 
     console.print()
 
+    console.print(
+        "[dim]AI provider: Anthropic uses an API key from an Anthropic "
+        "account you already have (nothing is installed by this step). "
+        "Ollama needs Ollama already installed and running somewhere "
+        "Atlas can reach.[/dim]"
+    )
+
     while True:
 
         provider = typer.prompt(
@@ -532,12 +565,13 @@ def init():
     if provider == "ollama":
 
         ollama_host = typer.prompt(
-            "Ollama host",
+            "Ollama host (address of your already-running Ollama server)",
             default=ollama_host
         )
 
         model = typer.prompt(
-            "Model",
+            "Model (must already be pulled in Ollama, "
+            "e.g. via 'ollama pull llama3.1')",
             default="llama3.1"
         )
 
@@ -565,12 +599,17 @@ def init():
 
     console.print()
 
+    console.print(
+        "[dim]Monitoring: connects to a Prometheus server you already "
+        "have running - Atlas does not install Prometheus.[/dim]"
+    )
+
     monitoring = MonitoringConfig()
 
     if typer.confirm("Configure Prometheus monitoring?"):
 
         prometheus_url = typer.prompt(
-            "Prometheus URL",
+            "Prometheus URL (e.g. http://192.168.1.50:9090)",
             default="http://localhost:9090"
         )
 

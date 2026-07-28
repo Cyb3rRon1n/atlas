@@ -136,3 +136,43 @@ def test_store_and_queries_self_heal_a_database_with_no_tables(tmp_path, monkeyp
     assert KnowledgeQueries().latest_analysis()["summary"] == "ok"
 
     engine.dispose()
+
+
+def test_initialize_database_creates_parent_directory_for_default_engine(
+    tmp_path, monkeypatch
+):
+    """
+    Regression test: initialize_database()'s directory-creation branch
+    used to check `if engine is None`, but every real call site
+    (KnowledgeStore/KnowledgeQueries) passes its own bound `engine`
+    explicitly rather than relying on the default argument, so that
+    branch never actually fired outside of a direct, no-argument call -
+    meaning a genuinely fresh directory with no inventory/ folder yet
+    (e.g. running any command other than `atlas discover`, whose
+    save_inventory() incidentally creates inventory/ as a side effect
+    and was masking this) crashed with "unable to open database file".
+    The fix compares identity against `default_engine` instead.
+
+    Uses a fully isolated, absolute-path engine (not the process-wide
+    atlas.database.engine.engine singleton) - that singleton bakes in
+    an absolute path the first time anything imports it, so reusing it
+    across a cwd change within the same process (as pytest's
+    isolated_cwd fixture does) doesn't behave like a real, separate
+    `atlas` invocation and risks touching the real local database.
+    """
+
+    import atlas.database as database_module
+
+    fresh_path = tmp_path / "inventory" / "atlas.db"
+    fresh_engine = create_engine(f"sqlite:///{fresh_path}")
+
+    monkeypatch.setattr(database_module, "DATABASE_PATH", fresh_path)
+    monkeypatch.setattr(database_module, "default_engine", fresh_engine)
+
+    assert not fresh_path.parent.exists()
+
+    database_module.initialize_database(fresh_engine)
+
+    assert fresh_path.parent.exists()
+
+    fresh_engine.dispose()

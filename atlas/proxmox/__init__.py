@@ -1,6 +1,7 @@
 from atlas.proxmox.client import connect
 from atlas.proxmox.discovery import discover_nodes, discover_resources
 from atlas.proxmox.changes import diff_virtualization, format_change
+from atlas.proxmox.manager import get_guest_info, restart_guest
 
 
 __all__ = [
@@ -8,5 +9,7 @@ __all__ = [
     "discover_nodes",
     "discover_resources",
     "diff_virtualization",
-    "format_change"
+    "format_change",
+    "get_guest_info",
+    "restart_guest"
 ]

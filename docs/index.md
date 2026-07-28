@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/social-preview.svg" alt="Atlas - AI-powered operations platform for self-hosted infrastructure" style="max-width: 100%;">
+</p>
+
 # Atlas
 
 **AI-powered operations platform for self-hosted infrastructure.**
@@ -17,6 +21,25 @@ Atlas is guided by one principle:
 - **Extends** via a plugin architecture and an internal event bus, so new capabilities don't require rewriting the core
 
 See [Architecture](architecture/index.md) for how these pieces fit together, or jump straight to [Getting Started](getting-started/index.md).
+
+## See it in action
+
+Representative output, not a literal capture — field names and formatting match real commands; hostnames, containers, and figures are illustrative.
+
+<p align="center">
+  <img src="images/screenshots/doctor.svg" alt="atlas doctor example output" style="max-width: 100%; width: 640px;"><br>
+  <sub><code>atlas doctor</code> — environment health plus integration readiness</sub>
+</p>
+
+<p align="center">
+  <img src="images/screenshots/proxmox-scan.svg" alt="atlas proxmox scan example output" style="max-width: 100%; width: 640px;"><br>
+  <sub><code>atlas proxmox scan</code> — cluster inventory and change detection since the last scan</sub>
+</p>
+
+<p align="center">
+  <img src="images/screenshots/analyze.svg" alt="atlas analyze example output" style="max-width: 100%; width: 640px;"><br>
+  <sub><code>atlas analyze</code> — AI summary with a grounded, approval-gated action suggestion</sub>
+</p>
 
 ## Where this is headed
 

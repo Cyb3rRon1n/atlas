@@ -2,6 +2,12 @@
   <img src="docs/images/social-preview.svg" alt="Atlas - AI-powered operations platform for self-hosted infrastructure" width="100%">
 </p>
 
+<p align="center">
+  <a href="https://github.com/Cyb3rRon1n/atlas/actions/workflows/ci.yml"><img src="https://github.com/Cyb3rRon1n/atlas/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+">
+</p>
+
 # Atlas
 
 **AI-powered operations platform for self-hosted infrastructure.**
@@ -22,28 +28,25 @@ Atlas is currently under active development.
 
 ## Project Status
 
-Atlas is progressing through its foundation and intelligence architecture phases.
+Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-assisted analysis, and approval-gated automation — and it's been verified against real infrastructure, not just tests. See the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/) for the full, detailed history, including real bugs found and fixed along the way.
 
-### Implemented
+### Shipped and verified against real infrastructure
 
-- ✅ Python CLI application
-- ✅ Configuration management
 - ✅ Hardware, OS, storage, and network discovery
-- ✅ Inventory generation
-- ✅ Reporting engine
-- ✅ Docker discovery and service detection
-- ✅ Docker Compose analysis
-- ✅ Proxmox integration foundation
+- ✅ Docker discovery, service detection, and Compose analysis
+- ✅ Docker container restart — the first approval-gated action
+- ✅ Proxmox cluster discovery, change detection, and guest restart — the second approval-gated action
+- ✅ AI analysis via a local Ollama model end to end; Anthropic Claude also supported (connection and error handling verified, a full response is pending your own billing setup)
+- ✅ Prometheus monitoring integration
+- ✅ Guided setup (`atlas init`) and environment/integration health checks (`atlas doctor`)
+- ✅ Event-driven architecture with persistent operational history
 - ✅ Plugin architecture
-- ✅ Event-driven system
-- ✅ Persistent operational history and knowledge storage
-- ✅ AI analysis engine (pluggable Anthropic / Ollama providers)
 
-### In Development
+### In progress
 
-- 🚧 Automated operational workflows
+- 🚧 Broader automation framework — a real action registry beyond the two action types that exist today
+- 🚧 Deeper monitoring — container-level metrics, threshold alerting
 - 🚧 Agent-based capabilities
-- 🚧 Advanced monitoring integrations
 
 ---
 

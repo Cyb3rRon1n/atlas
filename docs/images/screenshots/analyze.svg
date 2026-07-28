@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="411" viewBox="0 0 900 411">
+<rect width="900" height="411" rx="12" fill="#0d1b2a"/>
+<path d="M0,12 a12,12 0 0 1 12,-12 h876 a12,12 0 0 1 12,12 v32 h-900 z" fill="#16283b"/>
+<line x1="0" y1="44" x2="900" y2="44" stroke="#233649" stroke-width="1"/>
+<circle cx="24" cy="22.0" r="6" fill="#e0645a" opacity="0.85"/>
+<circle cx="44" cy="22.0" r="6" fill="#e0b04a" opacity="0.85"/>
+<circle cx="64" cy="22.0" r="6" fill="#5fb87a" opacity="0.85"/>
+<text x="450.0" y="27.0" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#8a99a2">atlas analyze</text>
+<text x="26" y="79.5" font-family="JetBrains Mono" font-size="15.5" fill="#5cb3c4" xml:space="preserve">Atlas Analysis</text>
+<text x="26" y="129.5" font-family="JetBrains Mono" font-size="15.5" fill="#dbe3e6" xml:space="preserve">Discovered 1 Proxmox node, 2 guests, and 4 Docker containers.</text>
+<text x="26" y="154.5" font-family="JetBrains Mono" font-size="15.5" fill="#dbe3e6" xml:space="preserve">Storage on / is at 78% and climbing steadily - worth a look</text>
+<text x="26" y="179.5" font-family="JetBrains Mono" font-size="15.5" fill="#dbe3e6" xml:space="preserve">before it becomes urgent.</text>
+<text x="26" y="229.5" font-family="JetBrains Mono" font-size="15.5" fill="#d9ab5c" xml:space="preserve">● Storage on / is at 78% (warning)</text>
+<text x="26" y="254.5" font-family="JetBrains Mono" font-size="15.5" fill="#66757f" xml:space="preserve">  Usage has grown ~12% over the past week.</text>
+<text x="26" y="304.5" font-family="JetBrains Mono" font-size="15.5" fill="#d9ab5c" xml:space="preserve">● Container 'jellyfin' looks unhealthy (warning)</text>
+<text x="26" y="329.5" font-family="JetBrains Mono" font-size="15.5" fill="#66757f" xml:space="preserve">  Restarted 3 times in the last hour.</text>
+<text x="26" y="379.5" font-family="JetBrains Mono" font-size="15.5" fill="#5cb3c4" xml:space="preserve">  → Suggested: atlas restart jellyfin</text>
+</svg>

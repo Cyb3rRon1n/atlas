@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="361" viewBox="0 0 900 361">
+<rect width="900" height="361" rx="12" fill="#0d1b2a"/>
+<path d="M0,12 a12,12 0 0 1 12,-12 h876 a12,12 0 0 1 12,12 v32 h-900 z" fill="#16283b"/>
+<line x1="0" y1="44" x2="900" y2="44" stroke="#233649" stroke-width="1"/>
+<circle cx="24" cy="22.0" r="6" fill="#e0645a" opacity="0.85"/>
+<circle cx="44" cy="22.0" r="6" fill="#e0b04a" opacity="0.85"/>
+<circle cx="64" cy="22.0" r="6" fill="#5fb87a" opacity="0.85"/>
+<text x="450.0" y="27.0" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#8a99a2">atlas proxmox scan</text>
+<text x="26" y="79.5" font-family="JetBrains Mono" font-size="15.5" fill="#5cb3c4" xml:space="preserve">Atlas Proxmox Scan</text>
+<text x="26" y="129.5" font-family="JetBrains Mono" font-size="15.5" fill="#5fb87a" xml:space="preserve">✓ Proxmox discovery complete</text>
+<text x="26" y="179.5" font-family="JetBrains Mono" font-size="15.5" fill="#dbe3e6" xml:space="preserve">Node: pve1   Status: online</text>
+<text x="26" y="204.5" font-family="JetBrains Mono" font-size="15.5" fill="#dbe3e6" xml:space="preserve">Guest: plex (lxc, id 101)   Node: pve1   Status: running</text>
+<text x="26" y="229.5" font-family="JetBrains Mono" font-size="15.5" fill="#dbe3e6" xml:space="preserve">Guest: jellyfin (lxc, id 102)   Node: pve1   Status: running</text>
+<text x="26" y="279.5" font-family="JetBrains Mono" font-size="15.5" fill="#5cb3c4" xml:space="preserve">Changes since last scan:</text>
+<text x="26" y="329.5" font-family="JetBrains Mono" font-size="15.5" fill="#d9ab5c" xml:space="preserve">Guest 'jellyfin' (102) status changed: stopped → running</text>
+</svg>

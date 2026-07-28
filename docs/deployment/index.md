@@ -13,15 +13,15 @@ graph TD
 
 The typical setup:
 
-1. Install Proxmox VE on your hardware.
+1. Install Proxmox VE on your hardware, on a static (or DHCP-reserved) IP — Atlas's config keys off a fixed host address, and Proxmox itself expects a stable management IP regardless.
 2. Create an Ubuntu VM inside that Proxmox host.
-3. Clone Atlas into that VM and run it there.
+3. Clone Atlas into that VM, install it (`pip install -e .`), and run `atlas init` there to generate `atlas.yaml` — see [Getting Started](../getting-started/index.md).
 
 Because Atlas runs on the same cluster it inspects, connecting back to the Proxmox API is a same-network call rather than something exposed externally.
 
 ## Authentication: use a scoped API token, not the root password
 
-Atlas's [`proxmox` configuration](../configuration.md#proxmox) accepts either a password or an API token. **Prefer the token.** Generate one in the Proxmox UI under **Datacenter → Permissions → API Tokens**, and grant it a role scoped to only what Atlas actually needs — read access is sufficient for `atlas proxmox scan`'s current inventory capabilities.
+Atlas's [`proxmox` configuration](../configuration.md#proxmox) accepts either a password or an API token. **Prefer the token.** Generate one in the Proxmox UI under **Datacenter → Permissions → API Tokens** (create a dedicated user first, e.g. `atlas@pve` under the *Proxmox VE authentication server* realm, rather than tokenizing `root@pam`), and grant it a role scoped to only what Atlas actually needs — the built-in `PVEAuditor` role is read-only and sufficient for `atlas proxmox scan`. `atlas proxmox restart` needs additional write/power-management permission on top of that — see [Configuration](../configuration.md#proxmox). `atlas init` prompts for the token directly and writes it into `atlas.yaml` for you; it does not create the token in Proxmox itself, so generate it in the UI first.
 
 This isn't just caution for its own sake — it's the project's own stated principle. From `CONTRIBUTING.md`:
 

@@ -20,6 +20,29 @@ def known_container_names(environment: dict) -> set[str]:
     return names
 
 
+def known_guest_ids(environment: dict) -> set[str]:
+    """
+    Flatten every Proxmox guest vmid Atlas actually observed, as
+    strings (action targets are always strings) - matches by vmid,
+    not name, same stable-identifier principle as
+    atlas.proxmox.changes.diff_virtualization.
+    """
+
+    guests = environment.get("virtualization", {}).get("guests", [])
+
+    return {
+        str(guest["vmid"])
+        for guest in guests
+        if "vmid" in guest
+    }
+
+
+TARGET_VALIDATORS = {
+    "restart_container": known_container_names,
+    "restart_guest": known_guest_ids,
+}
+
+
 class AtlasAnalyzer:
     """
     Runs an environment snapshot through an AI provider
@@ -34,14 +57,16 @@ class AtlasAnalyzer:
 
         result = self.provider.analyze(environment)
 
-        known_containers = known_container_names(environment)
-
         for recommendation in result.recommendations:
 
-            if (
-                recommendation.action
-                and recommendation.action.target not in known_containers
-            ):
+            action = recommendation.action
+
+            if not action:
+                continue
+
+            validator = TARGET_VALIDATORS.get(action.type)
+
+            if not validator or action.target not in validator(environment):
                 recommendation.action = None
 
         return result

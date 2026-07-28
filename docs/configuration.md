@@ -68,6 +68,8 @@ See [Deployment](deployment/index.md) for why a scoped API token is preferred ov
 
 If both a token and a password are configured, the token is used.
 
+Read access is enough for `atlas proxmox scan`. `atlas proxmox restart <vmid>` needs additional write/power-management permission on the token or account — consult Proxmox's own permission documentation for your version (search for the guest power-management privilege, commonly `VM.PowerMgmt`) rather than assuming a specific role covers it, since this hasn't been confirmed against a live Proxmox instance — see [Deployment](deployment/index.md).
+
 ## `intelligence`
 
 Controls the AI backend behind `atlas analyze`.

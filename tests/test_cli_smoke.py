@@ -247,6 +247,89 @@ def test_proxmox_scan_second_run_reports_changes(isolated_cwd, temp_db):
     assert "atlas.proxmox.changes_detected" in event_types
 
 
+def test_proxmox_restart_when_disabled_does_not_attempt_connection(isolated_cwd):
+
+    result = runner.invoke(app, ["proxmox", "restart", "100"])
+
+    assert result.exit_code == 0
+    assert "Proxmox integration disabled." in result.output
+
+
+def test_proxmox_restart_guest_not_found(isolated_cwd):
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+
+    with (
+        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch("atlas.proxmox.manager.discover_resources", return_value=[]),
+    ):
+
+        result = runner.invoke(app, ["proxmox", "restart", "999"])
+
+    assert result.exit_code == 0
+    assert "No guest with vmid 999 found" in result.output
+
+
+PROXMOX_GUEST = {
+    "vmid": 100, "name": "plex", "node": "pve1", "type": "qemu",
+    "status": "running", "cpu": 0.1, "maxcpu": 4, "mem": 100,
+    "maxmem": 1000, "disk": 0, "maxdisk": 0, "uptime": 10
+}
+
+
+def test_proxmox_restart_declined_does_not_restart_guest(isolated_cwd):
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+
+    with (
+        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch(
+            "atlas.proxmox.manager.discover_resources",
+            return_value=[PROXMOX_GUEST]
+        ),
+        patch("atlas.cli.main.restart_guest") as mock_restart,
+    ):
+
+        result = runner.invoke(
+            app, ["proxmox", "restart", "100"], input="n\n"
+        )
+
+    assert result.exit_code == 0
+    assert "Cancelled." in result.output
+    mock_restart.assert_not_called()
+
+
+def test_proxmox_restart_confirmed_restarts_guest_and_logs_event(
+    isolated_cwd, temp_db
+):
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+
+    with (
+        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch(
+            "atlas.proxmox.manager.discover_resources",
+            return_value=[PROXMOX_GUEST]
+        ),
+        patch(
+            "atlas.cli.main.restart_guest",
+            return_value={"success": True}
+        ) as mock_restart,
+    ):
+
+        result = runner.invoke(
+            app, ["proxmox", "restart", "100"], input="y\n"
+        )
+
+    assert result.exit_code == 0
+    assert "restarted" in result.output
+    assert mock_restart.call_args.args[1:] == ("pve1", 100, "qemu")
+
+    events = KnowledgeQueries().recent_events()
+
+    assert events[0].event_type == "atlas.action.guest_restarted"
+
+
 def test_monitor_when_disabled_does_not_attempt_connection(isolated_cwd):
     """
     monitoring.enabled defaults to false - this is the actual

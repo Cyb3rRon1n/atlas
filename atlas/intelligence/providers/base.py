@@ -72,7 +72,7 @@ ANALYSIS_SCHEMA = {
                                 "properties": {
                                     "type": {
                                         "type": "string",
-                                        "enum": ["restart_container"]
+                                        "enum": ["restart_container", "restart_guest"]
                                     },
                                     "target": {"type": "string"}
                                 },
@@ -102,15 +102,19 @@ SYSTEM_PROMPT = (
     "the provided data (exact device names, container names, utilization figures). "
     "Do not give generic advice that isn't backed by the data. If nothing "
     "significant stands out, say so and return an empty recommendations list.\n\n"
-    "The only action Atlas can currently execute is restarting a Docker "
-    "container (action type \"restart_container\", with \"target\" set to a "
-    "container name that literally appears in the provided containers data). "
-    "Only include an action when restarting that specific container would "
-    "genuinely address the problem described in that recommendation - a "
-    "container that is crash-looping, unhealthy, or unexpectedly exited. "
-    "Most recommendations are not actionable this way and should leave "
-    "\"action\" as null. Never invent a container name that is not present "
-    "in the provided data."
+    "Atlas can currently execute two actions. (1) Restart a Docker container "
+    "(action type \"restart_container\", with \"target\" set to a container "
+    "name that literally appears in the provided containers data). (2) "
+    "Restart a Proxmox VM or LXC container (action type \"restart_guest\", "
+    "with \"target\" set to the guest's vmid, as a string, that literally "
+    "appears in the provided virtualization guest data - use the vmid, not "
+    "the guest's name, since that is its stable identifier). Only include "
+    "an action when restarting that specific container or guest would "
+    "genuinely address the problem described in that recommendation - it "
+    "is crash-looping, unhealthy, unexpectedly exited, or stopped when it "
+    "should be running. Most recommendations are not actionable this way "
+    "and should leave \"action\" as null. Never invent a container name or "
+    "vmid that is not present in the provided data."
 )
 
 

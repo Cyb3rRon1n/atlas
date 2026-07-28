@@ -14,6 +14,8 @@ from atlas.proxmox import (
     discover_resources,
     diff_virtualization,
     format_change,
+    get_guest_info,
+    restart_guest,
 )
 from atlas.plugins import PluginManager
 from atlas.monitoring import collect_metrics
@@ -188,6 +190,111 @@ CPU / Memory:
             payload=data
         )
     )
+
+
+@proxmox_app.command(name="restart")
+def restart_guest_command(vmid: int):
+    """
+    Restart a Proxmox VM or LXC guest (requires confirmation).
+    """
+
+    console.print(
+        "[bold blue]Atlas Proxmox Restart[/bold blue]\n"
+    )
+
+    settings = load_config()
+
+    proxmox_settings = settings.proxmox
+
+    if not proxmox_settings.enabled:
+
+        console.print(
+            "[yellow]Proxmox integration disabled.[/yellow]"
+        )
+
+        console.print(
+            "Enable it in atlas.yaml"
+        )
+
+        return
+
+    client = connect(
+        proxmox_settings.host,
+        proxmox_settings.user,
+        password=proxmox_settings.password,
+        token_name=proxmox_settings.token_name,
+        token_value=proxmox_settings.token_value,
+        verify_ssl=proxmox_settings.verify_ssl
+    )
+
+    if not client:
+
+        console.print(
+            "[red]Unable to connect to Proxmox.[/red]"
+        )
+
+        return
+
+    info = get_guest_info(client, vmid)
+
+    if not info["found"]:
+
+        console.print(
+            f"[red]{info['error']}[/red]"
+        )
+
+        return
+
+    console.print(f"Guest: {info['name']} ({info['type']}, id {vmid})")
+    console.print(f"Node: {info['node']}")
+    console.print(f"Current status: {info['status']}\n")
+
+    console.print(
+        "This will restart the guest. Any unsaved in-guest state is "
+        "lost; the guest's own disks are unaffected.\n"
+    )
+
+    if not typer.confirm("Proceed?"):
+
+        console.print(
+            "[yellow]Cancelled.[/yellow]"
+        )
+
+        return
+
+    result = restart_guest(
+        client,
+        info["node"],
+        vmid,
+        info["type"]
+    )
+
+    runtime = application.runtime
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.action.guest_restarted",
+            source="ProxmoxRestartAction",
+            payload={
+                "vmid": vmid,
+                "node": info["node"],
+                "result": result
+            }
+        )
+    )
+
+    if not result["success"]:
+
+        console.print(
+            f"\n[red]Restart failed: {result['error']}[/red]"
+        )
+
+        return
+
+    console.print(
+        f"\n[green]✓ Guest '{info['name']}' ({vmid}) restarted[/green]"
+    )
+
 
 @app.command()
 def monitor():
@@ -832,6 +939,11 @@ def analyze():
         "info": "cyan"
     }
 
+    action_commands = {
+        "restart_container": "atlas restart {target}",
+        "restart_guest": "atlas proxmox restart {target}"
+    }
+
     if not result.recommendations:
 
         console.print(
@@ -855,10 +967,16 @@ def analyze():
 
         if recommendation.action:
 
-            console.print(
-                f"\n  [cyan]→ Suggested:[/cyan] atlas restart "
-                f"{recommendation.action.target}"
+            command = action_commands.get(
+                recommendation.action.type
             )
+
+            if command:
+
+                console.print(
+                    f"\n  [cyan]→ Suggested:[/cyan] "
+                    f"{command.format(target=recommendation.action.target)}"
+                )
 
         console.print()
 

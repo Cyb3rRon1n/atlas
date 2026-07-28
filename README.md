@@ -83,17 +83,17 @@ atlas analyze    # sends the latest snapshot to an AI provider for a summary + r
 Representative output, not a literal capture — field names and formatting match real commands; hostnames, containers, and figures are illustrative.
 
 <p align="center">
-  <img src="docs/images/screenshots/doctor.svg" alt="atlas doctor example output" width="640"><br>
+  <img src="docs/images/screenshots/doctor.svg" alt="atlas doctor example output" width="820"><br>
   <sub><code>atlas doctor</code> — environment health plus integration readiness</sub>
 </p>
 
 <p align="center">
-  <img src="docs/images/screenshots/proxmox-scan.svg" alt="atlas proxmox scan example output" width="640"><br>
+  <img src="docs/images/screenshots/proxmox-scan.svg" alt="atlas proxmox scan example output" width="820"><br>
   <sub><code>atlas proxmox scan</code> — cluster inventory and change detection since the last scan</sub>
 </p>
 
 <p align="center">
-  <img src="docs/images/screenshots/analyze.svg" alt="atlas analyze example output" width="640"><br>
+  <img src="docs/images/screenshots/analyze.svg" alt="atlas analyze example output" width="820"><br>
   <sub><code>atlas analyze</code> — AI summary with a grounded, approval-gated action suggestion</sub>
 </p>
 

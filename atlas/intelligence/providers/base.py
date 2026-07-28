@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Literal
 
+from atlas.actions import ACTIONS
+
 
 Severity = Literal["info", "warning", "critical"]
 
@@ -72,7 +74,7 @@ ANALYSIS_SCHEMA = {
                                 "properties": {
                                     "type": {
                                         "type": "string",
-                                        "enum": ["restart_container", "restart_guest"]
+                                        "enum": list(ACTIONS.keys())
                                     },
                                     "target": {"type": "string"}
                                 },
@@ -102,19 +104,25 @@ SYSTEM_PROMPT = (
     "the provided data (exact device names, container names, utilization figures). "
     "Do not give generic advice that isn't backed by the data. If nothing "
     "significant stands out, say so and return an empty recommendations list.\n\n"
-    "Atlas can currently execute two actions. (1) Restart a Docker container "
-    "(action type \"restart_container\", with \"target\" set to a container "
-    "name that literally appears in the provided containers data). (2) "
-    "Restart a Proxmox VM or LXC container (action type \"restart_guest\", "
-    "with \"target\" set to the guest's vmid, as a string, that literally "
-    "appears in the provided virtualization guest data - use the vmid, not "
-    "the guest's name, since that is its stable identifier). Only include "
-    "an action when restarting that specific container or guest would "
-    "genuinely address the problem described in that recommendation - it "
-    "is crash-looping, unhealthy, unexpectedly exited, or stopped when it "
-    "should be running. Most recommendations are not actionable this way "
-    "and should leave \"action\" as null. Never invent a container name or "
-    "vmid that is not present in the provided data."
+    "Atlas can currently execute three actions. (1) Restart a Docker "
+    "container (action type \"restart_container\", with \"target\" set to a "
+    "container name that literally appears in the provided containers data) "
+    "- use when that container is crash-looping, unhealthy, unexpectedly "
+    "exited, or stopped when it should be running. (2) Restart a Proxmox VM "
+    "or LXC container (action type \"restart_guest\", with \"target\" set to "
+    "the guest's vmid, as a string, that literally appears in the provided "
+    "virtualization guest data - use the vmid, not the guest's name, since "
+    "that is its stable identifier) - same trigger conditions as (1). (3) "
+    "Stop a Docker container (action type \"stop_container\", with "
+    "\"target\" set to a container name that literally appears in the "
+    "provided containers data) - use only when a running container is "
+    "itself the problem (e.g. consuming excessive resources, or should not "
+    "be running at all), not as a way to fix a crash-looping container - "
+    "that calls for restart_container instead. Only include an action when "
+    "it would genuinely address the problem described in that "
+    "recommendation. Most recommendations are not actionable this way and "
+    "should leave \"action\" as null. Never invent a container name or vmid "
+    "that is not present in the provided data."
 )
 
 

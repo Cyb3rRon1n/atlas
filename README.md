@@ -115,6 +115,7 @@ Representative output, not a literal capture — field names and formatting matc
 | `atlas report` | Generate an infrastructure report from the latest inventory. |
 | `atlas docker` | Display Docker container status. |
 | `atlas restart <name>` | Restart a Docker container. Prompts for confirmation before acting. |
+| `atlas stop <name>` | Stop a Docker container without removing it. Prompts for confirmation before acting. |
 | `atlas services` | Detect known homelab services running in Docker. |
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure and report changes since the last scan (requires `proxmox.enabled: true`). |
@@ -157,7 +158,7 @@ Container: plex
 Status:   running
 ```
 
-Atlas can also act, not just observe: `atlas restart <name>` restarts a container after showing you its current state and asking for confirmation. This is Atlas's first automation capability — see [Deployment](https://cyb3rron1n.github.io/atlas/deployment/) for the safety principle behind approval-gated actions.
+Atlas can also act, not just observe: `atlas restart <name>` restarts a container and `atlas stop <name>` stops one without removing it, both after showing you its current state and asking for confirmation. See [Deployment](https://cyb3rron1n.github.io/atlas/deployment/) for the safety principle behind approval-gated actions.
 
 ### Docker Compose Analysis
 

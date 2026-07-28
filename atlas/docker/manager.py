@@ -105,3 +105,39 @@ def restart_container(name):
         "success": True,
         "previous_status": previous_status
     }
+
+
+def stop_container(name):
+
+    client = get_client()
+
+    if not client:
+        return {
+            "success": False,
+            "error": "Docker unavailable"
+        }
+
+    try:
+        container = client.containers.get(name)
+
+    except docker.errors.NotFound:
+        return {
+            "success": False,
+            "error": f"No container named '{name}' found"
+        }
+
+    previous_status = container.status
+
+    try:
+        container.stop()
+
+    except Exception as error:
+        return {
+            "success": False,
+            "error": str(error)
+        }
+
+    return {
+        "success": True,
+        "previous_status": previous_status
+    }

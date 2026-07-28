@@ -2,7 +2,12 @@ from unittest.mock import MagicMock, patch
 
 import docker.errors
 
-from atlas.docker import collect_containers, get_container_info, restart_container
+from atlas.docker import (
+    collect_containers,
+    get_container_info,
+    restart_container,
+    stop_container,
+)
 
 
 def test_collect_containers_when_daemon_unavailable():
@@ -177,3 +182,72 @@ def test_restart_container_when_successful():
     assert result == {"success": True, "previous_status": "exited"}
 
     fake_container.restart.assert_called_once_with()
+
+
+def test_stop_container_when_daemon_unavailable():
+
+    with patch(
+        "atlas.docker.manager.docker.from_env",
+        side_effect=RuntimeError("no docker socket")
+    ):
+
+        result = stop_container("plex")
+
+    assert result == {"success": False, "error": "Docker unavailable"}
+
+
+def test_stop_container_when_not_found():
+
+    fake_client = MagicMock()
+    fake_client.containers.get.side_effect = docker.errors.NotFound("not found")
+
+    with patch(
+        "atlas.docker.manager.docker.from_env",
+        return_value=fake_client
+    ):
+
+        result = stop_container("missing")
+
+    assert result == {
+        "success": False,
+        "error": "No container named 'missing' found"
+    }
+
+
+def test_stop_container_when_stop_raises():
+
+    fake_container = MagicMock()
+    fake_container.status = "running"
+    fake_container.stop.side_effect = RuntimeError("daemon exploded")
+
+    fake_client = MagicMock()
+    fake_client.containers.get.return_value = fake_container
+
+    with patch(
+        "atlas.docker.manager.docker.from_env",
+        return_value=fake_client
+    ):
+
+        result = stop_container("plex")
+
+    assert result == {"success": False, "error": "daemon exploded"}
+
+
+def test_stop_container_when_successful():
+
+    fake_container = MagicMock()
+    fake_container.status = "running"
+
+    fake_client = MagicMock()
+    fake_client.containers.get.return_value = fake_container
+
+    with patch(
+        "atlas.docker.manager.docker.from_env",
+        return_value=fake_client
+    ):
+
+        result = stop_container("plex")
+
+    assert result == {"success": True, "previous_status": "running"}
+
+    fake_container.stop.assert_called_once_with()

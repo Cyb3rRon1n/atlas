@@ -300,6 +300,57 @@ def test_analyze_prints_suggested_action_for_known_container_only(
     assert "atlas restart ghost" not in result.output
 
 
+def test_analyze_prints_suggested_stop_command_for_known_container(
+    isolated_cwd, temp_db
+):
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.intelligence.providers.base import (
+        AIProvider,
+        AnalysisResult,
+        Recommendation,
+        SuggestedAction,
+    )
+    from atlas.knowledge.store import KnowledgeStore
+
+    environment = AtlasEnvironmentContext()
+
+    environment.update(
+        "containers",
+        {"Docker": {"available": True, "containers": [{"name": "plex"}]}}
+    )
+
+    KnowledgeStore().save_environment(environment)
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context):
+
+            return AnalysisResult(
+                summary="One host, lightly loaded.",
+                recommendations=[
+                    Recommendation(
+                        title="Container 'plex' is consuming excessive resources",
+                        detail="CPU usage has been pinned for an hour.",
+                        severity="warning",
+                        action=SuggestedAction(
+                            type="stop_container", target="plex"
+                        )
+                    ),
+                ]
+            )
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ):
+
+        result = runner.invoke(app, ["analyze"])
+
+    assert result.exit_code == 0
+    assert "Suggested: atlas stop plex" in result.output
+
+
 def test_proxmox_scan_when_disabled_does_not_attempt_connection(isolated_cwd):
     """
     proxmox.enabled defaults to false, so this exercises the fast exit
@@ -618,3 +669,45 @@ def test_restart_confirmed_restarts_container_and_logs_event(
     events = KnowledgeQueries().recent_events()
 
     assert events[0].event_type == "atlas.action.container_restarted"
+
+
+def test_stop_declined_does_not_stop_container(isolated_cwd, temp_db):
+
+    fake_container = MagicMock()
+    fake_container.name = "plex"
+    fake_container.image.tags = ["plexinc/pms-docker"]
+    fake_container.status = "running"
+
+    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+
+        mock_from_env.return_value.containers.get.return_value = fake_container
+
+        result = runner.invoke(app, ["stop", "plex"], input="n\n")
+
+    assert result.exit_code == 0
+    assert "Cancelled." in result.output
+    fake_container.stop.assert_not_called()
+
+
+def test_stop_confirmed_stops_container_and_logs_event(
+    isolated_cwd, temp_db
+):
+
+    fake_container = MagicMock()
+    fake_container.name = "plex"
+    fake_container.image.tags = ["plexinc/pms-docker"]
+    fake_container.status = "running"
+
+    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+
+        mock_from_env.return_value.containers.get.return_value = fake_container
+
+        result = runner.invoke(app, ["stop", "plex"], input="y\n")
+
+    assert result.exit_code == 0
+    assert "stopped" in result.output
+    fake_container.stop.assert_called_once_with()
+
+    events = KnowledgeQueries().recent_events()
+
+    assert events[0].event_type == "atlas.action.container_stopped"

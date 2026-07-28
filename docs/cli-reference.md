@@ -1,6 +1,6 @@
 # CLI Reference
 
-All 19 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
+All 20 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
 
 ## Status & health
 
@@ -38,6 +38,7 @@ Commands that change infrastructure rather than just observe it. All are approva
 | Command | Description |
 |---|---|
 | `atlas restart <name>` | Restart a Docker container. Shows the container's current state and asks for confirmation before acting. |
+| `atlas stop <name>` | Stop a Docker container without removing it. Shows the container's current state and asks for confirmation before acting. |
 | `atlas proxmox restart <vmid>` | Restart a Proxmox VM or LXC guest. Shows the guest's current state and asks for confirmation before acting (requires `proxmox.enabled: true` and write/power-management permission on the token, see [Configuration](configuration.md#proxmox)). |
 
 ## Knowledge & AI

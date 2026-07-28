@@ -1,4 +1,5 @@
 import typer
+from atlas.actions import ACTIONS
 from atlas.discovery import run_discovery
 from atlas.inventory import save_inventory
 from atlas.inventory import load_inventory
@@ -7,7 +8,7 @@ from atlas.config import load_config, write_config, write_setup_log
 from atlas.config.loader import CONFIG_FILE
 from atlas.config.models import AtlasConfig, IntelligenceConfig, MonitoringConfig, ProxmoxConfig
 from atlas.health import run_checks
-from atlas.docker import collect_containers, get_container_info, restart_container
+from atlas.docker import collect_containers, get_container_info, restart_container, stop_container
 from atlas.services import detect_services
 from atlas.compose import parse_compose_file
 from atlas.proxmox import (
@@ -942,6 +943,71 @@ def restart(name: str):
 
 
 @app.command()
+def stop(name: str):
+    """
+    Stop a Docker container (requires confirmation).
+    """
+
+    console.print(
+        "[bold blue]Atlas Stop[/bold blue]\n"
+    )
+
+    info = get_container_info(name)
+
+    if not info["found"]:
+
+        console.print(
+            f"[red]{info['error']}[/red]"
+        )
+
+        return
+
+    console.print(f"Container: {info['name']}")
+    console.print(f"Image: {info['image']}")
+    console.print(f"Current status: {info['status']}\n")
+
+    console.print(
+        "This will stop the container. It will not be removed - "
+        f"restart it anytime with atlas restart {name}.\n"
+    )
+
+    if not typer.confirm("Proceed?"):
+
+        console.print(
+            "[yellow]Cancelled.[/yellow]"
+        )
+
+        return
+
+    result = stop_container(name)
+
+    runtime = application.runtime
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.action.container_stopped",
+            source="StopAction",
+            payload={
+                "container": name,
+                "result": result
+            }
+        )
+    )
+
+    if not result["success"]:
+
+        console.print(
+            f"\n[red]Stop failed: {result['error']}[/red]"
+        )
+
+        return
+
+    console.print(
+        f"\n[green]✓ Container '{name}' stopped[/green]"
+    )
+
+
+@app.command()
 def services():
     """
     Detect known homelab services.
@@ -1213,11 +1279,6 @@ def analyze():
         "info": "cyan"
     }
 
-    action_commands = {
-        "restart_container": "atlas restart {target}",
-        "restart_guest": "atlas proxmox restart {target}"
-    }
-
     if not result.recommendations:
 
         console.print(
@@ -1241,15 +1302,15 @@ def analyze():
 
         if recommendation.action:
 
-            command = action_commands.get(
+            definition = ACTIONS.get(
                 recommendation.action.type
             )
 
-            if command:
+            if definition:
 
                 console.print(
                     f"\n  [cyan]→ Suggested:[/cyan] "
-                    f"{command.format(target=recommendation.action.target)}"
+                    f"{definition.command_template.format(target=recommendation.action.target)}"
                 )
 
         console.print()

@@ -1,22 +1,22 @@
-atlas:
-  name: atlas-node
-
+name: atlas-node
 discovery:
   hardware: true
   storage: true
   network: true
-
 inventory:
   directory: inventory/generated
-
-# Atlas Configuration
-
 proxmox:
-
   enabled: false
-
-  host: ""
-
-  user: ""
-
+  host: 192.168.1.10
+  user: atlas@pve
+  password: ''
+  token_name: atlas-token
+  token_value: ''
   verify_ssl: false
+intelligence:
+  provider: anthropic
+  model: claude-opus-5
+  ollama_host: http://localhost:11434
+monitoring:
+  enabled: false
+  prometheus_url: http://localhost:9090

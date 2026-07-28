@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <rect width="1280" height="640" fill="#0d1b2a"/>
+
+  <g transform="translate(70,176) scale(4.5)" fill="none">
+    <circle cx="32" cy="32" r="26" stroke="#5cb3c4" stroke-width="2"/>
+    <ellipse cx="32" cy="32" rx="26" ry="10" stroke="#5cb3c4" stroke-width="1.3" opacity="0.55"/>
+    <ellipse cx="32" cy="32" rx="12" ry="26" stroke="#5cb3c4" stroke-width="1.3" opacity="0.55"/>
+    <line x1="14" y1="24" x2="32" y2="14" stroke="#d9ab5c" stroke-width="1.4"/>
+    <line x1="32" y1="14" x2="48" y2="22" stroke="#d9ab5c" stroke-width="1.4"/>
+    <line x1="14" y1="24" x2="22" y2="42" stroke="#d9ab5c" stroke-width="1.4"/>
+    <line x1="48" y1="22" x2="42" y2="46" stroke="#d9ab5c" stroke-width="1.4"/>
+    <line x1="22" y1="42" x2="42" y2="46" stroke="#d9ab5c" stroke-width="1.4"/>
+    <circle cx="14" cy="24" r="2.6" fill="#d9ab5c"/>
+    <circle cx="32" cy="14" r="2.6" fill="#d9ab5c"/>
+    <circle cx="48" cy="22" r="2.6" fill="#d9ab5c"/>
+    <circle cx="22" cy="42" r="2.6" fill="#d9ab5c"/>
+    <circle cx="42" cy="46" r="2.6" fill="#d9ab5c"/>
+  </g>
+
+  <text x="432" y="308" font-family="JetBrains Mono" font-weight="700" font-size="96" letter-spacing="-2" fill="#eef1f0">atlas</text>
+
+  <text x="435" y="360" font-family="Inter" font-weight="400" font-size="30" fill="#93a3ac">
+    <tspan x="435" dy="0">AI-powered operations platform</tspan>
+    <tspan x="435" dy="40">for self-hosted infrastructure</tspan>
+  </text>
+
+  <text x="70" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#56636b" letter-spacing="0.5">observe</text>
+  <text x="205" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#3a4b58">&#8594;</text>
+  <text x="245" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#56636b" letter-spacing="0.5">understand</text>
+  <text x="450" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#3a4b58">&#8594;</text>
+  <text x="490" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#56636b" letter-spacing="0.5">recommend</text>
+  <text x="690" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#3a4b58">&#8594;</text>
+  <text x="730" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#d9ab5c" letter-spacing="0.5">automate with approval</text>
+</svg>

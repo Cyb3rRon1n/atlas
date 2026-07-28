@@ -15,7 +15,15 @@ atlas version
 
 ## First run
 
-Discover the host you're running on, generate a report, and get an AI-assisted read on what you found:
+Generate `atlas.yaml` interactively — prompts for the Proxmox/AI provider/Prometheus settings you actually need, skips anything you don't, and never writes `ANTHROPIC_API_KEY` to disk. Every run is logged to `logs/atlas-init-<timestamp>.log` (secrets redacted) for troubleshooting:
+
+```bash
+atlas init
+```
+
+You can skip this and run on defaults instead — `atlas.yaml` is optional; see [Configuration](../configuration.md) for the full field reference if you'd rather write it by hand.
+
+Then discover the host you're running on, generate a report, and get an AI-assisted read on what you found:
 
 ```bash
 atlas discover   # inventories the host, saves it to inventory/generated/

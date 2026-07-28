@@ -1,6 +1,6 @@
 # CLI Reference
 
-All 18 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
+All 19 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
 
 ## Status & health
 
@@ -8,6 +8,7 @@ All 18 current Atlas commands. Run `atlas <command> --help` for any command-spec
 |---|---|
 | `atlas version` | Display the Atlas version. |
 | `atlas status` | Display current Atlas status. |
+| `atlas init` | Interactively generate `atlas.yaml` — prompts only for Proxmox/AI provider/Prometheus settings, skips whatever you decline, never writes `ANTHROPIC_API_KEY` to disk. Logs the session to `logs/atlas-init-<timestamp>.log` (secrets redacted) for troubleshooting and records. Optional — Atlas runs on safe defaults without an `atlas.yaml` at all. |
 | `atlas doctor` | Run Atlas health checks (Python, memory, storage, Docker, inventory) plus readiness checks for the optional integrations (Proxmox, AI provider, Prometheus) against the current `atlas.yaml`. |
 | `atlas config` | Display the active Atlas configuration. |
 | `atlas runtime` | Display Atlas runtime information. |

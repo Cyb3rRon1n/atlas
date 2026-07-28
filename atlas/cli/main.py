@@ -3,7 +3,9 @@ from atlas.discovery import run_discovery
 from atlas.inventory import save_inventory
 from atlas.inventory import load_inventory
 from atlas.reporting.generator import generate_report
-from atlas.config import load_config
+from atlas.config import load_config, write_config, write_setup_log
+from atlas.config.loader import CONFIG_FILE
+from atlas.config.models import AtlasConfig, IntelligenceConfig, MonitoringConfig, ProxmoxConfig
 from atlas.health import run_checks
 from atlas.docker import collect_containers, get_container_info, restart_container
 from atlas.services import detect_services
@@ -430,6 +432,186 @@ def doctor():
             f"{check['name']}: "
             f"{check['details']}"
         )
+
+
+@app.command()
+def init():
+    """
+    Interactively generate atlas.yaml.
+    """
+
+    console.print(
+        "[bold cyan]Atlas Init[/bold cyan]\n"
+    )
+
+    if CONFIG_FILE.exists():
+
+        console.print(
+            f"{CONFIG_FILE} already exists.\n"
+        )
+
+        if not typer.confirm("Overwrite?"):
+
+            console.print(
+                "[yellow]Cancelled.[/yellow]"
+            )
+
+            return
+
+    log_lines = ["Atlas init started"]
+
+    name = typer.prompt(
+        "Instance name",
+        default="atlas-node"
+    )
+
+    log_lines.append(f"name: {name}")
+
+    console.print()
+
+    proxmox = ProxmoxConfig()
+
+    if typer.confirm("Configure Proxmox integration?"):
+
+        host = typer.prompt("Proxmox host")
+        user = typer.prompt("Proxmox user", default="atlas@pve")
+
+        if typer.confirm("Use an API token instead of a password?", default=True):
+
+            token_name = typer.prompt("Token name")
+            token_value = typer.prompt("Token value", hide_input=True)
+            password = ""
+            auth = "token"
+
+        else:
+
+            token_name = ""
+            token_value = ""
+            password = typer.prompt("Password", hide_input=True)
+            auth = "password"
+
+        verify_ssl = typer.confirm("Verify TLS certificate?", default=False)
+
+        proxmox = ProxmoxConfig(
+            enabled=True,
+            host=host,
+            user=user,
+            token_name=token_name,
+            token_value=token_value,
+            password=password,
+            verify_ssl=verify_ssl
+        )
+
+        log_lines.append(
+            f"proxmox: enabled, host={host}, user={user}, auth={auth}, "
+            f"verify_ssl={verify_ssl}"
+        )
+
+    else:
+
+        log_lines.append("proxmox: disabled")
+
+    console.print()
+
+    while True:
+
+        provider = typer.prompt(
+            "AI provider (anthropic/ollama)",
+            default="anthropic"
+        )
+
+        if provider in ("anthropic", "ollama"):
+            break
+
+        console.print(
+            "[yellow]Please enter 'anthropic' or 'ollama'.[/yellow]"
+        )
+
+    ollama_host = "http://localhost:11434"
+
+    if provider == "ollama":
+
+        ollama_host = typer.prompt(
+            "Ollama host",
+            default=ollama_host
+        )
+
+        model = typer.prompt(
+            "Model",
+            default="llama3.1"
+        )
+
+    else:
+
+        model = typer.prompt(
+            "Model",
+            default="claude-opus-5"
+        )
+
+        console.print(
+            "\n[yellow]Remember to set the ANTHROPIC_API_KEY environment "
+            "variable[/yellow] - it is never stored in atlas.yaml."
+        )
+
+    intelligence = IntelligenceConfig(
+        provider=provider,
+        model=model,
+        ollama_host=ollama_host
+    )
+
+    log_lines.append(
+        f"intelligence: provider={provider}, model={model}"
+    )
+
+    console.print()
+
+    monitoring = MonitoringConfig()
+
+    if typer.confirm("Configure Prometheus monitoring?"):
+
+        prometheus_url = typer.prompt(
+            "Prometheus URL",
+            default="http://localhost:9090"
+        )
+
+        monitoring = MonitoringConfig(
+            enabled=True,
+            prometheus_url=prometheus_url
+        )
+
+        log_lines.append(
+            f"monitoring: enabled, prometheus_url={prometheus_url}"
+        )
+
+    else:
+
+        log_lines.append("monitoring: disabled")
+
+    config = AtlasConfig(
+        name=name,
+        proxmox=proxmox,
+        intelligence=intelligence,
+        monitoring=monitoring
+    )
+
+    write_config(config)
+
+    log_lines.append(f"{CONFIG_FILE} written")
+    log_lines.append("Atlas init completed")
+
+    log_path = write_setup_log(log_lines)
+
+    console.print(
+        f"\n[green]✓ {CONFIG_FILE} created[/green]"
+    )
+
+    console.print(
+        f"[green]✓ Setup log saved to {log_path}[/green]\n"
+    )
+
+    console.print(
+        "Run: atlas doctor"
+    )
 
 
 @app.command()

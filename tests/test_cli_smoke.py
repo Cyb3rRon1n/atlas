@@ -33,6 +33,143 @@ def test_config_shows_defaults(isolated_cwd):
     assert "atlas-node" in result.output
 
 
+def test_init_declining_every_integration_writes_minimal_config(isolated_cwd):
+
+    result = runner.invoke(
+        app,
+        ["init"],
+        input="sentinel\nn\nanthropic\nclaude-opus-5\nn\n"
+    )
+
+    assert result.exit_code == 0
+    assert "atlas.yaml created" in result.output
+
+    written = (isolated_cwd / "atlas.yaml").read_text()
+
+    assert "name: sentinel" in written
+    assert "enabled: false" in written
+
+    log_files = list((isolated_cwd / "logs").glob("atlas-init-*.log"))
+
+    assert len(log_files) == 1
+    assert "name: sentinel" in log_files[0].read_text()
+    assert "proxmox: disabled" in log_files[0].read_text()
+
+
+def test_init_with_proxmox_token_auth_redacts_secret_from_log(isolated_cwd):
+
+    result = runner.invoke(
+        app,
+        ["init"],
+        input=(
+            "sentinel\n"
+            "y\n192.168.1.10\natlas@pve\ny\natlas-token\nsupersecret\nn\n"
+            "anthropic\nclaude-opus-5\n"
+            "n\n"
+        )
+    )
+
+    assert result.exit_code == 0
+
+    written = (isolated_cwd / "atlas.yaml").read_text()
+
+    assert "token_value: supersecret" in written
+    assert "host: 192.168.1.10" in written
+
+    log_text = (
+        list((isolated_cwd / "logs").glob("atlas-init-*.log"))[0].read_text()
+    )
+
+    assert "supersecret" not in log_text
+    assert "auth=token" in log_text
+
+
+def test_init_with_proxmox_password_auth(isolated_cwd):
+
+    result = runner.invoke(
+        app,
+        ["init"],
+        input=(
+            "sentinel\n"
+            "y\n192.168.1.10\natlas@pve\nn\nhunter2\nn\n"
+            "anthropic\nclaude-opus-5\n"
+            "n\n"
+        )
+    )
+
+    assert result.exit_code == 0
+
+    written = (isolated_cwd / "atlas.yaml").read_text()
+
+    assert "password: hunter2" in written
+    assert "token_value: ''" in written
+
+
+def test_init_with_ollama_provider(isolated_cwd):
+
+    result = runner.invoke(
+        app,
+        ["init"],
+        input=(
+            "sentinel\nn\n"
+            "ollama\nhttp://localhost:11434\nllama3.1\n"
+            "n\n"
+        )
+    )
+
+    assert result.exit_code == 0
+
+    written = (isolated_cwd / "atlas.yaml").read_text()
+
+    assert "provider: ollama" in written
+    assert "model: llama3.1" in written
+
+
+def test_init_reprompts_on_invalid_provider(isolated_cwd):
+
+    result = runner.invoke(
+        app,
+        ["init"],
+        input="sentinel\nn\nbogus\nanthropic\nclaude-opus-5\nn\n"
+    )
+
+    assert result.exit_code == 0
+    assert "Please enter 'anthropic' or 'ollama'." in result.output
+
+    written = (isolated_cwd / "atlas.yaml").read_text()
+
+    assert "provider: anthropic" in written
+
+
+def test_init_declines_overwrite_of_existing_config(isolated_cwd):
+
+    (isolated_cwd / "atlas.yaml").write_text("name: untouched\n")
+
+    result = runner.invoke(app, ["init"], input="n\n")
+
+    assert result.exit_code == 0
+    assert "Cancelled." in result.output
+    assert (isolated_cwd / "atlas.yaml").read_text() == "name: untouched\n"
+    assert not (isolated_cwd / "logs").exists()
+
+
+def test_init_confirms_overwrite_of_existing_config(isolated_cwd):
+
+    (isolated_cwd / "atlas.yaml").write_text("name: untouched\n")
+
+    result = runner.invoke(
+        app,
+        ["init"],
+        input="y\nreplaced\nn\nanthropic\nclaude-opus-5\nn\n"
+    )
+
+    assert result.exit_code == 0
+
+    written = (isolated_cwd / "atlas.yaml").read_text()
+
+    assert "name: replaced" in written
+
+
 def test_doctor(isolated_cwd):
 
     with patch(

@@ -633,6 +633,59 @@ def init():
         monitoring=monitoring
     )
 
+    console.print(
+        "\n[bold]Review[/bold] - check this matches what you meant to "
+        "enter, especially if anything looked odd while typing:\n"
+    )
+
+    console.print(f"  Name: {config.name}")
+
+    if config.proxmox.enabled:
+
+        if config.proxmox.token_value:
+            auth_display = (
+                f"API token '{config.proxmox.token_name}' "
+                f"({len(config.proxmox.token_value)} characters entered)"
+            )
+        else:
+            auth_display = (
+                f"password ({len(config.proxmox.password)} characters entered)"
+            )
+
+        console.print(
+            f"  Proxmox: enabled, host={config.proxmox.host}, "
+            f"user={config.proxmox.user}, auth={auth_display}, "
+            f"verify_ssl={config.proxmox.verify_ssl}"
+        )
+
+    else:
+
+        console.print("  Proxmox: disabled")
+
+    console.print(
+        f"  Intelligence: provider={config.intelligence.provider}, "
+        f"model={config.intelligence.model}"
+    )
+
+    if config.monitoring.enabled:
+
+        console.print(
+            f"  Monitoring: enabled, prometheus_url="
+            f"{config.monitoring.prometheus_url}"
+        )
+
+    else:
+
+        console.print("  Monitoring: disabled")
+
+    if not typer.confirm("\nSave this configuration?", default=True):
+
+        console.print(
+            "[yellow]Cancelled - nothing written.[/yellow]"
+        )
+
+        return
+
     write_config(config)
 
     log_lines.append(f"{CONFIG_FILE} written")

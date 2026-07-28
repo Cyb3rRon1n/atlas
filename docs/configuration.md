@@ -92,5 +92,10 @@ Controls `atlas monitor`.
 |---|---|---|
 | `enabled` | `false` | Must be `true` for `atlas monitor` to attempt a connection |
 | `prometheus_url` | `http://localhost:9090` | Base URL of an existing Prometheus server |
+| `cpu_threshold` | `90.0` | CPU usage percentage at or above which `atlas monitor` flags the metric |
+| `memory_threshold` | `90.0` | Memory usage percentage at or above which `atlas monitor` flags the metric |
+| `disk_threshold` | `90.0` | Disk usage percentage at or above which `atlas monitor` flags the metric |
 
 The default metric queries assume [`node_exporter`](https://github.com/prometheus/node_exporter) is running on the monitored host and being scraped by Prometheus — install and configure it there for `atlas monitor` to return real CPU/memory/disk figures. If Prometheus is reachable but `node_exporter` isn't set up yet, `atlas monitor` still runs; each affected metric just reports as unavailable rather than failing the whole command.
+
+A metric at or above its threshold prints with a yellow `!` instead of a green `✓` (e.g. `! cpu_percent: 92.1% (threshold: 90.0%)`), and if anything crossed its threshold, `atlas monitor` publishes `atlas.monitoring.threshold_exceeded` (visible via `atlas history`) alongside the `atlas.monitoring.scan.completed` event every scan already publishes — so a no-op scan doesn't add event-log noise, only an actual threshold crossing does. A metric with no data (`node_exporter` not scraped, etc.) is never flagged either way — "unavailable" isn't "under the limit."

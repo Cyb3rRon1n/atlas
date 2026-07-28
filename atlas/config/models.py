@@ -30,6 +30,9 @@ class IntelligenceConfig(BaseModel):
 class MonitoringConfig(BaseModel):
     enabled: bool = False
     prometheus_url: str = "http://localhost:9090"
+    cpu_threshold: float = 90.0
+    memory_threshold: float = 90.0
+    disk_threshold: float = 90.0
 
 
 class AtlasConfig(BaseModel):

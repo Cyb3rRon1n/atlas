@@ -588,6 +588,76 @@ def test_monitor_when_enabled_saves_metrics_to_environment(
     assert environment["monitoring"]["metrics"]["cpu_percent"] == 12.3
 
 
+def test_monitor_flags_metric_over_threshold_and_publishes_event(
+    isolated_cwd, temp_db
+):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "monitoring:\n"
+        "  enabled: true\n"
+        "  prometheus_url: http://localhost:9090\n"
+        "  cpu_threshold: 80\n"
+    )
+
+    def fake_get(url, params=None, timeout=None):
+
+        response = MagicMock()
+
+        response.json.return_value = {
+            "status": "success",
+            "data": {"result": [{"value": [0, "92.0"]}]}
+        }
+
+        return response
+
+    with patch("requests.get", side_effect=fake_get):
+
+        result = runner.invoke(app, ["monitor"])
+
+    assert result.exit_code == 0
+    assert "cpu_percent: 92.0% (threshold: 80.0%)" in result.output
+
+    event_types = [
+        event.event_type for event in KnowledgeQueries().recent_events()
+    ]
+
+    assert "atlas.monitoring.threshold_exceeded" in event_types
+
+
+def test_monitor_does_not_publish_threshold_event_when_nothing_exceeds(
+    isolated_cwd, temp_db
+):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "monitoring:\n"
+        "  enabled: true\n"
+        "  prometheus_url: http://localhost:9090\n"
+    )
+
+    def fake_get(url, params=None, timeout=None):
+
+        response = MagicMock()
+
+        response.json.return_value = {
+            "status": "success",
+            "data": {"result": [{"value": [0, "12.3"]}]}
+        }
+
+        return response
+
+    with patch("requests.get", side_effect=fake_get):
+
+        result = runner.invoke(app, ["monitor"])
+
+    assert result.exit_code == 0
+
+    event_types = [
+        event.event_type for event in KnowledgeQueries().recent_events()
+    ]
+
+    assert "atlas.monitoring.threshold_exceeded" not in event_types
+
+
 def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
     """
     atlas discover now runs built-in discovery and plugin discovery in

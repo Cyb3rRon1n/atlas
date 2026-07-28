@@ -23,7 +23,7 @@ All 20 current Atlas commands. Run `atlas <command> --help` for any command-spec
 | `atlas services` | Detect known homelab services running in Docker (see [Service Catalog](service-catalog.md)). |
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure — nodes, VMs, and containers — and report what changed since the last scan (requires `proxmox.enabled: true`, see [Configuration](configuration.md#proxmox)). |
-| `atlas monitor` | Query Prometheus for host metrics (requires `monitoring.enabled: true`, see [Configuration](configuration.md#monitoring)). |
+| `atlas monitor` | Query Prometheus for host metrics and flag any at or above their configured threshold (requires `monitoring.enabled: true`, see [Configuration](configuration.md#monitoring)). |
 
 ## Plugins
 

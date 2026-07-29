@@ -29,8 +29,10 @@ from atlas.knowledge.queries import KnowledgeQueries
 from atlas.knowledge.store import KnowledgeStore
 from atlas.core.application import application
 from atlas.intelligence.context import AtlasEnvironmentContext
+from atlas.intelligence.agent import AtlasAgent
 from atlas.intelligence.analyzer import AtlasAnalyzer
 from atlas.intelligence.providers import AIProviderError, get_provider
+from atlas.intelligence.tools import build_tools
 
 from atlas import __version__
 
@@ -1381,7 +1383,9 @@ def analyze():
 
         analyzer = AtlasAnalyzer(provider)
 
-        result = analyzer.analyze(environment)
+        tools = build_tools(settings)
+
+        result = analyzer.analyze(environment, tools)
 
     except AIProviderError as error:
 
@@ -1457,6 +1461,90 @@ def analyze():
                 "recommendation_count": len(result.recommendations)
             }
         )
+    )
+
+
+@app.command()
+def chat():
+    """
+    Interactive chat with Atlas about your infrastructure. Atlas can
+    look up live container/Proxmox/monitoring state and recent
+    history as needed - unlike atlas analyze, no prior atlas discover
+    is required. Type 'exit' or 'quit' to end the session.
+    """
+
+    console.print(
+        "[bold blue]Atlas Chat[/bold blue]\n"
+    )
+
+    settings = load_config()
+
+    try:
+        provider = get_provider(settings.intelligence)
+
+    except AIProviderError as error:
+
+        console.print(
+            f"[red]{error}[/red]"
+        )
+
+        return
+
+    agent = AtlasAgent(provider, settings)
+
+    console.print(
+        "Ask about your infrastructure. Type 'exit' to quit.\n"
+    )
+
+    messages = []
+
+    while True:
+
+        try:
+            user_input = typer.prompt("You")
+
+        except (EOFError, KeyboardInterrupt):
+
+            console.print()
+
+            break
+
+        if user_input.strip().lower() in {"exit", "quit"}:
+            break
+
+        messages.append({
+            "role": "user",
+            "content": user_input
+        })
+
+        try:
+            reply = agent.converse(messages)
+
+        except AIProviderError as error:
+
+            console.print(
+                f"\n[red]{error}[/red]\n"
+            )
+
+            continue
+
+        console.print(
+            f"\n[bold]Atlas:[/bold] {reply.text}\n"
+        )
+
+        if reply.action:
+
+            definition = ACTIONS.get(reply.action.type)
+
+            if definition:
+
+                console.print(
+                    f"[cyan]→ Suggested:[/cyan] "
+                    f"{definition.command_template.format(target=reply.action.target)}\n"
+                )
+
+    console.print(
+        "[green]Chat ended.[/green]"
     )
 
 

@@ -264,7 +264,7 @@ def test_analyze_prints_suggested_action_for_known_container_only(
 
     class FakeProvider(AIProvider):
 
-        def analyze(self, context):
+        def analyze(self, context, tools=None):
 
             return AnalysisResult(
                 summary="One host, lightly loaded.",
@@ -324,7 +324,7 @@ def test_analyze_prints_suggested_stop_command_for_known_container(
 
     class FakeProvider(AIProvider):
 
-        def analyze(self, context):
+        def analyze(self, context, tools=None):
 
             return AnalysisResult(
                 summary="One host, lightly loaded.",
@@ -349,6 +349,77 @@ def test_analyze_prints_suggested_stop_command_for_known_container(
 
     assert result.exit_code == 0
     assert "Suggested: atlas stop plex" in result.output
+
+
+def test_chat_prints_reply_and_suggested_action(isolated_cwd, temp_db):
+
+    from atlas.intelligence.providers.base import (
+        AIProvider,
+        ChatReply,
+        SuggestedAction,
+    )
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+            raise NotImplementedError
+
+        def converse(self, messages, tools=None):
+
+            return ChatReply(
+                text="Plex is using a lot of CPU right now.",
+                action=SuggestedAction(type="stop_container", target="plex")
+            )
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ), patch(
+        "atlas.docker.collect_containers",
+        return_value={"available": True, "containers": [{"name": "plex"}]}
+    ):
+
+        result = runner.invoke(app, ["chat"], input="how's plex?\nexit\n")
+
+    assert result.exit_code == 0
+    assert "Plex is using a lot of CPU right now." in result.output
+    assert "Suggested: atlas stop plex" in result.output
+
+
+def test_chat_drops_suggested_action_for_hallucinated_container(
+    isolated_cwd, temp_db
+):
+
+    from atlas.intelligence.providers.base import (
+        AIProvider,
+        ChatReply,
+        SuggestedAction,
+    )
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+            raise NotImplementedError
+
+        def converse(self, messages, tools=None):
+
+            return ChatReply(
+                text="I'd stop ghost.",
+                action=SuggestedAction(type="stop_container", target="ghost")
+            )
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ), patch(
+        "atlas.docker.collect_containers",
+        return_value={"available": True, "containers": [{"name": "plex"}]}
+    ):
+
+        result = runner.invoke(app, ["chat"], input="how's ghost?\nexit\n")
+
+    assert result.exit_code == 0
+    assert "Suggested:" not in result.output
 
 
 def test_proxmox_scan_when_disabled_does_not_attempt_connection(isolated_cwd):

@@ -12,9 +12,9 @@ class AtlasAnalyzer:
 
         self.provider = provider
 
-    def analyze(self, environment: dict) -> AnalysisResult:
+    def analyze(self, environment: dict, tools: dict | None = None) -> AnalysisResult:
 
-        result = self.provider.analyze(environment)
+        result = self.provider.analyze(environment, tools)
 
         for recommendation in result.recommendations:
 

@@ -2,6 +2,7 @@ from atlas.intelligence.providers.base import (
     AIProvider,
     AIProviderError,
     AnalysisResult,
+    ChatReply,
     Recommendation,
 )
 
@@ -39,6 +40,7 @@ __all__ = [
     "AIProvider",
     "AIProviderError",
     "AnalysisResult",
+    "ChatReply",
     "Recommendation",
     "get_provider",
 ]

@@ -13,10 +13,12 @@ class FakeProvider(AIProvider):
 
         self.result = result
         self.received_context = None
+        self.received_tools = None
 
-    def analyze(self, context: dict) -> AnalysisResult:
+    def analyze(self, context: dict, tools: dict | None = None) -> AnalysisResult:
 
         self.received_context = context
+        self.received_tools = tools
 
         return self.result
 

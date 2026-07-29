@@ -352,6 +352,72 @@ def test_analyze_prints_suggested_stop_command_for_known_container(
     assert "Suggested: atlas stop plex" in result.output
 
 
+def test_analyze_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db):
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.intelligence.providers.base import (
+        AIProvider,
+        AnalysisResult,
+        PlanStep,
+        SuggestedAction,
+        SuggestedPlan,
+    )
+    from atlas.knowledge.store import KnowledgeStore
+
+    environment = AtlasEnvironmentContext()
+
+    environment.update(
+        "containers",
+        {
+            "Docker": {
+                "available": True,
+                "containers": [{"name": "sonarr"}, {"name": "radarr"}]
+            }
+        }
+    )
+
+    KnowledgeStore().save_environment(environment)
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+
+            return AnalysisResult(
+                summary="Media stack is stuck.",
+                plan=SuggestedPlan(
+                    summary="Recover the media stack",
+                    steps=[
+                        PlanStep(
+                            action=SuggestedAction(
+                                type="stop_container", target="sonarr"
+                            ),
+                            rationale="sonarr is holding a lock radarr needs"
+                        ),
+                        PlanStep(
+                            action=SuggestedAction(
+                                type="restart_container", target="radarr"
+                            ),
+                            rationale="will pick up cleanly once sonarr is stopped"
+                        ),
+                    ]
+                )
+            )
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ):
+
+        result = runner.invoke(app, ["analyze"])
+
+    assert result.exit_code == 0
+    assert "Suggested plan: Recover the media stack" in result.output
+    assert "1. atlas stop sonarr" in result.output
+    assert "(sonarr is holding a lock radarr needs)" in result.output
+    assert "2. atlas restart radarr" in result.output
+    assert "Run each step yourself, in order." in result.output
+
+
 def test_chat_prints_reply_and_suggested_action(isolated_cwd, temp_db):
 
     from atlas.intelligence.providers.base import (
@@ -421,6 +487,64 @@ def test_chat_drops_suggested_action_for_hallucinated_container(
 
     assert result.exit_code == 0
     assert "Suggested:" not in result.output
+
+
+def test_chat_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db):
+
+    from atlas.intelligence.providers.base import (
+        AIProvider,
+        ChatReply,
+        PlanStep,
+        SuggestedAction,
+        SuggestedPlan,
+    )
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+            raise NotImplementedError
+
+        def converse(self, messages, tools=None):
+
+            return ChatReply(
+                text="Here's how to recover the media stack.",
+                plan=SuggestedPlan(
+                    summary="Recover the media stack",
+                    steps=[
+                        PlanStep(
+                            action=SuggestedAction(
+                                type="stop_container", target="sonarr"
+                            ),
+                            rationale="sonarr is holding a lock radarr needs"
+                        ),
+                        PlanStep(
+                            action=SuggestedAction(
+                                type="restart_container", target="radarr"
+                            ),
+                            rationale="will pick up cleanly once sonarr is stopped"
+                        ),
+                    ]
+                )
+            )
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ), patch(
+        "atlas.docker.collect_containers",
+        return_value={
+            "available": True,
+            "containers": [{"name": "sonarr"}, {"name": "radarr"}]
+        }
+    ):
+
+        result = runner.invoke(app, ["chat"], input="help me recover\nexit\n")
+
+    assert result.exit_code == 0
+    assert "Suggested plan: Recover the media stack" in result.output
+    assert "1. atlas stop sonarr" in result.output
+    assert "2. atlas restart radarr" in result.output
+    assert "Run each step yourself, in order." in result.output
 
 
 def test_proxmox_scan_when_disabled_does_not_attempt_connection(isolated_cwd):

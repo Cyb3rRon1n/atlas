@@ -1561,6 +1561,31 @@ def analyze():
 
         console.print()
 
+    if result.plan:
+
+        console.print(
+            f"[bold]Suggested plan:[/bold] {result.plan.summary}\n"
+        )
+
+        for index, step in enumerate(result.plan.steps, start=1):
+
+            definition = ACTIONS.get(step.action.type)
+
+            if not definition:
+                continue
+
+            console.print(
+                f"  {index}. {definition.command_template(step.action)}"
+            )
+
+            console.print(
+                f"     ({step.rationale})\n"
+            )
+
+        console.print(
+            "Run each step yourself, in order.\n"
+        )
+
     store = KnowledgeStore()
 
     store.save_analysis(
@@ -1662,6 +1687,31 @@ def chat():
                     f"[cyan]→ Suggested:[/cyan] "
                     f"{definition.command_template(reply.action)}\n"
                 )
+
+        if reply.plan:
+
+            console.print(
+                f"[bold]Suggested plan:[/bold] {reply.plan.summary}\n"
+            )
+
+            for index, step in enumerate(reply.plan.steps, start=1):
+
+                definition = ACTIONS.get(step.action.type)
+
+                if not definition:
+                    continue
+
+                console.print(
+                    f"  {index}. {definition.command_template(step.action)}"
+                )
+
+                console.print(
+                    f"     ({step.rationale})\n"
+                )
+
+            console.print(
+                "Run each step yourself, in order.\n"
+            )
 
     console.print(
         "[green]Chat ended.[/green]"

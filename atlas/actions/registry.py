@@ -45,3 +45,17 @@ ACTIONS: dict[str, ActionDefinition] = {
         known_targets=known_container_names
     ),
 }
+
+
+def is_action_grounded(action: "SuggestedAction", environment: dict) -> bool:
+    """
+    Shared by AtlasAnalyzer and AtlasAgent (single actions and, now,
+    every step of a plan) so the "is this a real action type with a
+    target Atlas actually observed" check lives in one place - it was
+    duplicated verbatim between the two before a plan's steps needed
+    the exact same check a third and fourth time.
+    """
+
+    definition = ACTIONS.get(action.type)
+
+    return bool(definition) and action.target in definition.known_targets(environment)

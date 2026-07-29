@@ -1,4 +1,4 @@
-from atlas.actions import ACTIONS
+from atlas.actions import is_action_grounded
 from atlas.intelligence.providers import AIProvider, AnalysisResult
 
 
@@ -20,12 +20,18 @@ class AtlasAnalyzer:
 
             action = recommendation.action
 
-            if not action:
-                continue
-
-            definition = ACTIONS.get(action.type)
-
-            if not definition or action.target not in definition.known_targets(environment):
+            if action and not is_action_grounded(action, environment):
                 recommendation.action = None
+
+        if result.plan and not all(
+            is_action_grounded(step.action, environment)
+            for step in result.plan.steps
+        ):
+
+            # A plan is a coherent whole in a way independent
+            # recommendations aren't - one hallucinated step target
+            # means dropping the entire plan rather than leaving a
+            # broken partial sequence behind.
+            result.plan = None
 
         return result

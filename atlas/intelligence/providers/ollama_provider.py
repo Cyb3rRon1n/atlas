@@ -12,6 +12,7 @@ from atlas.intelligence.providers.base import (
     AnalysisResult,
     ChatReply,
     chat_reply_from_dict,
+    plan_from_dict,
     recommendation_from_dict,
 )
 from atlas.intelligence.tools import execute_tool
@@ -58,7 +59,8 @@ class OllamaProvider(AIProvider):
             recommendations=[
                 recommendation_from_dict(item)
                 for item in data["recommendations"]
-            ]
+            ],
+            plan=plan_from_dict(data.get("plan"))
         )
 
     def converse(self, messages: list, tools: dict | None = None) -> ChatReply:

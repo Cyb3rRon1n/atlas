@@ -18,7 +18,9 @@ from atlas.proxmox import (
     diff_virtualization,
     format_change,
     get_guest_info,
+    resize_guest,
     restart_guest,
+    stop_guest,
 )
 from atlas.plugins import PluginManager
 from atlas.monitoring import collect_container_metrics, collect_metrics, evaluate_thresholds
@@ -304,6 +306,245 @@ def restart_guest_command(vmid: int):
 
     console.print(
         f"\n[green]✓ Guest '{info['name']}' ({vmid}) restarted[/green]"
+    )
+
+
+@proxmox_app.command(name="stop")
+def stop_guest_command(vmid: int):
+    """
+    Stop a Proxmox VM or LXC guest (requires confirmation).
+    """
+
+    console.print(
+        "[bold blue]Atlas Proxmox Stop[/bold blue]\n"
+    )
+
+    settings = load_config()
+
+    proxmox_settings = settings.proxmox
+
+    if not proxmox_settings.enabled:
+
+        console.print(
+            "[yellow]Proxmox integration disabled.[/yellow]"
+        )
+
+        console.print(
+            "Enable it in atlas.yaml"
+        )
+
+        return
+
+    client = connect(
+        proxmox_settings.host,
+        proxmox_settings.user,
+        password=proxmox_settings.password,
+        token_name=proxmox_settings.token_name,
+        token_value=proxmox_settings.token_value,
+        verify_ssl=proxmox_settings.verify_ssl
+    )
+
+    if not client:
+
+        console.print(
+            "[red]Unable to connect to Proxmox.[/red]"
+        )
+
+        return
+
+    info = get_guest_info(client, vmid)
+
+    if not info["found"]:
+
+        console.print(
+            f"[red]{info['error']}[/red]"
+        )
+
+        return
+
+    console.print(f"Guest: {info['name']} ({info['type']}, id {vmid})")
+    console.print(f"Node: {info['node']}")
+    console.print(f"Current status: {info['status']}\n")
+
+    console.print(
+        "This will shut down the guest via an ACPI request. If the "
+        "guest OS isn't responding, this may not complete - use the "
+        "Proxmox UI for a hard stop if needed.\n"
+    )
+
+    if not typer.confirm("Proceed?"):
+
+        console.print(
+            "[yellow]Cancelled.[/yellow]"
+        )
+
+        return
+
+    result = stop_guest(
+        client,
+        info["node"],
+        vmid,
+        info["type"]
+    )
+
+    runtime = application.runtime
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.action.guest_stopped",
+            source="ProxmoxStopAction",
+            payload={
+                "vmid": vmid,
+                "node": info["node"],
+                "result": result
+            }
+        )
+    )
+
+    if not result["success"]:
+
+        console.print(
+            f"\n[red]Stop failed: {result['error']}[/red]"
+        )
+
+        return
+
+    console.print(
+        f"\n[green]✓ Guest '{info['name']}' ({vmid}) stopped[/green]"
+    )
+
+
+@proxmox_app.command(name="resize")
+def resize_guest_command(
+    vmid: int,
+    cpus: float = typer.Option(None, help="New CPU limit in cores, e.g. 1.5"),
+    memory: str = typer.Option(None, help="New memory limit, e.g. 512m or 1g")
+):
+    """
+    Resize a Proxmox guest's CPU and/or memory limit (requires confirmation).
+    """
+
+    console.print(
+        "[bold blue]Atlas Proxmox Resize[/bold blue]\n"
+    )
+
+    if cpus is None and memory is None:
+
+        console.print(
+            "[red]Specify --cpus and/or --memory.[/red]"
+        )
+
+        return
+
+    settings = load_config()
+
+    proxmox_settings = settings.proxmox
+
+    if not proxmox_settings.enabled:
+
+        console.print(
+            "[yellow]Proxmox integration disabled.[/yellow]"
+        )
+
+        console.print(
+            "Enable it in atlas.yaml"
+        )
+
+        return
+
+    client = connect(
+        proxmox_settings.host,
+        proxmox_settings.user,
+        password=proxmox_settings.password,
+        token_name=proxmox_settings.token_name,
+        token_value=proxmox_settings.token_value,
+        verify_ssl=proxmox_settings.verify_ssl
+    )
+
+    if not client:
+
+        console.print(
+            "[red]Unable to connect to Proxmox.[/red]"
+        )
+
+        return
+
+    info = get_guest_info(client, vmid)
+
+    if not info["found"]:
+
+        console.print(
+            f"[red]{info['error']}[/red]"
+        )
+
+        return
+
+    console.print(f"Guest: {info['name']} ({info['type']}, id {vmid})\n")
+
+    if cpus is not None:
+        console.print(f"New CPU limit: {cpus} cores")
+
+    if memory is not None:
+        console.print(f"New memory limit: {memory}")
+
+    console.print(
+        "\nThis changes the guest's cpulimit/memory cap, not how many "
+        "CPUs or how much RAM the guest OS sees."
+    )
+
+    if info["type"] == "qemu":
+
+        console.print(
+            "Note: for a running VM, this may not take effect until "
+            "restart unless the guest has hotplug enabled - LXC "
+            "guests apply this live."
+        )
+
+    console.print()
+
+    if not typer.confirm("Proceed?"):
+
+        console.print(
+            "[yellow]Cancelled.[/yellow]"
+        )
+
+        return
+
+    result = resize_guest(
+        client,
+        info["node"],
+        vmid,
+        info["type"],
+        cpus=cpus,
+        memory=memory
+    )
+
+    runtime = application.runtime
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.action.guest_resized",
+            source="ProxmoxResizeAction",
+            payload={
+                "vmid": vmid,
+                "node": info["node"],
+                "cpus": cpus,
+                "memory": memory,
+                "result": result
+            }
+        )
+    )
+
+    if not result["success"]:
+
+        console.print(
+            f"\n[red]Resize failed: {result['error']}[/red]"
+        )
+
+        return
+
+    console.print(
+        f"\n[green]✓ Guest '{info['name']}' ({vmid}) resized[/green]"
     )
 
 

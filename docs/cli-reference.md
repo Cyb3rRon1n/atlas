@@ -42,6 +42,8 @@ Commands that change infrastructure rather than just observe it. All are approva
 | `atlas stop <name>` | Stop a Docker container without removing it. Shows the container's current state and asks for confirmation before acting. |
 | `atlas resize <name>` | Resize a Docker container's CPU (`--cpus <cores>`) and/or memory (`--memory <limit>`, e.g. `512m`/`1g`) limit, live, without a restart. Shows the container's current configured limit(s) and asks for confirmation before acting. |
 | `atlas proxmox restart <vmid>` | Restart a Proxmox VM or LXC guest. Shows the guest's current state and asks for confirmation before acting (requires `proxmox.enabled: true` and write/power-management permission on the token, see [Configuration](configuration.md#proxmox)). |
+| `atlas proxmox stop <vmid>` | Shut down a Proxmox VM or LXC guest via an ACPI request (not a hard power-off) - may not complete if the guest OS isn't responding. Shows current state and asks for confirmation. |
+| `atlas proxmox resize <vmid>` | Resize a Proxmox guest's CPU (`--cpus <cores>`, maps to Proxmox's `cpulimit`) and/or memory (`--memory <limit>`) limit. For a `qemu` guest, may need hotplug enabled to apply without a restart; LXC applies live. Asks for confirmation. |
 
 ## Knowledge & AI
 

@@ -8,7 +8,7 @@ from atlas.config import load_config, write_config, write_setup_log
 from atlas.config.loader import CONFIG_FILE
 from atlas.config.models import AtlasConfig, IntelligenceConfig, MonitoringConfig, ProxmoxConfig
 from atlas.health import run_checks
-from atlas.docker import collect_containers, get_container_info, restart_container, stop_container
+from atlas.docker import collect_containers, get_container_info, resize_container, restart_container, stop_container
 from atlas.services import detect_services
 from atlas.compose import parse_compose_file
 from atlas.proxmox import (
@@ -1150,6 +1150,108 @@ def stop(name: str):
 
 
 @app.command()
+def resize(
+    name: str,
+    cpus: float = typer.Option(None, help="New CPU limit in cores, e.g. 1.5"),
+    memory: str = typer.Option(None, help="New memory limit, e.g. 512m or 1g")
+):
+    """
+    Resize a Docker container's CPU and/or memory limit (requires confirmation).
+    """
+
+    console.print(
+        "[bold blue]Atlas Resize[/bold blue]\n"
+    )
+
+    if cpus is None and memory is None:
+
+        console.print(
+            "[red]Specify --cpus and/or --memory.[/red]"
+        )
+
+        return
+
+    info = get_container_info(name)
+
+    if not info["found"]:
+
+        console.print(
+            f"[red]{info['error']}[/red]"
+        )
+
+        return
+
+    console.print(f"Container: {info['name']}")
+
+    console.print(
+        f"Current CPU limit: "
+        f"{info['cpu_limit_cores']:.2f} cores" if info["cpu_limit_cores"] else
+        "Current CPU limit: unlimited"
+    )
+
+    console.print(
+        f"Current memory limit: {info['memory_limit_bytes']} bytes"
+        if info["memory_limit_bytes"] else
+        "Current memory limit: unlimited"
+    )
+
+    console.print()
+
+    if cpus is not None:
+        console.print(f"New CPU limit: {cpus} cores")
+
+    if memory is not None:
+        console.print(f"New memory limit: {memory}")
+
+    console.print(
+        "\nThis changes the container's resource limit live, without a "
+        "restart. Lowering memory below what the container is currently "
+        "using may fail.\n"
+    )
+
+    if not typer.confirm("Proceed?"):
+
+        console.print(
+            "[yellow]Cancelled.[/yellow]"
+        )
+
+        return
+
+    result = resize_container(
+        name,
+        cpus=cpus,
+        mem_limit=memory
+    )
+
+    runtime = application.runtime
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.action.container_resized",
+            source="ResizeAction",
+            payload={
+                "container": name,
+                "cpus": cpus,
+                "memory": memory,
+                "result": result
+            }
+        )
+    )
+
+    if not result["success"]:
+
+        console.print(
+            f"\n[red]Resize failed: {result['error']}[/red]"
+        )
+
+        return
+
+    console.print(
+        f"\n[green]✓ Container '{name}' resized[/green]"
+    )
+
+
+@app.command()
 def services():
     """
     Detect known homelab services.
@@ -1454,7 +1556,7 @@ def analyze():
 
                 console.print(
                     f"\n  [cyan]→ Suggested:[/cyan] "
-                    f"{definition.command_template.format(target=recommendation.action.target)}"
+                    f"{definition.command_template(recommendation.action)}"
                 )
 
         console.print()
@@ -1558,7 +1660,7 @@ def chat():
 
                 console.print(
                     f"[cyan]→ Suggested:[/cyan] "
-                    f"{definition.command_template.format(target=reply.action.target)}\n"
+                    f"{definition.command_template(reply.action)}\n"
                 )
 
     console.print(

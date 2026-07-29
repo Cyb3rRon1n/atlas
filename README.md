@@ -10,19 +10,13 @@
 
 # Atlas
 
-**AI-powered operations platform for self-hosted infrastructure.**
+**AI-assisted operations for your homelab — grounded in what's actually running, and never acting without your say-so.**
 
-Atlas is an extensible infrastructure intelligence platform designed to discover, understand, and eventually automate self-hosted environments. It provides a unified operational layer for homelabs, private clouds, and self-managed infrastructure by combining:
+If you're running Proxmox, a pile of Docker containers, maybe Prometheus for good measure — the real problem usually isn't automation, it's memory. What's actually deployed. Why it's set up that way. What changed since last week. Atlas exists to hold that context so you don't have to: it discovers your infrastructure, keeps a persistent record of it, can explain it back to you in plain language through Claude or a fully local Ollama model, and — carefully, and only with your explicit confirmation — can act on what it finds.
 
-- Infrastructure discovery
-- Operational inventory
-- Service awareness
-- Event-driven architecture
-- Persistent infrastructure knowledge
-- Plugin-based extensibility
-- AI-assisted operations
+It isn't a chatbot bolted onto your servers. Every AI-suggested action is cross-checked against what Atlas actually observed before it's ever shown to you, so a hallucinated container name gets silently dropped rather than handed to you as a real suggestion. And nothing mutates your infrastructure without you typing "yes" first — no autonomous mode, no bypass flag.
 
-Atlas is currently under active development.
+Everything below is real, working CLI functionality, not a roadmap of intentions — see [Project Status](#project-status) for what's shipped and verified against actual Proxmox hosts, Docker containers, and a real Prometheus/cAdvisor stack, not just mocks.
 
 ---
 
@@ -34,18 +28,16 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 
 - ✅ Hardware, OS, storage, and network discovery
 - ✅ Docker discovery, service detection, and Compose analysis
-- ✅ Docker container restart — the first approval-gated action
-- ✅ Proxmox cluster discovery, change detection, and guest restart — the second approval-gated action
+- ✅ Docker container restart and stop — approval-gated actions backed by a real `atlas/actions/` registry
+- ✅ Proxmox cluster discovery, change detection, and guest restart
 - ✅ AI analysis via a local Ollama model end to end; Anthropic Claude also supported (connection and error handling verified, a full response is pending your own billing setup)
-- ✅ Prometheus monitoring integration
+- ✅ Prometheus monitoring — host and per-container (cAdvisor) metrics, configurable threshold alerting, and change detection between scans
 - ✅ Guided setup (`atlas init`) and environment/integration health checks (`atlas doctor`)
 - ✅ Event-driven architecture with persistent operational history
 - ✅ Plugin architecture
 
 ### In progress
 
-- 🚧 Broader automation framework — a real action registry beyond the two action types that exist today
-- 🚧 Deeper monitoring — container-level metrics, threshold alerting
 - 🚧 Agent-based capabilities
 
 ---
@@ -170,7 +162,7 @@ Atlas can connect to a Proxmox cluster and inventory it (`atlas proxmox scan`): 
 
 ### Monitoring
 
-Atlas can query an existing [Prometheus](https://prometheus.io/) server for host metrics (`atlas monitor`) — CPU, memory, and disk usage, via the standard [`node_exporter`](https://github.com/prometheus/node_exporter) metrics. Like the rest of Atlas's integrations, it's Atlas reaching out on command, not a `/metrics` endpoint you'd point Prometheus at. If Prometheus is reachable but a given exporter isn't set up yet, the affected metric reports as unavailable rather than failing the whole scan. Each metric is checked against a configurable threshold (90% by default) and flagged if it's at or above it, and a threshold crossing is logged as its own event. Disabled by default — see [Configuration](#configuration).
+Atlas can query an existing [Prometheus](https://prometheus.io/) server for host metrics (`atlas monitor`) — CPU, memory, and disk usage, via the standard [`node_exporter`](https://github.com/prometheus/node_exporter) metrics, plus per-container CPU and memory if [cAdvisor](https://github.com/google/cadvisor) is scraped by the same Prometheus. Like the rest of Atlas's integrations, it's Atlas reaching out on command, not a `/metrics` endpoint you'd point Prometheus at. If Prometheus is reachable but a given exporter isn't set up yet, the affected metric reports as unavailable rather than failing the whole scan. Each metric — host or per-container — is checked against a configurable threshold (90% by default) and flagged if it's at or above it. Each scan also reports what changed since the last one: any metric that crossed or recovered from its threshold, the same change-detection pattern Proxmox scanning uses. Disabled by default — see [Configuration](#configuration).
 
 ### Plugin Architecture
 

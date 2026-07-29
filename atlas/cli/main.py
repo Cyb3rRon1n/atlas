@@ -1,5 +1,5 @@
 import typer
-from atlas.actions import ACTIONS
+from atlas.actions import ACTIONS, execute_action
 from atlas.discovery import run_discovery
 from atlas.inventory import save_inventory
 from atlas.inventory import load_inventory
@@ -50,6 +50,15 @@ app = typer.Typer(
 )
 
 console = Console()
+
+PLAN_STEP_EVENT_TYPES = {
+    "restart_container": "atlas.action.container_restarted",
+    "stop_container": "atlas.action.container_stopped",
+    "resize_container": "atlas.action.container_resized",
+    "restart_guest": "atlas.action.guest_restarted",
+    "stop_guest": "atlas.action.guest_stopped",
+    "resize_guest": "atlas.action.guest_resized",
+}
 
 proxmox_app = typer.Typer(
     name="proxmox",
@@ -1900,8 +1909,65 @@ def analyze():
             )
 
         console.print(
-            "Run each step yourself, in order.\n"
+            "Each step runs one at a time, with its own confirmation.\n"
         )
+
+    if result.plan and typer.confirm("Run this plan now?"):
+
+        for index, step in enumerate(result.plan.steps, start=1):
+
+            definition = ACTIONS.get(step.action.type)
+
+            console.print(
+                f"\nStep {index}: {definition.command_template(step.action)}"
+            )
+
+            console.print(
+                f"  ({step.rationale})"
+            )
+
+            if not typer.confirm("Run this step?"):
+
+                console.print(
+                    "[yellow]Stopped - remaining steps not run.[/yellow]"
+                )
+
+                break
+
+            step_result = execute_action(step.action)
+
+            application.runtime.events.publish(
+                AtlasEvent(
+                    event_type=PLAN_STEP_EVENT_TYPES[step.action.type],
+                    source="PlanStep",
+                    payload={
+                        "target": step.action.target,
+                        "result": step_result
+                    }
+                )
+            )
+
+            if not step_result["success"]:
+
+                console.print(
+                    f"[red]Step failed: {step_result['error']}[/red]"
+                )
+
+                console.print(
+                    "[yellow]Stopped - remaining steps not run.[/yellow]"
+                )
+
+                break
+
+            console.print(
+                f"[green]✓ Step {index} complete[/green]"
+            )
+
+        else:
+
+            console.print(
+                "\n[green]✓ Plan complete[/green]"
+            )
 
     store = KnowledgeStore()
 
@@ -2038,8 +2104,71 @@ def chat():
                 )
 
             console.print(
-                "Run each step yourself, in order.\n"
+                "Each step runs one at a time, with its own confirmation.\n"
             )
+
+            if typer.confirm("Run this plan now?"):
+
+                for index, step in enumerate(reply.plan.steps, start=1):
+
+                    definition = ACTIONS.get(step.action.type)
+
+                    console.print(
+                        f"\nStep {index}: "
+                        f"{definition.command_template(step.action)}"
+                    )
+
+                    console.print(
+                        f"  ({step.rationale})"
+                    )
+
+                    if not typer.confirm("Run this step?"):
+
+                        console.print(
+                            "[yellow]Stopped - remaining steps not "
+                            "run.[/yellow]"
+                        )
+
+                        break
+
+                    step_result = execute_action(step.action)
+
+                    application.runtime.events.publish(
+                        AtlasEvent(
+                            event_type=(
+                                PLAN_STEP_EVENT_TYPES[step.action.type]
+                            ),
+                            source="PlanStep",
+                            payload={
+                                "target": step.action.target,
+                                "result": step_result
+                            }
+                        )
+                    )
+
+                    if not step_result["success"]:
+
+                        console.print(
+                            f"[red]Step failed: "
+                            f"{step_result['error']}[/red]"
+                        )
+
+                        console.print(
+                            "[yellow]Stopped - remaining steps not "
+                            "run.[/yellow]"
+                        )
+
+                        break
+
+                    console.print(
+                        f"[green]✓ Step {index} complete[/green]"
+                    )
+
+                else:
+
+                    console.print(
+                        "\n[green]✓ Plan complete[/green]"
+                    )
 
     if transcript:
 

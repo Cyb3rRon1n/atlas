@@ -408,14 +408,210 @@ def test_analyze_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db
         return_value=FakeProvider()
     ):
 
-        result = runner.invoke(app, ["analyze"])
+        result = runner.invoke(app, ["analyze"], input="n\n")
 
     assert result.exit_code == 0
     assert "Suggested plan: Recover the media stack" in result.output
     assert "1. atlas stop sonarr" in result.output
     assert "(sonarr is holding a lock radarr needs)" in result.output
     assert "2. atlas restart radarr" in result.output
-    assert "Run each step yourself, in order." in result.output
+    assert "Each step runs one at a time, with its own confirmation." in result.output
+
+
+def _analyze_with_plan(monkeypatch_input, sonarr_status="running"):
+    """
+    Shared setup for the atlas analyze plan-execution tests below:
+    a grounded two-step plan (stop sonarr, restart radarr) via a fake
+    provider, invoked with the given scripted input.
+    """
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.intelligence.providers.base import (
+        AIProvider,
+        AnalysisResult,
+        PlanStep,
+        SuggestedAction,
+        SuggestedPlan,
+    )
+    from atlas.knowledge.store import KnowledgeStore
+
+    environment = AtlasEnvironmentContext()
+
+    environment.update(
+        "containers",
+        {
+            "Docker": {
+                "available": True,
+                "containers": [
+                    {"name": "sonarr", "status": sonarr_status},
+                    {"name": "radarr", "status": "running"}
+                ]
+            }
+        }
+    )
+
+    KnowledgeStore().save_environment(environment)
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+
+            return AnalysisResult(
+                summary="Media stack is stuck.",
+                plan=SuggestedPlan(
+                    summary="Recover the media stack",
+                    steps=[
+                        PlanStep(
+                            action=SuggestedAction(
+                                type="stop_container", target="sonarr"
+                            ),
+                            rationale="sonarr is holding a lock radarr needs"
+                        ),
+                        PlanStep(
+                            action=SuggestedAction(
+                                type="restart_container", target="radarr"
+                            ),
+                            rationale="will pick up cleanly once sonarr is stopped"
+                        ),
+                    ]
+                )
+            )
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ), patch(
+        "atlas.actions.registry.stop_container",
+        return_value={"success": True, "previous_status": "running"}
+    ) as mock_stop, patch(
+        "atlas.actions.registry.restart_container",
+        return_value={"success": True, "previous_status": "running"}
+    ) as mock_restart:
+
+        result = runner.invoke(app, ["analyze"], input=monkeypatch_input)
+
+    return result, mock_stop, mock_restart
+
+
+def test_analyze_declines_running_plan_does_not_execute_steps(
+    isolated_cwd, temp_db
+):
+
+    result, mock_stop, mock_restart = _analyze_with_plan("n\n")
+
+    assert result.exit_code == 0
+    assert "Run this plan now?" in result.output
+    mock_stop.assert_not_called()
+    mock_restart.assert_not_called()
+
+
+def test_analyze_confirms_plan_then_declines_second_step_stops_early(
+    isolated_cwd, temp_db
+):
+
+    result, mock_stop, mock_restart = _analyze_with_plan("y\ny\nn\n")
+
+    assert result.exit_code == 0
+    assert "Step 1: atlas stop sonarr" in result.output
+    assert "Step 2: atlas restart radarr" in result.output
+    assert "Stopped - remaining steps not run." in result.output
+    mock_stop.assert_called_once_with("sonarr")
+    mock_restart.assert_not_called()
+
+
+def test_analyze_confirms_plan_executes_all_steps_and_logs_events(
+    isolated_cwd, temp_db
+):
+
+    result, mock_stop, mock_restart = _analyze_with_plan("y\ny\ny\n")
+
+    assert result.exit_code == 0
+    assert "✓ Step 1 complete" in result.output
+    assert "✓ Step 2 complete" in result.output
+    assert "✓ Plan complete" in result.output
+    mock_stop.assert_called_once_with("sonarr")
+    mock_restart.assert_called_once_with("radarr")
+
+    events = KnowledgeQueries().recent_events(10)
+
+    plan_events = [e for e in events if e.source == "PlanStep"]
+    assert len(plan_events) == 2
+    assert {e.event_type for e in plan_events} == {
+        "atlas.action.container_stopped",
+        "atlas.action.container_restarted",
+    }
+
+
+def test_analyze_plan_step_failure_stops_remaining_steps(isolated_cwd, temp_db):
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.intelligence.providers.base import (
+        AIProvider,
+        AnalysisResult,
+        PlanStep,
+        SuggestedAction,
+        SuggestedPlan,
+    )
+    from atlas.knowledge.store import KnowledgeStore
+
+    environment = AtlasEnvironmentContext()
+
+    environment.update(
+        "containers",
+        {
+            "Docker": {
+                "available": True,
+                "containers": [
+                    {"name": "sonarr", "status": "running"},
+                    {"name": "radarr", "status": "running"}
+                ]
+            }
+        }
+    )
+
+    KnowledgeStore().save_environment(environment)
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+
+            return AnalysisResult(
+                summary="Media stack is stuck.",
+                plan=SuggestedPlan(
+                    summary="Recover the media stack",
+                    steps=[
+                        PlanStep(
+                            action=SuggestedAction(
+                                type="stop_container", target="sonarr"
+                            ),
+                            rationale="sonarr is holding a lock radarr needs"
+                        ),
+                        PlanStep(
+                            action=SuggestedAction(
+                                type="restart_container", target="radarr"
+                            ),
+                            rationale="will pick up cleanly once sonarr is stopped"
+                        ),
+                    ]
+                )
+            )
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ), patch(
+        "atlas.actions.registry.stop_container",
+        return_value={"success": False, "error": "container is locked"}
+    ), patch(
+        "atlas.actions.registry.restart_container"
+    ) as mock_restart:
+
+        result = runner.invoke(app, ["analyze"], input="y\ny\n")
+
+    assert result.exit_code == 0
+    assert "Step failed: container is locked" in result.output
+    assert "Stopped - remaining steps not run." in result.output
+    mock_restart.assert_not_called()
 
 
 def test_chat_prints_reply_and_suggested_action(isolated_cwd, temp_db):
@@ -538,13 +734,89 @@ def test_chat_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db):
         }
     ):
 
-        result = runner.invoke(app, ["chat"], input="help me recover\nexit\n")
+        result = runner.invoke(
+            app, ["chat"], input="help me recover\nn\nexit\n"
+        )
 
     assert result.exit_code == 0
     assert "Suggested plan: Recover the media stack" in result.output
     assert "1. atlas stop sonarr" in result.output
     assert "2. atlas restart radarr" in result.output
-    assert "Run each step yourself, in order." in result.output
+    assert "Each step runs one at a time, with its own confirmation." in result.output
+
+
+def test_chat_confirms_plan_executes_all_steps_and_logs_events(
+    isolated_cwd, temp_db
+):
+
+    from atlas.intelligence.providers.base import (
+        AIProvider,
+        ChatReply,
+        PlanStep,
+        SuggestedAction,
+        SuggestedPlan,
+    )
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+            raise NotImplementedError
+
+        def converse(self, messages, tools=None):
+
+            return ChatReply(
+                text="Here's how to recover the media stack.",
+                plan=SuggestedPlan(
+                    summary="Recover the media stack",
+                    steps=[
+                        PlanStep(
+                            action=SuggestedAction(
+                                type="stop_container", target="sonarr"
+                            ),
+                            rationale="sonarr is holding a lock radarr needs"
+                        ),
+                        PlanStep(
+                            action=SuggestedAction(
+                                type="restart_container", target="radarr"
+                            ),
+                            rationale="will pick up cleanly once sonarr is stopped"
+                        ),
+                    ]
+                )
+            )
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ), patch(
+        "atlas.docker.collect_containers",
+        return_value={
+            "available": True,
+            "containers": [{"name": "sonarr"}, {"name": "radarr"}]
+        }
+    ), patch(
+        "atlas.actions.registry.stop_container",
+        return_value={"success": True, "previous_status": "running"}
+    ) as mock_stop, patch(
+        "atlas.actions.registry.restart_container",
+        return_value={"success": True, "previous_status": "running"}
+    ) as mock_restart:
+
+        result = runner.invoke(
+            app, ["chat"], input="help me recover\ny\ny\ny\nexit\n"
+        )
+
+    assert result.exit_code == 0
+    assert "✓ Step 1 complete" in result.output
+    assert "✓ Step 2 complete" in result.output
+    assert "✓ Plan complete" in result.output
+    mock_stop.assert_called_once_with("sonarr")
+    mock_restart.assert_called_once_with("radarr")
+
+    events = KnowledgeQueries().recent_events(10)
+
+    plan_events = [e for e in events if e.source == "PlanStep"]
+    assert len(plan_events) == 2
 
 
 def test_chat_saves_transcript_as_a_single_event_on_exit(isolated_cwd, temp_db):

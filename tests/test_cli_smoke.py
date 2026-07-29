@@ -624,6 +624,46 @@ def test_chat_exiting_immediately_does_not_save_a_transcript(
     assert transcript_events == []
 
 
+def test_trends_when_no_monitoring_history_prints_hint(isolated_cwd, temp_db):
+
+    result = runner.invoke(app, ["trends"])
+
+    assert result.exit_code == 0
+    assert "No monitoring history found." in result.output
+    assert "Run: atlas monitor" in result.output
+
+
+def test_trends_prints_host_and_container_summaries(isolated_cwd, temp_db):
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.knowledge.store import KnowledgeStore
+
+    store = KnowledgeStore()
+
+    for cpu_value in (10.0, 20.0, 30.0):
+
+        environment = AtlasEnvironmentContext()
+
+        environment.update("monitoring", {
+            "metrics": {"cpu_percent": cpu_value, "memory_percent": None},
+            "containers": {"plex": {"cpu_percent": cpu_value / 2}}
+        })
+
+        store.save_environment(environment)
+
+    discover_only = AtlasEnvironmentContext()
+    discover_only.ingest_discovery({"system": {"hostname": "sentinel"}})
+    store.save_environment(discover_only)
+
+    result = runner.invoke(app, ["trends"])
+
+    assert result.exit_code == 0
+    assert "cpu_percent: latest 30.0%, min 10.0%, max 30.0%, avg 20.0% (3 samples)" in result.output
+    assert "memory_percent" not in result.output
+    assert "plex:" in result.output
+    assert "cpu_percent: latest 15.0%, min 5.0%, max 15.0%, avg 10.0% (3 samples)" in result.output
+
+
 def test_proxmox_scan_when_disabled_does_not_attempt_connection(isolated_cwd):
     """
     proxmox.enabled defaults to false, so this exercises the fast exit

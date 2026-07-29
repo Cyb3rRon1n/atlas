@@ -24,6 +24,7 @@ All 20 current Atlas commands. Run `atlas <command> --help` for any command-spec
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure — nodes, VMs, and containers — and report what changed since the last scan (requires `proxmox.enabled: true`, see [Configuration](configuration.md#proxmox)). |
 | `atlas monitor` | Query Prometheus for host metrics and flag any at or above their configured threshold (requires `monitoring.enabled: true`, see [Configuration](configuration.md#monitoring)). |
+| `atlas trends` | Show host and per-container resource-usage trends (latest/min/max/avg) from the environment snapshots `atlas monitor` has been saving. `--limit` controls how many recent snapshots to consider (default 20). |
 
 ## Plugins
 

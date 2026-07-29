@@ -35,6 +35,34 @@ class KnowledgeQueries:
             )
 
 
+    def environment_history(
+        self,
+        limit: int = 20
+    ):
+
+        initialize_database(engine)
+
+        with Session(engine) as session:
+
+            records = (
+                session.query(EnvironmentRecord)
+                .order_by(
+                    EnvironmentRecord.created_at.desc(),
+                    EnvironmentRecord.id.desc()
+                )
+                .limit(limit)
+                .all()
+            )
+
+            return [
+                {
+                    "created_at": record.created_at,
+                    "data": json.loads(record.data)
+                }
+                for record in records
+            ]
+
+
     def latest_environment(self):
 
         initialize_database(engine)

@@ -47,4 +47,5 @@ Commands that change infrastructure rather than just observe it. All are approva
 |---|---|
 | `atlas history` | Display recorded operational events. |
 | `atlas intelligence` | Display the latest stored environment context. |
-| `atlas analyze` | Analyze the latest environment snapshot with AI and print a summary plus recommendations (see [Configuration](configuration.md#intelligence)). |
+| `atlas analyze` | Analyze the latest environment snapshot with AI — using live tool calls for current state — and print a summary plus recommendations (see [Configuration](configuration.md#intelligence)). |
+| `atlas chat` | Interactive multi-turn chat with Atlas about your infrastructure. No prior `atlas discover` required — grounds itself against live state on demand. Type `exit` to quit. |

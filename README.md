@@ -31,6 +31,7 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 - ✅ Docker container restart and stop — approval-gated actions backed by a real `atlas/actions/` registry
 - ✅ Proxmox cluster discovery, change detection, and guest restart
 - ✅ AI analysis via a local Ollama model end to end; Anthropic Claude also supported (connection and error handling verified, a full response is pending your own billing setup)
+- ✅ Agent-based capabilities — both providers can call read-only tools mid-request for live state; `atlas analyze` uses this by default, and it powers the new `atlas chat` command
 - ✅ Prometheus monitoring — host and per-container (cAdvisor) metrics, configurable threshold alerting, and change detection between scans
 - ✅ Guided setup (`atlas init`) and environment/integration health checks (`atlas doctor`)
 - ✅ Event-driven architecture with persistent operational history
@@ -38,7 +39,7 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 
 ### In progress
 
-- 🚧 Agent-based capabilities
+- Nothing currently queued
 
 ---
 
@@ -69,6 +70,7 @@ Run a first discovery pass and inspect the results:
 atlas discover   # inventories the host and saves it to inventory/generated/
 atlas report     # generates a report from the latest inventory
 atlas analyze    # sends the latest snapshot to an AI provider for a summary + recommendations
+atlas chat       # ask Atlas about your infrastructure directly - no atlas discover needed first
 ```
 
 ---
@@ -116,7 +118,8 @@ Representative output, not a literal capture — field names and formatting matc
 | `atlas plugins` | Display registered Atlas plugins. |
 | `atlas history` | Display recorded operational events. |
 | `atlas intelligence` | Display the latest stored environment context. |
-| `atlas analyze` | Analyze the latest environment snapshot with AI and print a summary plus recommendations. |
+| `atlas analyze` | Analyze the latest environment snapshot with AI (using live tool calls for current state) and print a summary plus recommendations. |
+| `atlas chat` | Interactive multi-turn chat with Atlas about your infrastructure — no prior `atlas discover` required. Type `exit` to quit. |
 | `atlas runtime` | Display Atlas runtime information. |
 
 Run `atlas <command> --help` for command-specific options.
@@ -198,6 +201,12 @@ Atlas can send its latest discovered environment snapshot to a configurable AI p
 - **Ollama** — any locally-run model, for a fully self-hosted setup.
 
 See [Configuration](#configuration) below for how to select and configure a provider. Results are persisted to Atlas's knowledge store and emit an `atlas.analysis.completed` event.
+
+### Agent-Based Capabilities
+
+Both providers can call a small, deliberately read-only set of tools mid-request — current containers, self-hosted services, Proxmox status, monitoring metrics, recent events, and the last saved analysis — instead of only ever seeing one fixed snapshot. `atlas analyze` uses this by default now, so its recommendations reflect what's actually running right now, not just what was true at the last `atlas discover`. No mutating tool exists here; restart/stop stay behind their own approval-gated commands.
+
+This also unlocks `atlas chat`, a new interactive command for asking Atlas about your infrastructure conversationally. Unlike `atlas analyze`, it needs no prior `atlas discover` — it grounds itself against live state on demand. It can suggest an approval-gated action the same grounded way `atlas analyze` does, but never executes one. Like every other Atlas command, it's on-demand only: you run it, it runs, it exits — no background process, no scheduled mode.
 
 ---
 

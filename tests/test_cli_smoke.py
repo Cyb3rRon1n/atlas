@@ -15,7 +15,7 @@ def test_version():
     result = runner.invoke(app, ["version"])
 
     assert result.exit_code == 0
-    assert "0.1.0-alpha" in result.output
+    assert "0.4.0" in result.output
 
 
 def test_status():
@@ -545,6 +545,83 @@ def test_chat_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db):
     assert "1. atlas stop sonarr" in result.output
     assert "2. atlas restart radarr" in result.output
     assert "Run each step yourself, in order." in result.output
+
+
+def test_chat_saves_transcript_as_a_single_event_on_exit(isolated_cwd, temp_db):
+
+    from atlas.intelligence.providers.base import AIProvider, ChatReply
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+            raise NotImplementedError
+
+        def converse(self, messages, tools=None):
+
+            return ChatReply(text="All quiet on the media stack.")
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ), patch(
+        "atlas.docker.collect_containers",
+        return_value={"available": True, "containers": []}
+    ):
+
+        result = runner.invoke(
+            app, ["chat"], input="how's everything?\nanything else?\nexit\n"
+        )
+
+    assert result.exit_code == 0
+
+    events = KnowledgeQueries().recent_events(10)
+    transcript_events = [
+        event for event in events
+        if event.event_type == "atlas.chat.transcript_saved"
+    ]
+
+    assert len(transcript_events) == 1
+
+    payload = json.loads(transcript_events[0].payload)
+
+    assert payload["messages"] == [
+        {"role": "user", "content": "how's everything?"},
+        {"role": "assistant", "content": "All quiet on the media stack."},
+        {"role": "user", "content": "anything else?"},
+        {"role": "assistant", "content": "All quiet on the media stack."},
+    ]
+
+
+def test_chat_exiting_immediately_does_not_save_a_transcript(
+    isolated_cwd, temp_db
+):
+
+    from atlas.intelligence.providers.base import AIProvider, ChatReply
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+            raise NotImplementedError
+
+        def converse(self, messages, tools=None):
+            raise AssertionError("should never be called")
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ):
+
+        result = runner.invoke(app, ["chat"], input="exit\n")
+
+    assert result.exit_code == 0
+
+    events = KnowledgeQueries().recent_events(10)
+    transcript_events = [
+        event for event in events
+        if event.event_type == "atlas.chat.transcript_saved"
+    ]
+
+    assert transcript_events == []
 
 
 def test_proxmox_scan_when_disabled_does_not_attempt_connection(isolated_cwd):

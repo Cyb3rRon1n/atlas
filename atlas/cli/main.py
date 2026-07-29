@@ -1642,6 +1642,7 @@ def chat():
     )
 
     messages = []
+    transcript = []
 
     while True:
 
@@ -1662,6 +1663,11 @@ def chat():
             "content": user_input
         })
 
+        transcript.append({
+            "role": "user",
+            "content": user_input
+        })
+
         try:
             reply = agent.converse(messages)
 
@@ -1672,6 +1678,11 @@ def chat():
             )
 
             continue
+
+        transcript.append({
+            "role": "assistant",
+            "content": reply.text
+        })
 
         console.print(
             f"\n[bold]Atlas:[/bold] {reply.text}\n"
@@ -1712,6 +1723,18 @@ def chat():
             console.print(
                 "Run each step yourself, in order.\n"
             )
+
+    if transcript:
+
+        runtime = application.runtime
+
+        runtime.events.publish(
+            AtlasEvent(
+                event_type="atlas.chat.transcript_saved",
+                source="AtlasChat",
+                payload={"messages": transcript}
+            )
+        )
 
     console.print(
         "[green]Chat ended.[/green]"

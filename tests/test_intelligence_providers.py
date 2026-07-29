@@ -42,7 +42,32 @@ SAMPLE_RESPONSE_JSON = json.dumps({
             "severity": "warning",
             "action": {"type": "restart_container", "target": "plex"}
         }
-    ]
+    ],
+    "plan": None
+})
+
+SAMPLE_RESPONSE_WITH_PLAN_JSON = json.dumps({
+    "summary": "One host, lightly loaded.",
+    "recommendations": [],
+    "plan": {
+        "summary": "Recover the media stack",
+        "steps": [
+            {
+                "action": {
+                    "type": "stop_container", "target": "sonarr",
+                    "cpus": None, "memory": None
+                },
+                "rationale": "sonarr is holding a lock radarr needs"
+            },
+            {
+                "action": {
+                    "type": "restart_container", "target": "radarr",
+                    "cpus": None, "memory": None
+                },
+                "rationale": "will pick up cleanly once sonarr is stopped"
+            }
+        ]
+    }
 })
 
 
@@ -106,6 +131,25 @@ class TestAnthropicProvider:
             assert result.recommendations[0].action is None
             assert result.recommendations[1].action.type == "restart_container"
             assert result.recommendations[1].action.target == "plex"
+
+    def test_analyze_parses_a_suggested_plan(self):
+
+        with patch("anthropic.Anthropic") as mock_client_cls:
+
+            mock_client = MagicMock()
+            mock_client.messages.create.return_value = _fake_message(
+                SAMPLE_RESPONSE_WITH_PLAN_JSON
+            )
+            mock_client_cls.return_value = mock_client
+
+            provider = AnthropicProvider()
+            result = provider.analyze(SAMPLE_CONTEXT)
+
+            assert result.plan.summary == "Recover the media stack"
+            assert len(result.plan.steps) == 2
+            assert result.plan.steps[0].action.type == "stop_container"
+            assert result.plan.steps[0].action.target == "sonarr"
+            assert result.plan.steps[1].action.target == "radarr"
 
     def test_refusal_raises_provider_error(self):
 
@@ -293,6 +337,24 @@ class TestOllamaProvider:
 
             assert result.summary == "One host, lightly loaded."
             assert result.recommendations[1].action.target == "plex"
+
+    def test_analyze_parses_a_suggested_plan(self):
+
+        with patch("requests.post") as mock_post:
+
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "message": {"content": SAMPLE_RESPONSE_WITH_PLAN_JSON}
+            }
+            mock_post.return_value = mock_response
+
+            provider = OllamaProvider(model="llama3.1")
+            result = provider.analyze(SAMPLE_CONTEXT)
+
+            assert result.plan.summary == "Recover the media stack"
+            assert len(result.plan.steps) == 2
+            assert result.plan.steps[0].action.type == "stop_container"
+            assert result.plan.steps[1].action.target == "radarr"
 
     def test_connection_error_maps_to_provider_error(self):
 

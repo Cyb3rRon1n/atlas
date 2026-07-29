@@ -1,4 +1,4 @@
-from atlas.actions import ACTIONS
+from atlas.actions import is_action_grounded
 from atlas.config.models import AtlasConfig
 from atlas.intelligence.providers import AIProvider, ChatReply
 from atlas.intelligence.tools import build_tools, execute_tool
@@ -22,14 +22,31 @@ class AtlasAgent:
 
         reply = self.provider.converse(messages, self.tools)
 
-        action = reply.action
-
-        if not action:
+        if not reply.action and not reply.plan:
             return reply
 
-        definition = ACTIONS.get(action.type)
+        environment = self._live_environment()
 
-        if not definition or action.target not in definition.known_targets(self._live_environment()):
+        if reply.action and not is_action_grounded(reply.action, environment):
+            reply.action = None
+
+        if reply.plan and not all(
+            is_action_grounded(step.action, environment)
+            for step in reply.plan.steps
+        ):
+
+            # Same "drop the whole plan on one bad step" rule
+            # AtlasAnalyzer applies - see its analyze() for why.
+            reply.plan = None
+
+        if reply.plan and reply.action:
+
+            # Seen in real testing: the model can propose a plan and
+            # still fill in the standalone action (usually a copy of
+            # the plan's own first step), which would print as a
+            # redundant "suggested action" alongside the plan. The
+            # prompt asks the model not to do this, but that's not
+            # enforced - same reasoning as grounding above.
             reply.action = None
 
         return reply

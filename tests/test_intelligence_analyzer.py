@@ -2,8 +2,10 @@ from atlas.intelligence.analyzer import AtlasAnalyzer
 from atlas.intelligence.providers.base import (
     AIProvider,
     AnalysisResult,
+    PlanStep,
     Recommendation,
     SuggestedAction,
+    SuggestedPlan,
 )
 
 
@@ -201,6 +203,96 @@ def test_analyzer_drops_action_with_unrecognized_type():
     analyzed = analyzer.analyze(environment)
 
     assert analyzed.recommendations[0].action is None
+
+
+def test_analyzer_keeps_plan_when_every_step_is_grounded():
+
+    result = AnalysisResult(
+        summary="...",
+        plan=SuggestedPlan(
+            summary="Recover the media stack",
+            steps=[
+                PlanStep(
+                    action=SuggestedAction(type="stop_container", target="sonarr"),
+                    rationale="sonarr is holding a lock radarr needs"
+                ),
+                PlanStep(
+                    action=SuggestedAction(type="restart_container", target="radarr"),
+                    rationale="will pick up cleanly once sonarr is stopped"
+                ),
+            ]
+        )
+    )
+
+    analyzer = AtlasAnalyzer(FakeProvider(result))
+
+    environment = {
+        "containers": {
+            "Docker": {
+                "available": True,
+                "containers": [
+                    {"name": "sonarr", "status": "running"},
+                    {"name": "radarr", "status": "running"},
+                ]
+            }
+        }
+    }
+
+    analyzed = analyzer.analyze(environment)
+
+    assert analyzed.plan is not None
+    assert len(analyzed.plan.steps) == 2
+
+
+def test_analyzer_drops_entire_plan_when_one_step_is_ungrounded():
+    """
+    A plan is a coherent whole, unlike independent recommendations -
+    one hallucinated step target invalidates the whole sequence
+    rather than leaving a partially-runnable plan behind.
+    """
+
+    result = AnalysisResult(
+        summary="...",
+        plan=SuggestedPlan(
+            summary="Recover the media stack",
+            steps=[
+                PlanStep(
+                    action=SuggestedAction(type="stop_container", target="sonarr"),
+                    rationale="sonarr is holding a lock radarr needs"
+                ),
+                PlanStep(
+                    action=SuggestedAction(type="restart_container", target="ghost"),
+                    rationale="will pick up cleanly once sonarr is stopped"
+                ),
+            ]
+        )
+    )
+
+    analyzer = AtlasAnalyzer(FakeProvider(result))
+
+    environment = {
+        "containers": {
+            "Docker": {
+                "available": True,
+                "containers": [{"name": "sonarr", "status": "running"}]
+            }
+        }
+    }
+
+    analyzed = analyzer.analyze(environment)
+
+    assert analyzed.plan is None
+
+
+def test_analyzer_leaves_plan_as_none_when_no_plan_was_suggested():
+
+    result = AnalysisResult(summary="Nothing to report.")
+
+    analyzer = AtlasAnalyzer(FakeProvider(result))
+
+    analyzed = analyzer.analyze({"system": {}})
+
+    assert analyzed.plan is None
 
 
 def test_analyzer_keeps_action_when_stop_target_is_a_known_container():

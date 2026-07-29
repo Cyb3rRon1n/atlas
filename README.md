@@ -33,6 +33,7 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 - ✅ Proxmox cluster discovery, change detection, and guest restart
 - ✅ AI analysis via a local Ollama model end to end; Anthropic Claude also supported (connection and error handling verified, a full response is pending your own billing setup)
 - ✅ Agent-based capabilities — both providers can call read-only tools mid-request for live state; `atlas analyze` uses this by default, and it powers the new `atlas chat` command
+- ✅ Multi-step action plans — an ordered sequence of approval-gated actions for genuinely dependent steps (e.g. stop one container, then restart another), printed for you to run yourself, one step at a time
 - ✅ Prometheus monitoring — host and per-container (cAdvisor) metrics, configurable threshold alerting, and change detection between scans
 - ✅ Guided setup (`atlas init`) and environment/integration health checks (`atlas doctor`)
 - ✅ Event-driven architecture with persistent operational history
@@ -209,6 +210,8 @@ See [Configuration](#configuration) below for how to select and configure a prov
 Both providers can call a small, deliberately read-only set of tools mid-request — current containers, self-hosted services, Proxmox status, monitoring metrics, recent events, and the last saved analysis — instead of only ever seeing one fixed snapshot. `atlas analyze` uses this by default now, so its recommendations reflect what's actually running right now, not just what was true at the last `atlas discover`. No mutating tool exists here; restart/stop/resize stay behind their own approval-gated commands. A suggested action can now include a proposed CPU/memory resize (`atlas resize <name> --cpus/--memory`) alongside restart/stop/restart-guest, grounded the same way — the AI only proposes a target it actually observed.
 
 This also unlocks `atlas chat`, a new interactive command for asking Atlas about your infrastructure conversationally. Unlike `atlas analyze`, it needs no prior `atlas discover` — it grounds itself against live state on demand. It can suggest an approval-gated action the same grounded way `atlas analyze` does, but never executes one. Like every other Atlas command, it's on-demand only: you run it, it runs, it exits — no background process, no scheduled mode.
+
+Both `atlas analyze` and `atlas chat` can also suggest a **plan** — an ordered sequence of steps for a situation where later steps genuinely depend on earlier ones (e.g. stop the container holding a lock, then restart the one that was failing because of it), printed as a numbered list with each step's command and rationale. A plan is still suggest-only, exactly like a single action: nothing executes it, and you run each step yourself, in order, through its own approval gate. One hallucinated step drops the whole plan rather than leaving a partially-trustworthy sequence behind.
 
 ---
 

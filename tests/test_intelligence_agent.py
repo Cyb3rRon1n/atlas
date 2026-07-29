@@ -2,7 +2,13 @@ from unittest.mock import patch
 
 from atlas.config.models import AtlasConfig
 from atlas.intelligence.agent import AtlasAgent
-from atlas.intelligence.providers.base import AIProvider, ChatReply, SuggestedAction
+from atlas.intelligence.providers.base import (
+    AIProvider,
+    ChatReply,
+    PlanStep,
+    SuggestedAction,
+    SuggestedPlan,
+)
 
 
 class FakeProvider(AIProvider):
@@ -78,6 +84,113 @@ def test_converse_passes_no_action_through_unchanged():
 
     assert result.action is None
     assert result.text == "Nothing stands out right now."
+
+
+def test_converse_keeps_plan_when_every_step_is_grounded():
+
+    reply = ChatReply(
+        text="Here's how to recover the media stack.",
+        plan=SuggestedPlan(
+            summary="Recover the media stack",
+            steps=[
+                PlanStep(
+                    action=SuggestedAction(type="stop_container", target="sonarr"),
+                    rationale="sonarr is holding a lock radarr needs"
+                ),
+                PlanStep(
+                    action=SuggestedAction(type="restart_container", target="radarr"),
+                    rationale="will pick up cleanly once sonarr is stopped"
+                ),
+            ]
+        )
+    )
+
+    agent = AtlasAgent(FakeProvider(reply), AtlasConfig())
+
+    with patch(
+        "atlas.docker.collect_containers",
+        return_value={
+            "available": True,
+            "containers": [{"name": "sonarr"}, {"name": "radarr"}]
+        }
+    ):
+
+        result = agent.converse([{"role": "user", "content": "help me recover"}])
+
+    assert result.plan is not None
+    assert len(result.plan.steps) == 2
+
+
+def test_converse_clears_standalone_action_when_a_plan_is_also_present():
+    """
+    Seen against a real Ollama model: it filled in both a plan and a
+    standalone action (a copy of the plan's first step), which would
+    print as a redundant suggestion alongside the plan.
+    """
+
+    reply = ChatReply(
+        text="Here's how to recover the media stack.",
+        action=SuggestedAction(type="stop_container", target="sonarr"),
+        plan=SuggestedPlan(
+            summary="Recover the media stack",
+            steps=[
+                PlanStep(
+                    action=SuggestedAction(type="stop_container", target="sonarr"),
+                    rationale="sonarr is holding a lock radarr needs"
+                ),
+                PlanStep(
+                    action=SuggestedAction(type="restart_container", target="radarr"),
+                    rationale="will pick up cleanly once sonarr is stopped"
+                ),
+            ]
+        )
+    )
+
+    agent = AtlasAgent(FakeProvider(reply), AtlasConfig())
+
+    with patch(
+        "atlas.docker.collect_containers",
+        return_value={
+            "available": True,
+            "containers": [{"name": "sonarr"}, {"name": "radarr"}]
+        }
+    ):
+
+        result = agent.converse([{"role": "user", "content": "help me recover"}])
+
+    assert result.plan is not None
+    assert result.action is None
+
+
+def test_converse_drops_entire_plan_when_one_step_is_ungrounded():
+
+    reply = ChatReply(
+        text="Here's how to recover the media stack.",
+        plan=SuggestedPlan(
+            summary="Recover the media stack",
+            steps=[
+                PlanStep(
+                    action=SuggestedAction(type="stop_container", target="sonarr"),
+                    rationale="sonarr is holding a lock radarr needs"
+                ),
+                PlanStep(
+                    action=SuggestedAction(type="restart_container", target="ghost"),
+                    rationale="will pick up cleanly once sonarr is stopped"
+                ),
+            ]
+        )
+    )
+
+    agent = AtlasAgent(FakeProvider(reply), AtlasConfig())
+
+    with patch(
+        "atlas.docker.collect_containers",
+        return_value={"available": True, "containers": [{"name": "sonarr"}]}
+    ):
+
+        result = agent.converse([{"role": "user", "content": "help me recover"}])
+
+    assert result.plan is None
 
 
 def test_agent_builds_tools_from_config_once():

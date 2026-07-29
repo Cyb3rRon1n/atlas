@@ -27,12 +27,27 @@ class Recommendation:
 
 
 @dataclass
+class PlanStep:
+
+    action: SuggestedAction
+    rationale: str
+
+
+@dataclass
+class SuggestedPlan:
+
+    summary: str
+    steps: list[PlanStep]
+
+
+@dataclass
 class AnalysisResult:
 
     summary: str
     recommendations: list[Recommendation] = field(
         default_factory=list
     )
+    plan: SuggestedPlan | None = None
 
 
 @dataclass
@@ -40,6 +55,7 @@ class ChatReply:
 
     text: str
     action: SuggestedAction | None = None
+    plan: SuggestedPlan | None = None
 
 
 def recommendation_from_dict(item: dict) -> Recommendation:
@@ -69,35 +85,96 @@ def chat_reply_from_dict(item: dict) -> ChatReply:
 
     return ChatReply(
         text=item["text"],
-        action=SuggestedAction(**action_data) if action_data else None
+        action=SuggestedAction(**action_data) if action_data else None,
+        plan=plan_from_dict(item.get("plan"))
     )
 
 
+def plan_from_dict(data: dict | None) -> SuggestedPlan | None:
+    """
+    Shared by every provider so the plan dict -> SuggestedPlan
+    conversion lives in one place, same role recommendation_from_dict()/
+    chat_reply_from_dict() play for the single-action shape.
+    """
+
+    if not data:
+        return None
+
+    return SuggestedPlan(
+        summary=data["summary"],
+        steps=[
+            PlanStep(
+                action=SuggestedAction(**step["action"]),
+                rationale=step["rationale"]
+            )
+            for step in data["steps"]
+        ]
+    )
+
+
+# The action-object shape itself, factored out so both the single
+# optional `action` field (ACTION_SCHEMA, nullable) and each plan
+# step's action (PLAN_SCHEMA, not nullable - a step without an action
+# doesn't mean anything) reference the same definition rather than
+# duplicating it a third time. cpus/memory are required-but-nullable,
+# same "structured output requires every key in `required` even when
+# the value itself is nullable" reasoning that already applies to
+# `action` on the parent object - they're only meaningful for
+# resize_container, always null on every other action type.
+ACTION_OBJECT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "type": {
+            "type": "string",
+            "enum": list(ACTIONS.keys())
+        },
+        "target": {"type": "string"},
+        "cpus": {
+            "anyOf": [{"type": "string"}, {"type": "null"}]
+        },
+        "memory": {
+            "anyOf": [{"type": "string"}, {"type": "null"}]
+        }
+    },
+    "required": ["type", "target", "cpus", "memory"],
+    "additionalProperties": False
+}
+
+
 # Shared by ANALYSIS_SCHEMA and CHAT_SCHEMA so a field added to what an
-# action can carry (e.g. cpus/memory for resize_container) only needs
-# to change in one place. cpus/memory are required-but-nullable, same
-# "structured output requires every key in `required` even when the
-# value itself is nullable" reasoning that already applies to `action`
-# on the parent object - they're only meaningful for resize_container,
-# always null on every other action type.
+# action can carry only needs to change in one place.
 ACTION_SCHEMA = {
+    "anyOf": [
+        ACTION_OBJECT_SCHEMA,
+        {"type": "null"}
+    ]
+}
+
+
+# Shared by ANALYSIS_SCHEMA and CHAT_SCHEMA, same reuse rationale as
+# ACTION_SCHEMA. A plan is reserved for a genuine ordered, multi-target
+# sequence - most responses leave it null and use the single `action`
+# field on a Recommendation/ChatReply instead. See PLAN_INSTRUCTIONS.
+PLAN_SCHEMA = {
     "anyOf": [
         {
             "type": "object",
             "properties": {
-                "type": {
-                    "type": "string",
-                    "enum": list(ACTIONS.keys())
-                },
-                "target": {"type": "string"},
-                "cpus": {
-                    "anyOf": [{"type": "string"}, {"type": "null"}]
-                },
-                "memory": {
-                    "anyOf": [{"type": "string"}, {"type": "null"}]
+                "summary": {"type": "string"},
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "action": ACTION_OBJECT_SCHEMA,
+                            "rationale": {"type": "string"}
+                        },
+                        "required": ["action", "rationale"],
+                        "additionalProperties": False
+                    }
                 }
             },
-            "required": ["type", "target", "cpus", "memory"],
+            "required": ["summary", "steps"],
             "additionalProperties": False
         },
         {"type": "null"}
@@ -127,9 +204,10 @@ ANALYSIS_SCHEMA = {
                 "required": ["title", "detail", "severity", "action"],
                 "additionalProperties": False
             }
-        }
+        },
+        "plan": PLAN_SCHEMA
     },
-    "required": ["summary", "recommendations"],
+    "required": ["summary", "recommendations", "plan"],
     "additionalProperties": False
 }
 
@@ -140,9 +218,10 @@ CHAT_SCHEMA = {
         "text": {
             "type": "string"
         },
-        "action": ACTION_SCHEMA
+        "action": ACTION_SCHEMA,
+        "plan": PLAN_SCHEMA
     },
-    "required": ["text", "action"],
+    "required": ["text", "action", "plan"],
     "additionalProperties": False
 }
 
@@ -182,6 +261,23 @@ ACTION_INSTRUCTIONS = (
 )
 
 
+PLAN_INSTRUCTIONS = (
+    "You may also propose a \"plan\": an ordered sequence of steps toward "
+    "one goal, each step an action plus a short rationale. Use a plan ONLY "
+    "when the situation genuinely needs multiple actions in a specific "
+    "order because later steps depend on earlier ones (e.g. a container "
+    "needs to be stopped before restarting a different one that was "
+    "failing because of it). Do NOT use a plan for several independent, "
+    "unrelated issues - each of those should be its own separate "
+    "recommendation with its own single action instead. Every step's "
+    "action must follow the exact same rules as a single action above "
+    "(grounded target, correct fields for that action type). When you "
+    "propose a plan, leave the standalone \"action\" field null - a plan "
+    "step's action must not also be repeated as the standalone action. "
+    "Most responses should leave \"plan\" as null."
+)
+
+
 SYSTEM_PROMPT = (
     "You are Atlas, an infrastructure advisor for a self-hosted homelab. "
     "You are given a JSON snapshot of the environment's discovered state "
@@ -193,7 +289,7 @@ SYSTEM_PROMPT = (
     "in specifics from the data (exact device names, container names, "
     "utilization figures). Do not give generic advice that isn't backed by "
     "the data. If nothing significant stands out, say so and return an "
-    "empty recommendations list.\n\n" + ACTION_INSTRUCTIONS
+    "empty recommendations list.\n\n" + ACTION_INSTRUCTIONS + "\n\n" + PLAN_INSTRUCTIONS
 )
 
 
@@ -205,7 +301,7 @@ CHAT_SYSTEM_PROMPT = (
     "information to answer accurately rather than guessing. Answer "
     "naturally and concisely. Only include a structured action suggestion "
     "when it is genuinely warranted by what you actually observed via a "
-    "tool call - most replies should leave it null.\n\n" + ACTION_INSTRUCTIONS
+    "tool call - most replies should leave it null.\n\n" + ACTION_INSTRUCTIONS + "\n\n" + PLAN_INSTRUCTIONS
 )
 
 

@@ -23,6 +23,11 @@ from atlas.proxmox import (
 from atlas.plugins import PluginManager
 from atlas.monitoring import collect_container_metrics, collect_metrics, evaluate_thresholds
 from atlas.monitoring.changes import diff_monitoring, format_change as format_monitoring_change
+from atlas.monitoring.trends import (
+    container_metric_trend,
+    host_metric_trend,
+    known_container_names,
+)
 from rich.console import Console
 from atlas.events import AtlasEvent
 from atlas.knowledge.queries import KnowledgeQueries
@@ -520,6 +525,77 @@ def monitor():
     console.print(
         "\n[green]✓ Monitoring scan complete[/green]"
     )
+
+
+@app.command()
+def trends(limit: int = 20):
+    """
+    Show resource-usage trends from saved atlas monitor snapshots.
+    """
+
+    console.print(
+        "[bold blue]Atlas Trends[/bold blue]\n"
+    )
+
+    records = KnowledgeQueries().environment_history(limit)
+
+    if not any(record["data"].get("monitoring") for record in records):
+
+        console.print(
+            "[yellow]No monitoring history found.[/yellow]"
+        )
+
+        console.print(
+            "Run: atlas monitor (a few times, to build history)"
+        )
+
+        return
+
+    console.print(
+        "[bold]Host:[/bold]"
+    )
+
+    for metric_name in ("cpu_percent", "memory_percent", "disk_percent"):
+
+        points = host_metric_trend(records, metric_name)
+
+        if not points:
+            continue
+
+        values = [value for _, value in points]
+
+        console.print(
+            f"  {metric_name}: latest {values[-1]:.1f}%, "
+            f"min {min(values):.1f}%, max {max(values):.1f}%, "
+            f"avg {sum(values) / len(values):.1f}% ({len(values)} samples)"
+        )
+
+    for container_name in known_container_names(records):
+
+        console.print(
+            f"\n[bold]{container_name}:[/bold]"
+        )
+
+        for metric_name in (
+            "cpu_percent", "memory_percent",
+            "cpu_percent_of_limit", "memory_percent_of_limit"
+        ):
+
+            points = container_metric_trend(
+                records, container_name, metric_name
+            )
+
+            if not points:
+                continue
+
+            values = [value for _, value in points]
+
+            console.print(
+                f"  {metric_name}: latest {values[-1]:.1f}%, "
+                f"min {min(values):.1f}%, max {max(values):.1f}%, "
+                f"avg {sum(values) / len(values):.1f}% ({len(values)} samples)"
+            )
+
 
 @app.command()
 def version():

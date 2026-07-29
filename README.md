@@ -37,6 +37,7 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 - ✅ Persisted `atlas chat` transcripts — a session's conversation saves as one event on exit, visible via `atlas history`
 - ✅ `get_container_logs` tool — lets both AI providers pull recent log lines for a specific container instead of reasoning from status alone
 - ✅ Prometheus monitoring — host and per-container (cAdvisor) metrics, configurable threshold alerting, and change detection between scans
+- ✅ Resource-usage trending (`atlas trends`) — latest/min/max/avg over time for host and per-container metrics, built from the history `atlas monitor` already saves
 - ✅ Guided setup (`atlas init`) and environment/integration health checks (`atlas doctor`)
 - ✅ Event-driven architecture with persistent operational history
 - ✅ Plugin architecture
@@ -165,6 +166,7 @@ Representative output, not a literal capture — field names and formatting matc
 | `atlas proxmox scan` | Scan Proxmox infrastructure and report changes since the last scan (requires `proxmox.enabled: true`). |
 | `atlas proxmox restart <vmid>` | Restart a Proxmox VM or LXC guest. Prompts for confirmation before acting. |
 | `atlas monitor` | Query Prometheus for host metrics and flag any at or above their configured threshold (requires `monitoring.enabled: true`). |
+| `atlas trends` | Show host and per-container resource-usage trends from saved `atlas monitor` snapshots. |
 | `atlas plugins` | Display registered Atlas plugins. |
 | `atlas history` | Display recorded operational events. |
 | `atlas intelligence` | Display the latest stored environment context. |
@@ -211,11 +213,13 @@ Atlas can parse a Docker Compose file (`atlas compose`) to surface its services,
 
 ### Proxmox Integration
 
-Atlas can connect to a Proxmox cluster and inventory it (`atlas proxmox scan`): node status, and every VM and container across the cluster (name, node, status, CPU/memory usage). Authentication supports either an API token (`token_name`/`token_value`, recommended — see [Configuration](#configuration)) or a password. Results feed into the same environment context as `atlas discover`, so `atlas analyze` can reason about your virtualization layer too. Each scan also reports what changed since the last one — nodes or guests added, removed, or with a different status. Atlas can also act here, not just observe: `atlas proxmox restart <vmid>` restarts a VM or LXC guest after showing you its current state and asking for confirmation, the same approval-gated shape as `atlas restart` for Docker — see [Architecture](https://cyb3rron1n.github.io/atlas/architecture/#approval-gated-actions). This needs write/power-management permission on the token beyond the read-only scope `scan` uses. Planned expansion includes resource-usage trending over time.
+Atlas can connect to a Proxmox cluster and inventory it (`atlas proxmox scan`): node status, and every VM and container across the cluster (name, node, status, CPU/memory usage). Authentication supports either an API token (`token_name`/`token_value`, recommended — see [Configuration](#configuration)) or a password. Results feed into the same environment context as `atlas discover`, so `atlas analyze` can reason about your virtualization layer too. Each scan also reports what changed since the last one — nodes or guests added, removed, or with a different status. Atlas can also act here, not just observe: `atlas proxmox restart <vmid>` restarts a VM or LXC guest after showing you its current state and asking for confirmation, the same approval-gated shape as `atlas restart` for Docker — see [Architecture](https://cyb3rron1n.github.io/atlas/architecture/#approval-gated-actions). This needs write/power-management permission on the token beyond the read-only scope `scan` uses.
 
 ### Monitoring
 
 Atlas can query an existing [Prometheus](https://prometheus.io/) server for host metrics (`atlas monitor`) — CPU, memory, and disk usage, via the standard [`node_exporter`](https://github.com/prometheus/node_exporter) metrics, plus per-container CPU and memory if [cAdvisor](https://github.com/google/cadvisor) is scraped by the same Prometheus. Like the rest of Atlas's integrations, it's Atlas reaching out on command, not a `/metrics` endpoint you'd point Prometheus at. If Prometheus is reachable but a given exporter isn't set up yet, the affected metric reports as unavailable rather than failing the whole scan. Each metric — host or per-container — is checked against a configurable threshold (90% by default) and flagged if it's at or above it. Each scan also reports what changed since the last one: any metric that crossed or recovered from its threshold, the same change-detection pattern Proxmox scanning uses. Per-container metrics also include what a container is using *relative to its own configured CPU/memory limit* (not just relative to the host) — the difference between "busy" and "starved by its own allocation." Disabled by default — see [Configuration](#configuration).
+
+`atlas trends` shows how those metrics have moved over time — a latest/min/max/avg summary per host and per-container metric, built entirely from the history of snapshots `atlas monitor` has already been saving (no new collection, no new storage). Run `atlas monitor` a few times to build up history, then `atlas trends` to see it.
 
 ### Plugin Architecture
 

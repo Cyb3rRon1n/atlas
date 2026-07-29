@@ -57,6 +57,47 @@ def test_save_and_query_environment(temp_db):
     assert latest["system"] == {"hostname": "sentinel"}
 
 
+def test_environment_history_empty_when_nothing_stored(temp_db):
+
+    assert KnowledgeQueries().environment_history() == []
+
+
+def test_environment_history_returns_rows_most_recent_first(temp_db):
+
+    store = KnowledgeStore()
+
+    first = AtlasEnvironmentContext()
+    first.ingest_discovery({"system": {"hostname": "first"}})
+    store.save_environment(first)
+
+    second = AtlasEnvironmentContext()
+    second.ingest_discovery({"system": {"hostname": "second"}})
+    store.save_environment(second)
+
+    history = KnowledgeQueries().environment_history()
+
+    assert len(history) == 2
+    assert history[0]["data"]["system"] == {"hostname": "second"}
+    assert history[1]["data"]["system"] == {"hostname": "first"}
+
+
+def test_environment_history_respects_limit(temp_db):
+
+    store = KnowledgeStore()
+
+    for index in range(5):
+
+        environment = AtlasEnvironmentContext()
+        environment.ingest_discovery({"system": {"hostname": str(index)}})
+        store.save_environment(environment)
+
+    history = KnowledgeQueries().environment_history(limit=2)
+
+    assert len(history) == 2
+    assert history[0]["data"]["system"] == {"hostname": "4"}
+    assert history[1]["data"]["system"] == {"hostname": "3"}
+
+
 def test_latest_analysis_none_when_nothing_stored(temp_db):
 
     assert KnowledgeQueries().latest_analysis() is None

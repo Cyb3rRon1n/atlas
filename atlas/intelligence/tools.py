@@ -11,7 +11,7 @@ class ToolDefinition:
     name: str
     description: str
     input_schema: dict
-    handler: Callable[[], dict]
+    handler: Callable[[dict], dict]
 
 
 EMPTY_SCHEMA = {
@@ -21,14 +21,14 @@ EMPTY_SCHEMA = {
 }
 
 
-def _get_containers():
+def _get_containers(arguments):
 
     from atlas.docker import collect_containers
 
     return collect_containers()
 
 
-def _get_services():
+def _get_services(arguments):
 
     from atlas.docker import collect_containers
     from atlas.services import detect_services
@@ -40,7 +40,7 @@ def _get_services():
     }
 
 
-def _get_recent_events():
+def _get_recent_events(arguments):
 
     events = KnowledgeQueries().recent_events()
 
@@ -56,16 +56,25 @@ def _get_recent_events():
     }
 
 
-def _get_last_analysis():
+def _get_last_analysis(arguments):
 
     return {
         "analysis": KnowledgeQueries().latest_analysis()
     }
 
 
+def _get_container_logs(arguments):
+
+    from atlas.docker import get_container_logs
+
+    tail = min(int(arguments.get("tail") or 100), 500)
+
+    return get_container_logs(arguments["container"], tail=tail)
+
+
 def _proxmox_handler(config: AtlasConfig):
 
-    def handler():
+    def handler(arguments):
 
         from atlas.proxmox import connect, discover_nodes, discover_resources
 
@@ -94,7 +103,7 @@ def _proxmox_handler(config: AtlasConfig):
 
 def _monitoring_handler(config: AtlasConfig):
 
-    def handler():
+    def handler(arguments):
 
         from atlas.monitoring import collect_container_metrics, collect_metrics
 
@@ -163,6 +172,36 @@ def build_tools(config: AtlasConfig) -> dict[str, ToolDefinition]:
             input_schema=EMPTY_SCHEMA,
             handler=_get_last_analysis
         ),
+        "get_container_logs": ToolDefinition(
+            name="get_container_logs",
+            description=(
+                "Get recent log lines for a specific Docker container. "
+                "Use when reasoning from status alone isn't enough to "
+                "explain what's actually happening."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "container": {
+                        "type": "string",
+                        "description": (
+                            "Container name, as it appears in "
+                            "get_containers."
+                        )
+                    },
+                    "tail": {
+                        "type": "integer",
+                        "description": (
+                            "Number of recent lines to fetch "
+                            "(default 100, capped at 500)."
+                        )
+                    }
+                },
+                "required": ["container"],
+                "additionalProperties": False
+            },
+            handler=_get_container_logs
+        ),
     }
 
     if config.proxmox.enabled:
@@ -210,7 +249,7 @@ def execute_tool(tools: dict[str, ToolDefinition] | None, name: str, arguments: 
         return {"error": f"Unknown tool: {name}"}
 
     try:
-        return definition.handler()
+        return definition.handler(arguments)
 
     except Exception as error:
 

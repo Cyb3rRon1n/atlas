@@ -23,7 +23,7 @@ FAKE_TOOLS = {
         name="get_containers",
         description="Get the current live list of Docker containers.",
         input_schema={"type": "object", "properties": {}},
-        handler=lambda: {"containers": [{"name": "plex", "status": "running"}]}
+        handler=lambda arguments: {"containers": [{"name": "plex", "status": "running"}]}
     )
 }
 

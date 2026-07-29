@@ -12,9 +12,9 @@
 
 **Know what's running on your infrastructure, why, and what changed — before you have to go find out the hard way.**
 
-Atlas is a CLI that discovers, remembers, and explains self-hosted infrastructure: Proxmox clusters, Docker containers, and the services running on them. Ask what changed since your last check-in, or get an AI-generated summary via Claude or a fully local Ollama model — either way, nothing it tells you is guessed. Every AI-suggested action is checked against what Atlas actually observed first.
+Atlas is a CLI built for people running real infrastructure at home — Proxmox clusters, Docker containers, and the self-hosted services on top of them — who are tired of learning something broke by noticing it's down. Run it locally, alongside whatever you're managing, whenever you want a read on things: it discovers what's actually there, remembers what changed since last time, and can explain either in plain language, via Claude or a fully local Ollama model. Nothing it tells you is guessed — every AI-suggested action is checked against what Atlas actually observed first.
 
-When it comes to acting — restarting a container, restarting a Proxmox guest — Atlas always asks first. No autonomous mode, no bypass flag.
+When it comes to acting — restarting a container, resizing its limits, restarting a Proxmox guest — Atlas always asks first. No daemon, no autonomous mode, no bypass flag.
 
 Everything above is real and working today. See [Project Status](#project-status) for what's shipped and verified against real infrastructure, not mocks.
 
@@ -48,16 +48,11 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 
 ---
 
-## Requirements
+## Requirements & Platform Support
 
 Atlas itself needs very little. Everything past the base install is an optional integration, independently gated by config, and `atlas doctor` will tell you exactly what's configured versus missing.
 
-**To run Atlas at all:**
-
-- Linux (see [Platform & Integration Support](#platform--integration-support) below)
-- Python 3.11+ and pip
-
-That's enough for `atlas discover`, `atlas report`, `atlas docker`, `atlas services`, `atlas compose`, and `atlas doctor` — no config file, no external services.
+**To run Atlas at all:** Linux, Python 3.11+, and pip. That's enough for `atlas discover`, `atlas report`, `atlas docker`, `atlas services`, `atlas compose`, and `atlas doctor` — no config file, no external services.
 
 **Optional — only needed for the specific integration it backs:**
 
@@ -70,26 +65,21 @@ That's enough for `atlas discover`, `atlas report`, `atlas docker`, `atlas servi
 
 None of the above is required to get started — see [Quick Start](#quick-start).
 
----
-
-## Platform & Integration Support
-
-"Verified" means run against real infrastructure, not just unit-tested against mocks — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/) for exactly what each verification covered.
+**Platform support** — "verified" means run against real infrastructure, not just unit-tested against mocks (see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/) for what each verification covered):
 
 | Platform | Status |
 |---|---|
 | Ubuntu | ✅ verified — CI runs on `ubuntu-latest`, and it's the platform this project actually develops and tests against |
-| Other Linux distros (Debian, Fedora, Arch, ...) | best-effort — no distro-specific code (discovery is pure `psutil`/`platform`/`socket`, no `apt`/`dpkg`/`systemctl` calls), but not run against real hardware |
+| Other Linux distros (Debian, Fedora, Arch, ...) | best-effort — no distro-specific code, but not run against real hardware |
 | macOS / Windows | out of scope — `pyproject.toml` classifies POSIX/Linux only |
 
 | Integration | Status |
 |---|---|
-| Docker | ✅ verified — restart/stop/resize run against real containers, including a real docker-py/Engine API gotcha found and fixed along the way (`NanoCpus` vs. `CpuPeriod`/`CpuQuota`) |
-| Proxmox VE | ✅ verified — scan and restart run against a real Proxmox VE host, including two real auth/certificate gotchas documented in [Deployment](https://cyb3rron1n.github.io/atlas/deployment/) |
-| Ollama | ✅ verified — a real local `llama3.1`, including tool-use, `atlas chat`, and multi-step action plans |
-| Anthropic | ◐ partially verified — authentication and error handling confirmed against the real API; a full successful response is pending the maintainer's own billing setup |
-| Prometheus + node_exporter | ✅ verified — real Prometheus + `node_exporter`, all default host metric queries |
-| Prometheus + cAdvisor | ✅ verified — real cAdvisor, per-container metrics and allocation-relative thresholds |
+| Docker | ✅ verified against real containers |
+| Proxmox VE | ✅ verified against a real Proxmox VE host |
+| Ollama | ✅ verified against a real local `llama3.1` |
+| Anthropic | ◐ partially verified — auth and error handling confirmed; a full response is pending the maintainer's own billing setup |
+| Prometheus + node_exporter + cAdvisor | ✅ verified against real infrastructure |
 
 ---
 
@@ -180,103 +170,33 @@ Run `atlas <command> --help` for command-specific options.
 
 ## Features
 
-### Guided Setup
+**Guided Setup** — `atlas init` walks you through only what actually varies per deployment (name, Proxmox, AI provider, Prometheus), shows a full review screen before writing anything, and logs the session (secrets redacted) to `logs/`. `ANTHROPIC_API_KEY` is never prompted for or written to disk.
 
-Getting `atlas.yaml` in place doesn't require hand-editing YAML: `atlas init` walks you through the fields that actually vary per deployment — instance name, Proxmox connection, AI provider, Prometheus — and leaves everything else at sensible defaults. `ANTHROPIC_API_KEY` is never prompted for or written to disk. A final review screen shows exactly what was captured before anything is saved (a real safety net if terminal input ever looks garbled while typing), and every run is logged to `logs/` — with secrets redacted — for troubleshooting and record-keeping.
+**Health Checks** — `atlas doctor` checks your environment (Python, memory, storage, Docker) and whether each optional integration is actually configured. Fast presence checks, not live connection attempts, so it never hangs.
 
-### Health Checks
+**Infrastructure Discovery** — `atlas discover` inventories the host — OS, hardware, storage, network — and saves it for reporting, analysis, and change detection.
 
-`atlas doctor` answers "is this actually ready to use" at a glance: standard environment checks (Python, memory, storage, Docker, inventory) plus readiness checks for every optional integration — is Proxmox configured with credentials, is `ANTHROPIC_API_KEY` set, is a Prometheus URL present. These are presence checks, not live connection attempts, so `doctor` stays fast and never hangs waiting on a network call. A disabled integration reports healthy; only "enabled but missing what it needs" gets flagged.
+**Docker Integration** — `atlas docker` inspects containers; `atlas services` recognizes known self-hosted services running in them (Plex, Sonarr, and more — see the [Service Catalog](https://cyb3rron1n.github.io/atlas/service-catalog/)). Atlas can also act: `atlas restart`/`stop`/`resize <name>`, always after showing current state and asking for confirmation.
 
-### Infrastructure Discovery
+**Docker Compose Analysis** — `atlas compose` parses a Compose file to surface its services, images, ports, and volumes.
 
-Atlas inspects the host system and generates a structured infrastructure inventory covering host information, OS details, CPU and memory, storage devices and filesystem usage, and network information. Discovered data is saved to `inventory/generated/system-inventory.yaml` (`atlas discover`) and feeds reporting, analysis, change detection, and future automation.
+**Proxmox Integration** — `atlas proxmox scan` inventories a cluster (nodes, VMs, containers) and reports what changed since the last scan. `atlas proxmox restart <vmid>` restarts a guest, the same approval-gated shape as Docker. Token-based auth is recommended — see [Configuration](#configuration).
 
-### Docker Integration
+**Monitoring** — `atlas monitor` queries an existing Prometheus for host and per-container metrics (via `node_exporter`/cAdvisor), flags anything over a configurable threshold, and reports what changed since the last scan. `atlas trends` shows how those metrics moved over time, built entirely from history `atlas monitor` already saves — no new collection, no new storage. Disabled by default.
 
-Atlas inspects Docker environments — containers, images, status, and IDs (`atlas docker`) — and can identify known self-hosted services running inside them (`atlas services`), for example:
+**Plugin Architecture** — new discovery/integration capabilities register through a plugin system (`atlas plugins`) without touching the core.
 
-```
-Atlas Services
+**Operational Memory** — every meaningful action publishes an event onto an internal bus and is persisted automatically — `atlas history` shows the full record: discoveries, scans, restarts, chat sessions, and more.
 
-Service:  Plex
-Category: Media
-Container: plex
-Status:   running
-```
+**AI Analysis Engine** — `atlas analyze` sends your latest environment snapshot to Claude or a local Ollama model and gets back a plain-language summary plus concrete recommendations. See [Configuration](#configuration) for provider setup.
 
-Atlas can also act, not just observe: `atlas restart <name>` restarts a container, `atlas stop <name>` stops one without removing it, and `atlas resize <name> --cpus/--memory` changes its CPU or memory limit live, without a restart — all three after showing you its current state and asking for confirmation. See [Deployment](https://cyb3rron1n.github.io/atlas/deployment/) for the safety principle behind approval-gated actions.
-
-### Docker Compose Analysis
-
-Atlas can parse a Docker Compose file (`atlas compose`) to surface its services, images, ports, and volumes.
-
-### Proxmox Integration
-
-Atlas can connect to a Proxmox cluster and inventory it (`atlas proxmox scan`): node status, and every VM and container across the cluster (name, node, status, CPU/memory usage). Authentication supports either an API token (`token_name`/`token_value`, recommended — see [Configuration](#configuration)) or a password. Results feed into the same environment context as `atlas discover`, so `atlas analyze` can reason about your virtualization layer too. Each scan also reports what changed since the last one — nodes or guests added, removed, or with a different status. Atlas can also act here, not just observe: `atlas proxmox restart <vmid>` restarts a VM or LXC guest after showing you its current state and asking for confirmation, the same approval-gated shape as `atlas restart` for Docker — see [Architecture](https://cyb3rron1n.github.io/atlas/architecture/#approval-gated-actions). This needs write/power-management permission on the token beyond the read-only scope `scan` uses.
-
-### Monitoring
-
-Atlas can query an existing [Prometheus](https://prometheus.io/) server for host metrics (`atlas monitor`) — CPU, memory, and disk usage, via the standard [`node_exporter`](https://github.com/prometheus/node_exporter) metrics, plus per-container CPU and memory if [cAdvisor](https://github.com/google/cadvisor) is scraped by the same Prometheus. Like the rest of Atlas's integrations, it's Atlas reaching out on command, not a `/metrics` endpoint you'd point Prometheus at. If Prometheus is reachable but a given exporter isn't set up yet, the affected metric reports as unavailable rather than failing the whole scan. Each metric — host or per-container — is checked against a configurable threshold (90% by default) and flagged if it's at or above it. Each scan also reports what changed since the last one: any metric that crossed or recovered from its threshold, the same change-detection pattern Proxmox scanning uses. Per-container metrics also include what a container is using *relative to its own configured CPU/memory limit* (not just relative to the host) — the difference between "busy" and "starved by its own allocation." Disabled by default — see [Configuration](#configuration).
-
-`atlas trends` shows how those metrics have moved over time — a latest/min/max/avg summary per host and per-container metric, built entirely from the history of snapshots `atlas monitor` has already been saving (no new collection, no new storage). Run `atlas monitor` a few times to build up history, then `atlas trends` to see it.
-
-### Plugin Architecture
-
-Atlas uses a plugin-based design so new discovery providers, infrastructure integrations, monitoring systems, and automation capabilities can be added without rewriting the core system. The current plugin system supports registration, discovery, initialization, and plugin-level events (`atlas plugins`):
-
-```
-Atlas Plugins
-
-Docker (0.1.0)
-```
-
-### Event System
-
-Atlas uses an internal event bus so components can communicate without direct dependencies:
-
-```mermaid
-graph TD
-    A[Discovery Engine] --> B[atlas.discovery.completed]
-    B --> C[Knowledge Store]
-```
-
-Current events include `atlas.plugin.loaded`, `atlas.discovery.completed`, and `atlas.analysis.completed`.
-
-### Operational Memory
-
-Atlas maintains persistent operational history — plugin events, discovery events, and infrastructure observations — as the foundation for its intelligence features (`atlas history`).
-
-### AI Analysis Engine
-
-Atlas can send its latest discovered environment snapshot to a configurable AI provider and get back a plain-language summary plus concrete, actionable recommendations (`atlas analyze`). The provider is pluggable:
-
-- **Anthropic** — Claude models via the official SDK, using structured outputs so responses are always valid.
-- **Ollama** — any locally-run model, for a fully self-hosted setup.
-
-See [Configuration](#configuration) below for how to select and configure a provider. Results are persisted to Atlas's knowledge store and emit an `atlas.analysis.completed` event.
-
-### Agent-Based Capabilities
-
-Both providers can call a small, deliberately read-only set of tools mid-request — current containers, self-hosted services, Proxmox status, monitoring metrics, recent events, recent container logs, and the last saved analysis — instead of only ever seeing one fixed snapshot. `atlas analyze` uses this by default now, so its recommendations reflect what's actually running right now, not just what was true at the last `atlas discover`. No mutating tool exists here; restart/stop/resize stay behind their own approval-gated commands. A suggested action can now include a proposed CPU/memory resize (`atlas resize <name> --cpus/--memory`) alongside restart/stop/restart-guest, grounded the same way — the AI only proposes a target it actually observed.
-
-This also unlocks `atlas chat`, a new interactive command for asking Atlas about your infrastructure conversationally — its transcript is saved as a single event on exit, visible via `atlas history`. Unlike `atlas analyze`, it needs no prior `atlas discover` — it grounds itself against live state on demand. It can suggest an approval-gated action the same grounded way `atlas analyze` does, but never executes one. Like every other Atlas command, it's on-demand only: you run it, it runs, it exits — no background process, no scheduled mode.
-
-Both `atlas analyze` and `atlas chat` can also suggest a **plan** — an ordered sequence of steps for a situation where later steps genuinely depend on earlier ones (e.g. stop the container holding a lock, then restart the one that was failing because of it), printed as a numbered list with each step's command and rationale. A plan is still suggest-only, exactly like a single action: nothing executes it, and you run each step yourself, in order, through its own approval gate. One hallucinated step drops the whole plan rather than leaving a partially-trustworthy sequence behind.
+**Agent-Based Capabilities** — both providers can call a small, read-only tool set mid-request (containers, services, Proxmox status, metrics, logs, recent history) instead of only ever seeing one fixed snapshot. This powers `atlas chat`, an interactive command that needs no prior `atlas discover`. Either command can suggest an approval-gated action, or a multi-step **plan** for genuinely dependent steps (stop this, then restart that) — always grounded against what Atlas actually observed, never executed automatically.
 
 ---
 
 ## Architecture
 
-Atlas is built around a modular event-driven architecture, designed to let new capabilities be added without rewriting the core system:
-
-```mermaid
-graph TD
-    A[Atlas CLI] --> B[Atlas Runtime]
-    B --> C[Plugins]
-    B --> D[Event Bus]
-    B --> E[Knowledge Store]
-```
+Atlas is built around a modular, event-driven core (CLI → Runtime → Plugins / Event Bus / Knowledge Store), designed so new capabilities plug in without rewriting existing ones. See the [Architecture docs](https://cyb3rron1n.github.io/atlas/architecture/) for the full picture, including how every integration and approval-gated action fits together.
 
 ---
 
@@ -329,19 +249,6 @@ Redeploying the live site is manual (`.github/workflows/docs.yml`, triggered via
 
 ---
 
-## Development
-
-Atlas development follows incremental milestones. Current priorities, in order:
-
-1. Core architecture
-2. Discovery framework
-3. Plugin ecosystem
-4. Operational memory
-5. Intelligence layer
-6. Automation framework
-
----
-
 ## Contributing
 
 Contributions, ideas, and discussions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before submitting changes.
@@ -358,14 +265,4 @@ Atlas is released under the [MIT License](LICENSE).
 
 ## Vision
 
-Atlas aims to become an intelligent operations platform for self-hosted infrastructure:
-
-```mermaid
-graph TD
-    A[Observe] --> B[Understand]
-    B --> C[Recommend]
-    C --> D[Automate]
-    D --> E[Optimize]
-```
-
-Atlas is being built as a foundation for infrastructure intelligence.
+Atlas's long-term goal: observe → understand → recommend → automate → optimize, with every step staying observable, explainable, and under your control.

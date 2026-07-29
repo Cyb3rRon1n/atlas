@@ -134,6 +134,13 @@ Representative output, not a literal capture — field names and formatting matc
   <sub><code>atlas analyze</code> — AI summary with a grounded, approval-gated action suggestion</sub>
 </p>
 
+<p align="center">
+  <img src="docs/images/screenshots/chat.svg" alt="atlas chat example output" width="820"><br>
+  <sub><code>atlas chat</code> — a live conversation, grounded the same way as <code>atlas analyze</code></sub>
+</p>
+
+More examples (monitoring, resource-usage trends, multi-step plans) are on the [docs site](https://cyb3rron1n.github.io/atlas/).
+
 ---
 
 ## CLI Reference

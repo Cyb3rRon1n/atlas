@@ -16,8 +16,10 @@ Atlas is guided by one principle:
 ## What Atlas does today
 
 - **Discovers** your hardware, OS, storage, network, Docker containers, Compose stacks, and Proxmox cluster (nodes, VMs, and containers)
-- **Remembers** what it finds — every discovery run and event is persisted to a local knowledge store
-- **Analyzes** that knowledge with an AI provider (Anthropic Claude or a self-hosted Ollama model) and returns a plain-language summary plus concrete recommendations
+- **Remembers** what it finds — every discovery run and event is persisted to a local knowledge store, including host and per-container resource-usage history you can trend over time (`atlas trends`)
+- **Analyzes** that knowledge with an AI provider (Anthropic Claude or a self-hosted Ollama model) and returns a plain-language summary plus concrete recommendations — either as a single-shot report (`atlas analyze`) or an interactive conversation (`atlas chat`) that can call back into live state mid-request
+- **Monitors** an existing Prometheus for host and per-container metrics, flags anything over a configurable threshold, and reports what changed since the last scan
+- **Acts**, when you say so — restart, stop, or resize a Docker container; restart a Proxmox guest — always showing current state and asking for confirmation first, including for a multi-step plan when a fix genuinely needs an ordered sequence of steps
 - **Extends** via a plugin architecture and an internal event bus, so new capabilities don't require rewriting the core
 
 See [Architecture](architecture/index.md) for how these pieces fit together, or jump straight to [Getting Started](getting-started/index.md).
@@ -39,6 +41,21 @@ Representative output, not a literal capture — field names and formatting matc
 <p align="center">
   <img src="images/screenshots/analyze.svg" alt="atlas analyze example output" style="max-width: 100%; width: 820px;"><br>
   <sub><code>atlas analyze</code> — AI summary with a grounded, approval-gated action suggestion</sub>
+</p>
+
+<p align="center">
+  <img src="images/screenshots/chat.svg" alt="atlas chat example output" style="max-width: 100%; width: 820px;"><br>
+  <sub><code>atlas chat</code> — a live conversation, grounded the same way as <code>atlas analyze</code></sub>
+</p>
+
+<p align="center">
+  <img src="images/screenshots/plan.svg" alt="atlas analyze multi-step plan example output" style="max-width: 100%; width: 820px;"><br>
+  <sub>A suggested multi-step plan — printed for you to run yourself, one step at a time</sub>
+</p>
+
+<p align="center">
+  <img src="images/screenshots/trends.svg" alt="atlas trends example output" style="max-width: 100%; width: 820px;"><br>
+  <sub><code>atlas trends</code> — resource-usage history built from saved <code>atlas monitor</code> snapshots</sub>
 </p>
 
 ## Where this is headed

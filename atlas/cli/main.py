@@ -21,7 +21,8 @@ from atlas.proxmox import (
     restart_guest,
 )
 from atlas.plugins import PluginManager
-from atlas.monitoring import collect_metrics, evaluate_thresholds
+from atlas.monitoring import collect_container_metrics, collect_metrics, evaluate_thresholds
+from atlas.monitoring.changes import diff_monitoring, format_change as format_monitoring_change
 from rich.console import Console
 from atlas.events import AtlasEvent
 from atlas.knowledge.queries import KnowledgeQueries
@@ -327,6 +328,9 @@ def monitor():
         return
 
 
+    previous = KnowledgeQueries().latest_environment()
+
+
     data = collect_metrics(
         monitoring_settings.prometheus_url
     )
@@ -375,6 +379,77 @@ def monitor():
             )
 
 
+    container_data = collect_container_metrics(
+        monitoring_settings.prometheus_url
+    )
+
+    containers = container_data["containers"]
+
+    console.print(
+        "\n[bold]Containers:[/bold]"
+    )
+
+    if not containers:
+
+        console.print(
+            "No container metrics available (is cAdvisor being scraped?)"
+        )
+
+    for container_name, values in containers.items():
+
+        container_exceeded = evaluate_thresholds(values, thresholds)
+
+        console.print(f"\n{container_name}:")
+
+        for name, value in values.items():
+
+            if value is None:
+
+                console.print(
+                    f"  {name}: unavailable"
+                )
+
+                continue
+
+            if container_exceeded.get(name):
+
+                console.print(
+                    f"  [yellow]![/yellow] {name}: {value:.1f}% "
+                    f"(threshold: {thresholds[name]:.1f}%)"
+                )
+
+            else:
+
+                console.print(
+                    f"  [green]✓[/green] {name}: {value:.1f}%"
+                )
+
+
+    data["containers"] = containers
+
+    previous_monitoring = previous.get("monitoring") if previous else None
+
+    changes = diff_monitoring(previous_monitoring, data, thresholds)
+
+    if previous_monitoring:
+
+        console.print()
+
+        if changes:
+
+            console.print("[bold]Changes since last scan:[/bold]\n")
+
+            for change in changes:
+
+                console.print(format_monitoring_change(change))
+
+            console.print()
+
+        else:
+
+            console.print("No changes since last scan.\n")
+
+
     runtime = application.runtime
 
     runtime.environment.update(
@@ -409,6 +484,16 @@ def monitor():
                         name for name, over in exceeded.items() if over
                     ]
                 }
+            )
+        )
+
+    if changes:
+
+        runtime.events.publish(
+            AtlasEvent(
+                event_type="atlas.monitoring.changes_detected",
+                source="MonitoringScan",
+                payload={"changes": changes}
             )
         )
 

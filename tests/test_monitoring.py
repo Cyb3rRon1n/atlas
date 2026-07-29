@@ -3,8 +3,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
-from atlas.monitoring.client import PrometheusUnavailableError, query_prometheus
-from atlas.monitoring.collector import collect_metrics, evaluate_thresholds
+from atlas.monitoring.client import (
+    PrometheusUnavailableError,
+    query_prometheus,
+    query_prometheus_vector,
+)
+from atlas.monitoring.collector import (
+    collect_container_metrics,
+    collect_metrics,
+    evaluate_thresholds,
+)
 
 
 def _fake_response(status="success", result=None):
@@ -70,6 +78,117 @@ class TestQueryPrometheus:
 
         args, kwargs = mock_get.call_args
         assert args[0] == "http://localhost:9090/api/v1/query"
+
+
+class TestQueryPrometheusVector:
+
+    def test_parses_multiple_rows_keyed_by_label(self):
+
+        response = _fake_response(
+            result=[
+                {"metric": {"name": "plex"}, "value": [0, "12.3"]},
+                {"metric": {"name": "sonarr"}, "value": [0, "45.6"]},
+            ]
+        )
+
+        with patch("requests.get", return_value=response):
+            values = query_prometheus_vector(
+                "http://localhost:9090", "up", label="name"
+            )
+
+        assert values == {"plex": 12.3, "sonarr": 45.6}
+
+    def test_skips_rows_missing_the_label(self):
+
+        response = _fake_response(
+            result=[
+                {"metric": {}, "value": [0, "12.3"]},
+                {"metric": {"name": "sonarr"}, "value": [0, "45.6"]},
+            ]
+        )
+
+        with patch("requests.get", return_value=response):
+            values = query_prometheus_vector(
+                "http://localhost:9090", "up", label="name"
+            )
+
+        assert values == {"sonarr": 45.6}
+
+    def test_returns_empty_dict_when_result_is_empty(self):
+
+        response = _fake_response(result=[])
+
+        with patch("requests.get", return_value=response):
+            values = query_prometheus_vector(
+                "http://localhost:9090", "up", label="name"
+            )
+
+        assert values == {}
+
+    def test_raises_when_connection_fails(self):
+
+        with patch(
+            "requests.get",
+            side_effect=requests.exceptions.ConnectionError()
+        ):
+
+            with pytest.raises(PrometheusUnavailableError):
+                query_prometheus_vector(
+                    "http://localhost:9090", "up", label="name"
+                )
+
+
+class TestCollectContainerMetrics:
+
+    def test_available_false_when_prometheus_unreachable(self):
+
+        with patch(
+            "atlas.monitoring.collector.query_prometheus_vector",
+            side_effect=PrometheusUnavailableError("connection refused")
+        ):
+
+            result = collect_container_metrics("http://localhost:9090")
+
+        assert result == {"available": False, "containers": {}}
+
+    def test_merges_cpu_and_memory_by_container_name(self):
+
+        with patch(
+            "atlas.monitoring.collector.query_prometheus_vector",
+            side_effect=[
+                {"plex": 12.3, "sonarr": 45.6},
+                {"plex": 30.0, "sonarr": 10.0},
+            ]
+        ):
+
+            result = collect_container_metrics("http://localhost:9090")
+
+        assert result == {
+            "available": True,
+            "containers": {
+                "plex": {"cpu_percent": 12.3, "memory_percent": 30.0},
+                "sonarr": {"cpu_percent": 45.6, "memory_percent": 10.0},
+            }
+        }
+
+    def test_container_present_in_only_one_query_gets_none_for_the_other(self):
+
+        with patch(
+            "atlas.monitoring.collector.query_prometheus_vector",
+            side_effect=[
+                {"plex": 12.3},
+                {"sonarr": 10.0},
+            ]
+        ):
+
+            result = collect_container_metrics("http://localhost:9090")
+
+        assert result["containers"]["plex"] == {
+            "cpu_percent": 12.3, "memory_percent": None
+        }
+        assert result["containers"]["sonarr"] == {
+            "cpu_percent": None, "memory_percent": 10.0
+        }
 
 
 class TestCollectMetrics:

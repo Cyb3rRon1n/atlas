@@ -6,6 +6,7 @@ import docker.errors
 from atlas.docker import (
     collect_containers,
     get_container_info,
+    get_container_logs,
     resize_container,
     restart_container,
     stop_container,
@@ -446,3 +447,76 @@ def test_resize_container_with_both_cpus_and_memory():
     assert json.loads(kwargs["data"]) == {
         "NanoCPUs": 1000000000, "Memory": 536870912
     }
+
+
+def test_get_container_logs_when_daemon_unavailable():
+
+    with patch(
+        "atlas.docker.manager.docker.from_env",
+        side_effect=RuntimeError("no docker socket")
+    ):
+
+        result = get_container_logs("plex")
+
+    assert result == {"found": False, "error": "Docker unavailable"}
+
+
+def test_get_container_logs_when_not_found():
+
+    fake_client = MagicMock()
+    fake_client.containers.get.side_effect = docker.errors.NotFound("not found")
+
+    with patch(
+        "atlas.docker.manager.docker.from_env",
+        return_value=fake_client
+    ):
+
+        result = get_container_logs("missing")
+
+    assert result == {
+        "found": False,
+        "error": "No container named 'missing' found"
+    }
+
+
+def test_get_container_logs_when_logs_raises():
+
+    fake_container = MagicMock()
+    fake_container.logs.side_effect = RuntimeError("daemon exploded")
+
+    fake_client = MagicMock()
+    fake_client.containers.get.return_value = fake_container
+
+    with patch(
+        "atlas.docker.manager.docker.from_env",
+        return_value=fake_client
+    ):
+
+        result = get_container_logs("plex")
+
+    assert result == {"found": False, "error": "daemon exploded"}
+
+
+def test_get_container_logs_when_successful():
+
+    fake_container = MagicMock()
+    fake_container.name = "plex"
+    fake_container.logs.return_value = b"line one\nline two\n"
+
+    fake_client = MagicMock()
+    fake_client.containers.get.return_value = fake_container
+
+    with patch(
+        "atlas.docker.manager.docker.from_env",
+        return_value=fake_client
+    ):
+
+        result = get_container_logs("plex", tail=50)
+
+    assert result == {
+        "found": True,
+        "name": "plex",
+        "logs": "line one\nline two\n"
+    }
+
+    fake_container.logs.assert_called_once_with(tail=50, timestamps=False)

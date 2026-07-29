@@ -239,3 +239,41 @@ def stop_container(name):
         "success": True,
         "previous_status": previous_status
     }
+
+
+def get_container_logs(name, tail=100):
+
+    client = get_client()
+
+    if not client:
+        return {
+            "found": False,
+            "error": "Docker unavailable"
+        }
+
+    try:
+        container = client.containers.get(name)
+
+    except docker.errors.NotFound:
+        return {
+            "found": False,
+            "error": f"No container named '{name}' found"
+        }
+
+    try:
+        raw = container.logs(
+            tail=tail,
+            timestamps=False
+        )
+
+    except Exception as error:
+        return {
+            "found": False,
+            "error": str(error)
+        }
+
+    return {
+        "found": True,
+        "name": container.name,
+        "logs": raw.decode("utf-8", errors="replace")
+    }

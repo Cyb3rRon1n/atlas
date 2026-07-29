@@ -189,9 +189,75 @@ def test_get_monitoring_tool_merges_host_and_container_metrics():
     assert result["containers"]["plex"]["cpu_percent"] == 2.0
 
 
+def test_build_tools_always_includes_get_container_logs():
+
+    tools = build_tools(AtlasConfig())
+
+    assert "get_container_logs" in tools
+    assert tools["get_container_logs"].input_schema["required"] == ["container"]
+
+
+def test_get_container_logs_tool_passes_container_and_default_tail():
+
+    tools = build_tools(AtlasConfig())
+
+    with patch(
+        "atlas.docker.get_container_logs",
+        return_value={"found": True, "name": "plex", "logs": "line one\n"}
+    ) as mock_logs:
+
+        result = execute_tool(
+            tools, "get_container_logs", {"container": "plex"}
+        )
+
+    assert result == {"found": True, "name": "plex", "logs": "line one\n"}
+    mock_logs.assert_called_once_with("plex", tail=100)
+
+
+def test_get_container_logs_tool_respects_a_lower_requested_tail():
+
+    tools = build_tools(AtlasConfig())
+
+    with patch(
+        "atlas.docker.get_container_logs",
+        return_value={"found": True, "name": "plex", "logs": ""}
+    ) as mock_logs:
+
+        execute_tool(
+            tools, "get_container_logs", {"container": "plex", "tail": 20}
+        )
+
+    mock_logs.assert_called_once_with("plex", tail=20)
+
+
+def test_get_container_logs_tool_caps_an_excessive_requested_tail():
+
+    tools = build_tools(AtlasConfig())
+
+    with patch(
+        "atlas.docker.get_container_logs",
+        return_value={"found": True, "name": "plex", "logs": ""}
+    ) as mock_logs:
+
+        execute_tool(
+            tools, "get_container_logs", {"container": "plex", "tail": 100000}
+        )
+
+    mock_logs.assert_called_once_with("plex", tail=500)
+
+
+def test_get_container_logs_tool_returns_error_when_container_missing():
+
+    tools = build_tools(AtlasConfig())
+
+    result = execute_tool(tools, "get_container_logs", {})
+
+    assert "error" in result
+
+
 def test_execute_tool_catches_handler_exception():
 
-    def broken_handler():
+    def broken_handler(arguments):
         raise RuntimeError("boom")
 
     tools = {

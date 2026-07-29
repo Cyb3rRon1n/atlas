@@ -1,5 +1,20 @@
 # Getting Started
 
+## Requirements
+
+Atlas itself needs Linux, Python 3.11+, and pip — that's enough for `atlas discover`, `atlas report`, `atlas docker`, `atlas services`, `atlas compose`, and `atlas doctor`, no config file or external services required.
+
+Everything else is an optional integration, gated independently by `atlas.yaml` and checked by `atlas doctor`:
+
+| Integration | Enables | What it actually needs |
+|---|---|---|
+| Docker | Container discovery, `atlas restart`/`stop`/`resize`, cAdvisor container metrics | A Docker daemon reachable from wherever Atlas runs (local socket, or `DOCKER_HOST` for a remote one) |
+| Proxmox VE | `atlas proxmox scan`/`restart` | A reachable Proxmox host and an API token — a network call over HTTPS, nothing installed on Proxmox itself. See [Deployment](../deployment/index.md) for the recommended (not required) topology |
+| Anthropic **or** Ollama | `atlas analyze`, `atlas chat` | An `ANTHROPIC_API_KEY`, or a locally-reachable Ollama instance — only one is needed |
+| Prometheus | `atlas monitor` | An existing Prometheus, `node_exporter` for host metrics, and [cAdvisor](https://github.com/google/cadvisor) for per-container metrics |
+
+Officially verified against real infrastructure on Ubuntu only (CI runs `ubuntu-latest`); other Linux distros are expected to work — discovery has no distro-specific code — but aren't independently verified. macOS/Windows are out of scope.
+
 ## Install
 
 ```bash

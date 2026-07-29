@@ -30,7 +30,7 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 - ✅ Docker discovery, service detection, and Compose analysis
 - ✅ Docker container restart, stop, and resize (CPU/memory limits) — approval-gated actions backed by a real `atlas/actions/` registry
 - ✅ Container resource-allocation visibility — per-container CPU/memory usage relative to its own configured limit, not just relative to the host
-- ✅ Proxmox cluster discovery, change detection, and guest restart
+- ✅ Proxmox cluster discovery, change detection, and guest restart/stop/resize (CPU/memory limits) — the same three actions Docker containers have
 - ✅ AI analysis via a local Ollama model end to end; Anthropic Claude also supported (connection and error handling verified, a full response is pending your own billing setup)
 - ✅ Agent-based capabilities — both providers can call read-only tools mid-request for live state; `atlas analyze` uses this by default, and it powers the new `atlas chat` command
 - ✅ Multi-step action plans — an ordered sequence of approval-gated actions for genuinely dependent steps (e.g. stop one container, then restart another), printed for you to run yourself, one step at a time
@@ -162,6 +162,8 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure and report changes since the last scan (requires `proxmox.enabled: true`). |
 | `atlas proxmox restart <vmid>` | Restart a Proxmox VM or LXC guest. Prompts for confirmation before acting. |
+| `atlas proxmox stop <vmid>` | Shut down a Proxmox VM or LXC guest (ACPI request). Prompts for confirmation before acting. |
+| `atlas proxmox resize <vmid>` | Resize a Proxmox guest's CPU (`--cpus`) and/or memory (`--memory`) limit. Prompts for confirmation before acting. |
 | `atlas monitor` | Query Prometheus for host metrics and flag any at or above their configured threshold (requires `monitoring.enabled: true`). |
 | `atlas trends` | Show host and per-container resource-usage trends from saved `atlas monitor` snapshots. |
 | `atlas plugins` | Display registered Atlas plugins. |
@@ -187,7 +189,7 @@ Run `atlas <command> --help` for command-specific options.
 
 **Docker Compose Analysis** — `atlas compose` parses a Compose file to surface its services, images, ports, and volumes.
 
-**Proxmox Integration** — `atlas proxmox scan` inventories a cluster (nodes, VMs, containers) and reports what changed since the last scan. `atlas proxmox restart <vmid>` restarts a guest, the same approval-gated shape as Docker. Token-based auth is recommended — see [Configuration](#configuration).
+**Proxmox Integration** — `atlas proxmox scan` inventories a cluster (nodes, VMs, containers) and reports what changed since the last scan. Atlas can also act: `atlas proxmox restart`/`stop`/`resize <vmid>` — the same three actions Docker containers have, always after showing current state and asking for confirmation. Token-based auth is recommended — see [Configuration](#configuration).
 
 **Monitoring** — `atlas monitor` queries an existing Prometheus for host and per-container metrics (via `node_exporter`/cAdvisor), flags anything over a configurable threshold, and reports what changed since the last scan. `atlas trends` shows how those metrics moved over time, built entirely from history `atlas monitor` already saves — no new collection, no new storage. Disabled by default.
 

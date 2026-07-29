@@ -855,6 +855,159 @@ def test_proxmox_restart_confirmed_restarts_guest_and_logs_event(
     assert events[0].event_type == "atlas.action.guest_restarted"
 
 
+def test_proxmox_stop_when_disabled_does_not_attempt_connection(isolated_cwd):
+
+    result = runner.invoke(app, ["proxmox", "stop", "100"])
+
+    assert result.exit_code == 0
+    assert "Proxmox integration disabled." in result.output
+
+
+def test_proxmox_stop_declined_does_not_stop_guest(isolated_cwd):
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+
+    with (
+        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch(
+            "atlas.proxmox.manager.discover_resources",
+            return_value=[PROXMOX_GUEST]
+        ),
+        patch("atlas.cli.main.stop_guest") as mock_stop,
+    ):
+
+        result = runner.invoke(
+            app, ["proxmox", "stop", "100"], input="n\n"
+        )
+
+    assert result.exit_code == 0
+    assert "Cancelled." in result.output
+    mock_stop.assert_not_called()
+
+
+def test_proxmox_stop_confirmed_stops_guest_and_logs_event(
+    isolated_cwd, temp_db
+):
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+
+    with (
+        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch(
+            "atlas.proxmox.manager.discover_resources",
+            return_value=[PROXMOX_GUEST]
+        ),
+        patch(
+            "atlas.cli.main.stop_guest",
+            return_value={"success": True}
+        ) as mock_stop,
+    ):
+
+        result = runner.invoke(
+            app, ["proxmox", "stop", "100"], input="y\n"
+        )
+
+    assert result.exit_code == 0
+    assert "stopped" in result.output
+    assert "ACPI request" in result.output
+    assert mock_stop.call_args.args[1:] == ("pve1", 100, "qemu")
+
+    events = KnowledgeQueries().recent_events()
+
+    assert events[0].event_type == "atlas.action.guest_stopped"
+
+
+def test_proxmox_resize_requires_cpus_or_memory(isolated_cwd):
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+
+    result = runner.invoke(app, ["proxmox", "resize", "100"])
+
+    assert result.exit_code == 0
+    assert "Specify --cpus and/or --memory." in result.output
+
+
+def test_proxmox_resize_prints_hotplug_caveat_for_qemu_guest(isolated_cwd):
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+
+    with (
+        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch(
+            "atlas.proxmox.manager.discover_resources",
+            return_value=[PROXMOX_GUEST]
+        ),
+        patch("atlas.cli.main.resize_guest") as mock_resize,
+    ):
+
+        result = runner.invoke(
+            app, ["proxmox", "resize", "100", "--cpus", "1.5"], input="n\n"
+        )
+
+    assert result.exit_code == 0
+    assert "hotplug" in result.output
+    mock_resize.assert_not_called()
+
+
+def test_proxmox_resize_omits_hotplug_caveat_for_lxc_guest(isolated_cwd):
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+
+    lxc_guest = {**PROXMOX_GUEST, "type": "lxc"}
+
+    with (
+        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch(
+            "atlas.proxmox.manager.discover_resources",
+            return_value=[lxc_guest]
+        ),
+        patch("atlas.cli.main.resize_guest") as mock_resize,
+    ):
+
+        result = runner.invoke(
+            app, ["proxmox", "resize", "100", "--cpus", "1.5"], input="n\n"
+        )
+
+    assert result.exit_code == 0
+    assert "hotplug" not in result.output
+    mock_resize.assert_not_called()
+
+
+def test_proxmox_resize_confirmed_resizes_guest_and_logs_event(
+    isolated_cwd, temp_db
+):
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+
+    with (
+        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch(
+            "atlas.proxmox.manager.discover_resources",
+            return_value=[PROXMOX_GUEST]
+        ),
+        patch(
+            "atlas.cli.main.resize_guest",
+            return_value={"success": True}
+        ) as mock_resize,
+    ):
+
+        result = runner.invoke(
+            app,
+            ["proxmox", "resize", "100", "--cpus", "1.5", "--memory", "512m"],
+            input="y\n"
+        )
+
+    assert result.exit_code == 0
+    assert "resized" in result.output
+
+    assert mock_resize.call_args.args[1:] == ("pve1", 100, "qemu")
+    assert mock_resize.call_args.kwargs == {"cpus": 1.5, "memory": "512m"}
+
+    events = KnowledgeQueries().recent_events()
+
+    assert events[0].event_type == "atlas.action.guest_resized"
+
+
 def test_monitor_when_disabled_does_not_attempt_connection(isolated_cwd):
     """
     monitoring.enabled defaults to false - this is the actual

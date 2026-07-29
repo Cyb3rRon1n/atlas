@@ -44,6 +44,20 @@ ACTIONS: dict[str, ActionDefinition] = {
         ),
         known_targets=known_container_names
     ),
+    "stop_guest": ActionDefinition(
+        type="stop_guest",
+        command_template=lambda a: f"atlas proxmox stop {a.target}",
+        known_targets=known_guest_ids
+    ),
+    "resize_guest": ActionDefinition(
+        type="resize_guest",
+        command_template=lambda a: (
+            f"atlas proxmox resize {a.target}"
+            + (f" --cpus {a.cpus}" if a.cpus else "")
+            + (f" --memory {a.memory}" if a.memory else "")
+        ),
+        known_targets=known_guest_ids
+    ),
 }
 
 

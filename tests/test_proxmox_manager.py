@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from atlas.proxmox.manager import get_guest_info, restart_guest
+from atlas.proxmox.manager import get_guest_info, resize_guest, restart_guest, stop_guest
 
 
 def test_get_guest_info_found():
@@ -80,5 +80,102 @@ def test_restart_guest_returns_error_dict_instead_of_raising():
     )
 
     result = restart_guest(fake_client, "pve1", 100, "qemu")
+
+    assert result == {"success": False, "error": "guest is locked"}
+
+
+def test_stop_guest_success_for_qemu():
+
+    fake_client = MagicMock()
+
+    result = stop_guest(fake_client, "pve1", 100, "qemu")
+
+    assert result == {"success": True}
+    fake_client.nodes.assert_called_once_with("pve1")
+    fake_client.nodes.return_value.qemu.assert_called_once_with(100)
+    (
+        fake_client.nodes.return_value.qemu.return_value
+        .status.shutdown.post.assert_called_once_with()
+    )
+
+
+def test_stop_guest_success_for_lxc():
+
+    fake_client = MagicMock()
+
+    result = stop_guest(fake_client, "pve1", 101, "lxc")
+
+    assert result == {"success": True}
+    fake_client.nodes.assert_called_once_with("pve1")
+    fake_client.nodes.return_value.lxc.assert_called_once_with(101)
+    (
+        fake_client.nodes.return_value.lxc.return_value
+        .status.shutdown.post.assert_called_once_with()
+    )
+
+
+def test_stop_guest_returns_error_dict_instead_of_raising():
+
+    fake_client = MagicMock()
+
+    fake_client.nodes.return_value.lxc.return_value.status.shutdown.post.side_effect = (
+        RuntimeError("guest is locked")
+    )
+
+    result = stop_guest(fake_client, "pve1", 101, "lxc")
+
+    assert result == {"success": False, "error": "guest is locked"}
+
+
+def test_resize_guest_sends_cpulimit_for_qemu():
+
+    fake_client = MagicMock()
+
+    result = resize_guest(fake_client, "pve1", 100, "qemu", cpus=1.5)
+
+    assert result == {"success": True}
+    fake_client.nodes.assert_called_once_with("pve1")
+    fake_client.nodes.return_value.qemu.assert_called_once_with(100)
+    (
+        fake_client.nodes.return_value.qemu.return_value
+        .config.put.assert_called_once_with(cpulimit=1.5)
+    )
+
+
+def test_resize_guest_converts_memory_string_to_mb_for_lxc():
+
+    fake_client = MagicMock()
+
+    result = resize_guest(fake_client, "pve1", 101, "lxc", memory="512m")
+
+    assert result == {"success": True}
+    (
+        fake_client.nodes.return_value.lxc.return_value
+        .config.put.assert_called_once_with(memory=512)
+    )
+
+
+def test_resize_guest_sends_both_cpus_and_memory():
+
+    fake_client = MagicMock()
+
+    result = resize_guest(fake_client, "pve1", 100, "qemu", cpus=2.0, memory="1g")
+
+    assert result == {"success": True}
+    (
+        fake_client.nodes.return_value.qemu.return_value
+        .config.put.assert_called_once_with(cpulimit=2.0, memory=1024)
+    )
+
+
+def test_resize_guest_returns_error_dict_instead_of_raising():
+
+    fake_client = MagicMock()
+
+    fake_client.nodes.return_value.qemu.return_value.config.put.side_effect = (
+        RuntimeError("guest is locked")
+    )
+
+    result = resize_guest(fake_client, "pve1", 100, "qemu", cpus=1.0)
 
     assert result == {"success": False, "error": "guest is locked"}

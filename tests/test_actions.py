@@ -44,10 +44,11 @@ def test_known_guest_ids_empty_when_no_virtualization_key():
     assert known_guest_ids({"system": {}}) == set()
 
 
-def test_actions_registry_has_all_four_entries():
+def test_actions_registry_has_all_six_entries():
 
     assert set(ACTIONS.keys()) == {
-        "restart_container", "restart_guest", "stop_container", "resize_container"
+        "restart_container", "restart_guest", "stop_container", "resize_container",
+        "stop_guest", "resize_guest"
     }
 
 
@@ -135,3 +136,33 @@ def test_resize_container_command_template_with_neither():
     )
 
     assert definition.command_template(action) == "atlas resize plex"
+
+
+def test_stop_guest_action_wired_correctly():
+
+    definition = ACTIONS["stop_guest"]
+
+    action = SuggestedAction(type="stop_guest", target="100")
+    assert definition.command_template(action) == "atlas proxmox stop 100"
+    assert definition.known_targets is known_guest_ids
+
+
+def test_resize_guest_action_wired_correctly():
+
+    definition = ACTIONS["resize_guest"]
+
+    assert definition.known_targets is known_guest_ids
+
+
+def test_resize_guest_command_template_with_both():
+
+    definition = ACTIONS["resize_guest"]
+
+    action = SuggestedAction(
+        type="resize_guest", target="100", cpus="1.5", memory="512m"
+    )
+
+    assert (
+        definition.command_template(action)
+        == "atlas proxmox resize 100 --cpus 1.5 --memory 512m"
+    )

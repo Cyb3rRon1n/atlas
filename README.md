@@ -10,13 +10,13 @@
 
 # Atlas
 
-**AI-assisted operations for your homelab — grounded in what's actually running, and never acting without your say-so.**
+**Know what's running on your infrastructure, why, and what changed — before you have to go find out the hard way.**
 
-If you're running Proxmox, a pile of Docker containers, maybe Prometheus for good measure — the real problem usually isn't automation, it's memory. What's actually deployed. Why it's set up that way. What changed since last week. Atlas exists to hold that context so you don't have to: it discovers your infrastructure, keeps a persistent record of it, can explain it back to you in plain language through Claude or a fully local Ollama model, and — carefully, and only with your explicit confirmation — can act on what it finds.
+Atlas is a CLI that discovers, remembers, and explains self-hosted infrastructure: Proxmox clusters, Docker containers, and the services running on them. Ask what changed since your last check-in, or get an AI-generated summary via Claude or a fully local Ollama model — either way, nothing it tells you is guessed. Every AI-suggested action is checked against what Atlas actually observed first.
 
-It isn't a chatbot bolted onto your servers. Every AI-suggested action is cross-checked against what Atlas actually observed before it's ever shown to you, so a hallucinated container name gets silently dropped rather than handed to you as a real suggestion. And nothing mutates your infrastructure without you typing "yes" first — no autonomous mode, no bypass flag.
+When it comes to acting — restarting a container, restarting a Proxmox guest — Atlas always asks first. No autonomous mode, no bypass flag.
 
-Everything below is real, working CLI functionality, not a roadmap of intentions — see [Project Status](#project-status) for what's shipped and verified against actual Proxmox hosts, Docker containers, and a real Prometheus/cAdvisor stack, not just mocks.
+Everything above is real and working today. See [Project Status](#project-status) for what's shipped and verified against real infrastructure, not mocks.
 
 ---
 
@@ -108,7 +108,7 @@ Representative output, not a literal capture — field names and formatting matc
 | `atlas docker` | Display Docker container status. |
 | `atlas restart <name>` | Restart a Docker container. Prompts for confirmation before acting. |
 | `atlas stop <name>` | Stop a Docker container without removing it. Prompts for confirmation before acting. |
-| `atlas services` | Detect known homelab services running in Docker. |
+| `atlas services` | Detect known self-hosted services running in Docker. |
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure and report changes since the last scan (requires `proxmox.enabled: true`). |
 | `atlas proxmox restart <vmid>` | Restart a Proxmox VM or LXC guest. Prompts for confirmation before acting. |
@@ -139,7 +139,7 @@ Atlas inspects the host system and generates a structured infrastructure invento
 
 ### Docker Integration
 
-Atlas inspects Docker environments — containers, images, status, and IDs (`atlas docker`) — and can identify known homelab services running inside them (`atlas services`), for example:
+Atlas inspects Docker environments — containers, images, status, and IDs (`atlas docker`) — and can identify known self-hosted services running inside them (`atlas services`), for example:
 
 ```
 Atlas Services

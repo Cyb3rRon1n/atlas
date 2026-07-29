@@ -729,6 +729,62 @@ def test_monitor_does_not_publish_threshold_event_when_nothing_exceeds(
     assert "atlas.monitoring.threshold_exceeded" not in event_types
 
 
+def test_monitor_flags_container_over_its_own_allocation_threshold(
+    isolated_cwd, temp_db
+):
+    """
+    Real correctness gap found while scoping this feature: without a
+    config key literally named cpu_percent_of_limit, evaluate_thresholds()
+    would silently never flag it (missing threshold = not evaluated,
+    not "not exceeded"), so a container pinned at 95% of its own
+    limit would print a green checkmark. cpu_allocation_threshold
+    (and memory_allocation_threshold) exist specifically to close
+    that gap - this confirms the flag actually fires.
+    """
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "monitoring:\n"
+        "  enabled: true\n"
+        "  prometheus_url: http://localhost:9090\n"
+        "  cpu_allocation_threshold: 80\n"
+    )
+
+    def fake_get(url, params=None, timeout=None):
+
+        query = params["query"]
+        response = MagicMock()
+
+        if "container_spec_cpu_quota" in query:
+            result = [{"metric": {"name": "plex"}, "value": [0, "95.0"]}]
+
+        elif "container_spec_memory_limit_bytes" in query:
+            result = []
+
+        elif "container_cpu_usage_seconds_total" in query:
+            result = [{"metric": {"name": "plex"}, "value": [0, "20.0"]}]
+
+        elif "container_memory_usage_bytes" in query:
+            result = [{"metric": {"name": "plex"}, "value": [0, "5.0"]}]
+
+        else:
+            result = [{"value": [0, "12.3"]}]
+
+        response.json.return_value = {
+            "status": "success",
+            "data": {"result": result}
+        }
+
+        return response
+
+    with patch("requests.get", side_effect=fake_get):
+
+        result = runner.invoke(app, ["monitor"])
+
+    assert result.exit_code == 0
+    assert "cpu_percent_of_limit: 95.0% (threshold: 80.0%)" in result.output
+    assert "memory_percent_of_limit" not in result.output
+
+
 def test_monitor_saves_container_metrics_to_environment(isolated_cwd, temp_db):
 
     (isolated_cwd / "atlas.yaml").write_text(
@@ -742,7 +798,15 @@ def test_monitor_saves_container_metrics_to_environment(isolated_cwd, temp_db):
         query = params["query"]
         response = MagicMock()
 
-        if "container_cpu_usage_seconds_total" in query:
+        # The two *_percent_of_limit queries also contain the same
+        # container_cpu_usage_seconds_total/container_memory_usage_bytes
+        # substrings, so check their distinguishing spec_* metric name
+        # first - this container has no configured limit, so both
+        # return no rows, same as a real unconstrained container.
+        if "container_spec_cpu_quota" in query or "container_spec_memory_limit_bytes" in query:
+            result = []
+
+        elif "container_cpu_usage_seconds_total" in query:
             result = [{"metric": {"name": "plex"}, "value": [0, "25.0"]}]
 
         elif "container_memory_usage_bytes" in query:
@@ -769,7 +833,9 @@ def test_monitor_saves_container_metrics_to_environment(isolated_cwd, temp_db):
 
     assert environment["monitoring"]["containers"]["plex"] == {
         "cpu_percent": 25.0,
-        "memory_percent": 40.0
+        "memory_percent": 40.0,
+        "cpu_percent_of_limit": None,
+        "memory_percent_of_limit": None,
     }
 
 

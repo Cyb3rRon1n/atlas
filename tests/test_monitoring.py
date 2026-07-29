@@ -158,6 +158,8 @@ class TestCollectContainerMetrics:
             side_effect=[
                 {"plex": 12.3, "sonarr": 45.6},
                 {"plex": 30.0, "sonarr": 10.0},
+                {},
+                {},
             ]
         ):
 
@@ -166,8 +168,18 @@ class TestCollectContainerMetrics:
         assert result == {
             "available": True,
             "containers": {
-                "plex": {"cpu_percent": 12.3, "memory_percent": 30.0},
-                "sonarr": {"cpu_percent": 45.6, "memory_percent": 10.0},
+                "plex": {
+                    "cpu_percent": 12.3,
+                    "memory_percent": 30.0,
+                    "cpu_percent_of_limit": None,
+                    "memory_percent_of_limit": None,
+                },
+                "sonarr": {
+                    "cpu_percent": 45.6,
+                    "memory_percent": 10.0,
+                    "cpu_percent_of_limit": None,
+                    "memory_percent_of_limit": None,
+                },
             }
         }
 
@@ -178,17 +190,64 @@ class TestCollectContainerMetrics:
             side_effect=[
                 {"plex": 12.3},
                 {"sonarr": 10.0},
+                {},
+                {},
+            ]
+        ):
+
+            result = collect_container_metrics("http://localhost:9090")
+
+        assert result["containers"]["plex"]["cpu_percent"] == 12.3
+        assert result["containers"]["plex"]["memory_percent"] is None
+        assert result["containers"]["sonarr"]["cpu_percent"] is None
+        assert result["containers"]["sonarr"]["memory_percent"] == 10.0
+
+    def test_reports_percent_of_configured_limit_when_present(self):
+
+        with patch(
+            "atlas.monitoring.collector.query_prometheus_vector",
+            side_effect=[
+                {"plex": 50.0},
+                {"plex": 60.0},
+                {"plex": 25.0},
+                {"plex": 70.0},
             ]
         ):
 
             result = collect_container_metrics("http://localhost:9090")
 
         assert result["containers"]["plex"] == {
-            "cpu_percent": 12.3, "memory_percent": None
+            "cpu_percent": 50.0,
+            "memory_percent": 60.0,
+            "cpu_percent_of_limit": 25.0,
+            "memory_percent_of_limit": 70.0,
         }
-        assert result["containers"]["sonarr"] == {
-            "cpu_percent": None, "memory_percent": 10.0
-        }
+
+    def test_container_with_no_configured_limit_gets_none_for_limit_metrics(self):
+        """
+        The common case: most containers have no explicit CPU/memory
+        limit set, so the *_percent_of_limit queries simply don't
+        return a row for them (confirmed against a real cAdvisor -
+        an unconstrained container's spec_cpu_quota metric doesn't
+        exist at all, and spec_memory_limit_bytes is 0, filtered out
+        by the query's own `> 0` clause). None here means "no limit
+        configured", not "data unavailable".
+        """
+
+        with patch(
+            "atlas.monitoring.collector.query_prometheus_vector",
+            side_effect=[
+                {"plex": 50.0},
+                {"plex": 60.0},
+                {},
+                {},
+            ]
+        ):
+
+            result = collect_container_metrics("http://localhost:9090")
+
+        assert result["containers"]["plex"]["cpu_percent_of_limit"] is None
+        assert result["containers"]["plex"]["memory_percent_of_limit"] is None
 
 
 class TestCollectMetrics:

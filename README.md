@@ -28,7 +28,8 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 
 - ✅ Hardware, OS, storage, and network discovery
 - ✅ Docker discovery, service detection, and Compose analysis
-- ✅ Docker container restart and stop — approval-gated actions backed by a real `atlas/actions/` registry
+- ✅ Docker container restart, stop, and resize (CPU/memory limits) — approval-gated actions backed by a real `atlas/actions/` registry
+- ✅ Container resource-allocation visibility — per-container CPU/memory usage relative to its own configured limit, not just relative to the host
 - ✅ Proxmox cluster discovery, change detection, and guest restart
 - ✅ AI analysis via a local Ollama model end to end; Anthropic Claude also supported (connection and error handling verified, a full response is pending your own billing setup)
 - ✅ Agent-based capabilities — both providers can call read-only tools mid-request for live state; `atlas analyze` uses this by default, and it powers the new `atlas chat` command
@@ -110,6 +111,7 @@ Representative output, not a literal capture — field names and formatting matc
 | `atlas docker` | Display Docker container status. |
 | `atlas restart <name>` | Restart a Docker container. Prompts for confirmation before acting. |
 | `atlas stop <name>` | Stop a Docker container without removing it. Prompts for confirmation before acting. |
+| `atlas resize <name>` | Resize a Docker container's CPU (`--cpus`) and/or memory (`--memory`) limit, live, without a restart. Prompts for confirmation before acting. |
 | `atlas services` | Detect known self-hosted services running in Docker. |
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure and report changes since the last scan (requires `proxmox.enabled: true`). |
@@ -153,7 +155,7 @@ Container: plex
 Status:   running
 ```
 
-Atlas can also act, not just observe: `atlas restart <name>` restarts a container and `atlas stop <name>` stops one without removing it, both after showing you its current state and asking for confirmation. See [Deployment](https://cyb3rron1n.github.io/atlas/deployment/) for the safety principle behind approval-gated actions.
+Atlas can also act, not just observe: `atlas restart <name>` restarts a container, `atlas stop <name>` stops one without removing it, and `atlas resize <name> --cpus/--memory` changes its CPU or memory limit live, without a restart — all three after showing you its current state and asking for confirmation. See [Deployment](https://cyb3rron1n.github.io/atlas/deployment/) for the safety principle behind approval-gated actions.
 
 ### Docker Compose Analysis
 
@@ -204,7 +206,7 @@ See [Configuration](#configuration) below for how to select and configure a prov
 
 ### Agent-Based Capabilities
 
-Both providers can call a small, deliberately read-only set of tools mid-request — current containers, self-hosted services, Proxmox status, monitoring metrics, recent events, and the last saved analysis — instead of only ever seeing one fixed snapshot. `atlas analyze` uses this by default now, so its recommendations reflect what's actually running right now, not just what was true at the last `atlas discover`. No mutating tool exists here; restart/stop stay behind their own approval-gated commands.
+Both providers can call a small, deliberately read-only set of tools mid-request — current containers, self-hosted services, Proxmox status, monitoring metrics, recent events, and the last saved analysis — instead of only ever seeing one fixed snapshot. `atlas analyze` uses this by default now, so its recommendations reflect what's actually running right now, not just what was true at the last `atlas discover`. No mutating tool exists here; restart/stop/resize stay behind their own approval-gated commands. A suggested action can now include a proposed CPU/memory resize (`atlas resize <name> --cpus/--memory`) alongside restart/stop/restart-guest, grounded the same way — the AI only proposes a target it actually observed.
 
 This also unlocks `atlas chat`, a new interactive command for asking Atlas about your infrastructure conversationally. Unlike `atlas analyze`, it needs no prior `atlas discover` — it grounds itself against live state on demand. It can suggest an approval-gated action the same grounded way `atlas analyze` does, but never executes one. Like every other Atlas command, it's on-demand only: you run it, it runs, it exits — no background process, no scheduled mode.
 

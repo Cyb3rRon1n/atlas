@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
@@ -1013,3 +1014,120 @@ def test_stop_confirmed_stops_container_and_logs_event(
     events = KnowledgeQueries().recent_events()
 
     assert events[0].event_type == "atlas.action.container_stopped"
+
+
+def _fake_container_with_limits(**host_config):
+
+    fake_container = MagicMock()
+    fake_container.name = "plex"
+    fake_container.id = "abc123"
+    fake_container.image.tags = ["plexinc/pms-docker"]
+    fake_container.status = "running"
+    fake_container.attrs = {"HostConfig": host_config}
+
+    return fake_container
+
+
+def test_resize_rejects_when_neither_flag_given(isolated_cwd, temp_db):
+
+    result = runner.invoke(app, ["resize", "plex"])
+
+    assert result.exit_code == 0
+    assert "Specify --cpus and/or --memory." in result.output
+
+
+def test_resize_declined_does_not_update_container(isolated_cwd, temp_db):
+
+    fake_container = _fake_container_with_limits()
+
+    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+
+        mock_from_env.return_value.containers.get.return_value = fake_container
+
+        result = runner.invoke(
+            app, ["resize", "plex", "--cpus", "1.5"], input="n\n"
+        )
+
+    assert result.exit_code == 0
+    assert "Cancelled." in result.output
+    mock_from_env.return_value.api.post.assert_not_called()
+
+
+def test_resize_confirmed_with_cpus_only(isolated_cwd, temp_db):
+
+    fake_container = _fake_container_with_limits()
+
+    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+
+        mock_from_env.return_value.containers.get.return_value = fake_container
+        mock_from_env.return_value.api.base_url = "http+docker://localhost"
+
+        result = runner.invoke(
+            app, ["resize", "plex", "--cpus", "1.5"], input="y\n"
+        )
+
+    assert result.exit_code == 0
+    assert "resized" in result.output
+
+    _, kwargs = mock_from_env.return_value.api.post.call_args
+    assert json.loads(kwargs["data"]) == {"NanoCPUs": 1500000000}
+
+    events = KnowledgeQueries().recent_events()
+
+    assert events[0].event_type == "atlas.action.container_resized"
+
+
+def test_resize_confirmed_with_memory_only(isolated_cwd, temp_db):
+
+    fake_container = _fake_container_with_limits()
+
+    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+
+        mock_from_env.return_value.containers.get.return_value = fake_container
+        mock_from_env.return_value.api.base_url = "http+docker://localhost"
+
+        result = runner.invoke(
+            app, ["resize", "plex", "--memory", "512m"], input="y\n"
+        )
+
+    assert result.exit_code == 0
+    assert "resized" in result.output
+
+    _, kwargs = mock_from_env.return_value.api.post.call_args
+    assert json.loads(kwargs["data"]) == {"Memory": 536870912}
+
+
+def test_resize_confirmed_shows_current_configured_limits(isolated_cwd, temp_db):
+
+    fake_container = _fake_container_with_limits(
+        CpuPeriod=100000, CpuQuota=50000, Memory=268435456
+    )
+
+    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+
+        mock_from_env.return_value.containers.get.return_value = fake_container
+
+        result = runner.invoke(
+            app, ["resize", "plex", "--cpus", "1.0"], input="n\n"
+        )
+
+    assert "Current CPU limit: 0.50 cores" in result.output
+    assert "Current memory limit: 268435456 bytes" in result.output
+
+
+def test_resize_confirmed_shows_unlimited_when_no_configured_limits(
+    isolated_cwd, temp_db
+):
+
+    fake_container = _fake_container_with_limits()
+
+    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+
+        mock_from_env.return_value.containers.get.return_value = fake_container
+
+        result = runner.invoke(
+            app, ["resize", "plex", "--cpus", "1.0"], input="n\n"
+        )
+
+    assert "Current CPU limit: unlimited" in result.output
+    assert "Current memory limit: unlimited" in result.output

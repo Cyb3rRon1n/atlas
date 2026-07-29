@@ -1,4 +1,8 @@
-from atlas.monitoring.client import PrometheusUnavailableError, query_prometheus
+from atlas.monitoring.client import (
+    PrometheusUnavailableError,
+    query_prometheus,
+    query_prometheus_vector,
+)
 
 
 CPU_QUERY = (
@@ -12,6 +16,15 @@ MEMORY_QUERY = (
 DISK_QUERY = (
     '100 - (node_filesystem_avail_bytes{mountpoint="/"} '
     '/ node_filesystem_size_bytes{mountpoint="/"} * 100)'
+)
+
+CONTAINER_CPU_QUERY = (
+    'sum(rate(container_cpu_usage_seconds_total{name!=""}[5m])) by (name) * 100'
+)
+
+CONTAINER_MEMORY_QUERY = (
+    'container_memory_usage_bytes{name!=""} '
+    '/ scalar(node_memory_MemTotal_bytes) * 100'
 )
 
 
@@ -47,6 +60,45 @@ def collect_metrics(base_url: str):
     return {
         "available": True,
         "metrics": metrics
+    }
+
+
+def collect_container_metrics(base_url: str):
+    """
+    Query cAdvisor-sourced per-container CPU/memory metrics via the
+    same Prometheus server the host metrics come from - cAdvisor is
+    just a second exporter scraped by that Prometheus, not a separate
+    integration. Shaped like collect_metrics: "available" reflects
+    whether Prometheus itself was reachable; a container simply not
+    present in either query's result (e.g. cAdvisor isn't scraped, or
+    no containers exist) yields an empty containers dict, not an
+    error.
+    """
+
+    try:
+        cpu = query_prometheus_vector(base_url, CONTAINER_CPU_QUERY, label="name")
+        memory = query_prometheus_vector(base_url, CONTAINER_MEMORY_QUERY, label="name")
+
+    except PrometheusUnavailableError:
+
+        return {
+            "available": False,
+            "containers": {}
+        }
+
+    names = set(cpu) | set(memory)
+
+    containers = {
+        name: {
+            "cpu_percent": cpu.get(name),
+            "memory_percent": memory.get(name),
+        }
+        for name in names
+    }
+
+    return {
+        "available": True,
+        "containers": containers
     }
 
 

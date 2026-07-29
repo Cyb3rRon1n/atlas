@@ -387,6 +387,21 @@ def monitor():
 
     containers = container_data["containers"]
 
+    # cpu_percent_of_limit/memory_percent_of_limit are "percent of what
+    # this container was actually allocated" - a different question
+    # from cpu_percent/memory_percent's "percent of the host". Most
+    # containers have no configured limit at all, so those two keys
+    # are None a lot more often than the host-relative ones - that's
+    # "not applicable", not "unavailable", so they're skipped entirely
+    # below rather than printed as unavailable.
+    allocation_metric_names = {"cpu_percent_of_limit", "memory_percent_of_limit"}
+
+    container_thresholds = {
+        **thresholds,
+        "cpu_percent_of_limit": monitoring_settings.cpu_allocation_threshold,
+        "memory_percent_of_limit": monitoring_settings.memory_allocation_threshold,
+    }
+
     console.print(
         "\n[bold]Containers:[/bold]"
     )
@@ -399,13 +414,16 @@ def monitor():
 
     for container_name, values in containers.items():
 
-        container_exceeded = evaluate_thresholds(values, thresholds)
+        container_exceeded = evaluate_thresholds(values, container_thresholds)
 
         console.print(f"\n{container_name}:")
 
         for name, value in values.items():
 
             if value is None:
+
+                if name in allocation_metric_names:
+                    continue
 
                 console.print(
                     f"  {name}: unavailable"
@@ -417,7 +435,7 @@ def monitor():
 
                 console.print(
                     f"  [yellow]![/yellow] {name}: {value:.1f}% "
-                    f"(threshold: {thresholds[name]:.1f}%)"
+                    f"(threshold: {container_thresholds[name]:.1f}%)"
                 )
 
             else:
@@ -431,7 +449,7 @@ def monitor():
 
     previous_monitoring = previous.get("monitoring") if previous else None
 
-    changes = diff_monitoring(previous_monitoring, data, thresholds)
+    changes = diff_monitoring(previous_monitoring, data, container_thresholds)
 
     if previous_monitoring:
 

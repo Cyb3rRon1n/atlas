@@ -33,6 +33,8 @@ class MonitoringConfig(BaseModel):
     cpu_threshold: float = 90.0
     memory_threshold: float = 90.0
     disk_threshold: float = 90.0
+    cpu_allocation_threshold: float = 90.0
+    memory_allocation_threshold: float = 90.0
 
 
 class AtlasConfig(BaseModel):

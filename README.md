@@ -45,6 +45,51 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 
 ---
 
+## Requirements
+
+Atlas itself needs very little. Everything past the base install is an optional integration, independently gated by config, and `atlas doctor` will tell you exactly what's configured versus missing.
+
+**To run Atlas at all:**
+
+- Linux (see [Platform & Integration Support](#platform--integration-support) below)
+- Python 3.11+ and pip
+
+That's enough for `atlas discover`, `atlas report`, `atlas docker`, `atlas services`, `atlas compose`, and `atlas doctor` — no config file, no external services.
+
+**Optional — only needed for the specific integration it backs:**
+
+| Integration | Enables | What it actually needs |
+|---|---|---|
+| Docker | Container discovery, `atlas restart`/`stop`/`resize`, cAdvisor container metrics | A Docker daemon reachable from wherever Atlas runs — the local socket by default, or `DOCKER_HOST` for a remote one |
+| Proxmox VE | `atlas proxmox scan`/`restart` | A reachable Proxmox host and an API token — a network call over HTTPS, nothing installed on the Proxmox host itself. See [Deployment](https://cyb3rron1n.github.io/atlas/deployment/) for the recommended (not required) topology |
+| Anthropic **or** Ollama | `atlas analyze`, `atlas chat` | An `ANTHROPIC_API_KEY`, or a locally-reachable Ollama instance — only one is needed |
+| Prometheus | `atlas monitor` | An existing Prometheus, [`node_exporter`](https://github.com/prometheus/node_exporter) for host metrics, and [cAdvisor](https://github.com/google/cadvisor) if you also want per-container metrics |
+
+None of the above is required to get started — see [Quick Start](#quick-start).
+
+---
+
+## Platform & Integration Support
+
+"Verified" means run against real infrastructure, not just unit-tested against mocks — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/) for exactly what each verification covered.
+
+| Platform | Status |
+|---|---|
+| Ubuntu | ✅ verified — CI runs on `ubuntu-latest`, and it's the platform this project actually develops and tests against |
+| Other Linux distros (Debian, Fedora, Arch, ...) | best-effort — no distro-specific code (discovery is pure `psutil`/`platform`/`socket`, no `apt`/`dpkg`/`systemctl` calls), but not run against real hardware |
+| macOS / Windows | out of scope — `pyproject.toml` classifies POSIX/Linux only |
+
+| Integration | Status |
+|---|---|
+| Docker | ✅ verified — restart/stop/resize run against real containers, including a real docker-py/Engine API gotcha found and fixed along the way (`NanoCpus` vs. `CpuPeriod`/`CpuQuota`) |
+| Proxmox VE | ✅ verified — scan and restart run against a real Proxmox VE host, including two real auth/certificate gotchas documented in [Deployment](https://cyb3rron1n.github.io/atlas/deployment/) |
+| Ollama | ✅ verified — a real local `llama3.1`, including tool-use, `atlas chat`, and multi-step action plans |
+| Anthropic | ◐ partially verified — authentication and error handling confirmed against the real API; a full successful response is pending the maintainer's own billing setup |
+| Prometheus + node_exporter | ✅ verified — real Prometheus + `node_exporter`, all default host metric queries |
+| Prometheus + cAdvisor | ✅ verified — real cAdvisor, per-container metrics and allocation-relative thresholds |
+
+---
+
 ## Quick Start
 
 Clone the repository and set up a virtual environment:

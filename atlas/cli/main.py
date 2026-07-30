@@ -1,3 +1,5 @@
+import json
+
 import typer
 from atlas.actions import ACTIONS, execute_action
 from atlas.discovery import run_discovery
@@ -558,14 +560,21 @@ def resize_guest_command(
 
 
 @app.command()
-def monitor():
+def monitor(
+    json_output: bool = typer.Option(
+        False, "--json",
+        help="Print machine-readable JSON instead of formatted output."
+    )
+):
     """
     Query Prometheus for host metrics.
     """
 
-    console.print(
-        "[bold blue]Atlas Monitoring[/bold blue]\n"
-    )
+    if not json_output:
+
+        console.print(
+            "[bold blue]Atlas Monitoring[/bold blue]\n"
+        )
 
     settings = load_config()
 
@@ -574,13 +583,19 @@ def monitor():
 
     if not monitoring_settings.enabled:
 
-        console.print(
-            "[yellow]Monitoring integration disabled.[/yellow]"
-        )
+        if json_output:
 
-        console.print(
-            "Enable it in atlas.yaml"
-        )
+            print(json.dumps({"enabled": False}, indent=2))
+
+        else:
+
+            console.print(
+                "[yellow]Monitoring integration disabled.[/yellow]"
+            )
+
+            console.print(
+                "Enable it in atlas.yaml"
+            )
 
         return
 
@@ -595,11 +610,22 @@ def monitor():
 
     if not data["available"]:
 
-        console.print(
-            "[red]Unable to reach Prometheus.[/red]"
-        )
+        if json_output:
 
-        return
+            print(
+                json.dumps(
+                    {"enabled": True, "available": False},
+                    indent=2
+                )
+            )
+
+        else:
+
+            console.print(
+                "[red]Unable to reach Prometheus.[/red]"
+            )
+
+        raise typer.Exit(code=1)
 
 
     metrics = data["metrics"]
@@ -612,28 +638,30 @@ def monitor():
 
     exceeded = evaluate_thresholds(metrics, thresholds)
 
-    for name, value in metrics.items():
+    if not json_output:
 
-        if value is None:
+        for name, value in metrics.items():
 
-            console.print(
-                f"{name}: unavailable"
-            )
+            if value is None:
 
-            continue
+                console.print(
+                    f"{name}: unavailable"
+                )
 
-        if exceeded.get(name):
+                continue
 
-            console.print(
-                f"[yellow]![/yellow] {name}: {value:.1f}% "
-                f"(threshold: {thresholds[name]:.1f}%)"
-            )
+            if exceeded.get(name):
 
-        else:
+                console.print(
+                    f"[yellow]![/yellow] {name}: {value:.1f}% "
+                    f"(threshold: {thresholds[name]:.1f}%)"
+                )
 
-            console.print(
-                f"[green]✓[/green] {name}: {value:.1f}%"
-            )
+            else:
+
+                console.print(
+                    f"[green]✓[/green] {name}: {value:.1f}%"
+                )
 
 
     container_data = collect_container_metrics(
@@ -657,19 +685,31 @@ def monitor():
         "memory_percent_of_limit": monitoring_settings.memory_allocation_threshold,
     }
 
-    console.print(
-        "\n[bold]Containers:[/bold]"
-    )
-
-    if not containers:
+    if not json_output:
 
         console.print(
-            "No container metrics available (is cAdvisor being scraped?)"
+            "\n[bold]Containers:[/bold]"
         )
+
+        if not containers:
+
+            console.print(
+                "No container metrics available (is cAdvisor being scraped?)"
+            )
+
+    containers_payload = {}
 
     for container_name, values in containers.items():
 
         container_exceeded = evaluate_thresholds(values, container_thresholds)
+
+        containers_payload[container_name] = {
+            "metrics": values,
+            "exceeded": container_exceeded
+        }
+
+        if json_output:
+            continue
 
         console.print(f"\n{container_name}:")
 
@@ -706,7 +746,7 @@ def monitor():
 
     changes = diff_monitoring(previous_monitoring, data, container_thresholds)
 
-    if previous_monitoring:
+    if not json_output and previous_monitoring:
 
         console.print()
 
@@ -772,38 +812,101 @@ def monitor():
             )
         )
 
-    console.print(
-        "\n[green]✓ Monitoring scan complete[/green]"
+    healthy = (
+        not any(exceeded.values())
+        and not any(
+            any(container["exceeded"].values())
+            for container in containers_payload.values()
+        )
     )
+
+    if json_output:
+
+        print(
+            json.dumps(
+                {
+                    "enabled": True,
+                    "available": True,
+                    "metrics": metrics,
+                    "thresholds": thresholds,
+                    "exceeded": exceeded,
+                    "container_thresholds": container_thresholds,
+                    "containers": containers_payload,
+                    "changes": changes,
+                    "healthy": healthy
+                },
+                indent=2
+            )
+        )
+
+    else:
+
+        console.print(
+            "\n[green]✓ Monitoring scan complete[/green]"
+        )
+
+    if not healthy:
+        raise typer.Exit(code=1)
+
+
+def _trend_summary(points):
+
+    values = [value for _, value in points]
+
+    return {
+        "latest": values[-1],
+        "min": min(values),
+        "max": max(values),
+        "avg": sum(values) / len(values),
+        "samples": len(values)
+    }
 
 
 @app.command()
-def trends(limit: int = 20):
+def trends(
+    limit: int = 20,
+    json_output: bool = typer.Option(
+        False, "--json",
+        help="Print machine-readable JSON instead of formatted output."
+    )
+):
     """
     Show resource-usage trends from saved atlas monitor snapshots.
     """
 
-    console.print(
-        "[bold blue]Atlas Trends[/bold blue]\n"
-    )
+    if not json_output:
+
+        console.print(
+            "[bold blue]Atlas Trends[/bold blue]\n"
+        )
 
     records = KnowledgeQueries().environment_history(limit)
 
     if not any(record["data"].get("monitoring") for record in records):
 
-        console.print(
-            "[yellow]No monitoring history found.[/yellow]"
-        )
+        if json_output:
 
-        console.print(
-            "Run: atlas monitor (a few times, to build history)"
-        )
+            print(json.dumps({"host": {}, "containers": {}}, indent=2))
+
+        else:
+
+            console.print(
+                "[yellow]No monitoring history found.[/yellow]"
+            )
+
+            console.print(
+                "Run: atlas monitor (a few times, to build history)"
+            )
 
         return
 
-    console.print(
-        "[bold]Host:[/bold]"
-    )
+    host_payload = {}
+
+    if not json_output:
+
+        console.print(
+            "[bold]Host:[/bold]"
+        )
 
     for metric_name in ("cpu_percent", "memory_percent", "disk_percent"):
 
@@ -812,19 +915,29 @@ def trends(limit: int = 20):
         if not points:
             continue
 
-        values = [value for _, value in points]
+        summary = _trend_summary(points)
+        host_payload[metric_name] = summary
+
+        if json_output:
+            continue
 
         console.print(
-            f"  {metric_name}: latest {values[-1]:.1f}%, "
-            f"min {min(values):.1f}%, max {max(values):.1f}%, "
-            f"avg {sum(values) / len(values):.1f}% ({len(values)} samples)"
+            f"  {metric_name}: latest {summary['latest']:.1f}%, "
+            f"min {summary['min']:.1f}%, max {summary['max']:.1f}%, "
+            f"avg {summary['avg']:.1f}% ({summary['samples']} samples)"
         )
+
+    containers_payload = {}
 
     for container_name in known_container_names(records):
 
-        console.print(
-            f"\n[bold]{container_name}:[/bold]"
-        )
+        container_payload = {}
+
+        if not json_output:
+
+            console.print(
+                f"\n[bold]{container_name}:[/bold]"
+            )
 
         for metric_name in (
             "cpu_percent", "memory_percent",
@@ -838,13 +951,28 @@ def trends(limit: int = 20):
             if not points:
                 continue
 
-            values = [value for _, value in points]
+            summary = _trend_summary(points)
+            container_payload[metric_name] = summary
+
+            if json_output:
+                continue
 
             console.print(
-                f"  {metric_name}: latest {values[-1]:.1f}%, "
-                f"min {min(values):.1f}%, max {max(values):.1f}%, "
-                f"avg {sum(values) / len(values):.1f}% ({len(values)} samples)"
+                f"  {metric_name}: latest {summary['latest']:.1f}%, "
+                f"min {summary['min']:.1f}%, max {summary['max']:.1f}%, "
+                f"avg {summary['avg']:.1f}% ({summary['samples']} samples)"
             )
+
+        containers_payload[container_name] = container_payload
+
+    if json_output:
+
+        print(
+            json.dumps(
+                {"host": host_payload, "containers": containers_payload},
+                indent=2
+            )
+        )
 
 
 @app.command()
@@ -878,29 +1006,50 @@ def status():
 
 
 @app.command()
-def doctor():
+def doctor(
+    json_output: bool = typer.Option(
+        False, "--json",
+        help="Print machine-readable JSON instead of formatted output."
+    )
+):
     """
     Run Atlas health checks.
     """
 
-    console.print(
-        "[bold cyan]Atlas Doctor[/bold cyan]\n"
-    )
-
     results = run_checks()
 
-    for check in results:
+    healthy = all(check["status"] for check in results)
 
-        if check["status"]:
-            symbol = "[green]✓[/green]"
-        else:
-            symbol = "[yellow]![/yellow]"
+    if json_output:
+
+        print(
+            json.dumps(
+                {"checks": results, "healthy": healthy},
+                indent=2
+            )
+        )
+
+    else:
 
         console.print(
-            f"{symbol} "
-            f"{check['name']}: "
-            f"{check['details']}"
+            "[bold cyan]Atlas Doctor[/bold cyan]\n"
         )
+
+        for check in results:
+
+            if check["status"]:
+                symbol = "[green]✓[/green]"
+            else:
+                symbol = "[yellow]![/yellow]"
+
+            console.print(
+                f"{symbol} "
+                f"{check['name']}: "
+                f"{check['details']}"
+            )
+
+    if not healthy:
+        raise typer.Exit(code=1)
 
 
 @app.command()

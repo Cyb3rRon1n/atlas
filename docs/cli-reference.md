@@ -9,7 +9,7 @@ All 20 current Atlas commands. Run `atlas <command> --help` for any command-spec
 | `atlas version` | Display the Atlas version. |
 | `atlas status` | Display current Atlas status. |
 | `atlas init` | Interactively generate `atlas.yaml` — prompts only for Proxmox/AI provider/Prometheus settings, skips whatever you decline, never writes `ANTHROPIC_API_KEY` to disk. Logs the session to `logs/atlas-init-<timestamp>.log` (secrets redacted) for troubleshooting and records. Optional — Atlas runs on safe defaults without an `atlas.yaml` at all. |
-| `atlas doctor` | Run Atlas health checks (Python, memory, storage, Docker, inventory) plus readiness checks for the optional integrations (Proxmox, AI provider, Prometheus) against the current `atlas.yaml`. |
+| `atlas doctor` | Run Atlas health checks (Python, memory, storage, Docker, inventory) plus readiness checks for the optional integrations (Proxmox, AI provider, Prometheus) against the current `atlas.yaml`. `--json` prints `{"checks": [...], "healthy": bool}` instead. Exits 1 if any check is unhealthy, in either output mode - safe to check `$?` from cron without `--json`. |
 | `atlas config` | Display the active Atlas configuration. |
 | `atlas runtime` | Display Atlas runtime information. |
 
@@ -23,8 +23,8 @@ All 20 current Atlas commands. Run `atlas <command> --help` for any command-spec
 | `atlas services` | Detect known homelab services running in Docker (see [Service Catalog](service-catalog.md)). |
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure — nodes, VMs, and containers — and report what changed since the last scan (requires `proxmox.enabled: true`, see [Configuration](configuration.md#proxmox)). |
-| `atlas monitor` | Query Prometheus for host metrics and flag any at or above their configured threshold (requires `monitoring.enabled: true`, see [Configuration](configuration.md#monitoring)). |
-| `atlas trends` | Show host and per-container resource-usage trends (latest/min/max/avg) from the environment snapshots `atlas monitor` has been saving. `--limit` controls how many recent snapshots to consider (default 20). |
+| `atlas monitor` | Query Prometheus for host metrics and flag any at or above their configured threshold (requires `monitoring.enabled: true`, see [Configuration](configuration.md#monitoring)). `--json` prints the full scan as one payload instead. Exits 1 if disabled=false and Prometheus is unreachable, or if any metric exceeded its threshold; exits 0 when disabled (an intentional state, not a failure) - in either output mode. |
+| `atlas trends` | Show host and per-container resource-usage trends (latest/min/max/avg) from the environment snapshots `atlas monitor` has been saving. `--limit` controls how many recent snapshots to consider (default 20). `--json` prints `{"host": {...}, "containers": {...}}` instead - no exit-code logic, since a trend report has no health/threshold concept to signal. |
 
 ## Plugins
 

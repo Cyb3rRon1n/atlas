@@ -1,0 +1,63 @@
+name: Bug report
+description: Something isn't working the way it should
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and output
+      description: The exact `atlas ...` command you ran, and its full output (or a relevant excerpt). Use `--json` output where applicable — it's easier to compare against expected values.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor-output
+    attributes:
+      label: atlas doctor output
+      description: Run `atlas doctor` (or `atlas doctor --json`) and paste the result — helps distinguish "not configured" from "genuinely broken."
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: Atlas version
+      description: Output of `atlas version`
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS / distro
+      description: e.g. Ubuntu 24.04, Fedora 44, Debian 12 — see the Platform & Integration Support table in the README for what's verified vs. best-effort.
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant atlas.yaml (secrets redacted)
+      description: Only the sections relevant to the bug — remove `token_value`/`password`/any real hostnames or IPs you'd rather not share.
+      render: yaml
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?
+      description: Logs, screenshots, or context that might help.

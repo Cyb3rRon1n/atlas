@@ -1,0 +1,31 @@
+name: Feature request / idea
+description: Suggest something Atlas doesn't do yet, or an improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The underlying problem or workflow, not just the feature name — helps figure out the right shape for it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like Atlas to do?
+      description: Your idea, if you have one. Rough is fine.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What are you doing today instead?
+      description: How you're currently working around the gap, if at all.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: A quick check
+      description: Atlas is observe-first and approval-gated — see CONTRIBUTING.md's project philosophy.
+      options:
+        - label: I understand new mutating actions need to stay approval-gated (no autonomous execution, no bypass flag) to fit Atlas's existing design.

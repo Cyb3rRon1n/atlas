@@ -32,6 +32,7 @@ from atlas.monitoring.trends import (
     host_metric_trend,
     known_container_names,
 )
+from atlas.proxmox.trends import guest_metric_trend, known_guests
 from rich.console import Console
 from atlas.events import AtlasEvent
 from atlas.knowledge.queries import KnowledgeQueries
@@ -882,11 +883,18 @@ def trends(
 
     records = KnowledgeQueries().environment_history(limit)
 
-    if not any(record["data"].get("monitoring") for record in records):
+    if not any(
+        record["data"].get("monitoring") or record["data"].get("virtualization")
+        for record in records
+    ):
 
         if json_output:
 
-            print(json.dumps({"host": {}, "containers": {}}, indent=2))
+            print(
+                json.dumps(
+                    {"host": {}, "containers": {}, "guests": {}}, indent=2
+                )
+            )
 
         else:
 
@@ -895,7 +903,8 @@ def trends(
             )
 
             console.print(
-                "Run: atlas monitor (a few times, to build history)"
+                "Run: atlas monitor and/or atlas proxmox scan "
+                "(a few times, to build history)"
             )
 
         return
@@ -965,11 +974,48 @@ def trends(
 
         containers_payload[container_name] = container_payload
 
+    guests_payload = {}
+
+    for vmid, name in known_guests(records).items():
+
+        guest_payload = {"name": name}
+
+        if not json_output:
+
+            console.print(
+                f"\n[bold]{name} ({vmid}):[/bold]"
+            )
+
+        for metric_name in ("cpu_percent", "memory_percent"):
+
+            points = guest_metric_trend(records, vmid, metric_name)
+
+            if not points:
+                continue
+
+            summary = _trend_summary(points)
+            guest_payload[metric_name] = summary
+
+            if json_output:
+                continue
+
+            console.print(
+                f"  {metric_name}: latest {summary['latest']:.1f}%, "
+                f"min {summary['min']:.1f}%, max {summary['max']:.1f}%, "
+                f"avg {summary['avg']:.1f}% ({summary['samples']} samples)"
+            )
+
+        guests_payload[vmid] = guest_payload
+
     if json_output:
 
         print(
             json.dumps(
-                {"host": host_payload, "containers": containers_payload},
+                {
+                    "host": host_payload,
+                    "containers": containers_payload,
+                    "guests": guests_payload
+                },
                 indent=2
             )
         )

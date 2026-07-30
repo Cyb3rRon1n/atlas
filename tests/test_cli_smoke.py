@@ -981,7 +981,9 @@ def test_trends_json_when_no_monitoring_history(isolated_cwd, temp_db):
     result = runner.invoke(app, ["trends", "--json"])
 
     assert result.exit_code == 0
-    assert json.loads(result.output) == {"host": {}, "containers": {}}
+    assert json.loads(result.output) == {
+        "host": {}, "containers": {}, "guests": {}
+    }
 
 
 def test_trends_json_reports_host_and_container_summaries(isolated_cwd, temp_db):
@@ -1016,6 +1018,92 @@ def test_trends_json_reports_host_and_container_summaries(isolated_cwd, temp_db)
     assert payload["containers"]["plex"]["cpu_percent"] == {
         "latest": 15.0, "min": 5.0, "max": 15.0,
         "avg": 10.0, "samples": 3
+    }
+
+
+def test_trends_shows_guest_section_from_proxmox_scan_only_history(
+    isolated_cwd, temp_db
+):
+    """
+    A host that's only ever run atlas proxmox scan (no atlas monitor
+    at all) should still get a real trends report - this was a real
+    pre-existing gap the "no monitoring history" early-return check
+    had before it also considered virtualization data.
+    """
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.knowledge.store import KnowledgeStore
+
+    store = KnowledgeStore()
+
+    for cpu_value in (0.10, 0.20, 0.30):
+
+        environment = AtlasEnvironmentContext()
+
+        environment.update("virtualization", {
+            "nodes": [],
+            "guests": [
+                {
+                    "vmid": 100, "name": "plex", "cpu": cpu_value,
+                    "maxcpu": 4, "mem": 1_000_000, "maxmem": 4_000_000
+                }
+            ]
+        })
+
+        store.save_environment(environment)
+
+    result = runner.invoke(app, ["trends"])
+
+    assert result.exit_code == 0
+    assert "No monitoring history found." not in result.output
+    assert "plex (100):" in result.output
+    assert (
+        "cpu_percent: latest 30.0%, min 10.0%, max 30.0%, avg 20.0% "
+        "(3 samples)" in result.output
+    )
+    assert (
+        "memory_percent: latest 25.0%, min 25.0%, max 25.0%, avg 25.0% "
+        "(3 samples)" in result.output
+    )
+
+
+def test_trends_json_reports_guest_summaries(isolated_cwd, temp_db):
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.knowledge.store import KnowledgeStore
+
+    store = KnowledgeStore()
+
+    for cpu_value in (0.10, 0.20, 0.30):
+
+        environment = AtlasEnvironmentContext()
+
+        environment.update("virtualization", {
+            "nodes": [],
+            "guests": [
+                {
+                    "vmid": 100, "name": "plex", "cpu": cpu_value,
+                    "maxcpu": 4, "mem": 1_000_000, "maxmem": 4_000_000
+                }
+            ]
+        })
+
+        store.save_environment(environment)
+
+    result = runner.invoke(app, ["trends", "--json"])
+
+    assert result.exit_code == 0
+
+    payload = json.loads(result.output)
+
+    assert payload["guests"]["100"]["name"] == "plex"
+    assert payload["guests"]["100"]["cpu_percent"] == {
+        "latest": 30.0, "min": 10.0, "max": 30.0,
+        "avg": 20.0, "samples": 3
+    }
+    assert payload["guests"]["100"]["memory_percent"] == {
+        "latest": 25.0, "min": 25.0, "max": 25.0,
+        "avg": 25.0, "samples": 3
     }
 
 

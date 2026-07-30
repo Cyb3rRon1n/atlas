@@ -196,6 +196,10 @@ def test_init_declining_review_writes_nothing(isolated_cwd):
 
 
 def test_doctor(isolated_cwd):
+    """
+    Docker unavailable is a real unhealthy check, so this now exits 1
+    - exit codes are meaningful all the time, not just under --json.
+    """
 
     with patch(
         "atlas.docker.manager.docker.from_env",
@@ -203,8 +207,44 @@ def test_doctor(isolated_cwd):
     ):
         result = runner.invoke(app, ["doctor"])
 
-    assert result.exit_code == 0
+    assert result.exit_code == 1
     assert "Atlas Doctor" in result.output
+
+
+def test_doctor_json_reports_healthy_and_exits_zero(isolated_cwd):
+
+    fake_checks = [
+        {"name": "Python", "status": True, "details": "3.14.6"},
+        {"name": "Docker", "status": True, "details": "4 containers"},
+    ]
+
+    with patch("atlas.cli.main.run_checks", return_value=fake_checks):
+
+        result = runner.invoke(app, ["doctor", "--json"])
+
+    assert result.exit_code == 0
+
+    payload = json.loads(result.output)
+
+    assert payload == {"checks": fake_checks, "healthy": True}
+
+
+def test_doctor_json_reports_unhealthy_and_exits_one(isolated_cwd):
+
+    fake_checks = [
+        {"name": "Python", "status": True, "details": "3.14.6"},
+        {"name": "Docker", "status": False, "details": "unavailable"},
+    ]
+
+    with patch("atlas.cli.main.run_checks", return_value=fake_checks):
+
+        result = runner.invoke(app, ["doctor", "--json"])
+
+    assert result.exit_code == 1
+
+    payload = json.loads(result.output)
+
+    assert payload == {"checks": fake_checks, "healthy": False}
 
 
 def test_history_with_no_events(isolated_cwd, temp_db):
@@ -936,6 +976,49 @@ def test_trends_prints_host_and_container_summaries(isolated_cwd, temp_db):
     assert "cpu_percent: latest 15.0%, min 5.0%, max 15.0%, avg 10.0% (3 samples)" in result.output
 
 
+def test_trends_json_when_no_monitoring_history(isolated_cwd, temp_db):
+
+    result = runner.invoke(app, ["trends", "--json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.output) == {"host": {}, "containers": {}}
+
+
+def test_trends_json_reports_host_and_container_summaries(isolated_cwd, temp_db):
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.knowledge.store import KnowledgeStore
+
+    store = KnowledgeStore()
+
+    for cpu_value in (10.0, 20.0, 30.0):
+
+        environment = AtlasEnvironmentContext()
+
+        environment.update("monitoring", {
+            "metrics": {"cpu_percent": cpu_value, "memory_percent": None},
+            "containers": {"plex": {"cpu_percent": cpu_value / 2}}
+        })
+
+        store.save_environment(environment)
+
+    result = runner.invoke(app, ["trends", "--json"])
+
+    assert result.exit_code == 0
+
+    payload = json.loads(result.output)
+
+    assert payload["host"]["cpu_percent"] == {
+        "latest": 30.0, "min": 10.0, "max": 30.0,
+        "avg": 20.0, "samples": 3
+    }
+    assert "memory_percent" not in payload["host"]
+    assert payload["containers"]["plex"]["cpu_percent"] == {
+        "latest": 15.0, "min": 5.0, "max": 15.0,
+        "avg": 10.0, "samples": 3
+    }
+
+
 def test_proxmox_scan_when_disabled_does_not_attempt_connection(isolated_cwd):
     """
     proxmox.enabled defaults to false, so this exercises the fast exit
@@ -1292,6 +1375,103 @@ def test_monitor_when_disabled_does_not_attempt_connection(isolated_cwd):
     assert "Monitoring integration disabled." in result.output
 
 
+def test_monitor_json_when_disabled(isolated_cwd):
+
+    result = runner.invoke(app, ["monitor", "--json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.output) == {"enabled": False}
+
+
+def test_monitor_json_when_unreachable_exits_one(isolated_cwd, temp_db):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "monitoring:\n"
+        "  enabled: true\n"
+        "  prometheus_url: http://localhost:9090\n"
+    )
+
+    import requests
+
+    with patch(
+        "requests.get",
+        side_effect=requests.exceptions.ConnectionError("connection refused")
+    ):
+
+        result = runner.invoke(app, ["monitor", "--json"])
+
+    assert result.exit_code == 1
+    assert json.loads(result.output) == {"enabled": True, "available": False}
+
+
+def test_monitor_json_reports_healthy_and_exits_zero(isolated_cwd, temp_db):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "monitoring:\n"
+        "  enabled: true\n"
+        "  prometheus_url: http://localhost:9090\n"
+    )
+
+    def fake_get(url, params=None, timeout=None):
+
+        response = MagicMock()
+
+        response.json.return_value = {
+            "status": "success",
+            "data": {"result": [{"value": [0, "12.3"]}]}
+        }
+
+        return response
+
+    with patch("requests.get", side_effect=fake_get):
+
+        result = runner.invoke(app, ["monitor", "--json"])
+
+    assert result.exit_code == 0
+
+    payload = json.loads(result.output)
+
+    assert payload["enabled"] is True
+    assert payload["available"] is True
+    assert payload["healthy"] is True
+    assert payload["metrics"]["cpu_percent"] == 12.3
+    assert payload["exceeded"]["cpu_percent"] is False
+    assert payload["containers"] == {}
+    assert payload["changes"] == []
+
+
+def test_monitor_json_reports_unhealthy_and_exits_one(isolated_cwd, temp_db):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "monitoring:\n"
+        "  enabled: true\n"
+        "  prometheus_url: http://localhost:9090\n"
+        "  cpu_threshold: 80\n"
+    )
+
+    def fake_get(url, params=None, timeout=None):
+
+        response = MagicMock()
+
+        response.json.return_value = {
+            "status": "success",
+            "data": {"result": [{"value": [0, "92.0"]}]}
+        }
+
+        return response
+
+    with patch("requests.get", side_effect=fake_get):
+
+        result = runner.invoke(app, ["monitor", "--json"])
+
+    assert result.exit_code == 1
+
+    payload = json.loads(result.output)
+
+    assert payload["healthy"] is False
+    assert payload["exceeded"]["cpu_percent"] is True
+
+
 def test_monitor_when_enabled_saves_metrics_to_environment(
     isolated_cwd, temp_db
 ):
@@ -1352,7 +1532,7 @@ def test_monitor_flags_metric_over_threshold_and_publishes_event(
 
         result = runner.invoke(app, ["monitor"])
 
-    assert result.exit_code == 0
+    assert result.exit_code == 1
     assert "cpu_percent: 92.0% (threshold: 80.0%)" in result.output
 
     event_types = [
@@ -1447,7 +1627,7 @@ def test_monitor_flags_container_over_its_own_allocation_threshold(
 
         result = runner.invoke(app, ["monitor"])
 
-    assert result.exit_code == 0
+    assert result.exit_code == 1
     assert "cpu_percent_of_limit: 95.0% (threshold: 80.0%)" in result.output
     assert "memory_percent_of_limit" not in result.output
 
@@ -1547,7 +1727,7 @@ def test_monitor_publishes_changes_detected_event_when_metric_crosses_since_last
     with patch("requests.get", side_effect=make_fake_get("92.0")):
         second = runner.invoke(app, ["monitor"])
 
-    assert second.exit_code == 0
+    assert second.exit_code == 1
     assert "Changes since last scan" in second.output
 
     event_types = [

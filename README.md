@@ -37,7 +37,7 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 - ✅ Persisted `atlas chat` transcripts — a session's conversation saves as one event on exit, visible via `atlas history`
 - ✅ `get_container_logs` tool — lets both AI providers pull recent log lines for a specific container instead of reasoning from status alone
 - ✅ Prometheus monitoring — host and per-container (cAdvisor) metrics, configurable threshold alerting, and change detection between scans
-- ✅ Resource-usage trending (`atlas trends`) — latest/min/max/avg over time for host and per-container metrics, built from the history `atlas monitor` already saves
+- ✅ Resource-usage trending (`atlas trends`) — latest/min/max/avg over time for host, per-container, and per-Proxmox-guest metrics, built from the history `atlas monitor`/`atlas proxmox scan` already save
 - ✅ Guided setup (`atlas init`) and environment/integration health checks (`atlas doctor`)
 - ✅ `--json` output and cron-friendly exit codes on `atlas doctor`/`atlas monitor`/`atlas trends` — wire either health check into your own cron job or systemd timer without Atlas becoming a daemon
 - ✅ Event-driven architecture with persistent operational history
@@ -167,7 +167,7 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas proxmox stop <vmid>` | Shut down a Proxmox VM or LXC guest (ACPI request). Prompts for confirmation before acting. |
 | `atlas proxmox resize <vmid>` | Resize a Proxmox guest's CPU (`--cpus`) and/or memory (`--memory`) limit. Prompts for confirmation before acting. |
 | `atlas monitor` | Query Prometheus for host metrics and flag any at or above their configured threshold (requires `monitoring.enabled: true`). `--json` for machine-readable output; exits 1 if anything's exceeded or Prometheus is unreachable. |
-| `atlas trends` | Show host and per-container resource-usage trends from saved `atlas monitor` snapshots. `--json` for machine-readable output. |
+| `atlas trends` | Show host, per-container, and per-Proxmox-guest resource-usage trends from saved `atlas monitor`/`atlas proxmox scan` snapshots. `--json` for machine-readable output. |
 | `atlas plugins` | Display registered Atlas plugins. |
 | `atlas history` | Display recorded operational events. |
 | `atlas intelligence` | Display the latest stored environment context. |
@@ -193,7 +193,7 @@ Run `atlas <command> --help` for command-specific options.
 
 **Proxmox Integration** — `atlas proxmox scan` inventories a cluster (nodes, VMs, containers) and reports what changed since the last scan. Atlas can also act: `atlas proxmox restart`/`stop`/`resize <vmid>` — the same three actions Docker containers have, always after showing current state and asking for confirmation. Token-based auth is recommended — see [Configuration](#configuration).
 
-**Monitoring** — `atlas monitor` queries an existing Prometheus for host and per-container metrics (via `node_exporter`/cAdvisor), flags anything over a configurable threshold, and reports what changed since the last scan. `atlas trends` shows how those metrics moved over time, built entirely from history `atlas monitor` already saves — no new collection, no new storage. Disabled by default.
+**Monitoring** — `atlas monitor` queries an existing Prometheus for host and per-container metrics (via `node_exporter`/cAdvisor), flags anything over a configurable threshold, and reports what changed since the last scan. `atlas trends` shows how those metrics moved over time — host, per-container, and per-Proxmox-guest — built entirely from history `atlas monitor`/`atlas proxmox scan` already save, no new collection or storage. Disabled by default.
 
 **Plugin Architecture** — new discovery/integration capabilities register through a plugin system (`atlas plugins`) without touching the core.
 

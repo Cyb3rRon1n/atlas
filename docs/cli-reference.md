@@ -24,7 +24,7 @@ All 20 current Atlas commands. Run `atlas <command> --help` for any command-spec
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure — nodes, VMs, and containers — and report what changed since the last scan (requires `proxmox.enabled: true`, see [Configuration](configuration.md#proxmox)). |
 | `atlas monitor` | Query Prometheus for host metrics and flag any at or above their configured threshold (requires `monitoring.enabled: true`, see [Configuration](configuration.md#monitoring)). `--json` prints the full scan as one payload instead. Exits 1 if disabled=false and Prometheus is unreachable, or if any metric exceeded its threshold; exits 0 when disabled (an intentional state, not a failure) - in either output mode. |
-| `atlas trends` | Show host and per-container resource-usage trends (latest/min/max/avg) from the environment snapshots `atlas monitor` has been saving. `--limit` controls how many recent snapshots to consider (default 20). `--json` prints `{"host": {...}, "containers": {...}}` instead - no exit-code logic, since a trend report has no health/threshold concept to signal. |
+| `atlas trends` | Show host, per-container, and per-Proxmox-guest resource-usage trends (latest/min/max/avg) from the environment snapshots `atlas monitor`/`atlas proxmox scan` have been saving. `--limit` controls how many recent snapshots to consider (default 20). `--json` prints `{"host": {...}, "containers": {...}, "guests": {...}}` instead - no exit-code logic, since a trend report has no health/threshold concept to signal. Guest `memory_percent` is percent of the guest's own allocated memory, not host-relative like container `memory_percent` is. |
 
 ## Plugins
 

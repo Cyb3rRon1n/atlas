@@ -70,8 +70,9 @@ None of the above is required to get started — see [Quick Start](#quick-start)
 
 | Platform | Status |
 |---|---|
-| Ubuntu | ✅ verified — CI runs on `ubuntu-latest`, and it's the platform this project actually develops and tests against |
-| Other Linux distros (Debian, Fedora, Arch, ...) | best-effort — no distro-specific code, but not run against real hardware |
+| Ubuntu | ✅ verified — CI runs the full test suite on real `ubuntu-latest` GitHub Actions runners (Python 3.11/3.12) |
+| Fedora | ✅ verified — this project's actual development environment throughout, including every real-infrastructure check in this doc (Docker actions, Proxmox, Prometheus/cAdvisor, Ollama), plus a `btrfs`-rooted filesystem discovery correctly handles that Ubuntu's ext4-default setup never exercised |
+| Other Linux distros (Debian, Arch, RHEL, ...) | best-effort — no distro-specific code, but not independently run |
 | macOS / Windows | out of scope — `pyproject.toml` classifies POSIX/Linux only |
 
 | Integration | Status |

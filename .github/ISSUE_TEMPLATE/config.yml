@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://cyb3rron1n.github.io/atlas/
+    about: Architecture, CLI reference, configuration, and deployment docs — check here before filing an issue.

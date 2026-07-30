@@ -13,7 +13,7 @@ Everything else is an optional integration, gated independently by `atlas.yaml` 
 | Anthropic **or** Ollama | `atlas analyze`, `atlas chat` | An `ANTHROPIC_API_KEY`, or a locally-reachable Ollama instance — only one is needed |
 | Prometheus | `atlas monitor` | An existing Prometheus, `node_exporter` for host metrics, and [cAdvisor](https://github.com/google/cadvisor) for per-container metrics |
 
-Officially verified against real infrastructure on Ubuntu only (CI runs `ubuntu-latest`); other Linux distros are expected to work — discovery has no distro-specific code — but aren't independently verified. macOS/Windows are out of scope.
+Verified against real infrastructure on two distros: Ubuntu (CI runs the full test suite on real `ubuntu-latest` GitHub Actions runners) and Fedora (this project's actual development environment — every real-infrastructure check documented here has genuinely run on Fedora). Other Linux distros are expected to work — discovery has no distro-specific code — but aren't independently verified. macOS/Windows are out of scope.
 
 ## Install
 

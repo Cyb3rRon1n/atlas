@@ -1,0 +1,989 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered operations platform for self-hosted infrastructure.">
+      
+      
+      
+      
+        <link rel="prev" href="../getting-started/">
+      
+      
+        <link rel="next" href="../cli-reference/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Architecture - Atlas</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Atlas" class="md-header__button md-logo" aria-label="Atlas" data-md-component="logo">
+      
+  <img src="../images/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Atlas
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Cyb3rRon1n/atlas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cyb3rRon1n/atlas
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Atlas" class="md-nav__button md-logo" aria-label="Atlas" data-md-component="logo">
+      
+  <img src="../images/logo.svg" alt="logo">
+
+    </a>
+    Atlas
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Cyb3rRon1n/atlas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cyb3rRon1n/atlas
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#knowledge-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Knowledge store
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#discovery-built-in-and-plugins-one-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Discovery: built-in and plugins, one command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxmox-change-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxmox change detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resource-usage-trending" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource-usage trending
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#-json-output-and-exit-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --json output and exit codes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ai-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AI analysis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-based-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent-based capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-step-action-plans" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-step action plans
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plan-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plan execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#approval-gated-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Approval-gated actions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service-catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service Catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#knowledge-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Knowledge store
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#discovery-built-in-and-plugins-one-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Discovery: built-in and plugins, one command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxmox-change-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxmox change detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resource-usage-trending" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource-usage trending
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#-json-output-and-exit-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --json output and exit codes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ai-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AI analysis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-based-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent-based capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-step-action-plans" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-step action plans
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plan-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plan execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#approval-gated-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Approval-gated actions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Cyb3rRon1n/atlas/edit/main/docs/architecture/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
+<p>Atlas is built around a small runtime core, a synchronous event bus, and a local knowledge store — everything else (discovery, Docker, Compose, Proxmox, AI analysis) is a module that reads from or writes into those three things.</p>
+<pre class="mermaid"><code>graph TD
+    A[Atlas CLI] --&gt; B[Atlas Runtime]
+    B --&gt; C[Event Bus]
+    B --&gt; D[Environment Context]
+    B --&gt; E[Plugins]
+    C --&gt; F[Knowledge Store - SQLite]
+    D --&gt; F</code></pre>
+<h2 id="runtime">Runtime<a class="headerlink" href="#runtime" title="Permanent link">&para;</a></h2>
+<p><code>AtlasRuntime</code> is constructed once, at process start, as a module-level singleton. It owns three things every subsystem shares:</p>
+<ul>
+<li><strong>Environment context</strong> — the accumulated discovery snapshot (system, hardware, storage, network, services, containers, virtualization). <code>atlas discover</code> and <code>atlas proxmox scan</code> both write into it; <code>atlas analyze</code> reads from it.</li>
+<li><strong>Event bus</strong> — a synchronous publish/subscribe bus. Discovery, plugin loading, and AI analysis all publish events (<code>atlas.discovery.completed</code>, <code>atlas.plugin.loaded</code>, <code>atlas.analysis.completed</code>, <code>atlas.proxmox.scan.completed</code>); a wildcard listener persists every event to the knowledge store automatically.</li>
+<li><strong>Config</strong> — loaded once from <code>atlas.yaml</code> in the working directory (see <a href="../configuration/">Configuration</a>).</li>
+</ul>
+<h2 id="knowledge-store">Knowledge store<a class="headerlink" href="#knowledge-store" title="Permanent link">&para;</a></h2>
+<p>Atlas persists to a local SQLite database (<code>inventory/atlas.db</code>, gitignored and created automatically on first use): every event, the latest environment snapshot, and every AI analysis result. Reads and writes are split — a store component writes, a queries component reads (<code>latest_environment()</code>, <code>latest_analysis()</code>, <code>recent_events()</code>) — so the two responsibilities stay separable as more consumers show up.</p>
+<p><code>save_environment()</code> is insert-only — every <code>atlas discover</code> or <code>atlas proxmox scan</code> call adds a <strong>new</strong> row rather than overwriting the last one, so a full history of every past snapshot already exists in the database even though only <code>latest_environment()</code> is queried by most callers. Proxmox change detection (below) is the first feature to make use of that: it just has to read "latest" <em>before</em> saving the current scan, at which point "latest" is actually the previous one — no new table or query needed. The same trick is available to any future feature that wants to diff over time.</p>
+<h2 id="discovery-built-in-and-plugins-one-command">Discovery: built-in and plugins, one command<a class="headerlink" href="#discovery-built-in-and-plugins-one-command" title="Permanent link">&para;</a></h2>
+<p>Atlas gathers information about your environment two ways, both run by a single <code>atlas discover</code>:</p>
+<ul>
+<li><strong>Built-in discovery</strong> — the synchronous path that directly collects system, hardware, storage, and network information and merges the results.</li>
+<li><strong>Plugins</strong> — an extensible architecture (<code>atlas plugins</code> lists what's registered) where each plugin declares <code>initialize()</code> and <code>discover()</code>. Currently ships with a Docker plugin.</li>
+</ul>
+<p><code>atlas discover</code> runs both in one pass: built-in results populate <code>AtlasEnvironmentContext</code>'s system/hardware/storage/network fields, plugin results land in <code>AtlasEnvironmentContext.containers</code> (keyed by plugin name), and both are saved to the knowledge store together — so <code>atlas analyze</code> sees the complete picture from one command, the same way <code>atlas proxmox scan</code> populates its own field. Adding a new discovery source means writing an <code>AtlasPlugin</code> subclass; it's picked up automatically the next time <code>atlas discover</code> runs, no wiring changes needed.</p>
+<h2 id="proxmox-change-detection">Proxmox change detection<a class="headerlink" href="#proxmox-change-detection" title="Permanent link">&para;</a></h2>
+<p><code>atlas proxmox scan</code> reads <code>latest_environment()</code> <em>before</em> saving its own results — at that moment, "latest" is whatever the previous scan (or <code>atlas discover</code>) saved, giving a free baseline to diff against with no new storage. <code>diff_virtualization()</code> (<code>atlas/proxmox/changes.py</code>) is a pure function comparing two <code>{"nodes": [...], "guests": [...]}</code> snapshots: nodes are matched by name, guests by <code>vmid</code> (Proxmox's actual stable identifier, not name — a renamed guest with the same <code>vmid</code> is correctly treated as unchanged, not as one removed and a different one added). It reports additions, removals, and status changes for both.</p>
+<p>If there's no baseline at all (first-ever scan, or an environment that was never Proxmox-scanned before), nothing is reported — the scan output already lists every node and guest above, so treating a first sighting as a synthetic "added" change would just be noise. When there <em>is</em> a baseline, <code>atlas proxmox scan</code> prints either "No changes since last scan." or each change, and only publishes <code>atlas.proxmox.changes_detected</code> when something actually changed, keeping the event log meaningful rather than one no-op entry per scan.</p>
+<h2 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h2>
+<p><code>atlas monitor</code> queries an existing Prometheus server rather than Atlas hosting its own metrics endpoint — consistent with every other integration (<code>atlas discover</code>, <code>atlas proxmox scan</code>): Atlas is always the one reaching out on command, never a long-running server itself. <code>atlas/monitoring/client.py</code>'s <code>query_prometheus()</code> hits Prometheus's stable <code>/api/v1/query</code> HTTP API for a single PromQL instant query; <code>collector.py</code>'s <code>collect_metrics()</code> runs three fixed queries against standard <a href="https://github.com/prometheus/node_exporter"><code>node_exporter</code></a> metrics — host CPU, memory, and disk usage percentage. That's a real assumption worth naming: the default queries only return data if <code>node_exporter</code> (or something exposing equivalent metric names) is actually running and scraped by your Prometheus.</p>
+<p>The result distinguishes two kinds of "nothing here": if Prometheus itself can't be reached, <code>query_prometheus()</code> raises <code>PrometheusUnavailableError</code> and <code>collect_metrics()</code> returns <code>{"available": False, "metrics": {}}</code> — a real outage. If Prometheus is reachable but one specific query has no data (e.g. <code>node_exporter</code> isn't installed yet even though Prometheus is), that individual metric is <code>None</code> while <code>available</code> stays <code>True</code> and the other metrics still populate. Results are saved into <code>AtlasEnvironmentContext.monitoring</code> the same way Proxmox uses its own field, and <code>atlas.monitoring.scan.completed</code> publishes on every scan.</p>
+<p><strong>Threshold flagging.</strong> <code>collector.py</code>'s <code>evaluate_thresholds(metrics, thresholds)</code> is a pure function — <code>{metric_name: bool}</code> for whether each metric is at or above its configured threshold (<code>monitoring.cpu_threshold</code>/<code>memory_threshold</code>/<code>disk_threshold</code> in <code>atlas.yaml</code>, <code>90.0</code> by default each, matching the same <code>&lt; 90</code> convention <code>atlas/health/checks.py</code> already uses for the local host's own memory/storage checks). A <code>None</code> metric (no data) or a metric with no configured threshold is left out of the result entirely rather than counted as "not exceeded" — those are different states. <code>atlas monitor</code> prints each metric with a green <code>✓</code> or yellow <code>!</code> accordingly, mirroring <code>atlas doctor</code>'s existing convention, and only publishes <code>atlas.monitoring.threshold_exceeded</code> when something actually crossed its threshold — same "don't add event-log noise for a no-op" rule Proxmox change detection follows.</p>
+<p><strong>Note on verification:</strong> now confirmed against a real Prometheus instance (Docker, <code>prom/prometheus</code> + <code>prom/node-exporter</code>) — all three default PromQL queries resolved against real metric names and returned real values, alongside the Docker and Proxmox integrations, including both the normal and threshold-exceeded paths.</p>
+<p><strong>Container-level metrics (cAdvisor).</strong> cAdvisor is treated as a second exporter scraped by the same Prometheus <code>atlas monitor</code> already queries, not a separate integration — no new config section, just two more queries. <code>client.py</code>'s <code>query_prometheus()</code> only ever returned a single scalar (<code>result[0]</code>), which doesn't fit a per-container query that returns one row per container; the shared request/parse logic was pulled into a private <code>_query()</code>, and a new <code>query_prometheus_vector(base_url, promql, label)</code> returns <code>{label_value: value}</code> for every row in the result, keyed by a caller-given Prometheus label (<code>"name"</code> for cAdvisor's container label). <code>collector.py</code>'s <code>collect_container_metrics()</code> runs two cAdvisor queries through it — CPU as percent of one core (<code>rate(container_cpu_usage_seconds_total[5m])*100</code>, the standard cAdvisor/Grafana convention) and memory as percent of host total memory (<code>container_memory_usage_bytes / scalar(node_memory_MemTotal_bytes) * 100</code>, deliberately the same unit as the host's own <code>memory_percent</code> so it can reuse <code>evaluate_thresholds()</code> and the existing <code>cpu_threshold</code>/<code>memory_threshold</code> config as-is, called once per container). A container missing from one of the two queries still appears, with <code>None</code> for that metric, same "no data yet, not an error" rule the host collector already follows. Results merge into the same <code>AtlasEnvironmentContext.monitoring</code> dict under a <code>containers</code> key — no new context field.</p>
+<p><strong>Monitoring change detection.</strong> <code>atlas/monitoring/changes.py</code>'s <code>diff_monitoring(previous, current, thresholds)</code> mirrors Proxmox's <code>diff_virtualization()</code> shape exactly (same <code>previous</code> falsy → <code>[]</code> no-baseline rule), but where Proxmox diffs raw state (node/guest status), monitoring diffs <em>threshold-exceeded state</em>: a metric — host or per-container — that moved from under-threshold to over-threshold since the last scan is a <code>*_metric_crossed</code> change; the reverse is <code>*_metric_recovered</code>. Both previous and current are evaluated against the <em>current</em> thresholds (threshold config itself isn't versioned per snapshot). <code>format_change()</code> renders each type to a display string; <code>atlas/cli/main.py</code> imports it aliased as <code>format_monitoring_change</code> since <code>format_change</code> is already bound to the Proxmox version. <code>atlas monitor</code> fetches <code>KnowledgeQueries().latest_environment()</code> up front (same placement as <code>atlas proxmox scan</code>), prints a "Changes since last scan" section, and publishes <code>atlas.monitoring.changes_detected</code> only when non-empty — a different event from <code>atlas.monitoring.threshold_exceeded</code> (which fires on "something is bad <em>right now</em>," every scan) versus this one firing on "something <em>changed</em> since last time."</p>
+<p><strong>Note on verification:</strong> confirmed against a real cAdvisor (Docker, host networking, <code>--privileged</code>) scraped by the same test Prometheus used for the earlier monitoring verification — real per-container rows returned for all three actual containers on the host, and a real threshold change between two live scans produced a genuine <code>container_metric_crossed</code> change and <code>atlas.monitoring.changes_detected</code> event.</p>
+<p><strong>Container resource-allocation visibility.</strong> <code>cpu_percent</code>/<code>memory_percent</code> answer "how busy is this host/container"; <code>cpu_percent_of_limit</code>/<code>memory_percent_of_limit</code> (two more optional keys on the same per-container dict) answer a different question — "is this container starved relative to what it was actually <em>allocated</em>." Computed entirely in PromQL against cAdvisor's own <code>container_spec_cpu_quota</code>/<code>container_spec_cpu_period</code>/<code>container_spec_memory_limit_bytes</code> metrics (the <em>configured</em> limits, not usage) — no Docker-side collection needed, since cAdvisor already exposes limits as their own metrics and this feature lives entirely inside the already-monitoring-gated <code>atlas monitor</code>. A container with no configured limit for a resource simply has <code>None</code> for that key, same "missing from the query result, not an error" rule the other container metrics already follow — most containers have no explicit limit, so this is the common case, not an edge case. Threshold-flagging reuses two new <code>MonitoringConfig</code> fields, <code>cpu_allocation_threshold</code>/<code>memory_allocation_threshold</code> (90.0 default, same convention as every other threshold), evaluated via a container-only thresholds dict rather than added to the host-level one. <code>diff_monitoring()</code>, <code>evaluate_thresholds()</code>, and <code>atlas.monitoring.changes_detected</code> needed <strong>zero changes</strong> — both are already generic over whatever keys a container's metrics dict contains, so an allocation-threshold crossing flows through the existing change-detection path for free. Verified against a real <code>--cpus=0.5 --memory=256m</code> test container: <code>cpu_percent_of_limit</code> tracked <code>cpu_percent / 0.5</code> exactly across live scans. One real bug surfaced doing that: the CPU query originally divided an aggregated (<code>sum(...) by (name)</code>) series against un-aggregated <code>container_spec_cpu_*</code> series, and Prometheus's default vector matching requires identical label sets — mismatched labels return no rows, not an error, so <code>cpu_percent_of_limit</code> silently came back <code>None</code> even for the container with a real limit, until an explicit <code>on(name)</code> was added to both operators.</p>
+<h2 id="resource-usage-trending">Resource-usage trending<a class="headerlink" href="#resource-usage-trending" title="Permanent link">&para;</a></h2>
+<p><code>atlas trends</code> reads the history of environment snapshots <code>atlas monitor</code> (and <code>atlas discover</code>/<code>atlas proxmox scan</code>) have already been saving all along — <code>save_environment()</code> is insert-only, so nothing new needed collecting or storing. <code>KnowledgeQueries.environment_history(limit=20)</code> is a new method, same shape as <code>recent_events()</code>: parsed <code>{"created_at", "data"}</code> rows, most-recent-first, ordered by <code>created_at.desc(), id.desc()</code> — the <code>id</code> tiebreak matters because two real snapshots can land in the same microsecond. <code>atlas/monitoring/trends.py</code> (pure functions, same style as <code>atlas/monitoring/changes.py</code>) turns that into chronological <code>(timestamp, value)</code> points per metric: <code>host_metric_trend(records, metric_name)</code>, <code>container_metric_trend(records, container_name, metric_name)</code>, and <code>known_container_names(records)</code> to enumerate which containers appear anywhere in the window. <code>atlas trends</code> prints one summary line per metric — latest/min/max/avg over N samples — no graphs, consistent with the rest of the CLI's plain-text output.</p>
+<p><strong>Every saved row only carries the categories the command that saved it actually populated</strong>, not a complete snapshot — a real constraint, not an assumption, found by reading <code>atlas discover</code>/<code>atlas proxmox scan</code>/<code>atlas monitor</code>'s save call sites. Each is a separate CLI invocation with its own fresh in-memory environment context, so a row from <code>atlas monitor</code> has real <code>monitoring</code> data but empty <code>hardware</code>/<code>virtualization</code>, and a row from <code>atlas discover</code> is the reverse. <code>host_metric_trend()</code>/<code>container_metric_trend()</code> skip any row with no <code>monitoring</code> data at all (not just a missing individual metric) rather than assuming every row is complete.</p>
+<p>Verified against real accumulated history: several real <code>atlas monitor</code> runs against the project's test Prometheus + cAdvisor setup, then <code>atlas trends</code> correctly reported genuine host CPU/memory/disk trends and per-container trends for every real container, including <code>cpu_percent_of_limit</code>/<code>memory_percent_of_limit</code> trending correctly for the one container with a real configured limit and showing nothing for the unconstrained ones.</p>
+<p><strong>Proxmox guest usage was originally deferred here</strong> — saved on a completely separate schedule (<code>atlas proxmox scan</code>, not <code>atlas monitor</code>), a separate snapshot row, a different unit (a 0–1 fraction, not a percent) — but has since been added. <code>atlas/proxmox/trends.py</code> (new, mirroring this module's structure the same way <code>atlas/proxmox/changes.py</code> already mirrors <code>atlas/monitoring/changes.py</code>, kept as its own Proxmox-domain module rather than folded in here) reuses the exact same skip-rows-lacking-the-field mechanism above for <code>virtualization</code> instead of <code>monitoring</code> — "stitching two independently-scheduled time series together" needed no new machinery, just the same filter already there for exactly this reason. Two unit-normalization decisions made from what <code>/cluster/resources</code> actually provides (already saved in every scan, no new discovery): <code>cpu_percent = guest["cpu"] * 100</code> (percent of one core, matching host/container <code>cpu_percent</code>'s convention, not <code>/ maxcpu</code>); <code>memory_percent = (guest["mem"] / guest["maxmem"]) * 100</code>, which means what Docker's <code>memory_percent_of_limit</code> means (percent of the guest's <em>own</em> allocation) rather than what Docker's host-relative <code>memory_percent</code> means — Proxmox's API gives no host-total comparison the way cAdvisor's separate spec-limit query does, so that's the only meaningful percentage available. Guests are matched by vmid, never name, same principle <code>diff_virtualization()</code> already established. Fixed a real pre-existing gap along the way: <code>atlas trends</code>'s "no monitoring history found" early-return only ever checked for <code>monitoring</code> data, so a host that only ever ran <code>atlas proxmox scan</code> would incorrectly hit that message despite having real guest trend data — the check now considers <code>virtualization</code> too.</p>
+<p>Verified against the real Proxmox VE host: started the real <code>atlas-test</code> LXC guest (normally kept stopped), ran several real scans while it was running, and <code>atlas trends</code>/<code>atlas trends --json</code> both correctly showed real, non-zero, correctly-normalized trends for it, alongside a correct all-zero trend for the second real guest (<code>VM 101</code>, which stayed stopped throughout) — confirmed via <code>jq</code> that the JSON shape is genuinely valid. Environment restored to its original resting state afterward.</p>
+<h2 id="-json-output-and-exit-codes"><code>--json</code> output and exit codes<a class="headerlink" href="#-json-output-and-exit-codes" title="Permanent link">&para;</a></h2>
+<p><code>atlas doctor</code>/<code>atlas monitor</code>/<code>atlas trends</code> each gained a <code>--json</code> flag, printing one machine-readable payload via plain <code>print(json.dumps(payload, indent=2))</code> instead of the usual Rich-formatted output — plain <code>print()</code>, not <code>console.print()</code>, so the output stays clean and uncolored regardless of Rich's terminal detection, which matters when there's no TTY (a cron job, piped into <code>jq</code>). Every field in each payload reuses a variable the function was already computing for its human-readable path — <code>--json</code> is pure assembly, not new calculation.</p>
+<p><strong>Exit codes are meaningful all the time, not gated behind <code>--json</code>.</strong> <code>atlas doctor</code>/<code>atlas monitor</code> now <code>raise typer.Exit(code=1)</code> whenever something's actually wrong, in both output modes — a plain <code>atlas doctor</code> in a cron job can be checked with <code>$?</code> alone, no JSON parsing required. This is a deliberate behavior change from the previous always-exit-0 behavior of both commands. <code>atlas doctor</code>'s <code>healthy</code> is <code>all(check["status"] for check in results)</code>; <code>atlas monitor</code> distinguishes three states — disabled (<code>{"enabled": false}</code>, exit 0, an intentional state, same rule <code>atlas doctor</code> already applies to every optional integration), unreachable (<code>{"enabled": true, "available": false}</code>, exit 1), and reachable (full payload, exit 1 iff any host or per-container metric exceeded its threshold). <code>atlas trends</code> gets <code>--json</code> output but no exit-code logic — a trend report with zero samples is empty, not wrong, so there's no health concept for it to signal; this needed one real restructuring, pulling each print statement's inline latest/min/max/avg/samples computation into a shared <code>_trend_summary(points)</code> helper so both output paths compute from the same call rather than two parallel implementations that could drift apart.</p>
+<p>Verified against real infrastructure: all three <code>--json</code> variants produced genuinely valid JSON (piped through <code>jq</code> against the real Docker/Prometheus/cAdvisor test setup) with values matching the human-formatted output; <code>atlas monitor</code>'s exit code was confirmed to actually flip from <code>0</code> to <code>1</code> and back by temporarily lowering <code>cpu_threshold</code> below the real live CPU percentage, then restoring it.</p>
+<h2 id="ai-analysis">AI analysis<a class="headerlink" href="#ai-analysis" title="Permanent link">&para;</a></h2>
+<p><code>atlas analyze</code> sends the latest environment snapshot to a pluggable AI provider and gets back a structured result — a summary plus a list of concrete recommendations, each with a severity. Two providers exist today:</p>
+<ul>
+<li><strong>Anthropic</strong> — Claude, via the official SDK, using structured/schema-constrained output so responses are always valid (no free-text parsing).</li>
+<li><strong>Ollama</strong> — any locally-run model, for a fully self-hosted setup consistent with Atlas's local-first philosophy.</li>
+</ul>
+<p>The provider is selected in <a href="../configuration/#intelligence">configuration</a> and built through a small factory, so adding a third backend later doesn't touch the analysis logic itself.</p>
+<p>Each recommendation can also carry a schema-validated <code>action</code> — one of <code>{"type": "restart_container", "target": "&lt;container name&gt;"}</code>, <code>{"type": "restart_guest", "target": "&lt;vmid&gt;"}</code> (a Proxmox guest, targeted by its stable <code>vmid</code>, not its name), <code>{"type": "stop_container", "target": "&lt;container name&gt;"}</code>, <code>{"type": "resize_container", "target": "&lt;container name&gt;", "cpus": "&lt;new limit or null&gt;", "memory": "&lt;new limit or null&gt;"}</code>, or <code>null</code>. <code>cpus</code>/<code>memory</code> are present (required-but-nullable) on every action type, not just <code>resize_container</code> — structured output requires every key in <code>required</code> even when the value itself is nullable, so the schema carries them everywhere and they're simply always <code>null</code> except on a resize suggestion. The <code>action.type</code> enum is generated from <code>atlas/actions/registry.py</code>'s <code>ACTIONS</code> dict rather than hand-written, so the schema can't list an action the rest of the system doesn't actually know how to handle. The AI is instructed to only populate an action when it genuinely fixes the specific problem described — <code>stop_container</code> specifically only when the <em>running</em> container itself is the problem (resource hogging, shouldn't be running), not as a way to fix a crash-looping one, which calls for <code>restart_container</code> instead; <code>resize_container</code> when a container is throttled by its own configured limit while it genuinely needs more, or over-provisioned relative to actual usage, with <code>cpus</code>/<code>memory</code> set to a new value only for the dimension actually changing. Before <code>atlas analyze</code>/<code>atlas chat</code> print anything, <code>AtlasAnalyzer</code>/<code>AtlasAgent</code> look up <code>ACTIONS.get(action.type)</code> and silently clear any action whose type isn't in the registry or whose target doesn't match <code>definition.known_targets(environment)</code>, so an AI-hallucinated container name or vmid never reaches the terminal or the knowledge store. A matching suggestion prints as a plain, copy-pasteable line via <code>definition.command_template(action)</code> (a callable now, not a format string — see <a href="#approval-gated-actions">Approval-gated actions</a>); neither command ever executes it — running it is a separate, deliberate step that goes through the matching action's own independent approval gate.</p>
+<h2 id="agent-based-capabilities">Agent-based capabilities<a class="headerlink" href="#agent-based-capabilities" title="Permanent link">&para;</a></h2>
+<p>Both providers' <code>analyze()</code> and the new <code>converse()</code> can call a small, explicitly read-only set of tools mid-request instead of only ever seeing one fixed snapshot — <code>atlas/intelligence/tools.py</code>'s <code>build_tools(config)</code> returns <code>{name: ToolDefinition}</code> (<code>get_containers</code>, <code>get_services</code>, <code>get_recent_events</code>, <code>get_last_analysis</code>, <code>get_container_logs</code>, plus <code>get_proxmox_status</code>/<code>get_monitoring</code> when those integrations are enabled), each wrapping a function that already exists elsewhere (<code>collect_containers()</code>, <code>detect_services()</code>, <code>discover_nodes()</code>/<code>discover_resources()</code>, <code>collect_metrics()</code>/<code>collect_container_metrics()</code>) — no new data-collection code, only new AI-facing wiring. <code>execute_tool()</code> is the shared dispatcher both providers call into; an unknown tool name or a handler exception becomes <code>{"error": ...}</code> rather than raising, so a hallucinated tool call or a live query that fails (Proxmox unreachable, etc.) can't crash the session. <strong>Deliberately no mutating tool exists here</strong> — restart/stop/etc. stay behind their own approval-gated commands (below), never reachable from inside an analysis or chat turn.</p>
+<p><code>get_container_logs(container, tail)</code> is the first tool needing an argument, which surfaced a real gap: <code>ToolDefinition.handler</code> was <code>Callable[[], dict]</code> and <code>execute_tool(tools, name, arguments)</code> received real per-call arguments from both providers' tool-use loops (Anthropic's <code>block.input</code>, Ollama's <code>function.get("arguments")</code>) but never actually passed them to the handler — every prior tool got away with this by using <code>EMPTY_SCHEMA</code>. Fixed by making every handler's signature <code>Callable[[dict], dict]</code> uniformly (the zero-arg tools just ignore <code>arguments</code> now, rather than special-casing the one that needs it) and having <code>execute_tool()</code> call <code>definition.handler(arguments)</code>. The new tool itself wraps <code>atlas/docker/manager.py</code>'s <code>get_container_logs()</code> (same pure-result-dict, never-raises shape as every other manager function there), decoding <code>container.logs(tail=N, timestamps=False)</code> with <code>errors="replace"</code>. <code>tail</code> is model-controllable but capped server-side at 500 regardless of what's requested. No grounding logic needed — unlike a suggested action, a hallucinated or stale container name here just comes back as an ordinary <code>{"found": False, "error": "..."}</code> tool result via Docker's existing <code>NotFound</code> handling, not something that could reach the terminal as if it were real.</p>
+<p><code>AIProvider</code> gained a <code>tools</code> parameter on <code>analyze()</code> and a new <code>converse(messages, tools) -&gt; ChatReply</code> method (<code>ChatReply(text, action)</code>, schema-constrained the same way as <code>AnalysisResult</code> via a new <code>CHAT_SCHEMA</code>/<code>CHAT_SYSTEM_PROMPT</code> pair in <code>base.py</code> — both share <code>ACTION_INSTRUCTIONS</code>, the action-grounding paragraph extracted out of the original hand-written <code>SYSTEM_PROMPT</code> so it isn't duplicated across the two prompts). <code>converse()</code> has a non-abstract default that raises <code>NotImplementedError</code> rather than being <code>@abstractmethod</code> — a provider (or test double) implementing only <code>analyze()</code> is still a valid <code>AIProvider</code>, it just can't back <code>atlas chat</code>.</p>
+<p>Each provider runs its own manual tool-use loop (capped at a fixed iteration count so a confused model can't loop forever burning API cost), and the two loops are <em>not</em> the same shape — this was a real, verified difference between the two APIs, not a stylistic choice:</p>
+<ul>
+<li><strong>Anthropic</strong> (<code>anthropic_provider.py</code>) sends <code>tools</code> and the schema-constrained <code>output_config.format</code> in the <em>same</em> request every turn — Anthropic's documented tool-use + structured-output pattern. A <code>tool_use</code> <code>stop_reason</code> means execute the tool(s) and loop with the results appended as <code>tool_result</code> blocks; anything else means parse the response as the final schema-shaped answer.</li>
+<li><strong>Ollama</strong> (<code>ollama_provider.py</code>) <em>never</em> sends <code>tools</code> and <code>format</code> in the same request. This was empirically verified against a real local <code>llama3.1</code>: with both present, the model silently never emits <code>tool_calls</code> at all and just answers directly and ungrounded — not an error, just quietly wrong, which is worse than a normal miss because there's no signal anything went wrong. So the loop runs a tools-only phase (no <code>format</code>) until the model stops asking for tools, then makes one dedicated finalize request (<code>format</code>, no <code>tools</code>) to get the schema-shaped answer from whatever the conversation now contains. When no tools are offered at all, both providers collapse back to exactly the original single request — zero behavior change for existing <code>analyze()</code> callers that don't pass <code>tools</code>.</li>
+</ul>
+<p><code>atlas analyze</code> builds <code>tools</code> via <code>build_tools(settings)</code> and passes them by default — no config flag, since (unlike Proxmox/Prometheus) this doesn't depend on external infrastructure existing, only on data Atlas can already collect locally.</p>
+<p><strong><code>atlas chat</code></strong> (<code>atlas/cli/main.py</code>) is the new multi-turn command this unlocks: an interactive loop maintaining <code>messages</code> for the session's lifetime only (never persisted to the knowledge store as a new record type — no new event type, no new table). <code>AtlasAgent</code> (<code>atlas/intelligence/agent.py</code>) plays the same orchestration role for chat that <code>AtlasAnalyzer</code> plays for <code>atlas analyze</code>, applying the identical <code>ACTIONS.get(action.type)</code> + <code>known_targets(environment)</code> grounding check before ever surfacing a suggested action. The one real difference: chat has no guaranteed prior <code>atlas discover</code>, so it can't ground against a saved snapshot the way <code>atlas analyze</code> does — <code>AtlasAgent._live_environment()</code> builds a minimal grounding dict by calling live Docker/Proxmox state through the <em>same</em> tool the model itself can call (<code>execute_tool(self.tools, "get_proxmox_status", {})</code>), not a second copy of the connection logic. A suggested action prints the same <code>→ Suggested: atlas restart &lt;target&gt;</code> line <code>atlas analyze</code> already prints; <code>atlas chat</code> never executes it, same separation every other suggested action already keeps. Stays strictly on-demand like every other Atlas command — no daemon, no scheduled mode; typing <code>exit</code>/<code>quit</code>/Ctrl-D ends the session.</p>
+<p><strong>Verified against a real local Ollama instance</strong> (<code>llama3.1</code>): <code>atlas chat</code> correctly called <code>get_containers</code> mid-conversation and reported the real, live set of Docker containers running on the host — not a stale snapshot, not a hallucinated list. This is also what caught the tools+format bug described above; the initial combined-request implementation looked correct in isolation (it passed unit tests against a mocked client) but silently never called a tool against the real model, which only surfaced by actually running it.</p>
+<p><code>atlas chat</code> now also persists its transcript: <code>chat()</code> builds a second, separate <code>transcript</code> list (plain <code>{"role", "content"}</code> string pairs) alongside the <code>messages</code> list it passes to <code>agent.converse()</code>, and publishes it as one <code>atlas.chat.transcript_saved</code> event on exit — only if the session had at least one exchange. This rides the same <code>DatabaseListener</code>-on-<code>"*"</code> path every other event uses and shows up in <code>atlas history</code> for free; no new table or query method. <code>transcript</code> has to be a separate list rather than reusing <code>messages</code>: both providers mutate <code>messages</code> in place, and Anthropic's tool-use loop appends raw SDK content-block objects onto it mid-conversation, which aren't JSON-serializable — publishing <code>messages</code> directly would crash <code>save_event()</code>'s <code>json.dumps()</code> on any session where a tool got called, the common case for a command built around tool-grounded answers. Found by reading the loop, not by hitting the crash.</p>
+<h2 id="multi-step-action-plans">Multi-step action plans<a class="headerlink" href="#multi-step-action-plans" title="Permanent link">&para;</a></h2>
+<p><code>AnalysisResult</code>/<code>ChatReply</code> each carry an optional <code>plan: SuggestedPlan | None</code>, alongside — not instead of — the existing single <code>action</code> field: <code>SuggestedPlan(summary, steps)</code>, where each <code>PlanStep(action, rationale)</code> uses the identical action-object shape a standalone <code>action</code> uses. This is for a genuine ordered sequence where later steps depend on earlier ones (e.g. a container needs to be stopped before restarting a different one that was failing because of it) — independent, unrelated issues should stay separate <code>Recommendation</code>s, each with its own single <code>action</code>, not be folded into a plan.</p>
+<p><strong>Still suggest-first, approval-gated the same way as every other action.</strong> <code>atlas analyze</code>/<code>atlas chat</code> print a plan as a numbered list — each step's <code>definition.command_template(step.action)</code> plus its rationale — then offer to run it (see <a href="#plan-execution">Plan execution</a> below); nothing runs without you confirming, and no plan is ever persisted (<code>KnowledgeStore.save_analysis()</code> is unchanged, still only writing <code>summary</code>/<code>recommendations</code>).</p>
+<p><code>PLAN_SCHEMA</code> (<code>atlas/intelligence/providers/base.py</code>) reuses <code>ACTION_OBJECT_SCHEMA</code> — the action-object shape pulled out of <code>ACTION_SCHEMA</code> for this purpose — for each step's action, so a plan step is validated against exactly the same shape a standalone action is. Unlike the standalone <code>action</code> field, a plan step's action isn't nullable (a step without one doesn't mean anything), while the plan itself is nullable at the top level, same "required but can resolve to null" pattern <code>action</code> already uses. <code>PLAN_INSTRUCTIONS</code> (appended to both <code>SYSTEM_PROMPT</code> and <code>CHAT_SYSTEM_PROMPT</code>) tells the model a plan is for a genuine dependency chain only, and that most responses should leave <code>plan</code> null.</p>
+<p><strong>Grounding treats a plan as one coherent unit.</strong> <code>AtlasAnalyzer.analyze()</code>/<code>AtlasAgent.converse()</code> already null out any ungrounded standalone <code>action</code> via a shared <code>is_action_grounded()</code> helper (factored out of both call sites, in <code>atlas/actions/registry.py</code>, once this made it the third place doing the identical <code>ACTIONS.get(type)</code> + <code>known_targets(environment)</code> check). For a plan, the same check runs per step, but one hallucinated step target drops the <strong>entire plan</strong>, not just that step — a partially-runnable sequence (where you can't tell which steps are still trustworthy) is worse than either a complete plan or no plan at all.</p>
+<p><strong>A real bug, found only by running a genuine dependency-chain scenario through a real local Ollama, not by any unit test:</strong> the model filled in <em>both</em> <code>plan</code> and the standalone <code>action</code> — <code>action</code> came back as a duplicate of the plan's own first step, which would have printed a redundant "suggested action" line directly above a plan that repeats it as step 1. <code>PLAN_INSTRUCTIONS</code> now tells the model not to do this, but a prompt instruction isn't enforcement — same reasoning as target grounding — so <code>AtlasAgent.converse()</code> also nulls <code>reply.action</code> outright whenever <code>reply.plan</code> is present, after grounding. Re-verified against real Ollama afterward: a genuine 3-step scenario (stop a container, restart a second one, restart the first again) across two real Docker containers came back as a correctly ordered, correctly grounded plan with <code>action</code> now <code>None</code>; a second scenario with two independent, unrelated container issues correctly produced two separate recommendations and left <code>plan</code> <code>None</code> — confirming the model isn't defaulting to a plan when the situation doesn't call for one.</p>
+<h2 id="plan-execution">Plan execution<a class="headerlink" href="#plan-execution" title="Permanent link">&para;</a></h2>
+<p><code>atlas analyze</code>/<code>atlas chat</code> no longer stop at printing a plan — right after printing, both ask <code>"Run this plan now?"</code>, and if confirmed, run each step in order, each with its own <code>typer.confirm()</code> (not one blanket gate for the whole plan). This is a genuinely narrower feature than the "atlas plan run" idea first floated when multi-step plans shipped, which assumed a separate command reading a persisted plan. It doesn't need to: the plan object already exists in memory the moment it's printed, so there's no new command and nothing gets persisted — closer to how a single suggested <code>action</code> already works (act now or don't; there's no "run my last suggestion" mechanism for those either).</p>
+<p>A new <code>execute_action(action) -&gt; dict</code> in <code>atlas/actions/registry.py</code> is the dispatcher: <code>ActionDefinition</code> gained a fourth field, <code>executor: Callable[["SuggestedAction"], dict]</code>, alongside <code>command_template</code>/<code>known_targets</code>, and <code>execute_action()</code> is just <code>ACTIONS[action.type].executor(action)</code> — the CLI's plan-running loop never branches on <code>action.type</code> itself. The four Docker executors are one-line lambdas wrapping the same manager functions the standalone <code>atlas restart</code>/<code>stop</code>/<code>resize</code> commands already call. The three Proxmox executors share <code>_execute_guest_action(action, manager_fn, **extra_kwargs)</code>, which connects and calls <code>get_guest_info()</code> first — exactly what <code>restart_guest_command</code>/<code>stop_guest_command</code>/<code>resize_guest_command</code> already do inline, factored into one place. This was the piece the original deferral called "materially harder" for Proxmox; it turned out to be the same connect-then-lookup preamble every Proxmox CLI command already has, not new machinery.</p>
+<p>Two things are deliberately <em>not</em> replicated from the standalone commands: there's no per-step "current state" display before confirming (would need a per-action-type info lookup inside the loop, exactly the branching this feature avoids — the step's rationale and exact command are shown instead), and a declined or failed step always stops the rest of the plan rather than skipping ahead, since a plan exists specifically for steps that depend on each other. Each executed step publishes the <em>same</em> event type the matching standalone command already publishes (a small <code>PLAN_STEP_EVENT_TYPES</code> lookup in <code>atlas/cli/main.py</code>, keyed by <code>action.type</code>) so it shows up in <code>atlas history</code> indistinguishable in effect from a manually-typed command — only <code>source="PlanStep"</code> differs, preserving provenance.</p>
+<p><strong>Verified against a real local Ollama and the real Docker test containers, executing for real:</strong> the same genuine 3-step dependency chain used to first verify multi-step plans (stop one container, restart a second, restart the first again), this time confirming every prompt through to completion. <code>docker ps</code> afterward showed both containers freshly restarted (seconds of uptime), and <code>atlas history</code> showed all three <code>PlanStep</code> events with correct event types and accurate <code>previous_status</code> values.</p>
+<h2 id="approval-gated-actions">Approval-gated actions<a class="headerlink" href="#approval-gated-actions" title="Permanent link">&para;</a></h2>
+<p>Every command up through <code>atlas discover</code>/<code>atlas proxmox scan</code>/<code>atlas monitor</code> is read-only. <code>atlas restart &lt;name&gt;</code> (Docker) was the first exception — the first thing Atlas could <em>do</em> to your infrastructure rather than just report on it. <code>atlas proxmox restart &lt;vmid&gt;</code> (a Proxmox VM/LXC guest) was the second. <code>atlas stop &lt;name&gt;</code> (Docker, without removing the container) was the third — a different verb, not just another restart on a different resource, which is what actually forced the registry below into existence rather than staying two dicts. <code>atlas resize &lt;name&gt;</code> (Docker, <code>--cpus</code>/<code>--memory</code>) was the fourth — the first one that isn't a single fixed operation. <code>atlas proxmox stop &lt;vmid&gt;</code> and <code>atlas proxmox resize &lt;vmid&gt;</code> are the fifth and sixth, closing the gap between Docker's three actions and Proxmox's one. All six share the same deliberately narrow, safety-first shape:</p>
+<ul>
+<li><strong>Pure result-dict functions</strong> — <code>get_container_info()</code>/<code>restart_container()</code>/<code>stop_container()</code>/<code>resize_container()</code> (<code>atlas/docker/manager.py</code>) and <code>get_guest_info()</code>/<code>restart_guest()</code>/<code>stop_guest()</code>/<code>resize_guest()</code> (<code>atlas/proxmox/manager.py</code>) never raise the underlying library's exceptions to the caller; they return <code>{"found"/"success": bool, ...}</code>, the same style <code>collect_containers()</code> already used. The CLI layer only interprets plain dicts.</li>
+<li><strong>Unconditional confirmation</strong> — each CLI command shows what will happen (current state, what the action means, what's preserved) and gates on <code>typer.confirm()</code>, which defaults to <em>no</em>. There's no <code>--yes</code> bypass; convenience loses to safety until there's a real reason to add one.</li>
+<li><strong>Logged like everything else</strong> — each action publishes its own event (<code>atlas.action.container_restarted</code>, <code>atlas.action.guest_restarted</code>, <code>atlas.action.container_stopped</code>, <code>atlas.action.container_resized</code>, <code>atlas.action.guest_stopped</code>, <code>atlas.action.guest_resized</code>) on the same event bus discovery uses, so it's persisted to the knowledge store the same way, visible via <code>atlas history</code>, with no special-cased storage code.</li>
+</ul>
+<p><code>atlas resize</code> doesn't use docker-py's <code>container.update()</code> — a real, verified-against-a-live-container finding, not an assumption. <code>docker run --cpus=0.5</code> (the standard path) sets <code>HostConfig.NanoCpus</code>, not <code>CpuPeriod</code>/<code>CpuQuota</code>; a <code>container.update(cpu_period=..., cpu_quota=...)</code> call against that same container fails with a real <code>409 Conflict</code> (Docker refuses to mix the two CPU-limiting mechanisms on one container), and docker-py's <code>update_container()</code> has no <code>NanoCPUs</code> parameter at all, even though the raw Docker Engine API accepts one (confirmed: the real <code>docker update --cpus</code> CLI does set it). <code>resize_container()</code> posts that raw API request directly instead — reusing docker-py's own <code>client.api</code> (a <code>requests.Session</code> subclass with the Docker-socket transport adapter already registered), not a new HTTP dependency or a shell-out to the <code>docker</code> CLI. Verified end to end: current-state display, a combined CPU+memory resize actually taking effect live (confirmed via <code>docker inspect</code> before/after, no restart), and an intentionally-too-low memory value failing cleanly with a caught <code>400 Bad Request</code>.</p>
+<p><code>atlas proxmox stop</code>/<code>atlas proxmox resize</code> surfaced two real distinctions from Proxmox's actual API, found by reading it rather than assumed. <strong>Stop:</strong> Proxmox has no single call with Docker <code>container.stop()</code>'s built-in graceful-then-force behavior — <code>status.shutdown</code> (an ACPI request, with no automatic force-fallback if the guest doesn't respond) and <code>status.stop</code> (hard power-off) are two separate endpoints. <code>stop_guest()</code> uses <code>shutdown</code>, matching what "stop" means in Docker's own default; the CLI's confirmation text says outright that this can stall on an unresponsive guest rather than implying Docker-equivalent guaranteed termination. <strong>Resize:</strong> Docker's <code>--cpus</code> maps to Proxmox's <code>cpulimit</code> (a float cap on host-core usage) — <strong>not</strong> <code>cores</code>/<code>sockets</code>, which is CPU <em>topology</em> (how many vCPUs the guest OS sees), a different concept that generally needs guest-side hot-add support to take effect without a reboot. <code>--memory</code> maps directly to Proxmox's <code>memory</code> (MB) config field, reusing the same <code>docker.utils.parse_bytes()</code> helper <code>resize_container</code> already uses to accept <code>"512m"</code>/<code>"1g"</code> strings, converted to MB since Proxmox's API takes a plain integer with no unit parsing of its own. <strong>Verified against a real Proxmox VE host and the same real LXC test guest used for <code>restart</code> verification</strong>: a real <code>atlas proxmox resize --cpus 0.5 --memory 256m</code> against a running guest, confirmed via a direct config read (<code>cpulimit: 0.5</code>, <code>memory: 256</code>) to have applied live, not just queued for next boot — then a real <code>atlas proxmox stop</code>, confirmed via a status check to have genuinely stopped the guest. The CLI's extra caveat for a <code>qemu</code>-type guest (a resize may need hotplug enabled to apply without a restart, unlike LXC) has since been independently verified against a real QEMU VM — see below.</p>
+<p><strong>QEMU hotplug caveat, verified against a real VM using Proxmox's own <code>pending</code> API, not guessed.</strong> <code>/nodes/{node}/qemu/{vmid}/pending</code> returns each config key with a <code>value</code> (the live, running value) and, only if a change hasn't taken effect yet, a separate <code>pending</code> field — a direct, authoritative signal from Proxmox itself about whether a config write actually reached the running instance or is just queued for next boot. Three real findings from a live test VM (kept KVM-disabled, since this Proxmox host has no hardware virtualization available — software emulation was enough for this test, since only config-application behavior was being verified, not guest performance):</p>
+<ol>
+<li><strong><code>cpulimit</code> applies live regardless of hotplug</strong>, matching the LXC behavior already verified — <code>pending.get()</code> returned only a <code>value</code> field for it, no split, confirming the earlier assumption ("<code>cpulimit</code> is a host-side cgroup cap for both guest types") for <code>qemu</code> specifically, not just <code>lxc</code>.</li>
+<li><strong><code>memory</code> genuinely does <em>not</em> apply live without hotplug</strong> — resizing a running VM with <code>hotplug</code> unset showed <code>{"key": "memory", "value": "2048", "pending": "512"}</code>: the <em>old</em> value was still what the running VM actually had, the new one queued. This is the caveat exactly as documented, now confirmed rather than assumed.</li>
+<li><strong>A real gotcha the original caveat didn't anticipate: enabling <code>hotplug: memory</code> on an <em>already-running</em> VM doesn't retroactively grant that VM live-resize capability.</strong> The <code>hotplug</code> config write itself showed up as <code>pending</code>, same as <code>memory</code> — QEMU's hotplug controller is a boot-time device, not something that can be added to a process that's already running. Confirmed by properly restarting the VM with <code>hotplug: memory</code> (and <code>numa: 1</code>, which Proxmox's memory hotplug also requires — restarting with NUMA enabled surfaced a second real gotcha, a <code>minimum memory must be 1024MB</code> start failure, since NUMA imposes its own memory floor) already set <em>before</em> boot: a subsequent resize then showed only a plain <code>value</code> for <code>memory</code>, no <code>pending</code> split — genuinely live this time.</li>
+</ol>
+<p>So the original caveat text (printed by the CLI) is accurate as far as it goes, but understates what "having hotplug enabled" actually requires in practice — it has to be set and the VM (re)started with it active, not toggled on a VM that's already running. The CLI's one-line prompt stays terse deliberately (this is exactly the kind of depth that belongs in documentation, not a confirmation prompt); this section is where that nuance actually lives.</p>
+<p><code>atlas analyze</code>/<code>atlas chat</code>'s suggested actions (above) deliberately stop at <em>suggesting</em> — recommend and act stay separate commands, each with their own approval boundary, rather than one command that both diagnoses and executes. <strong><code>atlas/actions/</code></strong> is the real action registry the roadmap called for — <code>atlas/actions/registry.py</code>'s <code>ActionDefinition</code> (<code>type</code>, <code>command_template</code>, <code>known_targets</code>) and the <code>ACTIONS</code> dict populated with all six entries, <code>atlas/actions/targets.py</code>'s <code>known_container_names()</code>/<code>known_guest_ids()</code> behind them (<code>resize_container</code>/<code>stop_guest</code>/<code>resize_guest</code> all reuse the existing target functions unchanged — same target kind as their same-resource siblings). Still deliberately just a dataclass + dict, not a class hierarchy or plugin system. <code>command_template</code> is a small callable (<code>Callable[[SuggestedAction], str]</code>) rather than a plain format string — forced by <code>resize_container</code> needing more than one substitution; <code>resize_guest</code>'s command template is nearly identical to <code>resize_container</code>'s for the same reason. Both <code>atlas analyze</code> and <code>atlas chat</code>'s print logic call <code>definition.command_template(action)</code> directly now — no per-action-type branching added to the CLI. This is now the one place both <code>AtlasAnalyzer</code>/<code>AtlasAgent</code> and the CLI's print logic read from, instead of separately-maintained dicts plus a hand-written schema enum. Adding another action means one <code>ACTIONS</code> entry, one manager function, one CLI command, and one <code>ACTION_INSTRUCTIONS</code> sentence.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "content.action.edit", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

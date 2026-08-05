@@ -1,0 +1,782 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered operations platform for self-hosted infrastructure.">
+      
+      
+      
+      
+        <link rel="prev" href="../service-catalog/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Roadmap - Atlas</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#roadmap" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Atlas" class="md-header__button md-logo" aria-label="Atlas" data-md-component="logo">
+      
+  <img src="../images/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Atlas
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Roadmap
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Cyb3rRon1n/atlas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cyb3rRon1n/atlas
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Atlas" class="md-nav__button md-logo" aria-label="Atlas" data-md-component="logo">
+      
+  <img src="../images/logo.svg" alt="logo">
+
+    </a>
+    Atlas
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Cyb3rRon1n/atlas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cyb3rRon1n/atlas
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service-catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service Catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shipped
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deliberately-out-of-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deliberately out of scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#guiding-principle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Guiding principle
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shipped
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deliberately-out-of-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deliberately out of scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#guiding-principle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Guiding principle
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Cyb3rRon1n/atlas/edit/main/docs/roadmap.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="roadmap">Roadmap<a class="headerlink" href="#roadmap" title="Permanent link">&para;</a></h1>
+<h2 id="shipped">Shipped<a class="headerlink" href="#shipped" title="Permanent link">&para;</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Python CLI application, configuration management</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Hardware, OS, storage, and network discovery</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Inventory generation and reporting</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Docker discovery and known-service detection (<a href="../service-catalog/">Service Catalog</a>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Docker Compose analysis</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Event-driven system with persistent operational history</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Plugin architecture (currently: a Docker plugin)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Proxmox integration</strong> — node discovery, cluster-wide VM/container inventory, API token authentication</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>AI analysis engine</strong> — <code>atlas analyze</code>, pluggable Anthropic/Ollama providers, structured recommendations</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Test suite (156 tests) and CI (GitHub Actions, Python 3.11/3.12)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Unified discovery</strong> — <code>atlas discover</code> now runs built-in discovery and every registered plugin in one pass, saving one complete environment snapshot; the separate <code>atlas discover-plugins</code> command was removed once its job was folded in</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>First automation action</strong> — <code>atlas restart &lt;name&gt;</code> restarts a Docker container after showing its state and requiring confirmation, logged via the event bus. The first Atlas command that acts rather than observes — see <a href="../architecture/#approval-gated-actions">Architecture</a>. Along the way, found and fixed a real bug: the event bus's knowledge-store listener was defined but never actually registered, so no published event had ever been persisted (<code>atlas history</code> was effectively non-functional before this).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong><code>atlas analyze</code> suggests actions</strong> — recommendations carry a schema-validated, optional <code>action</code> field (currently just <code>restart_container</code>); <code>AtlasAnalyzer</code> cross-checks the suggested target against containers Atlas actually observed and drops anything ungrounded before it's shown. <code>atlas analyze</code> only prints the suggestion (<code>→ Suggested: atlas restart plex</code>) — running it is a separate step through <code>atlas restart</code>'s own approval gate, not something <code>analyze</code> executes itself.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Proxmox change detection</strong> — <code>atlas proxmox scan</code> now reports what changed since the last scan (nodes/guests added, removed, or status-changed) and logs it via <code>atlas.proxmox.changes_detected</code>. This turned out not to need new storage: <code>save_environment()</code> was already insert-only, so a full history of past snapshots already existed in the database — this item was mis-scoped before it was actually looked into, the same way the event-listener registration gap was.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Monitoring integration</strong> — <code>atlas monitor</code> queries an existing Prometheus server for host CPU/memory/disk usage via standard <code>node_exporter</code> metrics, following the same "Atlas reaches out on command" shape as every other integration rather than exposing a <code>/metrics</code> endpoint. Disabled by default; verified against a real Prometheus + <code>node_exporter</code> — see <a href="../architecture/#monitoring">Architecture</a> and "Verification against real infrastructure" below.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Fixed: database tables were never created automatically.</strong> <code>atlas.database.initialize_database()</code> existed but nothing called it, and the (then still committed) <code>inventory/atlas.db</code> predated the <code>AnalysisRecord</code> model — so <code>atlas analyze</code> would crash on its very first real use (<code>no such table: analysis</code>), and a genuinely fresh install with no pre-existing db would crash on <em>any</em> command that touches the database. Fixed by calling <code>initialize_database()</code> lazily at the top of every <code>KnowledgeStore</code>/<code>KnowledgeQueries</code> method rather than at construction time — construction happens as part of the <code>AtlasRuntime</code> singleton built at module import, so doing it there would create/mutate the database using whatever the process's cwd happens to be at first import (e.g. the real repo root during a <code>pytest</code> run), not the user's actual working directory. Verified against a copy of the (then still committed) db (existing rows untouched, missing table added) and against a fresh directory with no <code>inventory/</code> at all.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong><code>inventory/atlas.db</code> un-tracked from git.</strong> It grows a new row on every command run and now self-heals its own schema (above), so there was nothing left it needed to seed — keeping it committed just meant every real usage session against real hardware would show up as a binary diff to commit. It's gitignored now; the file still exists locally and nothing about its behavior changed.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong><code>atlas doctor</code> readiness checks</strong> — now also checks the three integrations that were previously invisible to it: Proxmox (enabled + host + credentials present), the AI provider (<code>ANTHROPIC_API_KEY</code> set for Anthropic; no key needed for Ollama), and Prometheus (enabled + URL present). These are config/presence checks, not live connection attempts — <code>doctor</code> stays fast and never hangs waiting on a network call. A disabled integration reports healthy (<code>✓ Proxmox: disabled</code>) since that's a valid, intentional state, not a problem; only "enabled but misconfigured" reports unhealthy. This is what actually answers "is this ready for my real setup" from the command line instead of by hand.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Second automation action: <code>atlas proxmox restart &lt;vmid&gt;</code></strong> — restarts a Proxmox VM or LXC guest, the same approval-gated shape as <code>atlas restart</code> for Docker (pure result-dict manager function, unconditional <code>typer.confirm()</code>, logged via the event bus). This forced the action framework's first real generalization, previously only ever exercised with one action type: <code>ANALYSIS_SCHEMA</code>'s <code>action.type</code> enum, <code>AtlasAnalyzer</code>'s target-grounding check, and <code>analyze()</code>'s suggested-command print all moved from a single hardcoded case to small lookup dicts (<code>TARGET_VALIDATORS</code>, <code>action_commands</code>) keyed by action type — see <a href="../architecture/#approval-gated-actions">Architecture</a>. Needs write/power-management permission on the Proxmox token beyond the read-only scope <code>scan</code> uses. Along the way, found and fixed two more real bugs in the database-initialization fix from the previous entry (see git history / CLAUDE.md for the full detail).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong><code>atlas init</code></strong> — interactively generates <code>atlas.yaml</code>, prompting only for what actually varies per deployment (instance name, Proxmox, AI provider, Prometheus) and leaving <code>discovery</code>/<code>inventory</code> at their defaults. <code>ANTHROPIC_API_KEY</code> is never prompted for or written. Every run is logged to <code>logs/atlas-init-&lt;timestamp&gt;.log</code>, with secret values deliberately excluded from the log even though they're written to <code>atlas.yaml</code> itself. Existing <code>atlas.yaml</code> is protected behind the same <code>typer.confirm()</code> overwrite gate every other mutating command uses.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Verification against real infrastructure</strong> — Proxmox, both AI providers (Anthropic/Ollama), and Prometheus checked off integration-by-integration against real live systems, distinct from "built and unit-tested":</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Proxmox discovery and restart — real Proxmox VE host, real LXC guest</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Ollama — real local instance, full end-to-end <code>atlas analyze</code> run</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Prometheus — real Prometheus + <code>node_exporter</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anthropic — auth + error-handling path confirmed against a real key; a fully successful (non-error) response is still blocked on adding billing credits, a deliberate deferral rather than a technical gap</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Broader automation framework: <code>atlas stop &lt;name&gt;</code> and a real <code>atlas/actions/</code> registry</strong> — a third action type (Docker container stop), the one that actually forced <code>ActionDefinition</code>/<code>ACTIONS</code> to generalize into a real registry instead of three separately-maintained lookup structures.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Monitoring threshold/alerting</strong> — configurable per-metric thresholds (<code>90.0</code> default), yellow <code>!</code> flagging, <code>atlas.monitoring.threshold_exceeded</code> published only when something actually crossed. No push notifications (email/Slack/etc.) by design — see "Deliberately out of scope" below.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Deeper monitoring: cAdvisor container metrics and Proxmox-style change detection</strong> — per-container CPU/memory via cAdvisor as a second Prometheus exporter, plus <code>diff_monitoring()</code> change detection mirroring the Proxmox pattern. Verified against a real cAdvisor instance.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Agent-based capabilities: tool-use + <code>atlas chat</code></strong> — both AI providers can call a small, deliberately read-only set of tools mid-request; no mutating tool exists here by design — see "Deliberately out of scope" below. Unlocks <code>atlas chat</code>, a multi-turn command that grounds against live state instead of a saved snapshot. Verified against a real local Ollama, including a real bug found only by running against a live model (Ollama silently never called a tool when <code>tools</code> and <code>format</code> were sent together — fixed by splitting into a tools-only gathering phase then a separate finalize request).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Container resource-allocation visibility</strong> — <code>cpu_percent_of_limit</code>/<code>memory_percent_of_limit</code> via two more cAdvisor PromQL queries, no new Docker-side collection needed. Verified against a real resource-constrained test container.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>The <code>resize_container</code> action</strong> — a fourth action type, the first needing more than a flat <code>{target}</code> substitution (<code>command_template</code> became a small callable). Found a real, significant course-correction only by resizing an actual live container: <code>docker run --cpus</code> sets <code>NanoCpus</code>, which docker-py's <code>update_container()</code> doesn't expose at all — fixed by posting the raw Engine API request directly through docker-py's own transport.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Multi-step action plans</strong> — <code>AnalysisResult</code>/<code>ChatReply</code> can carry an ordered <code>plan</code> of dependent steps, still suggest-only at this point. Grounding treats a plan as one unit — one hallucinated step target drops the whole plan.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Persist <code>atlas chat</code> transcripts</strong> — one <code>atlas.chat.transcript_saved</code> event per session, riding the existing event-log path, no new table.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong><code>get_container_logs</code> tool</strong> — read-only, server-side capped at 500 lines. Found and fixed a real gap along the way: tool handlers never actually received call arguments until this forced the fix (every prior tool got away with it by using an empty schema).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Resource-usage trending (<code>atlas trends</code>)</strong> — new query/reporting code over data that was already being saved (<code>save_environment()</code> is insert-only), not new storage. Explicitly skips rows missing the field being trended, since each command only ever populates the categories it collects.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Proxmox stop/resize parity</strong> — <code>atlas proxmox stop</code>/<code>resize</code> close the gap between Docker's three actions and Proxmox's one, through the same registry pattern. QEMU's hotplug-for-live-memory-resize caveat has since been independently verified against a real QEMU VM (see below).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Plan execution</strong> — <code>atlas analyze</code>/<code>atlas chat</code> can now run a printed plan step-by-step, each with its own confirmation, via a generic <code>execute_action()</code> dispatcher. Narrower than originally scoped: no plan persistence, no <code>atlas plan run</code> command — the plan already exists in memory the moment it's printed.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong><code>--json</code> output + cron-friendly exit codes</strong> — <code>atlas doctor</code>/<code>atlas monitor</code>/<code>atlas trends</code> gained <code>--json</code>; exit codes are meaningful all the time, not just in JSON mode, so a plain cron job can check <code>$?</code> with no parsing at all.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>QEMU VM resize/hotplug caveat, verified</strong> — confirmed against a real QEMU VM via Proxmox's own <code>pending</code> API, including a real gotcha the original caveat didn't anticipate (enabling <code>hotplug: memory</code> on an already-running VM doesn't retroactively grant live-resize capability).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Second-distro verification</strong> — found the project's real day-to-day dev/test platform was Fedora all along, not Ubuntu as previously (incorrectly) documented; corrected. Ubuntu is verified via CI, Fedora via every piece of real-infrastructure testing in this project's history.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Proxmox guest usage in <code>atlas trends</code></strong> — the last item deferred when trending shipped. Reused the exact same "skip rows lacking the field" pattern already built for the monitor-vs-discover split; needed zero new machinery.</li>
+</ul>
+<h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A fully successful (non-error) Anthropic <code>atlas analyze</code> response</strong> — blocked on adding API billing credits, not on any code gap. Auth and error-handling are already verified against a real key.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A fifth+ action type</strong> — the registry (<code>ActionDefinition</code> + <code>ACTIONS</code>) is already built to make this cheap (one entry, one manager function, one CLI command, one prompt sentence); nothing concrete is queued yet.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A second plugin beyond Docker</strong> — the plugin architecture (<code>AtlasPlugin</code> ABC, <code>PluginManager</code>) has only ever had one real implementation. A natural next candidate is whatever the next non-Docker resource type turns out to be (e.g. a bare-metal service manager, or another hypervisor); nothing is scoped yet.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Multi-node / fleet view</strong> — Atlas currently reasons about one host plus one Proxmox cluster per run. Aggregating history/state across multiple independent Atlas installs (e.g. several homelab nodes) isn't supported and hasn't been scoped.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A lightweight read-only web view over existing data</strong> — <code>atlas report</code>/<code>atlas history</code>/<code>atlas trends</code> are all CLI-only; a simple local web dashboard over the same <code>KnowledgeQueries</code> reads is a plausible, low-risk future surface (no new write paths, no new automation), not started.</li>
+</ul>
+<h2 id="deliberately-out-of-scope">Deliberately out of scope<a class="headerlink" href="#deliberately-out-of-scope" title="Permanent link">&para;</a></h2>
+<p>Recorded so these don't get relitigated as "gaps" — each was considered and rejected for a real reason, not overlooked.</p>
+<ul>
+<li><strong>No daemon / scheduled mode.</strong> Every command is on-demand, run by a human or cron, not a background process. Keeps the "reaches out on command" shape consistent across every integration and avoids Atlas silently acting while unattended.</li>
+<li><strong>No push notifications (email/Slack/etc.).</strong> "Alerting" means visibly flagged in a command's own output (<code>!</code> markers, non-zero exit codes for cron), not paging someone. Atlas has no background process to send a notification <em>from</em> — see "no daemon" above; revisit only if a daemon mode is ever actually built.</li>
+<li><strong>No mutating tool inside <code>atlas chat</code>/<code>atlas analyze</code>'s tool-use loop.</strong> The AI can observe (read containers/services/events/logs/metrics) but never restart/stop/resize mid-conversation — every mutating action stays behind its own standalone, approval-gated command, never reachable as a side effect of a chat turn.</li>
+<li><strong>No unattended automation.</strong> Every action (<code>restart</code>/<code>stop</code>/<code>resize</code>, single or as part of a plan) requires an explicit <code>typer.confirm()</code> with no bypass flag. There is no "auto-approve" mode, and none is planned — this is the core safety property the "Guiding principle" diagram below encodes.</li>
+</ul>
+<h2 id="guiding-principle">Guiding principle<a class="headerlink" href="#guiding-principle" title="Permanent link">&para;</a></h2>
+<p>Every step up this list is expected to remain consistent with Atlas's core loop:</p>
+<pre class="mermaid"><code>graph LR
+    A[Observe] --&gt; B[Understand]
+    B --&gt; C[Recommend]
+    C --&gt; D[Automate with approval]</code></pre>
+<p>Automation is the last step, not the first — Atlas earns the right to act by first being reliably right about what it observes and recommends.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "content.action.edit", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

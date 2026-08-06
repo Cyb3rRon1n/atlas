@@ -2065,3 +2065,35 @@ def test_resize_confirmed_shows_unlimited_when_no_configured_limits(
 
     assert "Current CPU limit: unlimited" in result.output
     assert "Current memory limit: unlimited" in result.output
+
+
+def test_web_starts_server_with_default_host_and_port():
+
+    with patch("atlas.web.server.run_server") as mock_run_server:
+
+        result = runner.invoke(app, ["web"])
+
+    assert result.exit_code == 0
+    assert "http://127.0.0.1:8420" in result.output
+    mock_run_server.assert_called_once_with("127.0.0.1", 8420)
+
+
+def test_web_respects_host_and_port_options():
+
+    with patch("atlas.web.server.run_server") as mock_run_server:
+
+        result = runner.invoke(app, ["web", "--host", "0.0.0.0", "--port", "9000"])
+
+    assert result.exit_code == 0
+    assert "http://0.0.0.0:9000" in result.output
+    mock_run_server.assert_called_once_with("0.0.0.0", 9000)
+
+
+def test_web_handles_keyboard_interrupt_cleanly():
+
+    with patch("atlas.web.server.run_server", side_effect=KeyboardInterrupt):
+
+        result = runner.invoke(app, ["web"])
+
+    assert result.exit_code == 0
+    assert "Stopped." in result.output

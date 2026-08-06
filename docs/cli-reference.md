@@ -53,3 +53,4 @@ Commands that change infrastructure rather than just observe it. All are approva
 | `atlas intelligence` | Display the latest stored environment context. |
 | `atlas analyze` | Analyze the latest environment snapshot with AI — using live tool calls for current state — and print a summary plus recommendations (see [Configuration](configuration.md#intelligence)). |
 | `atlas chat` | Interactive multi-turn chat with Atlas about your infrastructure. No prior `atlas discover` required — grounds itself against live state on demand. Type `exit` to quit. |
+| `atlas web` | Serve a local, read-only web view (overview/history/trends) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). No write path — runs in the foreground until `Ctrl+C`, same on-demand shape as every other command. |

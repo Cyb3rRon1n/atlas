@@ -42,10 +42,11 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 - ✅ `--json` output and cron-friendly exit codes on `atlas doctor`/`atlas monitor`/`atlas trends` — wire either health check into your own cron job or systemd timer without Atlas becoming a daemon
 - ✅ Event-driven architecture with persistent operational history
 - ✅ Plugin architecture
+- ✅ Read-only web view (`atlas web`) — overview, history, and trends over the same data the CLI already reads, no new write path
 
 ### Next
 
-Nothing currently in progress, but a real, non-empty backlog exists — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/#next)'s own checklist for exactly what's queued (a fifth action type, a second plugin type, multi-node/fleet support, a read-only web view, and a fully successful Anthropic response pending your own billing setup) versus deliberately out of scope (no daemon, no push notifications, no unattended automation).
+Nothing currently in progress, but a real, non-empty backlog exists — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/#next)'s own checklist for exactly what's queued (a fifth action type, a second plugin type, multi-node/fleet support, and a fully successful Anthropic response pending your own billing setup) versus deliberately out of scope (no daemon, no push notifications, no unattended automation).
 
 ---
 
@@ -173,6 +174,7 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas intelligence` | Display the latest stored environment context. |
 | `atlas analyze` | Analyze the latest environment snapshot with AI (using live tool calls for current state) and print a summary plus recommendations. |
 | `atlas chat` | Interactive multi-turn chat with Atlas about your infrastructure — no prior `atlas discover` required. Type `exit` to quit. |
+| `atlas web` | Serve a local, read-only web view (overview/history/trends) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). No write path. |
 | `atlas runtime` | Display Atlas runtime information. |
 
 Run `atlas <command> --help` for command-specific options.
@@ -198,6 +200,8 @@ Run `atlas <command> --help` for command-specific options.
 **Plugin Architecture** — new discovery/integration capabilities register through a plugin system (`atlas plugins`) without touching the core.
 
 **Operational Memory** — every meaningful action publishes an event onto an internal bus and is persisted automatically — `atlas history` shows the full record: discoveries, scans, restarts, chat sessions, and more.
+
+**Read-Only Web View** — `atlas web` serves a local overview/history/trends dashboard over the exact same reads `atlas report`/`atlas history`/`atlas trends` already do — no new write path, no automation. Runs in the foreground until `Ctrl+C`, same on-demand shape as every other Atlas command.
 
 **AI Analysis Engine** — `atlas analyze` sends your latest environment snapshot to Claude or a local Ollama model and gets back a plain-language summary plus concrete recommendations. See [Configuration](#configuration) for provider setup.
 

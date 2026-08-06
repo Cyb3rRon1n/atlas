@@ -27,12 +27,7 @@ from atlas.proxmox import (
 from atlas.plugins import PluginManager
 from atlas.monitoring import collect_container_metrics, collect_metrics, evaluate_thresholds
 from atlas.monitoring.changes import diff_monitoring, format_change as format_monitoring_change
-from atlas.monitoring.trends import (
-    container_metric_trend,
-    host_metric_trend,
-    known_container_names,
-)
-from atlas.proxmox.trends import guest_metric_trend, known_guests
+from atlas.reporting.trends import build_trends_payload
 from rich.console import Console
 from atlas.events import AtlasEvent
 from atlas.knowledge.queries import KnowledgeQueries
@@ -850,17 +845,15 @@ def monitor(
         raise typer.Exit(code=1)
 
 
-def _trend_summary(points):
+def _print_trend_summaries(summaries):
 
-    values = [value for _, value in points]
+    for metric_name, summary in summaries.items():
 
-    return {
-        "latest": values[-1],
-        "min": min(values),
-        "max": max(values),
-        "avg": sum(values) / len(values),
-        "samples": len(values)
-    }
+        console.print(
+            f"  {metric_name}: latest {summary['latest']:.1f}%, "
+            f"min {summary['min']:.1f}%, max {summary['max']:.1f}%, "
+            f"avg {summary['avg']:.1f}% ({summary['samples']} samples)"
+        )
 
 
 @app.command()
@@ -881,20 +874,12 @@ def trends(
             "[bold blue]Atlas Trends[/bold blue]\n"
         )
 
-    records = KnowledgeQueries().environment_history(limit)
+    payload = build_trends_payload(limit)
 
-    if not any(
-        record["data"].get("monitoring") or record["data"].get("virtualization")
-        for record in records
-    ):
+    if not payload["host"] and not payload["containers"] and not payload["guests"]:
 
         if json_output:
-
-            print(
-                json.dumps(
-                    {"host": {}, "containers": {}, "guests": {}}, indent=2
-                )
-            )
+            print(json.dumps(payload, indent=2))
 
         else:
 
@@ -909,115 +894,32 @@ def trends(
 
         return
 
-    host_payload = {}
-
-    if not json_output:
-
-        console.print(
-            "[bold]Host:[/bold]"
-        )
-
-    for metric_name in ("cpu_percent", "memory_percent", "disk_percent"):
-
-        points = host_metric_trend(records, metric_name)
-
-        if not points:
-            continue
-
-        summary = _trend_summary(points)
-        host_payload[metric_name] = summary
-
-        if json_output:
-            continue
-
-        console.print(
-            f"  {metric_name}: latest {summary['latest']:.1f}%, "
-            f"min {summary['min']:.1f}%, max {summary['max']:.1f}%, "
-            f"avg {summary['avg']:.1f}% ({summary['samples']} samples)"
-        )
-
-    containers_payload = {}
-
-    for container_name in known_container_names(records):
-
-        container_payload = {}
-
-        if not json_output:
-
-            console.print(
-                f"\n[bold]{container_name}:[/bold]"
-            )
-
-        for metric_name in (
-            "cpu_percent", "memory_percent",
-            "cpu_percent_of_limit", "memory_percent_of_limit"
-        ):
-
-            points = container_metric_trend(
-                records, container_name, metric_name
-            )
-
-            if not points:
-                continue
-
-            summary = _trend_summary(points)
-            container_payload[metric_name] = summary
-
-            if json_output:
-                continue
-
-            console.print(
-                f"  {metric_name}: latest {summary['latest']:.1f}%, "
-                f"min {summary['min']:.1f}%, max {summary['max']:.1f}%, "
-                f"avg {summary['avg']:.1f}% ({summary['samples']} samples)"
-            )
-
-        containers_payload[container_name] = container_payload
-
-    guests_payload = {}
-
-    for vmid, name in known_guests(records).items():
-
-        guest_payload = {"name": name}
-
-        if not json_output:
-
-            console.print(
-                f"\n[bold]{name} ({vmid}):[/bold]"
-            )
-
-        for metric_name in ("cpu_percent", "memory_percent"):
-
-            points = guest_metric_trend(records, vmid, metric_name)
-
-            if not points:
-                continue
-
-            summary = _trend_summary(points)
-            guest_payload[metric_name] = summary
-
-            if json_output:
-                continue
-
-            console.print(
-                f"  {metric_name}: latest {summary['latest']:.1f}%, "
-                f"min {summary['min']:.1f}%, max {summary['max']:.1f}%, "
-                f"avg {summary['avg']:.1f}% ({summary['samples']} samples)"
-            )
-
-        guests_payload[vmid] = guest_payload
-
     if json_output:
+        print(json.dumps(payload, indent=2))
+        return
 
-        print(
-            json.dumps(
-                {
-                    "host": host_payload,
-                    "containers": containers_payload,
-                    "guests": guests_payload
-                },
-                indent=2
-            )
+    console.print(
+        "[bold]Host:[/bold]"
+    )
+
+    _print_trend_summaries(payload["host"])
+
+    for container_name, container_payload in payload["containers"].items():
+
+        console.print(
+            f"\n[bold]{container_name}:[/bold]"
+        )
+
+        _print_trend_summaries(container_payload)
+
+    for vmid, guest_payload in payload["guests"].items():
+
+        console.print(
+            f"\n[bold]{guest_payload['name']} ({vmid}):[/bold]"
+        )
+
+        _print_trend_summaries(
+            {k: v for k, v in guest_payload.items() if k != "name"}
         )
 
 
@@ -1956,6 +1858,33 @@ Payload:
 {event.payload}
 
 """
+        )
+
+@app.command()
+def web(
+    host: str = "127.0.0.1",
+    port: int = 8420
+):
+    """
+    Serve a local, read-only web view over Atlas's existing data
+    (overview, history, trends) - no new automation, no write path.
+    """
+
+    from atlas.web.server import run_server
+
+    console.print(
+        "[bold blue]Atlas Web[/bold blue]\n"
+    )
+
+    console.print(
+        f"Serving at http://{host}:{port} (Ctrl+C to stop)"
+    )
+
+    try:
+        run_server(host, port)
+    except KeyboardInterrupt:
+        console.print(
+            "\n[yellow]Stopped.[/yellow]"
         )
 
 @app.command()

@@ -43,6 +43,7 @@
 - [x] **QEMU VM resize/hotplug caveat, verified** — confirmed against a real QEMU VM via Proxmox's own `pending` API, including a real gotcha the original caveat didn't anticipate (enabling `hotplug: memory` on an already-running VM doesn't retroactively grant live-resize capability).
 - [x] **Second-distro verification** — found the project's real day-to-day dev/test platform was Fedora all along, not Ubuntu as previously (incorrectly) documented; corrected. Ubuntu is verified via CI, Fedora via every piece of real-infrastructure testing in this project's history.
 - [x] **Proxmox guest usage in `atlas trends`** — the last item deferred when trending shipped. Reused the exact same "skip rows lacking the field" pattern already built for the monitor-vs-discover split; needed zero new machinery.
+- [x] **A lightweight read-only web view (`atlas web`)** — a local overview/history/trends dashboard, `http.server` only (no new dependency). Every route is a `GET`; the handler defines no `do_POST`/`do_PUT`/`do_DELETE` at all, so there's no write path reachable by construction, not just by convention. `atlas trends`'s JSON-payload logic was extracted into a new pure `build_trends_payload()` (`atlas/reporting/trends.py`) so the CLI's `--json` output and this page can never disagree — a real, small refactor forced by wanting one source of truth, not two parallel implementations. Verified against a real running server (not just mocks): started `atlas web` for real, seeded real environment/event data, and confirmed all three routes rendered correctly over real HTTP requests, including a real 404 on an unknown route.
 
 ## Next
 
@@ -50,13 +51,12 @@
 - [ ] **A fifth+ action type** — the registry (`ActionDefinition` + `ACTIONS`) is already built to make this cheap (one entry, one manager function, one CLI command, one prompt sentence); nothing concrete is queued yet.
 - [ ] **A second plugin beyond Docker** — the plugin architecture (`AtlasPlugin` ABC, `PluginManager`) has only ever had one real implementation. A natural next candidate is whatever the next non-Docker resource type turns out to be (e.g. a bare-metal service manager, or another hypervisor); nothing is scoped yet.
 - [ ] **Multi-node / fleet view** — Atlas currently reasons about one host plus one Proxmox cluster per run. Aggregating history/state across multiple independent Atlas installs (e.g. several homelab nodes) isn't supported and hasn't been scoped.
-- [ ] **A lightweight read-only web view over existing data** — `atlas report`/`atlas history`/`atlas trends` are all CLI-only; a simple local web dashboard over the same `KnowledgeQueries` reads is a plausible, low-risk future surface (no new write paths, no new automation), not started.
 
 ## Deliberately out of scope
 
 Recorded so these don't get relitigated as "gaps" — each was considered and rejected for a real reason, not overlooked.
 
-- **No daemon / scheduled mode.** Every command is on-demand, run by a human or cron, not a background process. Keeps the "reaches out on command" shape consistent across every integration and avoids Atlas silently acting while unattended.
+- **No daemon / scheduled mode.** Every command is on-demand, run by a human or cron, not a background process. Keeps the "reaches out on command" shape consistent across every integration and avoids Atlas silently acting while unattended. `atlas web` doesn't break this: a human explicitly starts it in a foreground terminal and stops it with `Ctrl+C`, the same on-demand shape as `atlas chat` — nothing runs unattended or gets auto-started.
 - **No push notifications (email/Slack/etc.).** "Alerting" means visibly flagged in a command's own output (`!` markers, non-zero exit codes for cron), not paging someone. Atlas has no background process to send a notification *from* — see "no daemon" above; revisit only if a daemon mode is ever actually built.
 - **No mutating tool inside `atlas chat`/`atlas analyze`'s tool-use loop.** The AI can observe (read containers/services/events/logs/metrics) but never restart/stop/resize mid-conversation — every mutating action stays behind its own standalone, approval-gated command, never reachable as a side effect of a chat turn.
 - **No unattended automation.** Every action (`restart`/`stop`/`resize`, single or as part of a plan) requires an explicit `typer.confirm()` with no bypass flag. There is no "auto-approve" mode, and none is planned — this is the core safety property the "Guiding principle" diagram below encodes.

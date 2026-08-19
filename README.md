@@ -8,6 +8,10 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+">
 </p>
 
+<p align="center">
+  📖 <a href="https://cyb3rron1n.github.io/atlas/">Documentation</a> · <a href="https://cyb3rron1n.github.io/atlas/getting-started/">Getting Started</a> · <a href="https://cyb3rron1n.github.io/atlas/roadmap/">Roadmap</a> · <a href="https://cyb3rron1n.github.io/atlas/architecture/">Architecture</a> · <a href="https://cyb3rron1n.github.io/">Sibling Projects</a> · <a href="docs/images/favicon.svg">Favicon</a>
+</p>
+
 # Atlas
 
 **Know what's running on your infrastructure, why, and what changed — before you have to go find out the hard way.**

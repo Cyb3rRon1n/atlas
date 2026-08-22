@@ -37,6 +37,18 @@ class MonitoringConfig(BaseModel):
     memory_allocation_threshold: float = 90.0
 
 
+class FleetNode(BaseModel):
+    name: str
+    host: str
+    user: str = "atlas"
+    port: int = 22
+    identity_file: str = ""
+
+
+class FleetConfig(BaseModel):
+    nodes: list[FleetNode] = []
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -44,3 +56,4 @@ class AtlasConfig(BaseModel):
     proxmox: ProxmoxConfig = ProxmoxConfig()
     intelligence: IntelligenceConfig = IntelligenceConfig()
     monitoring: MonitoringConfig = MonitoringConfig()
+    fleet: FleetConfig = FleetConfig()

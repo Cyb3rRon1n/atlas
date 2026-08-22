@@ -20,3 +20,10 @@ intelligence:
 monitoring:
   enabled: false
   prometheus_url: http://localhost:9090
+fleet:
+  nodes:
+    - name: media-server
+      host: 192.168.1.20
+      user: atlas
+      port: 22
+      identity_file: ''

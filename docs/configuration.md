@@ -32,6 +32,14 @@ intelligence:
 monitoring:
   enabled: false
   prometheus_url: http://localhost:9090
+
+fleet:
+  nodes:
+    - name: media-server
+      host: 192.168.1.20
+      user: atlas
+      port: 22
+      identity_file: ""
 ```
 
 ## `name`
@@ -99,3 +107,19 @@ Controls `atlas monitor`.
 The default metric queries assume [`node_exporter`](https://github.com/prometheus/node_exporter) is running on the monitored host and being scraped by Prometheus — install and configure it there for `atlas monitor` to return real CPU/memory/disk figures. If Prometheus is reachable but `node_exporter` isn't set up yet, `atlas monitor` still runs; each affected metric just reports as unavailable rather than failing the whole command.
 
 A metric at or above its threshold prints with a yellow `!` instead of a green `✓` (e.g. `! cpu_percent: 92.1% (threshold: 90.0%)`), and if anything crossed its threshold, `atlas monitor` publishes `atlas.monitoring.threshold_exceeded` (visible via `atlas history`) alongside the `atlas.monitoring.scan.completed` event every scan already publishes — so a no-op scan doesn't add event-log noise, only an actual threshold crossing does. A metric with no data (`node_exporter` not scraped, etc.) is never flagged either way — "unavailable" isn't "under the limit."
+
+## `fleet`
+
+Controls `atlas fleet doctor`. No daemon, no central server — each node just needs to be reachable over SSH with Atlas already installed there; `atlas fleet doctor` SSHes in and runs `atlas doctor --json` remotely.
+
+`nodes` is a list, each entry:
+
+| Field | Default | Description |
+|---|---|---|
+| `name` | *(required)* | A label for this node, shown in `atlas fleet doctor`'s output |
+| `host` | *(required)* | Hostname or IP to SSH to |
+| `user` | `atlas` | SSH user |
+| `port` | `22` | SSH port |
+| `identity_file` | `""` | Path to an SSH private key; empty uses your normal SSH agent/default key |
+
+An empty `nodes` list (the default) means "no fleet nodes configured" — `atlas fleet doctor` exits 0, the same way a disabled Proxmox/monitoring integration does, not an error state.

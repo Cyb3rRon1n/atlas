@@ -19,6 +19,7 @@ from atlas.libvirt import (
     restart_guest as restart_libvirt_guest,
     stop_guest as stop_libvirt_guest,
 )
+from atlas.fleet import run_remote_doctor
 from atlas.proxmox import (
     connect,
     discover_nodes,
@@ -785,6 +786,120 @@ def resize_libvirt_guest_command(
     console.print(
         f"\n[green]✓ Guest '{name}' resized[/green]"
     )
+
+
+fleet_app = typer.Typer(
+    name="fleet",
+    help="Aggregate views across multiple Atlas nodes."
+)
+
+
+@fleet_app.command(name="doctor")
+def fleet_doctor(
+    json_output: bool = typer.Option(
+        False, "--json",
+        help="Print machine-readable JSON instead of formatted output."
+    )
+):
+    """
+    Run atlas doctor on every configured fleet node over SSH and
+    aggregate the results.
+    """
+
+    settings = load_config()
+
+    nodes = settings.fleet.nodes
+
+    if not nodes:
+
+        if json_output:
+
+            print(
+                json.dumps(
+                    {"nodes": [], "healthy": True},
+                    indent=2
+                )
+            )
+
+        else:
+
+            console.print(
+                "[yellow]No fleet nodes configured.[/yellow]"
+            )
+
+            console.print(
+                "Add nodes under fleet.nodes in atlas.yaml"
+            )
+
+        return
+
+    if not json_output:
+
+        console.print(
+            "[bold cyan]Atlas Fleet Doctor[/bold cyan]\n"
+        )
+
+    results = []
+
+    for node in nodes:
+
+        result = run_remote_doctor(node)
+
+        results.append(
+            {
+                "name": node.name,
+                "host": node.host,
+                **result
+            }
+        )
+
+    healthy = all(
+        result.get("reachable") and result.get("healthy")
+        for result in results
+    )
+
+    if json_output:
+
+        print(
+            json.dumps(
+                {"nodes": results, "healthy": healthy},
+                indent=2
+            )
+        )
+
+    else:
+
+        for result in results:
+
+            if not result["reachable"]:
+
+                console.print(
+                    f"[red]✗ {result['name']} ({result['host']}): "
+                    f"unreachable - {result['error']}[/red]"
+                )
+
+                continue
+
+            symbol = (
+                "[green]✓[/green]" if result["healthy"] else "[yellow]![/yellow]"
+            )
+
+            console.print(
+                f"{symbol} {result['name']} ({result['host']})"
+            )
+
+            for check in result["checks"]:
+
+                sub_symbol = (
+                    "[green]✓[/green]" if check["status"] else "[yellow]![/yellow]"
+                )
+
+                console.print(
+                    f"    {sub_symbol} {check['name']}: {check['details']}"
+                )
+
+    if not healthy:
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -2559,6 +2674,10 @@ app.add_typer(
 
 app.add_typer(
     libvirt_app
+)
+
+app.add_typer(
+    fleet_app
 )
 
 

@@ -2061,6 +2061,68 @@ def test_libvirt_resize_confirmed_resizes_guest_and_logs_event(isolated_cwd, tem
     assert payload["memory"] == "512MiB"
 
 
+def test_fleet_doctor_with_no_nodes_configured(isolated_cwd, temp_db):
+
+    result = runner.invoke(app, ["fleet", "doctor"])
+
+    assert result.exit_code == 0
+    assert "No fleet nodes configured." in result.output
+
+
+def test_fleet_doctor_json_with_no_nodes_configured(isolated_cwd, temp_db):
+
+    result = runner.invoke(app, ["fleet", "doctor", "--json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.output) == {"nodes": [], "healthy": True}
+
+
+def test_fleet_doctor_aggregates_reachable_and_unreachable_nodes(
+    isolated_cwd, temp_db
+):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "fleet:\n"
+        "  nodes:\n"
+        "    - name: node-a\n"
+        "      host: 10.0.0.5\n"
+        "    - name: node-b\n"
+        "      host: 10.0.0.6\n"
+    )
+
+    def fake_run(cmd, **kwargs):
+
+        result = MagicMock()
+
+        if "10.0.0.5" in cmd[-4]:
+            result.returncode = 0
+            result.stdout = '{"checks": [], "healthy": true}'
+        else:
+            result.returncode = 255
+            result.stdout = ""
+            result.stderr = "Permission denied (publickey)."
+
+        return result
+
+    with (
+        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("atlas.fleet.manager.subprocess.run", side_effect=fake_run),
+    ):
+
+        result = runner.invoke(app, ["fleet", "doctor", "--json"])
+
+    assert result.exit_code == 1
+
+    payload = json.loads(result.output)
+
+    assert payload["healthy"] is False
+    assert payload["nodes"][0] == {
+        "name": "node-a", "host": "10.0.0.5",
+        "reachable": True, "healthy": True, "checks": []
+    }
+    assert payload["nodes"][1]["reachable"] is False
+
+
 def test_stop_declined_does_not_stop_container(isolated_cwd, temp_db):
 
     fake_container = MagicMock()

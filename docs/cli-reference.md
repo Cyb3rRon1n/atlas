@@ -1,6 +1,6 @@
 # CLI Reference
 
-All 23 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
+All 24 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
 
 ## Status & health
 
@@ -57,3 +57,4 @@ Commands that change infrastructure rather than just observe it. All are approva
 | `atlas analyze` | Analyze the latest environment snapshot with AI — using live tool calls for current state — and print a summary plus recommendations (see [Configuration](configuration.md#intelligence)). |
 | `atlas chat` | Interactive multi-turn chat with Atlas about your infrastructure. No prior `atlas discover` required — grounds itself against live state on demand. Type `exit` to quit. |
 | `atlas web` | Serve a local, read-only web view (overview/history/trends) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). No write path — runs in the foreground until `Ctrl+C`, same on-demand shape as every other command. |
+| `atlas fleet doctor` | SSH into every node under `fleet.nodes` in `atlas.yaml` (no config = "no fleet nodes configured", exit 0) and run `atlas doctor --json` on each, reusing that same payload rather than a fleet-specific format. `-o BatchMode=yes` fails an auth prompt fast instead of hanging the whole scan; a per-node SSH/parse failure is reported as `"reachable": false` without aborting the rest. `--json` prints `{"nodes": [...], "healthy": bool}`. Exits 1 if any node is unreachable or unhealthy - safe to check `$?` from cron. No remote actions and no persistence - a live fan-out per invocation, not a saved snapshot. |

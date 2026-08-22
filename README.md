@@ -50,7 +50,7 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 
 ### Next
 
-Nothing currently in progress, but a real, non-empty backlog exists — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/#next)'s own checklist for exactly what's queued (a fifth action type, a second plugin type, multi-node/fleet support, and a fully successful Anthropic response pending your own billing setup) versus deliberately out of scope (no daemon, no push notifications, no unattended automation).
+Nothing currently in progress, but a real, non-empty backlog exists — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/#next)'s own checklist for exactly what's queued (a fifth action type, approval-gated actions for the new libvirt/KVM plugin, multi-node/fleet support, and a fully successful Anthropic response pending your own billing setup) versus deliberately out of scope (no daemon, no push notifications, no unattended automation).
 
 ---
 

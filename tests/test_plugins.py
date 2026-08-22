@@ -62,3 +62,24 @@ def test_discover_plugins_finds_docker_plugin():
     names = [p.name for p in plugins]
 
     assert "Docker" in names
+
+
+def test_discover_plugins_finds_libvirt_plugin():
+
+    plugins = discover_plugins()
+
+    by_name = {p.name: p for p in plugins}
+
+    assert "Libvirt" in by_name
+    assert by_name["Libvirt"].category == "virtualization"
+    assert by_name["Docker"].category == "containers"
+
+
+def test_plugin_category_defaults_to_unknown():
+    """
+    A plugin that forgets to set category shouldn't silently land in
+    someone else's category - AtlasEnvironmentContext.update() only
+    recognizes real category names, so "unknown" is a safe no-op.
+    """
+
+    assert FakePlugin().category == "unknown"

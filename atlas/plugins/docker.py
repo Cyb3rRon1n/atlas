@@ -9,6 +9,7 @@ class DockerPlugin(AtlasPlugin):
 
     name = "Docker"
     version = "0.1.0"
+    category = "containers"
 
     def __init__(self):
         self.runtime = None

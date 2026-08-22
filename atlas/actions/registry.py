@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable
 
-from atlas.actions.targets import known_container_names, known_guest_ids
+from atlas.actions.targets import known_container_names, known_guest_ids, known_libvirt_guest_names
 from atlas.config import load_config
 from atlas.docker import resize_container, restart_container, stop_container
+from atlas.libvirt import restart_guest as restart_libvirt_guest
 from atlas.proxmox import connect, get_guest_info, resize_guest, restart_guest, stop_guest
 
 if TYPE_CHECKING:
@@ -112,6 +113,12 @@ ACTIONS: dict[str, ActionDefinition] = {
             cpus=float(a.cpus) if a.cpus else None,
             memory=a.memory
         )
+    ),
+    "restart_libvirt_guest": ActionDefinition(
+        type="restart_libvirt_guest",
+        command_template=lambda a: f"atlas libvirt restart {a.target}",
+        known_targets=known_libvirt_guest_names,
+        executor=lambda a: restart_libvirt_guest(a.target)
     ),
 }
 

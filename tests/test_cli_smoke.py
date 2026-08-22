@@ -1,4 +1,5 @@
 import json
+import subprocess
 from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
@@ -1914,6 +1915,73 @@ def test_restart_confirmed_restarts_container_and_logs_event(
     events = KnowledgeQueries().recent_events()
 
     assert events[0].event_type == "atlas.action.container_restarted"
+
+
+def test_libvirt_restart_declined_does_not_restart_guest(isolated_cwd, temp_db):
+
+    fake_result = MagicMock()
+    fake_result.stdout = "running\n"
+
+    with (
+        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("atlas.libvirt.manager.subprocess.run", return_value=fake_result) as mock_run,
+    ):
+
+        result = runner.invoke(app, ["libvirt", "restart", "test-vm"], input="n\n")
+
+    assert result.exit_code == 0
+    assert "Cancelled." in result.output
+
+    # only the domstate lookup for the pre-confirm display, never reboot
+    assert all(call.args[0][1] != "reboot" for call in mock_run.call_args_list)
+
+
+def test_libvirt_restart_confirmed_restarts_guest_and_logs_event(
+    isolated_cwd, temp_db
+):
+
+    def fake_run(cmd, **kwargs):
+
+        result = MagicMock()
+
+        if cmd[1] == "domstate":
+            result.stdout = "running\n"
+        elif cmd[1] == "reboot":
+            result.stdout = ""
+        else:
+            raise AssertionError(f"unexpected virsh call: {cmd}")
+
+        return result
+
+    with (
+        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("atlas.libvirt.manager.subprocess.run", side_effect=fake_run),
+    ):
+
+        result = runner.invoke(app, ["libvirt", "restart", "test-vm"], input="y\n")
+
+    assert result.exit_code == 0
+    assert "restarted" in result.output
+
+    events = KnowledgeQueries().recent_events()
+
+    assert events[0].event_type == "atlas.action.libvirt_guest_restarted"
+
+
+def test_libvirt_restart_guest_not_found(isolated_cwd, temp_db):
+
+    with (
+        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch(
+            "atlas.libvirt.manager.subprocess.run",
+            side_effect=subprocess.CalledProcessError(1, "virsh")
+        ),
+    ):
+
+        result = runner.invoke(app, ["libvirt", "restart", "nope"])
+
+    assert result.exit_code == 0
+    assert "No libvirt guest named 'nope' found" in result.output
 
 
 def test_stop_declined_does_not_stop_container(isolated_cwd, temp_db):

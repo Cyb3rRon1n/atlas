@@ -1,6 +1,6 @@
 # CLI Reference
 
-All 20 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
+All 21 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
 
 ## Status & health
 
@@ -44,6 +44,7 @@ Commands that change infrastructure rather than just observe it. All are approva
 | `atlas proxmox restart <vmid>` | Restart a Proxmox VM or LXC guest. Shows the guest's current state and asks for confirmation before acting (requires `proxmox.enabled: true` and write/power-management permission on the token, see [Configuration](configuration.md#proxmox)). |
 | `atlas proxmox stop <vmid>` | Shut down a Proxmox VM or LXC guest via an ACPI request (not a hard power-off) - may not complete if the guest OS isn't responding. Shows current state and asks for confirmation. |
 | `atlas proxmox resize <vmid>` | Resize a Proxmox guest's CPU (`--cpus <cores>`, maps to Proxmox's `cpulimit`) and/or memory (`--memory <limit>`) limit. For a `qemu` guest, may need hotplug enabled to apply without a restart; LXC applies live. Asks for confirmation. |
+| `atlas libvirt restart <name>` | Restart a libvirt/KVM guest via an ACPI `virsh reboot` request - like Proxmox's stop, may not complete if the guest OS isn't responding. Shows current state and asks for confirmation. |
 
 ## Knowledge & AI
 

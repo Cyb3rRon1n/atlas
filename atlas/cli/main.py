@@ -1842,12 +1842,21 @@ def config():
 
 
 @app.command()
-def report():
+def report(
+    json_output: bool = typer.Option(
+        False, "--json",
+        help="Print machine-readable JSON instead of generating a Markdown report."
+    )
+):
     """
     Generate Atlas infrastructure report.
     """
 
     inventory = load_inventory()
+
+    if json_output:
+        print(json.dumps(inventory, indent=2))
+        return
 
     if not inventory:
         console.print(

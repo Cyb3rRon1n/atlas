@@ -2061,6 +2061,30 @@ def test_libvirt_resize_confirmed_resizes_guest_and_logs_event(isolated_cwd, tem
     assert payload["memory"] == "512MiB"
 
 
+def test_report_json_with_no_inventory(isolated_cwd):
+
+    result = runner.invoke(app, ["report", "--json"])
+
+    assert result.exit_code == 0
+    assert result.output.strip() == "null"
+
+
+def test_report_json_prints_inventory_without_writing_markdown(isolated_cwd):
+
+    from atlas.inventory import save_inventory
+
+    save_inventory({"system": {"hostname": "sentinel"}, "hardware": {}, "storage": [], "network": {}})
+
+    result = runner.invoke(app, ["report", "--json"])
+
+    assert result.exit_code == 0
+
+    payload = json.loads(result.output)
+
+    assert payload["system"]["hostname"] == "sentinel"
+    assert not (isolated_cwd / "reports" / "atlas-report.md").exists()
+
+
 def test_fleet_doctor_with_no_nodes_configured(isolated_cwd, temp_db):
 
     result = runner.invoke(app, ["fleet", "doctor"])

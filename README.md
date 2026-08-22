@@ -51,7 +51,7 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 
 ### Next
 
-Nothing currently in progress, but a real, non-empty backlog exists — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/#next)'s own checklist for exactly what's queued (`atlas report --json` then `atlas fleet report`, remote fleet actions, and a fully successful Anthropic response pending your own billing setup) versus deliberately out of scope (no daemon, no push notifications, no unattended automation).
+Nothing currently in progress, but a real, non-empty backlog exists — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/#next)'s own checklist for exactly what's queued (`atlas fleet report`, remote fleet actions, and a fully successful Anthropic response pending your own billing setup) versus deliberately out of scope (no daemon, no push notifications, no unattended automation).
 
 ---
 
@@ -162,7 +162,7 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas init` | Interactively generate `atlas.yaml`, logging the session to `logs/`. |
 | `atlas config` | Display the active Atlas configuration. |
 | `atlas discover` | Discover infrastructure information (including registered plugins) and generate inventory. |
-| `atlas report` | Generate an infrastructure report from the latest inventory. |
+| `atlas report` | Generate an infrastructure report from the latest inventory. `--json` prints the inventory dict instead of writing a Markdown file. |
 | `atlas docker` | Display Docker container status. |
 | `atlas restart <name>` | Restart a Docker container. Prompts for confirmation before acting. |
 | `atlas stop <name>` | Stop a Docker container without removing it. Prompts for confirmation before acting. |
@@ -216,7 +216,7 @@ Run `atlas <command> --help` for command-specific options.
 
 **Read-Only Web View** — `atlas web` serves a local overview/history/trends dashboard over the exact same reads `atlas report`/`atlas history`/`atlas trends` already do — no new write path, no automation. Runs in the foreground until `Ctrl+C`, same on-demand shape as every other Atlas command.
 
-**Fleet View** — `atlas fleet doctor`/`atlas fleet trends` run `atlas doctor`/`atlas trends` over SSH on every node listed under `fleet.nodes` in `atlas.yaml` and aggregate the results into one view — no daemon, no central server, no new dependency (shells out to `ssh`). Just needs each node reachable over SSH with Atlas already installed there. `atlas fleet report` isn't available yet — `atlas report` has no `--json` output to aggregate.
+**Fleet View** — `atlas fleet doctor`/`atlas fleet trends` run `atlas doctor`/`atlas trends` over SSH on every node listed under `fleet.nodes` in `atlas.yaml` and aggregate the results into one view — no daemon, no central server, no new dependency (shells out to `ssh`). Just needs each node reachable over SSH with Atlas already installed there. `atlas fleet report` isn't available yet, though `atlas report --json` now exists — that's the next piece, not built.
 
 **AI Analysis Engine** — `atlas analyze` sends your latest environment snapshot to Claude or a local Ollama model and gets back a plain-language summary plus concrete recommendations. See [Configuration](#configuration) for provider setup.
 

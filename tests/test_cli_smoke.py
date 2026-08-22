@@ -1917,6 +1917,48 @@ def test_restart_confirmed_restarts_container_and_logs_event(
     assert events[0].event_type == "atlas.action.container_restarted"
 
 
+def test_restart_with_unknown_node_refuses(isolated_cwd, temp_db):
+
+    result = runner.invoke(app, ["restart", "plex", "--node", "nope"])
+
+    assert result.exit_code == 0
+    assert "No fleet node named 'nope' configured" in result.output
+
+
+def test_restart_with_node_connects_via_ssh_and_logs_node(isolated_cwd, temp_db):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "fleet:\n"
+        "  nodes:\n"
+        "    - name: node-a\n"
+        "      host: 10.0.0.5\n"
+    )
+
+    fake_container = MagicMock()
+    fake_container.name = "plex"
+    fake_container.image.tags = ["plexinc/pms-docker"]
+    fake_container.status = "exited"
+
+    with patch("atlas.docker.manager.docker.DockerClient") as mock_docker_client:
+
+        mock_docker_client.return_value.containers.get.return_value = fake_container
+
+        result = runner.invoke(app, ["restart", "plex", "--node", "node-a"], input="y\n")
+
+    assert result.exit_code == 0
+    assert "restarted" in result.output
+
+    mock_docker_client.assert_any_call(
+        base_url="ssh://atlas@10.0.0.5:22",
+        use_ssh_client=True
+    )
+
+    events = KnowledgeQueries().recent_events()
+    payload = json.loads(events[0].payload)
+
+    assert payload["node"] == "node-a"
+
+
 def test_libvirt_restart_declined_does_not_restart_guest(isolated_cwd, temp_db):
 
     fake_result = MagicMock()
@@ -1966,6 +2008,51 @@ def test_libvirt_restart_confirmed_restarts_guest_and_logs_event(
     events = KnowledgeQueries().recent_events()
 
     assert events[0].event_type == "atlas.action.libvirt_guest_restarted"
+
+
+def test_libvirt_restart_with_node_uses_connect_uri_and_logs_node(
+    isolated_cwd, temp_db
+):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "fleet:\n"
+        "  nodes:\n"
+        "    - name: node-a\n"
+        "      host: 10.0.0.5\n"
+    )
+
+    def fake_run(cmd, **kwargs):
+
+        result = MagicMock()
+
+        if cmd[3] == "domstate":
+            result.stdout = "running\n"
+        elif cmd[3] == "reboot":
+            result.stdout = ""
+        else:
+            raise AssertionError(f"unexpected virsh call: {cmd}")
+
+        return result
+
+    with (
+        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("atlas.libvirt.manager.subprocess.run", side_effect=fake_run) as mock_run,
+    ):
+
+        result = runner.invoke(
+            app, ["libvirt", "restart", "test-vm", "--node", "node-a"], input="y\n"
+        )
+
+    assert result.exit_code == 0
+    assert "restarted" in result.output
+
+    for call in mock_run.call_args_list:
+        assert call.args[0][1:3] == ["-c", "qemu+ssh://atlas@10.0.0.5/system"]
+
+    events = KnowledgeQueries().recent_events()
+    payload = json.loads(events[0].payload)
+
+    assert payload["node"] == "node-a"
 
 
 def test_libvirt_restart_guest_not_found(isolated_cwd, temp_db):

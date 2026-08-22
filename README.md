@@ -164,18 +164,18 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas discover` | Discover infrastructure information (including registered plugins) and generate inventory. |
 | `atlas report` | Generate an infrastructure report from the latest inventory. `--json` prints the inventory dict instead of writing a Markdown file. |
 | `atlas docker` | Display Docker container status. |
-| `atlas restart <name>` | Restart a Docker container. Prompts for confirmation before acting. |
-| `atlas stop <name>` | Stop a Docker container without removing it. Prompts for confirmation before acting. |
-| `atlas resize <name>` | Resize a Docker container's CPU (`--cpus`) and/or memory (`--memory`) limit, live, without a restart. Prompts for confirmation before acting. |
+| `atlas restart <name>` | Restart a Docker container. `--node <fleet-node>` to act on a fleet node instead of locally. Prompts for confirmation before acting. |
+| `atlas stop <name>` | Stop a Docker container without removing it. `--node <fleet-node>` supported. Prompts for confirmation before acting. |
+| `atlas resize <name>` | Resize a Docker container's CPU (`--cpus`) and/or memory (`--memory`) limit, live, without a restart. `--node <fleet-node>` supported. Prompts for confirmation before acting. |
 | `atlas services` | Detect known self-hosted services running in Docker. |
 | `atlas compose` | Analyze a Docker Compose file. |
 | `atlas proxmox scan` | Scan Proxmox infrastructure and report changes since the last scan (requires `proxmox.enabled: true`). |
 | `atlas proxmox restart <vmid>` | Restart a Proxmox VM or LXC guest. Prompts for confirmation before acting. |
 | `atlas proxmox stop <vmid>` | Shut down a Proxmox VM or LXC guest (ACPI request). Prompts for confirmation before acting. |
 | `atlas proxmox resize <vmid>` | Resize a Proxmox guest's CPU (`--cpus`) and/or memory (`--memory`) limit. Prompts for confirmation before acting. |
-| `atlas libvirt restart <name>` | Restart a libvirt/KVM guest (ACPI request via `virsh reboot`). Prompts for confirmation before acting. |
-| `atlas libvirt stop <name>` | Stop a libvirt/KVM guest (ACPI request via `virsh shutdown`). Prompts for confirmation before acting. |
-| `atlas libvirt resize <name>` | Resize a libvirt/KVM guest's vCPU count (`--vcpus`) and/or memory (`--memory`, e.g. `512MiB`). Applies at next boot only. Prompts for confirmation before acting. |
+| `atlas libvirt restart <name>` | Restart a libvirt/KVM guest (ACPI request via `virsh reboot`). `--node <fleet-node>` to act on a fleet node instead of locally. Prompts for confirmation before acting. |
+| `atlas libvirt stop <name>` | Stop a libvirt/KVM guest (ACPI request via `virsh shutdown`). `--node <fleet-node>` supported. Prompts for confirmation before acting. |
+| `atlas libvirt resize <name>` | Resize a libvirt/KVM guest's vCPU count (`--vcpus`) and/or memory (`--memory`, e.g. `512MiB`). Applies at next boot only. `--node <fleet-node>` supported. Prompts for confirmation before acting. |
 | `atlas monitor` | Query Prometheus for host metrics and flag any at or above their configured threshold (requires `monitoring.enabled: true`). `--json` for machine-readable output; exits 1 if anything's exceeded or Prometheus is unreachable. |
 | `atlas trends` | Show host, per-container, and per-Proxmox-guest resource-usage trends from saved `atlas monitor`/`atlas proxmox scan` snapshots. `--json` for machine-readable output. |
 | `atlas plugins` | Display registered Atlas plugins. |
@@ -218,6 +218,8 @@ Run `atlas <command> --help` for command-specific options.
 **Read-Only Web View** — `atlas web` serves a local overview/history/trends dashboard over the exact same reads `atlas report`/`atlas history`/`atlas trends` already do — no new write path, no automation. Runs in the foreground until `Ctrl+C`, same on-demand shape as every other Atlas command.
 
 **Fleet View** — `atlas fleet doctor`/`trends`/`report` run `atlas doctor`/`trends`/`report` over SSH on every node listed under `fleet.nodes` in `atlas.yaml` and aggregate the results into one view — no daemon, no central server, no new dependency (shells out to `ssh`). Just needs each node reachable over SSH with Atlas already installed there.
+
+**Remote Fleet Actions** — add `--node <name>` to `atlas restart`/`stop`/`resize` or `atlas libvirt restart`/`stop`/`resize` to act on a fleet node's Docker/libvirt instead of the local one. Same confirmation prompt as always, just retargeted — no bypass flag, no unattended remote execution. Docker's remote path uses docker-py's `ssh://` transport (requires the `paramiko` dependency); libvirt uses its own native `qemu+ssh://` transport (no new dependency). Proxmox needs nothing extra — its API already reaches any guest in the configured cluster.
 
 **AI Analysis Engine** — `atlas analyze` sends your latest environment snapshot to Claude or a local Ollama model and gets back a plain-language summary plus concrete recommendations. See [Configuration](#configuration) for provider setup.
 

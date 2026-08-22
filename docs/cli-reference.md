@@ -38,15 +38,15 @@ Commands that change infrastructure rather than just observe it. All are approva
 
 | Command | Description |
 |---|---|
-| `atlas restart <name>` | Restart a Docker container. Shows the container's current state and asks for confirmation before acting. |
-| `atlas stop <name>` | Stop a Docker container without removing it. Shows the container's current state and asks for confirmation before acting. |
-| `atlas resize <name>` | Resize a Docker container's CPU (`--cpus <cores>`) and/or memory (`--memory <limit>`, e.g. `512m`/`1g`) limit, live, without a restart. Shows the container's current configured limit(s) and asks for confirmation before acting. |
+| `atlas restart <name>` | Restart a Docker container. `--node <fleet-node>` retargets the connection to that node's Docker daemon over SSH (docker-py's `ssh://` transport) instead of the local one - same confirmation, same event path, just a different client. Shows the container's current state and asks for confirmation before acting. |
+| `atlas stop <name>` | Stop a Docker container without removing it. `--node <fleet-node>` supported, same as `atlas restart`. Shows the container's current state and asks for confirmation before acting. |
+| `atlas resize <name>` | Resize a Docker container's CPU (`--cpus <cores>`) and/or memory (`--memory <limit>`, e.g. `512m`/`1g`) limit, live, without a restart. `--node <fleet-node>` supported, same as `atlas restart`. Shows the container's current configured limit(s) and asks for confirmation before acting. |
 | `atlas proxmox restart <vmid>` | Restart a Proxmox VM or LXC guest. Shows the guest's current state and asks for confirmation before acting (requires `proxmox.enabled: true` and write/power-management permission on the token, see [Configuration](configuration.md#proxmox)). |
 | `atlas proxmox stop <vmid>` | Shut down a Proxmox VM or LXC guest via an ACPI request (not a hard power-off) - may not complete if the guest OS isn't responding. Shows current state and asks for confirmation. |
 | `atlas proxmox resize <vmid>` | Resize a Proxmox guest's CPU (`--cpus <cores>`, maps to Proxmox's `cpulimit`) and/or memory (`--memory <limit>`) limit. For a `qemu` guest, may need hotplug enabled to apply without a restart; LXC applies live. Asks for confirmation. |
-| `atlas libvirt restart <name>` | Restart a libvirt/KVM guest via an ACPI `virsh reboot` request - like Proxmox's stop, may not complete if the guest OS isn't responding. Shows current state and asks for confirmation. |
-| `atlas libvirt stop <name>` | Stop a libvirt/KVM guest via an ACPI `virsh shutdown` request (not `virsh destroy`, libvirt's hard power-off) - same no-force-fallback caveat as restart. Shows current state and asks for confirmation. |
-| `atlas libvirt resize <name>` | Resize a libvirt/KVM guest's vCPU count (`--vcpus <count>`, an integer - a different concept from Docker/Proxmox's fractional `--cpus` limit) and/or memory (`--memory <size>`, e.g. `512MiB`). Applies at next boot only - a running guest needs hotplug already configured to pick this up live, not attempted here. CLI-only: not wired into `atlas analyze`/`atlas chat`'s suggestable actions. Asks for confirmation. |
+| `atlas libvirt restart <name>` | Restart a libvirt/KVM guest via an ACPI `virsh reboot` request - like Proxmox's stop, may not complete if the guest OS isn't responding. `--node <fleet-node>` retargets `virsh` at that node via its native `-c qemu+ssh://` transport - no new dependency. Shows current state and asks for confirmation. |
+| `atlas libvirt stop <name>` | Stop a libvirt/KVM guest via an ACPI `virsh shutdown` request (not `virsh destroy`, libvirt's hard power-off) - same no-force-fallback caveat as restart. `--node <fleet-node>` supported, same as `atlas libvirt restart`. Shows current state and asks for confirmation. |
+| `atlas libvirt resize <name>` | Resize a libvirt/KVM guest's vCPU count (`--vcpus <count>`, an integer - a different concept from Docker/Proxmox's fractional `--cpus` limit) and/or memory (`--memory <size>`, e.g. `512MiB`). Applies at next boot only - a running guest needs hotplug already configured to pick this up live, not attempted here. `--node <fleet-node>` supported, same as `atlas libvirt restart`. CLI-only: not wired into `atlas analyze`/`atlas chat`'s suggestable actions. Asks for confirmation. |
 
 ## Knowledge & AI
 

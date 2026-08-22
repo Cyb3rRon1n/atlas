@@ -2123,6 +2123,62 @@ def test_fleet_doctor_aggregates_reachable_and_unreachable_nodes(
     assert payload["nodes"][1]["reachable"] is False
 
 
+def test_fleet_trends_with_no_nodes_configured(isolated_cwd, temp_db):
+
+    result = runner.invoke(app, ["fleet", "trends"])
+
+    assert result.exit_code == 0
+    assert "No fleet nodes configured." in result.output
+
+
+def test_fleet_trends_aggregates_reachable_and_unreachable_nodes(
+    isolated_cwd, temp_db
+):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "fleet:\n"
+        "  nodes:\n"
+        "    - name: node-a\n"
+        "      host: 10.0.0.5\n"
+        "    - name: node-b\n"
+        "      host: 10.0.0.6\n"
+    )
+
+    def fake_run(cmd, **kwargs):
+
+        result = MagicMock()
+
+        if "10.0.0.5" in cmd[-6]:
+            result.returncode = 0
+            result.stdout = (
+                '{"host": {"cpu_percent": {"latest": 10.0, "min": 10.0, '
+                '"max": 10.0, "avg": 10.0, "samples": 1}}, "containers": {}, '
+                '"guests": {}}'
+            )
+        else:
+            result.returncode = 255
+            result.stdout = ""
+            result.stderr = "Connection refused"
+
+        return result
+
+    with (
+        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("atlas.fleet.manager.subprocess.run", side_effect=fake_run),
+    ):
+
+        result = runner.invoke(app, ["fleet", "trends", "--json"])
+
+    assert result.exit_code == 1
+
+    payload = json.loads(result.output)
+
+    assert "healthy" not in payload
+    assert payload["nodes"][0]["reachable"] is True
+    assert payload["nodes"][0]["host"]["cpu_percent"]["latest"] == 10.0
+    assert payload["nodes"][1]["reachable"] is False
+
+
 def test_stop_declined_does_not_stop_container(isolated_cwd, temp_db):
 
     fake_container = MagicMock()

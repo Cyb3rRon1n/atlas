@@ -19,7 +19,7 @@ from atlas.libvirt import (
     restart_guest as restart_libvirt_guest,
     stop_guest as stop_libvirt_guest,
 )
-from atlas.fleet import run_remote_doctor
+from atlas.fleet import run_remote_doctor, run_remote_trends
 from atlas.proxmox import (
     connect,
     discover_nodes,
@@ -899,6 +899,133 @@ def fleet_doctor(
                 )
 
     if not healthy:
+        raise typer.Exit(code=1)
+
+
+@fleet_app.command(name="trends")
+def fleet_trends(
+    limit: int = 20,
+    json_output: bool = typer.Option(
+        False, "--json",
+        help="Print machine-readable JSON instead of formatted output."
+    )
+):
+    """
+    Run atlas trends on every configured fleet node over SSH and
+    aggregate the results. Unlike fleet doctor, there is no fleet-wide
+    "healthy" concept - atlas trends itself has no health/threshold
+    concept to signal - so the exit code reflects reachability only.
+    """
+
+    settings = load_config()
+
+    nodes = settings.fleet.nodes
+
+    if not nodes:
+
+        if json_output:
+
+            print(
+                json.dumps(
+                    {"nodes": []},
+                    indent=2
+                )
+            )
+
+        else:
+
+            console.print(
+                "[yellow]No fleet nodes configured.[/yellow]"
+            )
+
+            console.print(
+                "Add nodes under fleet.nodes in atlas.yaml"
+            )
+
+        return
+
+    if not json_output:
+
+        console.print(
+            "[bold cyan]Atlas Fleet Trends[/bold cyan]\n"
+        )
+
+    results = []
+
+    for node in nodes:
+
+        result = run_remote_trends(node, limit=limit)
+
+        results.append(
+            {
+                "name": node.name,
+                "host": node.host,
+                **result
+            }
+        )
+
+    all_reachable = all(result["reachable"] for result in results)
+
+    if json_output:
+
+        print(
+            json.dumps(
+                {"nodes": results},
+                indent=2
+            )
+        )
+
+    else:
+
+        for result in results:
+
+            console.print(
+                f"[bold]{result['name']} ({result['host']}):[/bold]"
+            )
+
+            if not result["reachable"]:
+
+                console.print(
+                    f"  [red]unreachable - {result['error']}[/red]\n"
+                )
+
+                continue
+
+            if (
+                not result["host"]
+                and not result["containers"]
+                and not result["guests"]
+            ):
+
+                console.print(
+                    "  [yellow]No monitoring history found.[/yellow]\n"
+                )
+
+                continue
+
+            _print_trend_summaries(result["host"])
+
+            for container_name, container_payload in result["containers"].items():
+
+                console.print(
+                    f"  {container_name}:"
+                )
+
+                _print_trend_summaries(container_payload)
+
+            for vmid, guest_payload in result["guests"].items():
+
+                console.print(
+                    f"  {guest_payload['name']} ({vmid}):"
+                )
+
+                _print_trend_summaries(
+                    {k: v for k, v in guest_payload.items() if k != "name"}
+                )
+
+            console.print()
+
+    if not all_reachable:
         raise typer.Exit(code=1)
 
 

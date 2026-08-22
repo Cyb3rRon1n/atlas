@@ -227,7 +227,7 @@ CHAT_SCHEMA = {
 
 
 ACTION_INSTRUCTIONS = (
-    "Atlas can currently execute seven actions. (1) Restart a Docker "
+    "Atlas can currently execute eight actions. (1) Restart a Docker "
     "container (action type \"restart_container\", with \"target\" set to a "
     "container name that literally appears in the provided containers data) "
     "- use when that container is crash-looping, unhealthy, unexpectedly "
@@ -265,7 +265,12 @@ ACTION_INSTRUCTIONS = (
     "provided virtualization guest data) - same trigger conditions as (1). "
     "Distinct from restart_guest, which is for Proxmox guests only - use "
     "the guest's name here, not a vmid, since libvirt has no such "
-    "identifier. For every action type, \"cpus\" and \"memory\" must both "
+    "identifier. (8) Stop a libvirt/KVM guest (action type "
+    "\"stop_libvirt_guest\", with \"target\" set to the guest's name) - "
+    "same trigger conditions as (3): the running guest itself is the "
+    "problem, not a way to fix a crash-looping one. There is no "
+    "libvirt guest resize action available. For every action type, "
+    "\"cpus\" and \"memory\" must both "
     "be null except for resize_container and resize_guest. Only include an "
     "action when it would genuinely address the problem described in that "
     "recommendation. Most recommendations are not actionable this way and "

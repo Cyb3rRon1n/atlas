@@ -1984,6 +1984,83 @@ def test_libvirt_restart_guest_not_found(isolated_cwd, temp_db):
     assert "No libvirt guest named 'nope' found" in result.output
 
 
+def test_libvirt_stop_confirmed_stops_guest_and_logs_event(isolated_cwd, temp_db):
+
+    def fake_run(cmd, **kwargs):
+
+        result = MagicMock()
+
+        if cmd[1] == "domstate":
+            result.stdout = "running\n"
+        elif cmd[1] == "shutdown":
+            result.stdout = ""
+        else:
+            raise AssertionError(f"unexpected virsh call: {cmd}")
+
+        return result
+
+    with (
+        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("atlas.libvirt.manager.subprocess.run", side_effect=fake_run),
+    ):
+
+        result = runner.invoke(app, ["libvirt", "stop", "test-vm"], input="y\n")
+
+    assert result.exit_code == 0
+    assert "stopped" in result.output
+
+    events = KnowledgeQueries().recent_events()
+
+    assert events[0].event_type == "atlas.action.libvirt_guest_stopped"
+
+
+def test_libvirt_resize_requires_at_least_one_flag(isolated_cwd, temp_db):
+
+    result = runner.invoke(app, ["libvirt", "resize", "test-vm"])
+
+    assert result.exit_code == 0
+    assert "Specify --vcpus and/or --memory." in result.output
+
+
+def test_libvirt_resize_confirmed_resizes_guest_and_logs_event(isolated_cwd, temp_db):
+
+    def fake_run(cmd, **kwargs):
+
+        result = MagicMock()
+
+        if cmd[1] == "domstate":
+            result.stdout = "running\n"
+        elif cmd[1] in ("setvcpus", "setmem"):
+            result.stdout = ""
+        else:
+            raise AssertionError(f"unexpected virsh call: {cmd}")
+
+        return result
+
+    with (
+        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("atlas.libvirt.manager.subprocess.run", side_effect=fake_run),
+    ):
+
+        result = runner.invoke(
+            app,
+            ["libvirt", "resize", "test-vm", "--vcpus", "2", "--memory", "512MiB"],
+            input="y\n"
+        )
+
+    assert result.exit_code == 0
+    assert "resized" in result.output
+
+    events = KnowledgeQueries().recent_events()
+
+    assert events[0].event_type == "atlas.action.libvirt_guest_resized"
+
+    payload = json.loads(events[0].payload)
+
+    assert payload["vcpus"] == 2
+    assert payload["memory"] == "512MiB"
+
+
 def test_stop_declined_does_not_stop_container(isolated_cwd, temp_db):
 
     fake_container = MagicMock()

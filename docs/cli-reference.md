@@ -1,6 +1,6 @@
 # CLI Reference
 
-All 21 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
+All 23 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
 
 ## Status & health
 
@@ -45,6 +45,8 @@ Commands that change infrastructure rather than just observe it. All are approva
 | `atlas proxmox stop <vmid>` | Shut down a Proxmox VM or LXC guest via an ACPI request (not a hard power-off) - may not complete if the guest OS isn't responding. Shows current state and asks for confirmation. |
 | `atlas proxmox resize <vmid>` | Resize a Proxmox guest's CPU (`--cpus <cores>`, maps to Proxmox's `cpulimit`) and/or memory (`--memory <limit>`) limit. For a `qemu` guest, may need hotplug enabled to apply without a restart; LXC applies live. Asks for confirmation. |
 | `atlas libvirt restart <name>` | Restart a libvirt/KVM guest via an ACPI `virsh reboot` request - like Proxmox's stop, may not complete if the guest OS isn't responding. Shows current state and asks for confirmation. |
+| `atlas libvirt stop <name>` | Stop a libvirt/KVM guest via an ACPI `virsh shutdown` request (not `virsh destroy`, libvirt's hard power-off) - same no-force-fallback caveat as restart. Shows current state and asks for confirmation. |
+| `atlas libvirt resize <name>` | Resize a libvirt/KVM guest's vCPU count (`--vcpus <count>`, an integer - a different concept from Docker/Proxmox's fractional `--cpus` limit) and/or memory (`--memory <size>`, e.g. `512MiB`). Applies at next boot only - a running guest needs hotplug already configured to pick this up live, not attempted here. CLI-only: not wired into `atlas analyze`/`atlas chat`'s suggestable actions. Asks for confirmation. |
 
 ## Knowledge & AI
 

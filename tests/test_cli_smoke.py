@@ -275,6 +275,165 @@ def test_analyze_with_no_environment_short_circuits_without_api_call(
     assert "Run: atlas discover" in result.output
 
 
+def test_analyze_json_with_no_environment_prints_null(isolated_cwd, temp_db):
+
+    result = runner.invoke(app, ["analyze", "--json"])
+
+    assert result.exit_code == 0
+    assert result.output.strip() == "null"
+
+
+def test_analyze_json_prints_result_and_exits_zero(isolated_cwd, temp_db):
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.intelligence.providers.base import (
+        AIProvider,
+        AnalysisResult,
+        Recommendation,
+        SuggestedAction,
+    )
+    from atlas.knowledge.store import KnowledgeStore
+
+    environment = AtlasEnvironmentContext()
+
+    environment.update(
+        "containers",
+        {"Docker": {"available": True, "containers": [{"name": "plex"}]}}
+    )
+
+    KnowledgeStore().save_environment(environment)
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+
+            return AnalysisResult(
+                summary="One host, lightly loaded.",
+                recommendations=[
+                    Recommendation(
+                        title="Container 'plex' looks unhealthy",
+                        detail="Restarted 4 times in the last hour.",
+                        severity="warning",
+                        action=SuggestedAction(
+                            type="restart_container", target="plex"
+                        )
+                    ),
+                ]
+            )
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ):
+
+        result = runner.invoke(app, ["analyze", "--json"])
+
+    assert result.exit_code == 0
+
+    payload = json.loads(result.output)
+
+    assert payload["summary"] == "One host, lightly loaded."
+    assert payload["recommendations"][0]["action"]["target"] == "plex"
+    assert payload["plan"] is None
+    assert payload["provider"]
+
+
+def test_analyze_json_with_ai_provider_error_exits_one(isolated_cwd, temp_db):
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.intelligence.providers.base import AIProvider
+    from atlas.intelligence.providers import AIProviderError
+    from atlas.knowledge.store import KnowledgeStore
+
+    environment = AtlasEnvironmentContext()
+    KnowledgeStore().save_environment(environment)
+
+    class FailingProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+            raise AIProviderError("no API key configured")
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FailingProvider()
+    ):
+
+        result = runner.invoke(app, ["analyze", "--json"])
+
+    assert result.exit_code == 1
+    assert json.loads(result.output) == {"error": "no API key configured"}
+
+
+def test_analyze_json_with_plan_reports_it_without_running_it(isolated_cwd, temp_db):
+    """
+    --json must never offer/run the interactive plan-execution
+    prompt - same "no bypass flag" rule as remote fleet actions. The
+    plan is reported in the payload; nothing gets executed.
+    """
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.intelligence.providers.base import (
+        AIProvider,
+        AnalysisResult,
+        PlanStep,
+        SuggestedAction,
+        SuggestedPlan,
+    )
+    from atlas.knowledge.store import KnowledgeStore
+    from atlas.knowledge.queries import KnowledgeQueries
+
+    environment = AtlasEnvironmentContext()
+
+    environment.update(
+        "containers",
+        {
+            "Docker": {
+                "available": True,
+                "containers": [{"name": "sonarr"}, {"name": "radarr"}]
+            }
+        }
+    )
+
+    KnowledgeStore().save_environment(environment)
+
+    class FakeProvider(AIProvider):
+
+        def analyze(self, context, tools=None):
+
+            return AnalysisResult(
+                summary="Media stack is stuck.",
+                plan=SuggestedPlan(
+                    summary="Recover the media stack",
+                    steps=[
+                        PlanStep(
+                            action=SuggestedAction(
+                                type="stop_container", target="sonarr"
+                            ),
+                            rationale="sonarr is holding a lock radarr needs"
+                        ),
+                    ]
+                )
+            )
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=FakeProvider()
+    ), patch("atlas.cli.main.execute_action") as mock_execute:
+
+        result = runner.invoke(app, ["analyze", "--json"])
+
+    assert result.exit_code == 0
+
+    payload = json.loads(result.output)
+
+    assert payload["plan"]["summary"] == "Recover the media stack"
+    mock_execute.assert_not_called()
+
+    event_types = [e.event_type for e in KnowledgeQueries().recent_events()]
+
+    assert "atlas.action.container_stopped" not in event_types
+
+
 def test_analyze_prints_suggested_action_for_known_container_only(
     isolated_cwd, temp_db
 ):

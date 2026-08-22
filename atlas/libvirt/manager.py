@@ -77,3 +77,73 @@ def _guest_info(virsh, name):
         "uuid": uuid,
         "state": state,
     }
+
+
+def get_guest_info(name):
+    """
+    Look up a single guest's current state by name, for the CLI's
+    "show current state before confirming" step - same {"found": bool,
+    ...} shape as atlas.docker.manager.get_container_info()/
+    atlas.proxmox.manager.get_guest_info().
+    """
+
+    virsh = get_client()
+
+    if not virsh:
+        return {
+            "found": False,
+            "error": "libvirt/virsh unavailable"
+        }
+
+    try:
+        state = _run(virsh, "domstate", name).stdout.strip()
+
+    except (subprocess.SubprocessError, OSError):
+        return {
+            "found": False,
+            "error": f"No libvirt guest named '{name}' found"
+        }
+
+    return {
+        "found": True,
+        "name": name,
+        "state": state,
+    }
+
+
+def restart_guest(name):
+    """
+    Sends an ACPI reboot request via `virsh reboot` - like Proxmox's
+    own restart_guest(), this has no automatic force-fallback if the
+    guest OS isn't listening (unlike Docker's container.restart()),
+    so a stuck guest can leave this stalled rather than guaranteeing
+    completion. Same pure result-dict, never-raises shape as every
+    other manager function in this codebase.
+    """
+
+    virsh = get_client()
+
+    if not virsh:
+        return {
+            "success": False,
+            "error": "libvirt/virsh unavailable"
+        }
+
+    try:
+        _run(virsh, "reboot", name)
+
+    except subprocess.CalledProcessError as error:
+        return {
+            "success": False,
+            "error": error.stderr.strip() if error.stderr else str(error)
+        }
+
+    except (subprocess.SubprocessError, OSError) as error:
+        return {
+            "success": False,
+            "error": str(error)
+        }
+
+    return {
+        "success": True
+    }

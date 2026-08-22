@@ -13,6 +13,10 @@ from atlas.health import run_checks
 from atlas.docker import collect_containers, get_container_info, resize_container, restart_container, stop_container
 from atlas.services import detect_services
 from atlas.compose import parse_compose_file
+from atlas.libvirt import (
+    get_guest_info as get_libvirt_guest_info,
+    restart_guest as restart_libvirt_guest,
+)
 from atlas.proxmox import (
     connect,
     discover_nodes,
@@ -56,6 +60,7 @@ PLAN_STEP_EVENT_TYPES = {
     "restart_guest": "atlas.action.guest_restarted",
     "stop_guest": "atlas.action.guest_stopped",
     "resize_guest": "atlas.action.guest_resized",
+    "restart_libvirt_guest": "atlas.action.libvirt_guest_restarted",
 }
 
 proxmox_app = typer.Typer(
@@ -552,6 +557,78 @@ def resize_guest_command(
 
     console.print(
         f"\n[green]✓ Guest '{info['name']}' ({vmid}) resized[/green]"
+    )
+
+
+libvirt_app = typer.Typer(
+    name="libvirt",
+    help="Manage libvirt/KVM guests."
+)
+
+
+@libvirt_app.command(name="restart")
+def restart_libvirt_guest_command(name: str):
+    """
+    Restart a libvirt/KVM guest (requires confirmation).
+    """
+
+    console.print(
+        "[bold blue]Atlas Libvirt Restart[/bold blue]\n"
+    )
+
+    info = get_libvirt_guest_info(name)
+
+    if not info["found"]:
+
+        console.print(
+            f"[red]{info['error']}[/red]"
+        )
+
+        return
+
+    console.print(f"Guest: {info['name']}")
+    console.print(f"Current state: {info['state']}\n")
+
+    console.print(
+        "This sends an ACPI reboot request to the guest. Unlike "
+        "Docker's restart, there is no automatic force-fallback - if "
+        "the guest OS isn't listening, this can stall rather than "
+        "guarantee completion.\n"
+    )
+
+    if not typer.confirm("Proceed?"):
+
+        console.print(
+            "[yellow]Cancelled.[/yellow]"
+        )
+
+        return
+
+    result = restart_libvirt_guest(name)
+
+    runtime = application.runtime
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.action.libvirt_guest_restarted",
+            source="LibvirtRestartAction",
+            payload={
+                "guest": name,
+                "result": result
+            }
+        )
+    )
+
+    if not result["success"]:
+
+        console.print(
+            f"\n[red]Restart failed: {result['error']}[/red]"
+        )
+
+        return
+
+    console.print(
+        f"\n[green]✓ Guest '{name}' restarted[/green]"
     )
 
 
@@ -2323,6 +2400,10 @@ def chat():
 
 app.add_typer(
     proxmox_app
+)
+
+app.add_typer(
+    libvirt_app
 )
 
 

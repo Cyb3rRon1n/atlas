@@ -1,6 +1,12 @@
 from unittest.mock import MagicMock, patch
 
-from atlas.actions import ACTIONS, execute_action, known_container_names, known_guest_ids
+from atlas.actions import (
+    ACTIONS,
+    execute_action,
+    known_container_names,
+    known_guest_ids,
+    known_libvirt_guest_names,
+)
 from atlas.intelligence.providers.base import SuggestedAction
 
 
@@ -46,11 +52,50 @@ def test_known_guest_ids_empty_when_no_virtualization_key():
     assert known_guest_ids({"system": {}}) == set()
 
 
-def test_actions_registry_has_all_six_entries():
+def test_known_libvirt_guest_names_flattens_across_plugins():
+
+    environment = {
+        "virtualization": {
+            "Libvirt": {
+                "available": True,
+                "guests": [
+                    {"name": "test-vm", "uuid": "abc-123", "state": "running"},
+                ]
+            }
+        }
+    }
+
+    assert known_libvirt_guest_names(environment) == {"test-vm"}
+
+
+def test_known_libvirt_guest_names_ignores_proxmox_scan_shape():
+    """
+    atlas proxmox scan saves virtualization as a flat
+    {"nodes": [...], "guests": [...]} - values() on that yields lists,
+    not plugin dicts. Confirms the isinstance() guard skips it rather
+    than crashing.
+    """
+
+    environment = {
+        "virtualization": {
+            "nodes": [{"name": "pve1", "status": "online"}],
+            "guests": [{"vmid": 100, "name": "plex", "status": "running"}]
+        }
+    }
+
+    assert known_libvirt_guest_names(environment) == set()
+
+
+def test_known_libvirt_guest_names_empty_when_no_virtualization_key():
+
+    assert known_libvirt_guest_names({"system": {}}) == set()
+
+
+def test_actions_registry_has_all_seven_entries():
 
     assert set(ACTIONS.keys()) == {
         "restart_container", "restart_guest", "stop_container", "resize_container",
-        "stop_guest", "resize_guest"
+        "stop_guest", "resize_guest", "restart_libvirt_guest"
     }
 
 
@@ -168,6 +213,30 @@ def test_resize_guest_command_template_with_both():
         definition.command_template(action)
         == "atlas proxmox resize 100 --cpus 1.5 --memory 512m"
     )
+
+
+def test_restart_libvirt_guest_action_wired_correctly():
+
+    definition = ACTIONS["restart_libvirt_guest"]
+
+    action = SuggestedAction(type="restart_libvirt_guest", target="test-vm")
+    assert definition.command_template(action) == "atlas libvirt restart test-vm"
+    assert definition.known_targets is known_libvirt_guest_names
+
+
+def test_execute_action_restart_libvirt_guest_calls_manager_function():
+
+    with patch(
+        "atlas.actions.registry.restart_libvirt_guest",
+        return_value={"success": True}
+    ) as mock_restart:
+
+        result = execute_action(
+            SuggestedAction(type="restart_libvirt_guest", target="test-vm")
+        )
+
+    assert result == {"success": True}
+    mock_restart.assert_called_once_with("test-vm")
 
 
 def test_execute_action_restart_container_calls_manager_function():

@@ -45,12 +45,12 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 - ✅ Guided setup (`atlas init`) and environment/integration health checks (`atlas doctor`)
 - ✅ `--json` output and cron-friendly exit codes on `atlas doctor`/`atlas monitor`/`atlas trends` — wire either health check into your own cron job or systemd timer without Atlas becoming a daemon
 - ✅ Event-driven architecture with persistent operational history
-- ✅ Plugin architecture
+- ✅ Plugin architecture — a Docker plugin and a libvirt/KVM plugin (guest discovery, plus a first approval-gated `atlas libvirt restart`), proving the plugin system generalizes beyond one implementation
 - ✅ Read-only web view (`atlas web`) — overview, history, and trends over the same data the CLI already reads, no new write path
 
 ### Next
 
-Nothing currently in progress, but a real, non-empty backlog exists — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/#next)'s own checklist for exactly what's queued (a fifth action type, approval-gated actions for the new libvirt/KVM plugin, multi-node/fleet support, and a fully successful Anthropic response pending your own billing setup) versus deliberately out of scope (no daemon, no push notifications, no unattended automation).
+Nothing currently in progress, but a real, non-empty backlog exists — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/#next)'s own checklist for exactly what's queued (stop/resize for libvirt guests, multi-node/fleet support, and a fully successful Anthropic response pending your own billing setup) versus deliberately out of scope (no daemon, no push notifications, no unattended automation).
 
 ---
 
@@ -66,6 +66,7 @@ Atlas itself needs very little. Everything past the base install is an optional 
 |---|---|---|
 | Docker | Container discovery, `atlas restart`/`stop`/`resize`, cAdvisor container metrics | A Docker daemon reachable from wherever Atlas runs — the local socket by default, or `DOCKER_HOST` for a remote one |
 | Proxmox VE | `atlas proxmox scan`/`restart` | A reachable Proxmox host and an API token — a network call over HTTPS, nothing installed on the Proxmox host itself. See [Deployment](https://cyb3rron1n.github.io/atlas/deployment/) for the recommended (not required) topology |
+| libvirt/KVM | Guest discovery via `atlas discover`, `atlas libvirt restart` | The `virsh` CLI on the host Atlas runs on — no separate daemon config, unlike Docker/Proxmox |
 | Anthropic **or** Ollama | `atlas analyze`, `atlas chat` | An `ANTHROPIC_API_KEY`, or a locally-reachable Ollama instance — only one is needed |
 | Prometheus | `atlas monitor` | An existing Prometheus, [`node_exporter`](https://github.com/prometheus/node_exporter) for host metrics, and [cAdvisor](https://github.com/google/cadvisor) if you also want per-container metrics |
 
@@ -171,6 +172,7 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas proxmox restart <vmid>` | Restart a Proxmox VM or LXC guest. Prompts for confirmation before acting. |
 | `atlas proxmox stop <vmid>` | Shut down a Proxmox VM or LXC guest (ACPI request). Prompts for confirmation before acting. |
 | `atlas proxmox resize <vmid>` | Resize a Proxmox guest's CPU (`--cpus`) and/or memory (`--memory`) limit. Prompts for confirmation before acting. |
+| `atlas libvirt restart <name>` | Restart a libvirt/KVM guest (ACPI request via `virsh reboot`). Prompts for confirmation before acting. |
 | `atlas monitor` | Query Prometheus for host metrics and flag any at or above their configured threshold (requires `monitoring.enabled: true`). `--json` for machine-readable output; exits 1 if anything's exceeded or Prometheus is unreachable. |
 | `atlas trends` | Show host, per-container, and per-Proxmox-guest resource-usage trends from saved `atlas monitor`/`atlas proxmox scan` snapshots. `--json` for machine-readable output. |
 | `atlas plugins` | Display registered Atlas plugins. |
@@ -198,6 +200,8 @@ Run `atlas <command> --help` for command-specific options.
 **Docker Compose Analysis** — `atlas compose` parses a Compose file to surface its services, images, ports, and volumes.
 
 **Proxmox Integration** — `atlas proxmox scan` inventories a cluster (nodes, VMs, containers) and reports what changed since the last scan. Atlas can also act: `atlas proxmox restart`/`stop`/`resize <vmid>` — the same three actions Docker containers have, always after showing current state and asking for confirmation. Token-based auth is recommended — see [Configuration](#configuration).
+
+**libvirt/KVM Integration** — for hosts running plain libvirt/KVM instead of (or alongside) Proxmox: guest discovery rides `atlas discover` via a plugin (`atlas plugins` lists it), and `atlas libvirt restart <name>` can restart a guest, always after showing current state and asking for confirmation. Just needs `virsh` on the host Atlas runs on — no separate config section.
 
 **Monitoring** — `atlas monitor` queries an existing Prometheus for host and per-container metrics (via `node_exporter`/cAdvisor), flags anything over a configurable threshold, and reports what changed since the last scan. `atlas trends` shows how those metrics moved over time — host, per-container, and per-Proxmox-guest — built entirely from history `atlas monitor`/`atlas proxmox scan` already save, no new collection or storage. Disabled by default.
 

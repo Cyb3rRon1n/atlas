@@ -1,4 +1,6 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+
+import requests
 
 from atlas.config.models import (
     AtlasConfig,
@@ -8,6 +10,7 @@ from atlas.config.models import (
 )
 from atlas.health.checks import (
     check_docker,
+    check_environment,
     check_intelligence,
     check_inventory,
     check_memory,
@@ -19,14 +22,14 @@ from atlas.health.checks import (
 )
 
 
-def test_run_checks_returns_eight_named_checks(isolated_cwd, monkeypatch):
+def test_run_checks_returns_nine_named_checks(isolated_cwd, monkeypatch):
 
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
     checks = run_checks()
 
     assert [c["name"] for c in checks] == [
-        "Python", "Memory", "Storage", "Docker", "Inventory",
+        "Python", "Memory", "Storage", "Docker", "Environment", "Inventory",
         "Proxmox", "Intelligence", "Monitoring",
     ]
 
@@ -97,7 +100,7 @@ def test_check_proxmox_unhealthy_when_enabled_without_credentials():
     assert result["status"] is False
 
 
-def test_check_proxmox_healthy_when_enabled_with_token():
+def test_check_proxmox_healthy_when_enabled_and_reachable():
 
     config = AtlasConfig(
         proxmox=ProxmoxConfig(
@@ -109,9 +112,36 @@ def test_check_proxmox_healthy_when_enabled_with_token():
         )
     )
 
-    result = check_proxmox(config)
+    mock_client = MagicMock()
+    mock_client.version.get.return_value = {"version": "8.0"}
+
+    with patch("atlas.proxmox.client.connect", return_value=mock_client):
+        result = check_proxmox(config)
 
     assert result["status"] is True
+    assert "reachable" in result["details"]
+
+
+def test_check_proxmox_unhealthy_when_enabled_but_unreachable():
+
+    config = AtlasConfig(
+        proxmox=ProxmoxConfig(
+            enabled=True,
+            host="192.168.1.10",
+            user="atlas@pve",
+            token_name="atlas-token",
+            token_value="secret",
+        )
+    )
+
+    mock_client = MagicMock()
+    mock_client.version.get.side_effect = RuntimeError("connection refused")
+
+    with patch("atlas.proxmox.client.connect", return_value=mock_client):
+        result = check_proxmox(config)
+
+    assert result["status"] is False
+    assert "unreachable" in result["details"]
 
 
 def test_check_intelligence_unhealthy_without_api_key(monkeypatch):
@@ -140,7 +170,7 @@ def test_check_intelligence_healthy_with_api_key(monkeypatch):
     assert result["status"] is True
 
 
-def test_check_intelligence_healthy_for_ollama_without_api_key(monkeypatch):
+def test_check_intelligence_healthy_for_ollama_when_reachable(monkeypatch):
 
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
@@ -148,9 +178,32 @@ def test_check_intelligence_healthy_for_ollama_without_api_key(monkeypatch):
         intelligence=IntelligenceConfig(provider="ollama")
     )
 
-    result = check_intelligence(config)
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+
+    with patch("atlas.health.checks.requests.get", return_value=mock_response):
+        result = check_intelligence(config)
 
     assert result["status"] is True
+    assert "reachable" in result["details"]
+
+
+def test_check_intelligence_unhealthy_for_ollama_when_unreachable(monkeypatch):
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+    config = AtlasConfig(
+        intelligence=IntelligenceConfig(provider="ollama")
+    )
+
+    with patch(
+        "atlas.health.checks.requests.get",
+        side_effect=requests.exceptions.ConnectionError("refused"),
+    ):
+        result = check_intelligence(config)
+
+    assert result["status"] is False
+    assert "unreachable" in result["details"]
 
 
 def test_check_monitoring_healthy_when_disabled():
@@ -161,7 +214,7 @@ def test_check_monitoring_healthy_when_disabled():
     assert result["details"] == "disabled"
 
 
-def test_check_monitoring_healthy_when_enabled_with_url():
+def test_check_monitoring_healthy_when_enabled_and_reachable():
 
     config = AtlasConfig(
         monitoring=MonitoringConfig(
@@ -169,6 +222,70 @@ def test_check_monitoring_healthy_when_enabled_with_url():
         )
     )
 
-    result = check_monitoring(config)
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+
+    with patch("atlas.health.checks.requests.get", return_value=mock_response):
+        result = check_monitoring(config)
 
     assert result["status"] is True
+    assert "reachable" in result["details"]
+
+
+def test_check_monitoring_unhealthy_when_enabled_but_unreachable():
+
+    config = AtlasConfig(
+        monitoring=MonitoringConfig(
+            enabled=True, prometheus_url="http://localhost:9090"
+        )
+    )
+
+    with patch(
+        "atlas.health.checks.requests.get",
+        side_effect=requests.exceptions.ConnectionError("refused"),
+    ):
+        result = check_monitoring(config)
+
+    assert result["status"] is False
+    assert "unreachable" in result["details"]
+
+
+def test_check_environment_reports_none_detected(monkeypatch):
+
+    monkeypatch.delenv("KUBERNETES_SERVICE_HOST", raising=False)
+    monkeypatch.setattr("atlas.health.checks.shutil.which", lambda name: None)
+    monkeypatch.setattr("atlas.health.checks.Path.exists", lambda self: False)
+
+    result = check_environment()
+
+    assert result["status"] is True
+    assert "no additional" in result["details"]
+
+
+def test_check_environment_detects_libvirt(monkeypatch):
+
+    monkeypatch.delenv("KUBERNETES_SERVICE_HOST", raising=False)
+
+    monkeypatch.setattr(
+        "atlas.health.checks.shutil.which",
+        lambda name: "/usr/bin/virsh" if name == "virsh" else None,
+    )
+
+    monkeypatch.setattr("atlas.health.checks.Path.exists", lambda self: False)
+
+    result = check_environment()
+
+    assert result["status"] is True
+    assert "libvirt/KVM" in result["details"]
+
+
+def test_check_environment_detects_kubernetes_in_cluster(monkeypatch):
+
+    monkeypatch.setenv("KUBERNETES_SERVICE_HOST", "10.0.0.1")
+    monkeypatch.setattr("atlas.health.checks.shutil.which", lambda name: None)
+    monkeypatch.setattr("atlas.health.checks.Path.exists", lambda self: False)
+
+    result = check_environment()
+
+    assert result["status"] is True
+    assert "Kubernetes" in result["details"]

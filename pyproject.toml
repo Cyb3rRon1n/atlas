@@ -46,7 +46,8 @@ dependencies = [
     "proxmoxer",
     "anthropic",
     "requests",
-    "sqlalchemy"
+    "sqlalchemy",
+    "paramiko"
 ]
 
 [project.optional-dependencies]

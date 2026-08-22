@@ -67,6 +67,27 @@ PLAN_STEP_EVENT_TYPES = {
     "stop_libvirt_guest": "atlas.action.libvirt_guest_stopped",
 }
 
+
+def _resolve_fleet_node(node_name):
+    """
+    Look up a configured FleetNode by name for --node on
+    restart/stop/resize commands (Docker and libvirt). Returns
+    (FleetNode, error) - error is set and the node is None when
+    node_name doesn't match any configured node; both are None when
+    node_name itself is None (the normal, local-target case).
+    """
+
+    if node_name is None:
+        return None, None
+
+    settings = load_config()
+
+    for node in settings.fleet.nodes:
+        if node.name == node_name:
+            return node, None
+
+    return None, f"No fleet node named '{node_name}' configured"
+
 proxmox_app = typer.Typer(
     name="proxmox",
     help="Manage Proxmox infrastructure."
@@ -571,7 +592,13 @@ libvirt_app = typer.Typer(
 
 
 @libvirt_app.command(name="restart")
-def restart_libvirt_guest_command(name: str):
+def restart_libvirt_guest_command(
+    name: str,
+    node: str = typer.Option(
+        None, "--node",
+        help="Restart on this fleet node's libvirt instead of locally."
+    )
+):
     """
     Restart a libvirt/KVM guest (requires confirmation).
     """
@@ -580,7 +607,17 @@ def restart_libvirt_guest_command(name: str):
         "[bold blue]Atlas Libvirt Restart[/bold blue]\n"
     )
 
-    info = get_libvirt_guest_info(name)
+    fleet_node, error = _resolve_fleet_node(node)
+
+    if error:
+
+        console.print(
+            f"[red]{error}[/red]"
+        )
+
+        return
+
+    info = get_libvirt_guest_info(name, node=fleet_node)
 
     if not info["found"]:
 
@@ -589,6 +626,9 @@ def restart_libvirt_guest_command(name: str):
         )
 
         return
+
+    if fleet_node:
+        console.print(f"Node: {fleet_node.name} ({fleet_node.host})")
 
     console.print(f"Guest: {info['name']}")
     console.print(f"Current state: {info['state']}\n")
@@ -608,7 +648,7 @@ def restart_libvirt_guest_command(name: str):
 
         return
 
-    result = restart_libvirt_guest(name)
+    result = restart_libvirt_guest(name, node=fleet_node)
 
     runtime = application.runtime
 
@@ -618,6 +658,7 @@ def restart_libvirt_guest_command(name: str):
             source="LibvirtRestartAction",
             payload={
                 "guest": name,
+                "node": fleet_node.name if fleet_node else None,
                 "result": result
             }
         )
@@ -637,7 +678,13 @@ def restart_libvirt_guest_command(name: str):
 
 
 @libvirt_app.command(name="stop")
-def stop_libvirt_guest_command(name: str):
+def stop_libvirt_guest_command(
+    name: str,
+    node: str = typer.Option(
+        None, "--node",
+        help="Stop on this fleet node's libvirt instead of locally."
+    )
+):
     """
     Stop a libvirt/KVM guest (requires confirmation).
     """
@@ -646,7 +693,17 @@ def stop_libvirt_guest_command(name: str):
         "[bold blue]Atlas Libvirt Stop[/bold blue]\n"
     )
 
-    info = get_libvirt_guest_info(name)
+    fleet_node, error = _resolve_fleet_node(node)
+
+    if error:
+
+        console.print(
+            f"[red]{error}[/red]"
+        )
+
+        return
+
+    info = get_libvirt_guest_info(name, node=fleet_node)
 
     if not info["found"]:
 
@@ -655,6 +712,9 @@ def stop_libvirt_guest_command(name: str):
         )
 
         return
+
+    if fleet_node:
+        console.print(f"Node: {fleet_node.name} ({fleet_node.host})")
 
     console.print(f"Guest: {info['name']}")
     console.print(f"Current state: {info['state']}\n")
@@ -673,7 +733,7 @@ def stop_libvirt_guest_command(name: str):
 
         return
 
-    result = stop_libvirt_guest(name)
+    result = stop_libvirt_guest(name, node=fleet_node)
 
     runtime = application.runtime
 
@@ -683,6 +743,7 @@ def stop_libvirt_guest_command(name: str):
             source="LibvirtStopAction",
             payload={
                 "guest": name,
+                "node": fleet_node.name if fleet_node else None,
                 "result": result
             }
         )
@@ -705,7 +766,11 @@ def stop_libvirt_guest_command(name: str):
 def resize_libvirt_guest_command(
     name: str,
     vcpus: int = typer.Option(None, help="New vCPU count, e.g. 2"),
-    memory: str = typer.Option(None, help="New memory size, e.g. 512MiB or 2GiB")
+    memory: str = typer.Option(None, help="New memory size, e.g. 512MiB or 2GiB"),
+    node: str = typer.Option(
+        None, "--node",
+        help="Resize on this fleet node's libvirt instead of locally."
+    )
 ):
     """
     Resize a libvirt/KVM guest's vCPU count and/or memory allocation
@@ -726,7 +791,17 @@ def resize_libvirt_guest_command(
 
         return
 
-    info = get_libvirt_guest_info(name)
+    fleet_node, error = _resolve_fleet_node(node)
+
+    if error:
+
+        console.print(
+            f"[red]{error}[/red]"
+        )
+
+        return
+
+    info = get_libvirt_guest_info(name, node=fleet_node)
 
     if not info["found"]:
 
@@ -735,6 +810,9 @@ def resize_libvirt_guest_command(
         )
 
         return
+
+    if fleet_node:
+        console.print(f"Node: {fleet_node.name} ({fleet_node.host})")
 
     console.print(f"Guest: {info['name']}\n")
 
@@ -758,7 +836,7 @@ def resize_libvirt_guest_command(
 
         return
 
-    result = resize_libvirt_guest(name, vcpus=vcpus, memory=memory)
+    result = resize_libvirt_guest(name, vcpus=vcpus, memory=memory, node=fleet_node)
 
     runtime = application.runtime
 
@@ -768,6 +846,7 @@ def resize_libvirt_guest_command(
             source="LibvirtResizeAction",
             payload={
                 "guest": name,
+                "node": fleet_node.name if fleet_node else None,
                 "vcpus": vcpus,
                 "memory": memory,
                 "result": result
@@ -2043,7 +2122,13 @@ ID:
 
 
 @app.command()
-def restart(name: str):
+def restart(
+    name: str,
+    node: str = typer.Option(
+        None, "--node",
+        help="Restart on this fleet node's Docker daemon instead of locally."
+    )
+):
     """
     Restart a Docker container (requires confirmation).
     """
@@ -2052,7 +2137,17 @@ def restart(name: str):
         "[bold blue]Atlas Restart[/bold blue]\n"
     )
 
-    info = get_container_info(name)
+    fleet_node, error = _resolve_fleet_node(node)
+
+    if error:
+
+        console.print(
+            f"[red]{error}[/red]"
+        )
+
+        return
+
+    info = get_container_info(name, node=fleet_node)
 
     if not info["found"]:
 
@@ -2061,6 +2156,9 @@ def restart(name: str):
         )
 
         return
+
+    if fleet_node:
+        console.print(f"Node: {fleet_node.name} ({fleet_node.host})")
 
     console.print(f"Container: {info['name']}")
     console.print(f"Image: {info['image']}")
@@ -2080,7 +2178,7 @@ def restart(name: str):
 
         return
 
-    result = restart_container(name)
+    result = restart_container(name, node=fleet_node)
 
     runtime = application.runtime
 
@@ -2090,6 +2188,7 @@ def restart(name: str):
             source="RestartAction",
             payload={
                 "container": name,
+                "node": fleet_node.name if fleet_node else None,
                 "result": result
             }
         )
@@ -2109,7 +2208,13 @@ def restart(name: str):
 
 
 @app.command()
-def stop(name: str):
+def stop(
+    name: str,
+    node: str = typer.Option(
+        None, "--node",
+        help="Stop on this fleet node's Docker daemon instead of locally."
+    )
+):
     """
     Stop a Docker container (requires confirmation).
     """
@@ -2118,7 +2223,17 @@ def stop(name: str):
         "[bold blue]Atlas Stop[/bold blue]\n"
     )
 
-    info = get_container_info(name)
+    fleet_node, error = _resolve_fleet_node(node)
+
+    if error:
+
+        console.print(
+            f"[red]{error}[/red]"
+        )
+
+        return
+
+    info = get_container_info(name, node=fleet_node)
 
     if not info["found"]:
 
@@ -2127,6 +2242,9 @@ def stop(name: str):
         )
 
         return
+
+    if fleet_node:
+        console.print(f"Node: {fleet_node.name} ({fleet_node.host})")
 
     console.print(f"Container: {info['name']}")
     console.print(f"Image: {info['image']}")
@@ -2145,7 +2263,7 @@ def stop(name: str):
 
         return
 
-    result = stop_container(name)
+    result = stop_container(name, node=fleet_node)
 
     runtime = application.runtime
 
@@ -2155,6 +2273,7 @@ def stop(name: str):
             source="StopAction",
             payload={
                 "container": name,
+                "node": fleet_node.name if fleet_node else None,
                 "result": result
             }
         )
@@ -2177,7 +2296,11 @@ def stop(name: str):
 def resize(
     name: str,
     cpus: float = typer.Option(None, help="New CPU limit in cores, e.g. 1.5"),
-    memory: str = typer.Option(None, help="New memory limit, e.g. 512m or 1g")
+    memory: str = typer.Option(None, help="New memory limit, e.g. 512m or 1g"),
+    node: str = typer.Option(
+        None, "--node",
+        help="Resize on this fleet node's Docker daemon instead of locally."
+    )
 ):
     """
     Resize a Docker container's CPU and/or memory limit (requires confirmation).
@@ -2195,7 +2318,17 @@ def resize(
 
         return
 
-    info = get_container_info(name)
+    fleet_node, error = _resolve_fleet_node(node)
+
+    if error:
+
+        console.print(
+            f"[red]{error}[/red]"
+        )
+
+        return
+
+    info = get_container_info(name, node=fleet_node)
 
     if not info["found"]:
 
@@ -2204,6 +2337,9 @@ def resize(
         )
 
         return
+
+    if fleet_node:
+        console.print(f"Node: {fleet_node.name} ({fleet_node.host})")
 
     console.print(f"Container: {info['name']}")
 
@@ -2244,7 +2380,8 @@ def resize(
     result = resize_container(
         name,
         cpus=cpus,
-        mem_limit=memory
+        mem_limit=memory,
+        node=fleet_node
     )
 
     runtime = application.runtime
@@ -2255,6 +2392,7 @@ def resize(
             source="ResizeAction",
             payload={
                 "container": name,
+                "node": fleet_node.name if fleet_node else None,
                 "cpus": cpus,
                 "memory": memory,
                 "result": result

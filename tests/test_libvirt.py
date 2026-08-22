@@ -1,7 +1,15 @@
 import subprocess
 from unittest.mock import MagicMock, patch
 
+from atlas.config.models import FleetNode
 from atlas.libvirt import collect_guests, get_guest_info, resize_guest, restart_guest, stop_guest
+
+
+def _node(**overrides):
+
+    defaults = {"name": "node1", "host": "10.0.0.5", "user": "atlas", "port": 22, "identity_file": ""}
+
+    return FleetNode(**{**defaults, **overrides})
 
 
 def test_collect_guests_when_virsh_not_available():
@@ -258,3 +266,53 @@ def test_resize_guest_stops_after_first_failure():
 
     assert result["success"] is False
     assert mock_run.call_count == 1
+
+
+def test_restart_guest_with_node_uses_connect_uri():
+
+    with (
+        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("atlas.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
+    ):
+
+        restart_guest("vm1", node=_node())
+
+    assert mock_run.call_args.args[0] == [
+        "/usr/bin/virsh", "-c", "qemu+ssh://atlas@10.0.0.5/system", "reboot", "vm1"
+    ]
+
+
+def test_get_guest_info_with_node_uses_connect_uri():
+
+    fake_result = MagicMock()
+    fake_result.stdout = "running\n"
+
+    with (
+        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("atlas.libvirt.manager.subprocess.run", return_value=fake_result) as mock_run,
+    ):
+
+        get_guest_info("vm1", node=_node())
+
+    assert mock_run.call_args.args[0] == [
+        "/usr/bin/virsh", "-c", "qemu+ssh://atlas@10.0.0.5/system", "domstate", "vm1"
+    ]
+
+
+def test_resize_guest_with_node_uses_connect_uri_on_both_calls():
+
+    with (
+        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("atlas.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
+    ):
+
+        resize_guest("vm1", vcpus=2, memory="512MiB", node=_node())
+
+    assert mock_run.call_args_list[0].args[0] == [
+        "/usr/bin/virsh", "-c", "qemu+ssh://atlas@10.0.0.5/system",
+        "setvcpus", "vm1", "2", "--config"
+    ]
+    assert mock_run.call_args_list[1].args[0] == [
+        "/usr/bin/virsh", "-c", "qemu+ssh://atlas@10.0.0.5/system",
+        "setmem", "vm1", "512MiB", "--config"
+    ]

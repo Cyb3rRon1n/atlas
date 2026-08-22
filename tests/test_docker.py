@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import docker.errors
 
+from atlas.config.models import FleetNode
 from atlas.docker import (
     collect_containers,
     get_container_info,
@@ -11,6 +12,7 @@ from atlas.docker import (
     restart_container,
     stop_container,
 )
+from atlas.docker.manager import get_client
 
 
 def test_collect_containers_when_daemon_unavailable():
@@ -520,3 +522,42 @@ def test_get_container_logs_when_successful():
     }
 
     fake_container.logs.assert_called_once_with(tail=50, timestamps=False)
+
+
+def test_get_client_local_uses_from_env():
+
+    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+
+        get_client()
+
+    mock_from_env.assert_called_once_with()
+
+
+def test_get_client_with_node_connects_over_ssh():
+
+    node = FleetNode(name="node1", host="10.0.0.5", user="atlas", port=22)
+
+    with patch("atlas.docker.manager.docker.DockerClient") as mock_docker_client:
+
+        get_client(node)
+
+    mock_docker_client.assert_called_once_with(
+        base_url="ssh://atlas@10.0.0.5:22",
+        use_ssh_client=True
+    )
+
+
+def test_restart_container_passes_node_to_get_client():
+
+    fake_container = MagicMock()
+    fake_container.status = "exited"
+
+    node = FleetNode(name="node1", host="10.0.0.5", user="atlas", port=22)
+
+    with patch("atlas.docker.manager.get_client") as mock_get_client:
+
+        mock_get_client.return_value.containers.get.return_value = fake_container
+
+        restart_container("plex", node=node)
+
+    mock_get_client.assert_called_once_with(node)

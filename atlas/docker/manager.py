@@ -3,9 +3,23 @@ import json
 import docker
 
 
-def get_client():
+def get_client(node=None):
+    """
+    node, when given (a FleetNode), connects to that node's remote
+    Docker daemon over SSH instead of the local one - docker-py's own
+    ssh:// transport (requires paramiko; use_ssh_client=True makes it
+    shell out to the system ssh binary for the actual connection
+    rather than paramiko's own implementation, matching how the rest
+    of atlas/fleet/ already connects).
+    """
 
     try:
+        if node:
+            return docker.DockerClient(
+                base_url=f"ssh://{node.user}@{node.host}:{node.port}",
+                use_ssh_client=True
+            )
+
         return docker.from_env()
 
     except Exception:
@@ -46,9 +60,9 @@ def collect_containers():
     }
 
 
-def get_container_info(name):
+def get_container_info(name, node=None):
 
-    client = get_client()
+    client = get_client(node)
 
     if not client:
         return {
@@ -99,9 +113,9 @@ def get_container_info(name):
     }
 
 
-def restart_container(name):
+def restart_container(name, node=None):
 
-    client = get_client()
+    client = get_client(node)
 
     if not client:
         return {
@@ -135,7 +149,7 @@ def restart_container(name):
     }
 
 
-def resize_container(name, cpus=None, mem_limit=None):
+def resize_container(name, cpus=None, mem_limit=None, node=None):
     """
     Live-update a container's CPU/memory limit - no restart. Only
     includes the fields actually given, so a cpus-only resize doesn't
@@ -160,7 +174,7 @@ def resize_container(name, cpus=None, mem_limit=None):
     string ("512m", "1g") into raw bytes for the request body.
     """
 
-    client = get_client()
+    client = get_client(node)
 
     if not client:
         return {
@@ -205,9 +219,9 @@ def resize_container(name, cpus=None, mem_limit=None):
     }
 
 
-def stop_container(name):
+def stop_container(name, node=None):
 
-    client = get_client()
+    client = get_client(node)
 
     if not client:
         return {

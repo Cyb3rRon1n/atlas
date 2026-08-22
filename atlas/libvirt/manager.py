@@ -16,15 +16,28 @@ def get_client():
     return shutil.which("virsh")
 
 
-def _run(virsh, *args):
+def _run(virsh, *args, connect_uri=None):
+    """
+    connect_uri, when given, is passed as `-c <uri>` - libvirt's own
+    native remote-connection mechanism (e.g. qemu+ssh://user@host/
+    system), shelling through the system ssh binary under the hood.
+    No new dependency, unlike Docker's ssh:// transport.
+    """
+
+    prefix = ["-c", connect_uri] if connect_uri else []
 
     return subprocess.run(
-        [virsh, *args],
+        [virsh, *prefix, *args],
         capture_output=True,
         text=True,
         timeout=5,
         check=True
     )
+
+
+def _connect_uri(node):
+
+    return f"qemu+ssh://{node.user}@{node.host}/system" if node else None
 
 
 def collect_guests():
@@ -79,7 +92,7 @@ def _guest_info(virsh, name):
     }
 
 
-def get_guest_info(name):
+def get_guest_info(name, node=None):
     """
     Look up a single guest's current state by name, for the CLI's
     "show current state before confirming" step - same {"found": bool,
@@ -96,7 +109,7 @@ def get_guest_info(name):
         }
 
     try:
-        state = _run(virsh, "domstate", name).stdout.strip()
+        state = _run(virsh, "domstate", name, connect_uri=_connect_uri(node)).stdout.strip()
 
     except (subprocess.SubprocessError, OSError):
         return {
@@ -111,7 +124,7 @@ def get_guest_info(name):
     }
 
 
-def _run_command(virsh, *args):
+def _run_command(virsh, *args, connect_uri=None):
     """
     Shared by every mutating guest command (reboot/shutdown/setvcpus/
     setmem) - runs virsh and converts a failure into the pure
@@ -120,7 +133,7 @@ def _run_command(virsh, *args):
     """
 
     try:
-        _run(virsh, *args)
+        _run(virsh, *args, connect_uri=connect_uri)
 
     except subprocess.CalledProcessError as error:
         return {
@@ -139,7 +152,7 @@ def _run_command(virsh, *args):
     }
 
 
-def restart_guest(name):
+def restart_guest(name, node=None):
     """
     Sends an ACPI reboot request via `virsh reboot` - like Proxmox's
     own restart_guest(), this has no automatic force-fallback if the
@@ -156,10 +169,10 @@ def restart_guest(name):
             "error": "libvirt/virsh unavailable"
         }
 
-    return _run_command(virsh, "reboot", name)
+    return _run_command(virsh, "reboot", name, connect_uri=_connect_uri(node))
 
 
-def stop_guest(name):
+def stop_guest(name, node=None):
     """
     Sends an ACPI shutdown request via `virsh shutdown` - not `virsh
     destroy`, which despite its name is libvirt's hard power-off (it
@@ -176,10 +189,10 @@ def stop_guest(name):
             "error": "libvirt/virsh unavailable"
         }
 
-    return _run_command(virsh, "shutdown", name)
+    return _run_command(virsh, "shutdown", name, connect_uri=_connect_uri(node))
 
 
-def resize_guest(name, vcpus=None, memory=None):
+def resize_guest(name, vcpus=None, memory=None, node=None):
     """
     setvcpus/setmem are separate virsh subcommands (unlike Docker's
     single update call or Proxmox's single resize endpoint), so this
@@ -202,16 +215,22 @@ def resize_guest(name, vcpus=None, memory=None):
             "error": "libvirt/virsh unavailable"
         }
 
+    connect_uri = _connect_uri(node)
+
     if vcpus is not None:
 
-        result = _run_command(virsh, "setvcpus", name, str(vcpus), "--config")
+        result = _run_command(
+            virsh, "setvcpus", name, str(vcpus), "--config", connect_uri=connect_uri
+        )
 
         if not result["success"]:
             return result
 
     if memory is not None:
 
-        result = _run_command(virsh, "setmem", name, memory, "--config")
+        result = _run_command(
+            virsh, "setmem", name, memory, "--config", connect_uri=connect_uri
+        )
 
         if not result["success"]:
             return result

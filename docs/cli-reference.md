@@ -18,7 +18,7 @@ All 25 current Atlas commands. Run `atlas <command> --help` for any command-spec
 | Command | Description |
 |---|---|
 | `atlas discover` | Discover infrastructure information — built-in (system, hardware, storage, network) and every registered plugin — in one pass, and generate inventory. |
-| `atlas report` | Generate an infrastructure report from the latest inventory. |
+| `atlas report` | Generate an infrastructure report from the latest inventory. `--json` prints the raw inventory dict instead of writing `reports/atlas-report.md` - `null` if `atlas discover` hasn't run yet. No exit-code logic, same as `atlas trends`. |
 | `atlas docker` | Display Docker container status. |
 | `atlas services` | Detect known homelab services running in Docker (see [Service Catalog](service-catalog.md)). |
 | `atlas compose` | Analyze a Docker Compose file. |

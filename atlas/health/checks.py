@@ -216,28 +216,28 @@ def check_monitoring(config):
 def check_environment():
     """
     Informational, always healthy: reports virtualization/orchestration
-    backends Atlas detects but doesn't manage (only Docker and Proxmox
-    are actively supported), so a libvirt/KVM or Kubernetes host sees
-    itself acknowledged by doctor rather than silently ignored.
+    backends Atlas detects beyond Docker/Proxmox, so a libvirt/KVM or
+    Kubernetes host sees itself acknowledged by doctor rather than
+    silently ignored.
     """
 
     detected = []
 
     if shutil.which("virsh") or Path("/var/run/libvirt/libvirt-sock").exists():
-        detected.append("libvirt/KVM")
+        detected.append("libvirt/KVM (discoverable via atlas discover, no actions yet)")
 
     if (
         os.environ.get("KUBERNETES_SERVICE_HOST")
         or shutil.which("kubectl")
         or (Path.home() / ".kube" / "config").exists()
     ):
-        detected.append("Kubernetes")
+        detected.append("Kubernetes (not managed by Atlas)")
 
     return {
         "name": "Environment",
         "status": True,
         "details": (
-            f"{', '.join(detected)} detected (not managed by Atlas)"
+            "; ".join(detected)
             if detected
             else "no additional virtualization/orchestration backends detected"
         ),

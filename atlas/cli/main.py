@@ -1300,10 +1300,20 @@ def discover():
 
     plugin_data = manager.discover_all()
 
-    runtime.environment.update(
-        "containers",
-        plugin_data
-    )
+    by_category = {}
+
+    for plugin in manager.get_plugins():
+
+        by_category.setdefault(
+            plugin.category, {}
+        )[plugin.name] = plugin_data.get(plugin.name)
+
+    for category, category_data in by_category.items():
+
+        runtime.environment.update(
+            category,
+            category_data
+        )
 
     store = KnowledgeStore()
 
@@ -1812,7 +1822,7 @@ def plugins():
 
     for plugin in manager.get_plugins():
         console.print(
-            f"✓ {plugin.name} ({plugin.version})"
+            f"✓ {plugin.name} ({plugin.version}) — {plugin.category}"
         )
 
 @app.command()

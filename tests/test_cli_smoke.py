@@ -1845,7 +1845,8 @@ def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
             "atlas.discovery.network.socket.gethostbyname_ex",
             return_value=("sentinel", [], ["192.168.1.10"])
         ),
-        patch("atlas.docker.manager.docker.from_env") as mock_from_env
+        patch("atlas.docker.manager.docker.from_env") as mock_from_env,
+        patch("atlas.libvirt.manager.shutil.which", return_value=None)
     ):
 
         mock_from_env.return_value.containers.list.return_value = [
@@ -1864,6 +1865,13 @@ def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
     assert "cpu" in environment["hardware"]
     assert environment["containers"]["Docker"]["available"] is True
     assert environment["containers"]["Docker"]["containers"][0]["name"] == "plex"
+
+    # Different category (virtualization), not merged into "containers" -
+    # this is the bug the plugin category generalization fixed: every
+    # plugin's data used to land under the hardcoded "containers" key
+    # regardless of what it actually was.
+    assert environment["virtualization"]["Libvirt"]["available"] is False
+    assert "Libvirt" not in environment["containers"]
 
 
 def test_restart_declined_does_not_restart_container(isolated_cwd, temp_db):

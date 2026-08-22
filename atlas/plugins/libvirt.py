@@ -1,15 +1,15 @@
 from atlas.plugins import AtlasPlugin
-from atlas.docker import collect_containers
+from atlas.libvirt import collect_guests
 
 
-class DockerPlugin(AtlasPlugin):
+class LibvirtPlugin(AtlasPlugin):
     """
-    Atlas Docker Plugin
+    Atlas libvirt/KVM Plugin
     """
 
-    name = "Docker"
+    name = "Libvirt"
     version = "0.1.0"
-    category = "containers"
+    category = "virtualization"
 
     def __init__(self):
         self.runtime = None
@@ -18,4 +18,4 @@ class DockerPlugin(AtlasPlugin):
         self.runtime = runtime
 
     def discover(self):
-        return collect_containers()
+        return collect_guests()

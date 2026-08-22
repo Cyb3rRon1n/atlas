@@ -2,7 +2,7 @@ import subprocess
 from unittest.mock import MagicMock, patch
 
 from atlas.config.models import FleetNode
-from atlas.fleet import run_remote_doctor
+from atlas.fleet import run_remote_doctor, run_remote_trends
 
 
 def _node(**overrides):
@@ -155,3 +155,63 @@ def test_run_remote_doctor_when_ssh_times_out():
         result = run_remote_doctor(_node())
 
     assert result["reachable"] is False
+
+
+def test_run_remote_trends_uses_limit_flag():
+
+    fake_result = MagicMock()
+    fake_result.returncode = 0
+    fake_result.stdout = '{"host": {}, "containers": {}, "guests": {}}'
+
+    with (
+        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("atlas.fleet.manager.subprocess.run", return_value=fake_result) as mock_run,
+    ):
+
+        run_remote_trends(_node(), limit=5)
+
+    args = mock_run.call_args.args[0]
+
+    assert args[-4:] == ["trends", "--limit", "5", "--json"]
+
+
+def test_run_remote_trends_when_healthy():
+
+    fake_result = MagicMock()
+    fake_result.returncode = 0
+    fake_result.stdout = (
+        '{"host": {"cpu_percent": {"latest": 30.0, "min": 10.0, "max": 30.0, '
+        '"avg": 20.0, "samples": 3}}, "containers": {}, "guests": {}}'
+    )
+
+    with (
+        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("atlas.fleet.manager.subprocess.run", return_value=fake_result),
+    ):
+
+        result = run_remote_trends(_node())
+
+    assert result["reachable"] is True
+    assert result["host"]["cpu_percent"]["latest"] == 30.0
+    assert result["containers"] == {}
+    assert result["guests"] == {}
+
+
+def test_run_remote_trends_when_ssh_connection_fails():
+
+    fake_result = MagicMock()
+    fake_result.returncode = 255
+    fake_result.stdout = ""
+    fake_result.stderr = "Connection refused"
+
+    with (
+        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("atlas.fleet.manager.subprocess.run", return_value=fake_result),
+    ):
+
+        result = run_remote_trends(_node())
+
+    assert result == {
+        "reachable": False,
+        "error": "Connection refused"
+    }

@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 
 import psutil
+import requests
 
 from atlas.config import load_config
 
@@ -93,16 +94,45 @@ def check_proxmox(config):
         proxmox.token_name and proxmox.token_value
     ) or bool(proxmox.password)
 
-    healthy = has_host and has_auth
+    if not (has_host and has_auth):
+        return {
+            "name": "Proxmox",
+            "status": False,
+            "details": "enabled but missing host or credentials",
+        }
+
+    from atlas.proxmox.client import connect
+
+    client = connect(
+        proxmox.host,
+        proxmox.user,
+        password=proxmox.password,
+        token_name=proxmox.token_name,
+        token_value=proxmox.token_value,
+        verify_ssl=proxmox.verify_ssl,
+    )
+
+    if client is None:
+        return {
+            "name": "Proxmox",
+            "status": False,
+            "details": "enabled, configured, but connection failed",
+        }
+
+    try:
+        client.version.get()
+
+    except Exception as error:
+        return {
+            "name": "Proxmox",
+            "status": False,
+            "details": f"enabled, configured, but unreachable: {error}",
+        }
 
     return {
         "name": "Proxmox",
-        "status": healthy,
-        "details": (
-            "enabled, host and credentials configured"
-            if healthy
-            else "enabled but missing host or credentials"
-        ),
+        "status": True,
+        "details": "enabled, configured, and reachable",
     }
 
 
@@ -122,8 +152,17 @@ def check_intelligence(config):
 
     elif provider == "ollama":
 
-        healthy = True
-        details = f"ollama, {config.intelligence.ollama_host}"
+        host = config.intelligence.ollama_host
+
+        try:
+            requests.get(f"{host.rstrip('/')}/api/tags", timeout=3).raise_for_status()
+
+            healthy = True
+            details = f"ollama, {host}, reachable"
+
+        except requests.exceptions.RequestException as error:
+            healthy = False
+            details = f"ollama, {host}, unreachable: {error}"
 
     else:
 
@@ -148,15 +187,59 @@ def check_monitoring(config):
             "details": "disabled",
         }
 
-    healthy = bool(monitoring.prometheus_url)
+    if not monitoring.prometheus_url:
+        return {
+            "name": "Monitoring",
+            "status": False,
+            "details": "enabled but no prometheus_url configured",
+        }
+
+    url = monitoring.prometheus_url
+
+    try:
+        requests.get(f"{url.rstrip('/')}/-/healthy", timeout=3).raise_for_status()
+
+        return {
+            "name": "Monitoring",
+            "status": True,
+            "details": f"enabled, {url}, reachable",
+        }
+
+    except requests.exceptions.RequestException as error:
+        return {
+            "name": "Monitoring",
+            "status": False,
+            "details": f"enabled, {url}, unreachable: {error}",
+        }
+
+
+def check_environment():
+    """
+    Informational, always healthy: reports virtualization/orchestration
+    backends Atlas detects but doesn't manage (only Docker and Proxmox
+    are actively supported), so a libvirt/KVM or Kubernetes host sees
+    itself acknowledged by doctor rather than silently ignored.
+    """
+
+    detected = []
+
+    if shutil.which("virsh") or Path("/var/run/libvirt/libvirt-sock").exists():
+        detected.append("libvirt/KVM")
+
+    if (
+        os.environ.get("KUBERNETES_SERVICE_HOST")
+        or shutil.which("kubectl")
+        or (Path.home() / ".kube" / "config").exists()
+    ):
+        detected.append("Kubernetes")
 
     return {
-        "name": "Monitoring",
-        "status": healthy,
+        "name": "Environment",
+        "status": True,
         "details": (
-            f"enabled, {monitoring.prometheus_url}"
-            if healthy
-            else "enabled but no prometheus_url configured"
+            f"{', '.join(detected)} detected (not managed by Atlas)"
+            if detected
+            else "no additional virtualization/orchestration backends detected"
         ),
     }
 
@@ -170,6 +253,7 @@ def run_checks():
         check_memory(),
         check_storage(),
         check_docker(),
+        check_environment(),
         check_inventory(),
         check_proxmox(config),
         check_intelligence(config),

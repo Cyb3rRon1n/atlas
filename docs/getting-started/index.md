@@ -50,7 +50,7 @@ atlas analyze    # sends the latest snapshot to an AI provider for a summary + r
 
 ## Next steps
 
-- Run `atlas doctor` to sanity-check your environment (Python, memory, storage, Docker, inventory presence) and check readiness of the optional integrations (Proxmox credentials, `ANTHROPIC_API_KEY`, Prometheus URL) against whatever `atlas.yaml` has configured
+- Run `atlas doctor` to sanity-check your environment (Python, memory, storage, Docker, inventory presence, other virtualization/orchestration backends detected on the host) and live-check whatever optional integrations `atlas.yaml` has configured (Proxmox, `ANTHROPIC_API_KEY`/Ollama, Prometheus) — each reachability check is bounded by a short timeout, so it can't hang
 - If you run Docker workloads, `atlas docker` and `atlas services` will inventory containers and recognize known homelab services (Jellyfin, Sonarr, Radarr, and friends — see the [Service Catalog](../service-catalog.md))
 - If you run Proxmox, see [Deployment](../deployment/index.md) for how Atlas is meant to connect to it, then `atlas proxmox scan`
 - The full command list is in [CLI Reference](../cli-reference.md)

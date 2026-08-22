@@ -9,7 +9,7 @@ All 20 current Atlas commands. Run `atlas <command> --help` for any command-spec
 | `atlas version` | Display the Atlas version. |
 | `atlas status` | Display current Atlas status. |
 | `atlas init` | Interactively generate `atlas.yaml` — prompts only for Proxmox/AI provider/Prometheus settings, skips whatever you decline, never writes `ANTHROPIC_API_KEY` to disk. Logs the session to `logs/atlas-init-<timestamp>.log` (secrets redacted) for troubleshooting and records. Optional — Atlas runs on safe defaults without an `atlas.yaml` at all. |
-| `atlas doctor` | Run Atlas health checks (Python, memory, storage, Docker, inventory) plus readiness checks for the optional integrations (Proxmox, AI provider, Prometheus) against the current `atlas.yaml`. `--json` prints `{"checks": [...], "healthy": bool}` instead. Exits 1 if any check is unhealthy, in either output mode - safe to check `$?` from cron without `--json`. |
+| `atlas doctor` | Run Atlas health checks (Python, memory, storage, Docker, inventory, other virtualization/orchestration backends detected on the host) plus live reachability checks for the optional integrations you've configured (Proxmox, AI provider — Anthropic stays config-only to avoid a billed call, Ollama is checked live — Prometheus), each bounded by a short timeout so a dead endpoint can't hang the run. `--json` prints `{"checks": [...], "healthy": bool}` instead. Exits 1 if any check is unhealthy, in either output mode - safe to check `$?` from cron without `--json`. |
 | `atlas config` | Display the active Atlas configuration. |
 | `atlas runtime` | Display Atlas runtime information. |
 

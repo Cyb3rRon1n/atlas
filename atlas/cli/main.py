@@ -15,7 +15,9 @@ from atlas.services import detect_services
 from atlas.compose import parse_compose_file
 from atlas.libvirt import (
     get_guest_info as get_libvirt_guest_info,
+    resize_guest as resize_libvirt_guest,
     restart_guest as restart_libvirt_guest,
+    stop_guest as stop_libvirt_guest,
 )
 from atlas.proxmox import (
     connect,
@@ -61,6 +63,7 @@ PLAN_STEP_EVENT_TYPES = {
     "stop_guest": "atlas.action.guest_stopped",
     "resize_guest": "atlas.action.guest_resized",
     "restart_libvirt_guest": "atlas.action.libvirt_guest_restarted",
+    "stop_libvirt_guest": "atlas.action.libvirt_guest_stopped",
 }
 
 proxmox_app = typer.Typer(
@@ -629,6 +632,158 @@ def restart_libvirt_guest_command(name: str):
 
     console.print(
         f"\n[green]✓ Guest '{name}' restarted[/green]"
+    )
+
+
+@libvirt_app.command(name="stop")
+def stop_libvirt_guest_command(name: str):
+    """
+    Stop a libvirt/KVM guest (requires confirmation).
+    """
+
+    console.print(
+        "[bold blue]Atlas Libvirt Stop[/bold blue]\n"
+    )
+
+    info = get_libvirt_guest_info(name)
+
+    if not info["found"]:
+
+        console.print(
+            f"[red]{info['error']}[/red]"
+        )
+
+        return
+
+    console.print(f"Guest: {info['name']}")
+    console.print(f"Current state: {info['state']}\n")
+
+    console.print(
+        "This sends an ACPI shutdown request to the guest. There is "
+        "no automatic force-fallback - if the guest OS isn't "
+        "listening, this can stall rather than guarantee completion.\n"
+    )
+
+    if not typer.confirm("Proceed?"):
+
+        console.print(
+            "[yellow]Cancelled.[/yellow]"
+        )
+
+        return
+
+    result = stop_libvirt_guest(name)
+
+    runtime = application.runtime
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.action.libvirt_guest_stopped",
+            source="LibvirtStopAction",
+            payload={
+                "guest": name,
+                "result": result
+            }
+        )
+    )
+
+    if not result["success"]:
+
+        console.print(
+            f"\n[red]Stop failed: {result['error']}[/red]"
+        )
+
+        return
+
+    console.print(
+        f"\n[green]✓ Guest '{name}' stopped[/green]"
+    )
+
+
+@libvirt_app.command(name="resize")
+def resize_libvirt_guest_command(
+    name: str,
+    vcpus: int = typer.Option(None, help="New vCPU count, e.g. 2"),
+    memory: str = typer.Option(None, help="New memory size, e.g. 512MiB or 2GiB")
+):
+    """
+    Resize a libvirt/KVM guest's vCPU count and/or memory allocation
+    (requires confirmation). Applies at next boot only - a running
+    guest needs its own hotplug config to pick this up live, which
+    this command does not attempt.
+    """
+
+    console.print(
+        "[bold blue]Atlas Libvirt Resize[/bold blue]\n"
+    )
+
+    if vcpus is None and memory is None:
+
+        console.print(
+            "[red]Specify --vcpus and/or --memory.[/red]"
+        )
+
+        return
+
+    info = get_libvirt_guest_info(name)
+
+    if not info["found"]:
+
+        console.print(
+            f"[red]{info['error']}[/red]"
+        )
+
+        return
+
+    console.print(f"Guest: {info['name']}\n")
+
+    if vcpus is not None:
+        console.print(f"New vCPU count: {vcpus}")
+
+    if memory is not None:
+        console.print(f"New memory size: {memory}")
+
+    console.print(
+        "\nThis applies at next boot only. A running guest needs "
+        "hotplug already configured to pick this up live - not "
+        "attempted here, so a restart may be required.\n"
+    )
+
+    if not typer.confirm("Proceed?"):
+
+        console.print(
+            "[yellow]Cancelled.[/yellow]"
+        )
+
+        return
+
+    result = resize_libvirt_guest(name, vcpus=vcpus, memory=memory)
+
+    runtime = application.runtime
+
+    runtime.events.publish(
+        AtlasEvent(
+            event_type="atlas.action.libvirt_guest_resized",
+            source="LibvirtResizeAction",
+            payload={
+                "guest": name,
+                "vcpus": vcpus,
+                "memory": memory,
+                "result": result
+            }
+        )
+    )
+
+    if not result["success"]:
+
+        console.print(
+            f"\n[red]Resize failed: {result['error']}[/red]"
+        )
+
+        return
+
+    console.print(
+        f"\n[green]✓ Guest '{name}' resized[/green]"
     )
 
 

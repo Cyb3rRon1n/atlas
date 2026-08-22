@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Callable
 from atlas.actions.targets import known_container_names, known_guest_ids, known_libvirt_guest_names
 from atlas.config import load_config
 from atlas.docker import resize_container, restart_container, stop_container
-from atlas.libvirt import restart_guest as restart_libvirt_guest
+from atlas.libvirt import restart_guest as restart_libvirt_guest, stop_guest as stop_libvirt_guest
 from atlas.proxmox import connect, get_guest_info, resize_guest, restart_guest, stop_guest
 
 if TYPE_CHECKING:
@@ -120,7 +120,18 @@ ACTIONS: dict[str, ActionDefinition] = {
         known_targets=known_libvirt_guest_names,
         executor=lambda a: restart_libvirt_guest(a.target)
     ),
+    "stop_libvirt_guest": ActionDefinition(
+        type="stop_libvirt_guest",
+        command_template=lambda a: f"atlas libvirt stop {a.target}",
+        known_targets=known_libvirt_guest_names,
+        executor=lambda a: stop_libvirt_guest(a.target)
+    ),
 }
+# resize_libvirt_guest is deliberately not in ACTIONS - virsh's setvcpus
+# takes an integer vCPU count (topology), not the fractional core limit
+# every other resize_* action's "cpus" field means. Reusing that shared
+# schema field for a third, incompatible meaning wasn't worth it for a
+# CLI-only feature; see atlas libvirt resize.
 
 
 def is_action_grounded(action: "SuggestedAction", environment: dict) -> bool:

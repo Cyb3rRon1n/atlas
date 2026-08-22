@@ -91,11 +91,11 @@ def test_known_libvirt_guest_names_empty_when_no_virtualization_key():
     assert known_libvirt_guest_names({"system": {}}) == set()
 
 
-def test_actions_registry_has_all_seven_entries():
+def test_actions_registry_has_all_eight_entries():
 
     assert set(ACTIONS.keys()) == {
         "restart_container", "restart_guest", "stop_container", "resize_container",
-        "stop_guest", "resize_guest", "restart_libvirt_guest"
+        "stop_guest", "resize_guest", "restart_libvirt_guest", "stop_libvirt_guest"
     }
 
 
@@ -237,6 +237,40 @@ def test_execute_action_restart_libvirt_guest_calls_manager_function():
 
     assert result == {"success": True}
     mock_restart.assert_called_once_with("test-vm")
+
+
+def test_stop_libvirt_guest_action_wired_correctly():
+
+    definition = ACTIONS["stop_libvirt_guest"]
+
+    action = SuggestedAction(type="stop_libvirt_guest", target="test-vm")
+    assert definition.command_template(action) == "atlas libvirt stop test-vm"
+    assert definition.known_targets is known_libvirt_guest_names
+
+
+def test_execute_action_stop_libvirt_guest_calls_manager_function():
+
+    with patch(
+        "atlas.actions.registry.stop_libvirt_guest",
+        return_value={"success": True}
+    ) as mock_stop:
+
+        result = execute_action(
+            SuggestedAction(type="stop_libvirt_guest", target="test-vm")
+        )
+
+    assert result == {"success": True}
+    mock_stop.assert_called_once_with("test-vm")
+
+
+def test_resize_libvirt_guest_is_not_in_actions_registry():
+    """
+    Deliberately CLI-only - virsh's setvcpus takes an integer vCPU
+    count, a different concept from the fractional core limit every
+    other resize_*'s "cpus" field means. See atlas libvirt resize.
+    """
+
+    assert "resize_libvirt_guest" not in ACTIONS
 
 
 def test_execute_action_restart_container_calls_manager_function():

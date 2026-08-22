@@ -111,26 +111,16 @@ def get_guest_info(name):
     }
 
 
-def restart_guest(name):
+def _run_command(virsh, *args):
     """
-    Sends an ACPI reboot request via `virsh reboot` - like Proxmox's
-    own restart_guest(), this has no automatic force-fallback if the
-    guest OS isn't listening (unlike Docker's container.restart()),
-    so a stuck guest can leave this stalled rather than guaranteeing
-    completion. Same pure result-dict, never-raises shape as every
-    other manager function in this codebase.
+    Shared by every mutating guest command (reboot/shutdown/setvcpus/
+    setmem) - runs virsh and converts a failure into the pure
+    result-dict shape every manager function in this codebase uses,
+    never raising.
     """
-
-    virsh = get_client()
-
-    if not virsh:
-        return {
-            "success": False,
-            "error": "libvirt/virsh unavailable"
-        }
 
     try:
-        _run(virsh, "reboot", name)
+        _run(virsh, *args)
 
     except subprocess.CalledProcessError as error:
         return {
@@ -143,6 +133,88 @@ def restart_guest(name):
             "success": False,
             "error": str(error)
         }
+
+    return {
+        "success": True
+    }
+
+
+def restart_guest(name):
+    """
+    Sends an ACPI reboot request via `virsh reboot` - like Proxmox's
+    own restart_guest(), this has no automatic force-fallback if the
+    guest OS isn't listening (unlike Docker's container.restart()),
+    so a stuck guest can leave this stalled rather than guaranteeing
+    completion.
+    """
+
+    virsh = get_client()
+
+    if not virsh:
+        return {
+            "success": False,
+            "error": "libvirt/virsh unavailable"
+        }
+
+    return _run_command(virsh, "reboot", name)
+
+
+def stop_guest(name):
+    """
+    Sends an ACPI shutdown request via `virsh shutdown` - not `virsh
+    destroy`, which despite its name is libvirt's hard power-off (it
+    doesn't delete the guest). Same choice and same caveat as
+    Proxmox's stop_guest: no automatic force-fallback if the guest OS
+    isn't listening.
+    """
+
+    virsh = get_client()
+
+    if not virsh:
+        return {
+            "success": False,
+            "error": "libvirt/virsh unavailable"
+        }
+
+    return _run_command(virsh, "shutdown", name)
+
+
+def resize_guest(name, vcpus=None, memory=None):
+    """
+    setvcpus/setmem are separate virsh subcommands (unlike Docker's
+    single update call or Proxmox's single resize endpoint), so this
+    is up to two calls. --config only - applies at next boot, not
+    live. A running guest needing this immediately would need --live
+    too, which requires hotplug already configured on that guest -
+    the same class of gotcha Proxmox's own QEMU resize work found
+    real surprises in (see CLAUDE.md). Deliberately not attempted
+    here; the CLI's confirmation text says a restart may be needed
+    instead. vcpus is an integer *count* of virtual CPUs (topology),
+    not a fractional core limit like Docker's --cpus/Proxmox's
+    cpulimit - a genuinely different concept despite similar naming.
+    """
+
+    virsh = get_client()
+
+    if not virsh:
+        return {
+            "success": False,
+            "error": "libvirt/virsh unavailable"
+        }
+
+    if vcpus is not None:
+
+        result = _run_command(virsh, "setvcpus", name, str(vcpus), "--config")
+
+        if not result["success"]:
+            return result
+
+    if memory is not None:
+
+        result = _run_command(virsh, "setmem", name, memory, "--config")
+
+        if not result["success"]:
+            return result
 
     return {
         "success": True

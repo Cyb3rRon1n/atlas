@@ -156,7 +156,7 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 |---|---|
 | `atlas version` | Display the Atlas version. |
 | `atlas status` | Display current Atlas status. |
-| `atlas doctor` | Run Atlas health checks, including readiness of Proxmox/AI/Prometheus integrations. `--json` for machine-readable output; exits 1 if anything's unhealthy. |
+| `atlas doctor` | Run Atlas health checks, including live reachability of configured Proxmox/AI/Prometheus integrations and detection of other virtualization/orchestration backends (libvirt/KVM, Kubernetes). `--json` for machine-readable output; exits 1 if anything's unhealthy. |
 | `atlas init` | Interactively generate `atlas.yaml`, logging the session to `logs/`. |
 | `atlas config` | Display the active Atlas configuration. |
 | `atlas discover` | Discover infrastructure information (including registered plugins) and generate inventory. |
@@ -189,7 +189,7 @@ Run `atlas <command> --help` for command-specific options.
 
 **Guided Setup** — `atlas init` walks you through only what actually varies per deployment (name, Proxmox, AI provider, Prometheus), shows a full review screen before writing anything, and logs the session (secrets redacted) to `logs/`. `ANTHROPIC_API_KEY` is never prompted for or written to disk.
 
-**Health Checks** — `atlas doctor` checks your environment (Python, memory, storage, Docker) and whether each optional integration is actually configured. Fast presence checks, not live connection attempts, so it never hangs.
+**Health Checks** — `atlas doctor` checks your environment (Python, memory, storage, Docker, other virtualization/orchestration backends detected on the host) and each optional integration you've configured — Proxmox, your AI provider, Prometheus are checked for real reachability, not just presence, each bounded by a short timeout so a dead endpoint can't hang the run.
 
 **Infrastructure Discovery** — `atlas discover` inventories the host — OS, hardware, storage, network — and saves it for reporting, analysis, and change detection.
 

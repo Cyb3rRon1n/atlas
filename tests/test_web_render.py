@@ -38,11 +38,22 @@ def test_render_overview_page_shows_system_and_hardware():
 
 
 def test_render_overview_page_flattens_containers_dict():
+    """
+    containers is keyed by plugin name, not container name - each
+    entry is {"available": bool, "containers": [...]} (see
+    atlas.plugins.AtlasPlugin.category). A real container's own name
+    lives inside that nested list, not as the dict key.
+    """
 
     environment = {
         "timestamp": "2026-01-01 00:00:00",
         "system": {}, "hardware": {}, "storage": {}, "network": {},
-        "containers": {"plex": {"status": "running"}},
+        "containers": {
+            "Docker": {
+                "available": True,
+                "containers": [{"name": "plex", "status": "running"}]
+            }
+        },
         "virtualization": {}
     }
 
@@ -50,6 +61,7 @@ def test_render_overview_page_flattens_containers_dict():
 
     assert "plex" in html
     assert "running" in html
+    assert "Docker" in html
 
 
 def test_render_overview_page_shows_proxmox_guests():
@@ -63,8 +75,35 @@ def test_render_overview_page_shows_proxmox_guests():
 
     html = render_overview_page(environment, None)
 
-    assert "Proxmox Guests" in html
+    assert "Virtualization Guests" in html
     assert "plex" in html
+
+
+def test_render_overview_page_shows_plugin_sourced_guests():
+    """
+    A non-Proxmox virtualization plugin (e.g. LibvirtPlugin) lands
+    under "virtualization" keyed by plugin name, the same shape as
+    "containers" - distinct from atlas proxmox scan's flat
+    {"nodes": [...], "guests": [...]}.
+    """
+
+    environment = {
+        "timestamp": "2026-01-01 00:00:00",
+        "system": {}, "hardware": {}, "storage": {}, "network": {},
+        "containers": {},
+        "virtualization": {
+            "Libvirt": {
+                "available": True,
+                "guests": [{"name": "test-vm", "uuid": "abc-123", "state": "running"}]
+            }
+        }
+    }
+
+    html = render_overview_page(environment, None)
+
+    assert "Virtualization Guests" in html
+    assert "test-vm" in html
+    assert "Libvirt" in html
 
 
 def test_render_overview_page_shows_latest_analysis():
@@ -101,7 +140,12 @@ def test_render_overview_page_escapes_untrusted_values():
     environment = {
         "timestamp": "2026-01-01 00:00:00",
         "system": {}, "hardware": {}, "storage": {}, "network": {},
-        "containers": {"<script>alert(1)</script>": {"status": "running"}},
+        "containers": {
+            "Docker": {
+                "available": True,
+                "containers": [{"name": "<script>alert(1)</script>", "status": "running"}]
+            }
+        },
         "virtualization": {}
     }
 

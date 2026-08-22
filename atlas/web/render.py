@@ -116,29 +116,48 @@ def render_overview_page(environment, analysis):
             f"<div class=\"card\"><h2>{_esc(title)}</h2>{_kv_table(data)}</div>"
         )
 
+    # atlas discover's containers/virtualization categories are each
+    # keyed by plugin name (see atlas.plugins.AtlasPlugin.category and
+    # the per-category merge in atlas.cli.main.discover()) - every
+    # entry is {"available": bool, "containers"/"guests": [...]}, not
+    # the resource itself. Flatten each plugin's list into rows,
+    # tagging each with its source plugin.
     containers = environment.get("containers") or {}
 
-    if isinstance(containers, dict) and containers:
+    container_rows = [
+        {"plugin": plugin_name, **container}
+        for plugin_name, result in containers.items()
+        if isinstance(result, dict)
+        for container in result.get("containers", [])
+    ]
 
-        # atlas discover's plugin-sourced containers land as a dict
-        # keyed by container name (see atlas.discover's .update(
-        # "containers", plugin_data) call) - flatten to a list of
-        # {name, ...fields} rows for a normal table.
-        container_rows = [
-            {"name": name, **(fields if isinstance(fields, dict) else {"status": fields})}
-            for name, fields in containers.items()
-        ]
+    if container_rows:
 
         sections.append(
             f"<div class=\"card\"><h2>Containers</h2>{_list_of_dicts_table(container_rows)}</div>"
         )
 
-    guests = (environment.get("virtualization") or {}).get("guests") or []
+    virtualization = environment.get("virtualization") or {}
+
+    if isinstance(virtualization.get("guests"), list):
+
+        # atlas proxmox scan's shape - {"nodes": [...], "guests": [...]}
+        # - not plugin-sourced, so no "plugin" column to add.
+        guests = virtualization["guests"]
+
+    else:
+
+        guests = [
+            {"plugin": plugin_name, **guest}
+            for plugin_name, result in virtualization.items()
+            if isinstance(result, dict)
+            for guest in result.get("guests", [])
+        ]
 
     if guests:
 
         sections.append(
-            f"<div class=\"card\"><h2>Proxmox Guests</h2>{_list_of_dicts_table(guests)}</div>"
+            f"<div class=\"card\"><h2>Virtualization Guests</h2>{_list_of_dicts_table(guests)}</div>"
         )
 
     if analysis:

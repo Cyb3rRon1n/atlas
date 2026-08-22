@@ -1,6 +1,6 @@
 # CLI Reference
 
-All 25 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
+All 26 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
 
 ## Status & health
 
@@ -59,3 +59,4 @@ Commands that change infrastructure rather than just observe it. All are approva
 | `atlas web` | Serve a local, read-only web view (overview/history/trends) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). No write path — runs in the foreground until `Ctrl+C`, same on-demand shape as every other command. |
 | `atlas fleet doctor` | SSH into every node under `fleet.nodes` in `atlas.yaml` (no config = "no fleet nodes configured", exit 0) and run `atlas doctor --json` on each, reusing that same payload rather than a fleet-specific format. `-o BatchMode=yes` fails an auth prompt fast instead of hanging the whole scan; a per-node SSH/parse failure is reported as `"reachable": false` without aborting the rest. `--json` prints `{"nodes": [...], "healthy": bool}`. Exits 1 if any node is unreachable or unhealthy - safe to check `$?` from cron. No remote actions and no persistence - a live fan-out per invocation, not a saved snapshot. |
 | `atlas fleet trends` | SSH into every fleet node and run `atlas trends --limit <n> --json` on each, reusing that payload. `--limit` (default 20) passed through per node. No fleet-wide health concept (same as `atlas trends`) - `--json` prints `{"nodes": [...]}`, exit 1 iff any node is unreachable. |
+| `atlas fleet report` | SSH into every fleet node and run `atlas report --json` on each, reusing that payload. A reachable node with no inventory yet reports `{"reachable": true, "inventory": null}`, distinct from an unreachable one - not a parse failure. No fleet-wide health concept (same as `atlas report`) - `--json` prints `{"nodes": [...]}`, exit 1 iff any node is unreachable. |

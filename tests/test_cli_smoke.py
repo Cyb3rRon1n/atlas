@@ -2203,6 +2203,89 @@ def test_fleet_trends_aggregates_reachable_and_unreachable_nodes(
     assert payload["nodes"][1]["reachable"] is False
 
 
+def test_fleet_report_with_no_nodes_configured(isolated_cwd, temp_db):
+
+    result = runner.invoke(app, ["fleet", "report"])
+
+    assert result.exit_code == 0
+    assert "No fleet nodes configured." in result.output
+
+
+def test_fleet_report_aggregates_reachable_and_unreachable_nodes(
+    isolated_cwd, temp_db
+):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "fleet:\n"
+        "  nodes:\n"
+        "    - name: node-a\n"
+        "      host: 10.0.0.5\n"
+        "    - name: node-b\n"
+        "      host: 10.0.0.6\n"
+    )
+
+    def fake_run(cmd, **kwargs):
+
+        result = MagicMock()
+
+        if "10.0.0.5" in cmd[-4]:
+            result.returncode = 0
+            result.stdout = (
+                '{"system": {"hostname": "node-a"}, "hardware": {}, '
+                '"storage": [], "network": {}}'
+            )
+        else:
+            result.returncode = 255
+            result.stdout = ""
+            result.stderr = "Connection refused"
+
+        return result
+
+    with (
+        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("atlas.fleet.manager.subprocess.run", side_effect=fake_run),
+    ):
+
+        result = runner.invoke(app, ["fleet", "report", "--json"])
+
+    assert result.exit_code == 1
+
+    payload = json.loads(result.output)
+
+    assert "healthy" not in payload
+    assert payload["nodes"][0] == {
+        "name": "node-a", "host": "10.0.0.5", "reachable": True,
+        "system": {"hostname": "node-a"}, "hardware": {}, "storage": [], "network": {}
+    }
+    assert payload["nodes"][1]["reachable"] is False
+
+
+def test_fleet_report_shows_reachable_node_with_no_inventory(
+    isolated_cwd, temp_db
+):
+
+    (isolated_cwd / "atlas.yaml").write_text(
+        "fleet:\n"
+        "  nodes:\n"
+        "    - name: node-a\n"
+        "      host: 10.0.0.5\n"
+    )
+
+    fake_result = MagicMock()
+    fake_result.returncode = 0
+    fake_result.stdout = "null"
+
+    with (
+        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("atlas.fleet.manager.subprocess.run", return_value=fake_result),
+    ):
+
+        result = runner.invoke(app, ["fleet", "report"])
+
+    assert result.exit_code == 0
+    assert "No inventory found" in result.output
+
+
 def test_stop_declined_does_not_stop_container(isolated_cwd, temp_db):
 
     fake_container = MagicMock()

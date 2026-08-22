@@ -19,7 +19,7 @@ from atlas.libvirt import (
     restart_guest as restart_libvirt_guest,
     stop_guest as stop_libvirt_guest,
 )
-from atlas.fleet import run_remote_doctor, run_remote_trends
+from atlas.fleet import run_remote_doctor, run_remote_report, run_remote_trends
 from atlas.proxmox import (
     connect,
     discover_nodes,
@@ -1024,6 +1024,114 @@ def fleet_trends(
                 )
 
             console.print()
+
+    if not all_reachable:
+        raise typer.Exit(code=1)
+
+
+@fleet_app.command(name="report")
+def fleet_report(
+    json_output: bool = typer.Option(
+        False, "--json",
+        help="Print machine-readable JSON instead of formatted output."
+    )
+):
+    """
+    Run atlas report on every configured fleet node over SSH and
+    aggregate the results. No fleet-wide "healthy" concept - the exit
+    code reflects reachability only, same as atlas fleet trends.
+    """
+
+    settings = load_config()
+
+    nodes = settings.fleet.nodes
+
+    if not nodes:
+
+        if json_output:
+
+            print(
+                json.dumps(
+                    {"nodes": []},
+                    indent=2
+                )
+            )
+
+        else:
+
+            console.print(
+                "[yellow]No fleet nodes configured.[/yellow]"
+            )
+
+            console.print(
+                "Add nodes under fleet.nodes in atlas.yaml"
+            )
+
+        return
+
+    if not json_output:
+
+        console.print(
+            "[bold cyan]Atlas Fleet Report[/bold cyan]\n"
+        )
+
+    results = []
+
+    for node in nodes:
+
+        result = run_remote_report(node)
+
+        results.append(
+            {
+                "name": node.name,
+                "host": node.host,
+                **result
+            }
+        )
+
+    all_reachable = all(result["reachable"] for result in results)
+
+    if json_output:
+
+        print(
+            json.dumps(
+                {"nodes": results},
+                indent=2
+            )
+        )
+
+    else:
+
+        for result in results:
+
+            console.print(
+                f"[bold]{result['name']} ({result['host']}):[/bold]"
+            )
+
+            if not result["reachable"]:
+
+                console.print(
+                    f"  [red]unreachable - {result['error']}[/red]\n"
+                )
+
+                continue
+
+            if "inventory" in result and result["inventory"] is None:
+
+                console.print(
+                    "  [yellow]No inventory found - run atlas discover "
+                    "on that node.[/yellow]\n"
+                )
+
+                continue
+
+            console.print(
+                "  System:", result["system"]
+            )
+
+            console.print(
+                "  Hardware:", result["hardware"], "\n"
+            )
 
     if not all_reachable:
         raise typer.Exit(code=1)

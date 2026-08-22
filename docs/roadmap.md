@@ -56,10 +56,11 @@
 
 - [x] **`atlas report --json`** — the design question the previous entry left open turned out not to be a real question: `generate_report()`'s Markdown is *purely* a formatter over the same `inventory` dict `load_inventory()` already returns (system/hardware/storage/network), no extra computed content, so `--json` just prints that dict directly rather than inventing any new shape. `--json` replaces the human action entirely (skips writing `reports/atlas-report.md`), matching `doctor`/`monitor`/`trends`'s own convention of "`--json` prints instead of, not alongside, the normal behavior." No inventory yet prints `null` — `load_inventory()`'s real return value, not a special-cased empty shape. No exit-code logic, same as `atlas trends` — a snapshot dump has no health concept to signal. Verified against real discovered data on this machine: correct full JSON dump, and confirmed `reports/` was never created in `--json` mode. Unblocks `atlas fleet report` (same `_run_remote_json` pattern as `doctor`/`trends`), not built yet.
 
+- [x] **`atlas fleet report`** — third `_run_remote_json` consumer, `run_remote_report()` reuses `atlas report --json`'s payload. One real edge case: that payload can legitimately be `null` (a reachable node that hasn't run `atlas discover` yet), so `payload is None` is its own `{"reachable": True, "inventory": None}` result, not folded into `"reachable": False` and not crashed on. No fleet-wide `healthy`, exit code reflects reachability only, same as `atlas fleet trends`. Verified end to end against a real (deliberately misconfigured) SSH target.
+
 ## Next
 
 - [ ] **A fully successful (non-error) Anthropic `atlas analyze` response** — blocked on adding API billing credits, not on any code gap. Auth and error-handling are already verified against a real key.
-- [ ] **`atlas fleet report`** — now unblocked: `atlas report --json` shipped (below), same `_run_remote_json` pattern as `doctor`/`trends` applies cleanly; not built yet.
 - [ ] **Remote fleet actions** — restart/stop/resize on a specific fleet node's containers/guests over SSH. A real, separate approval-gating problem from a local action; not scoped yet.
 
 ## Deliberately out of scope

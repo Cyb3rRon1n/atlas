@@ -128,3 +128,36 @@ def run_remote_trends(node, limit=20, timeout=20):
         "containers": payload.get("containers", {}),
         "guests": payload.get("guests", {})
     }
+
+
+def run_remote_report(node, timeout=20):
+    """
+    SSHes into a fleet node and runs `atlas report --json` there,
+    reusing its raw inventory-dict payload. Unlike doctor/trends,
+    atlas report --json can legitimately print `null` (valid JSON) -
+    a reachable node that just hasn't run atlas discover yet, not a
+    parse failure - so that's its own case here, not folded into
+    "reachable": False.
+    """
+
+    reachable, payload, error = _run_remote_json(node, "report", "--json", timeout=timeout)
+
+    if not reachable:
+        return {
+            "reachable": False,
+            "error": error
+        }
+
+    if payload is None:
+        return {
+            "reachable": True,
+            "inventory": None
+        }
+
+    return {
+        "reachable": True,
+        "system": payload.get("system", {}),
+        "hardware": payload.get("hardware", {}),
+        "storage": payload.get("storage", []),
+        "network": payload.get("network", {})
+    }

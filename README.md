@@ -47,11 +47,11 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 - ✅ Event-driven architecture with persistent operational history
 - ✅ Plugin architecture — a Docker plugin and a libvirt/KVM plugin (guest discovery, plus approval-gated `atlas libvirt restart`/`stop`/`resize`), proving the plugin system generalizes beyond one implementation
 - ✅ Read-only web view (`atlas web`) — overview, history, and trends over the same data the CLI already reads, no new write path
-- ✅ Multi-node fleet view (`atlas fleet doctor`/`trends`) — SSHes into each configured node and runs `atlas doctor`/`atlas trends --json` there, no daemon or central server
+- ✅ Multi-node fleet view (`atlas fleet doctor`/`trends`/`report`) — SSHes into each configured node and runs the matching `--json` command there, no daemon or central server
 
 ### Next
 
-Nothing currently in progress, but a real, non-empty backlog exists — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/#next)'s own checklist for exactly what's queued (`atlas fleet report`, remote fleet actions, and a fully successful Anthropic response pending your own billing setup) versus deliberately out of scope (no daemon, no push notifications, no unattended automation).
+Nothing currently in progress, but a real, non-empty backlog exists — see the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/#next)'s own checklist for exactly what's queued (remote fleet actions, and a fully successful Anthropic response pending your own billing setup) versus deliberately out of scope (no daemon, no push notifications, no unattended automation).
 
 ---
 
@@ -186,6 +186,7 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas web` | Serve a local, read-only web view (overview/history/trends) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). No write path. |
 | `atlas fleet doctor` | SSH into every node under `fleet.nodes` in `atlas.yaml` and run `atlas doctor --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable or unhealthy. |
 | `atlas fleet trends` | SSH into every fleet node and run `atlas trends --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable (no fleet-wide health concept, same as `atlas trends`). |
+| `atlas fleet report` | SSH into every fleet node and run `atlas report --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable (no fleet-wide health concept, same as `atlas report`). |
 | `atlas runtime` | Display Atlas runtime information. |
 
 Run `atlas <command> --help` for command-specific options.
@@ -216,7 +217,7 @@ Run `atlas <command> --help` for command-specific options.
 
 **Read-Only Web View** — `atlas web` serves a local overview/history/trends dashboard over the exact same reads `atlas report`/`atlas history`/`atlas trends` already do — no new write path, no automation. Runs in the foreground until `Ctrl+C`, same on-demand shape as every other Atlas command.
 
-**Fleet View** — `atlas fleet doctor`/`atlas fleet trends` run `atlas doctor`/`atlas trends` over SSH on every node listed under `fleet.nodes` in `atlas.yaml` and aggregate the results into one view — no daemon, no central server, no new dependency (shells out to `ssh`). Just needs each node reachable over SSH with Atlas already installed there. `atlas fleet report` isn't available yet, though `atlas report --json` now exists — that's the next piece, not built.
+**Fleet View** — `atlas fleet doctor`/`trends`/`report` run `atlas doctor`/`trends`/`report` over SSH on every node listed under `fleet.nodes` in `atlas.yaml` and aggregate the results into one view — no daemon, no central server, no new dependency (shells out to `ssh`). Just needs each node reachable over SSH with Atlas already installed there.
 
 **AI Analysis Engine** — `atlas analyze` sends your latest environment snapshot to Claude or a local Ollama model and gets back a plain-language summary plus concrete recommendations. See [Configuration](#configuration) for provider setup.
 

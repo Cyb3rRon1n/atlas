@@ -2,7 +2,7 @@ import subprocess
 from unittest.mock import MagicMock, patch
 
 from atlas.config.models import FleetNode
-from atlas.fleet import run_remote_doctor, run_remote_trends
+from atlas.fleet import run_remote_doctor, run_remote_report, run_remote_trends
 
 
 def _node(**overrides):
@@ -210,6 +210,72 @@ def test_run_remote_trends_when_ssh_connection_fails():
     ):
 
         result = run_remote_trends(_node())
+
+    assert result == {
+        "reachable": False,
+        "error": "Connection refused"
+    }
+
+
+def test_run_remote_report_when_healthy():
+
+    fake_result = MagicMock()
+    fake_result.returncode = 0
+    fake_result.stdout = (
+        '{"system": {"hostname": "node1"}, "hardware": {}, '
+        '"storage": [], "network": {}}'
+    )
+
+    with (
+        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("atlas.fleet.manager.subprocess.run", return_value=fake_result),
+    ):
+
+        result = run_remote_report(_node())
+
+    assert result == {
+        "reachable": True,
+        "system": {"hostname": "node1"},
+        "hardware": {},
+        "storage": [],
+        "network": {}
+    }
+
+
+def test_run_remote_report_when_reachable_but_no_inventory():
+    """
+    atlas report --json legitimately prints `null` when the remote
+    node hasn't run atlas discover yet - a reachable node with no
+    data, not a parse failure.
+    """
+
+    fake_result = MagicMock()
+    fake_result.returncode = 0
+    fake_result.stdout = "null"
+
+    with (
+        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("atlas.fleet.manager.subprocess.run", return_value=fake_result),
+    ):
+
+        result = run_remote_report(_node())
+
+    assert result == {"reachable": True, "inventory": None}
+
+
+def test_run_remote_report_when_ssh_connection_fails():
+
+    fake_result = MagicMock()
+    fake_result.returncode = 255
+    fake_result.stdout = ""
+    fake_result.stderr = "Connection refused"
+
+    with (
+        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("atlas.fleet.manager.subprocess.run", return_value=fake_result),
+    ):
+
+        result = run_remote_report(_node())
 
     assert result == {
         "reachable": False,

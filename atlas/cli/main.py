@@ -1,4 +1,5 @@
 import json
+from dataclasses import asdict
 
 import typer
 from atlas.actions import ACTIONS, execute_action
@@ -2658,15 +2659,22 @@ def intelligence():
 
 
 @app.command()
-def analyze():
+def analyze(
+    json_output: bool = typer.Option(
+        False, "--json",
+        help="Print machine-readable JSON instead of formatted output."
+    )
+):
     """
     Analyze the latest environment snapshot with AI and
     produce a summary and recommendations.
     """
 
-    console.print(
-        "[bold blue]Atlas Analysis[/bold blue]\n"
-    )
+    if not json_output:
+
+        console.print(
+            "[bold blue]Atlas Analysis[/bold blue]\n"
+        )
 
     query = KnowledgeQueries()
 
@@ -2674,13 +2682,19 @@ def analyze():
 
     if not environment:
 
-        console.print(
-            "[yellow]No environment data found.[/yellow]"
-        )
+        if json_output:
 
-        console.print(
-            "Run: atlas discover"
-        )
+            print(json.dumps(None))
+
+        else:
+
+            console.print(
+                "[yellow]No environment data found.[/yellow]"
+            )
+
+            console.print(
+                "Run: atlas discover"
+            )
 
         return
 
@@ -2698,139 +2712,160 @@ def analyze():
 
     except AIProviderError as error:
 
-        console.print(
-            f"[red]Analysis failed:[/red] {error}"
-        )
+        if json_output:
 
-        return
-
-    console.print(
-        f"{result.summary}\n"
-    )
-
-    severity_styles = {
-        "critical": "bold red",
-        "warning": "yellow",
-        "info": "cyan"
-    }
-
-    if not result.recommendations:
-
-        console.print(
-            "[green]No recommendations at this time.[/green]"
-        )
-
-    for recommendation in result.recommendations:
-
-        style = severity_styles.get(
-            recommendation.severity, "white"
-        )
-
-        console.print(
-            f"[{style}]● {recommendation.title}[/{style}] "
-            f"({recommendation.severity})"
-        )
-
-        console.print(
-            f"  {recommendation.detail}"
-        )
-
-        if recommendation.action:
-
-            definition = ACTIONS.get(
-                recommendation.action.type
-            )
-
-            if definition:
-
-                console.print(
-                    f"\n  [cyan]→ Suggested:[/cyan] "
-                    f"{definition.command_template(recommendation.action)}"
-                )
-
-        console.print()
-
-    if result.plan:
-
-        console.print(
-            f"[bold]Suggested plan:[/bold] {result.plan.summary}\n"
-        )
-
-        for index, step in enumerate(result.plan.steps, start=1):
-
-            definition = ACTIONS.get(step.action.type)
-
-            if not definition:
-                continue
-
-            console.print(
-                f"  {index}. {definition.command_template(step.action)}"
-            )
-
-            console.print(
-                f"     ({step.rationale})\n"
-            )
-
-        console.print(
-            "Each step runs one at a time, with its own confirmation.\n"
-        )
-
-    if result.plan and typer.confirm("Run this plan now?"):
-
-        for index, step in enumerate(result.plan.steps, start=1):
-
-            definition = ACTIONS.get(step.action.type)
-
-            console.print(
-                f"\nStep {index}: {definition.command_template(step.action)}"
-            )
-
-            console.print(
-                f"  ({step.rationale})"
-            )
-
-            if not typer.confirm("Run this step?"):
-
-                console.print(
-                    "[yellow]Stopped - remaining steps not run.[/yellow]"
-                )
-
-                break
-
-            step_result = execute_action(step.action)
-
-            application.runtime.events.publish(
-                AtlasEvent(
-                    event_type=PLAN_STEP_EVENT_TYPES[step.action.type],
-                    source="PlanStep",
-                    payload={
-                        "target": step.action.target,
-                        "result": step_result
-                    }
-                )
-            )
-
-            if not step_result["success"]:
-
-                console.print(
-                    f"[red]Step failed: {step_result['error']}[/red]"
-                )
-
-                console.print(
-                    "[yellow]Stopped - remaining steps not run.[/yellow]"
-                )
-
-                break
-
-            console.print(
-                f"[green]✓ Step {index} complete[/green]"
-            )
+            print(json.dumps({"error": str(error)}, indent=2))
 
         else:
 
             console.print(
-                "\n[green]✓ Plan complete[/green]"
+                f"[red]Analysis failed:[/red] {error}"
             )
+
+        raise typer.Exit(code=1)
+
+    if json_output:
+
+        print(
+            json.dumps(
+                {
+                    **asdict(result),
+                    "provider": settings.intelligence.provider,
+                    "model": settings.intelligence.model
+                },
+                indent=2
+            )
+        )
+
+    else:
+
+        console.print(
+            f"{result.summary}\n"
+        )
+
+        severity_styles = {
+            "critical": "bold red",
+            "warning": "yellow",
+            "info": "cyan"
+        }
+
+        if not result.recommendations:
+
+            console.print(
+                "[green]No recommendations at this time.[/green]"
+            )
+
+        for recommendation in result.recommendations:
+
+            style = severity_styles.get(
+                recommendation.severity, "white"
+            )
+
+            console.print(
+                f"[{style}]● {recommendation.title}[/{style}] "
+                f"({recommendation.severity})"
+            )
+
+            console.print(
+                f"  {recommendation.detail}"
+            )
+
+            if recommendation.action:
+
+                definition = ACTIONS.get(
+                    recommendation.action.type
+                )
+
+                if definition:
+
+                    console.print(
+                        f"\n  [cyan]→ Suggested:[/cyan] "
+                        f"{definition.command_template(recommendation.action)}"
+                    )
+
+            console.print()
+
+        if result.plan:
+
+            console.print(
+                f"[bold]Suggested plan:[/bold] {result.plan.summary}\n"
+            )
+
+            for index, step in enumerate(result.plan.steps, start=1):
+
+                definition = ACTIONS.get(step.action.type)
+
+                if not definition:
+                    continue
+
+                console.print(
+                    f"  {index}. {definition.command_template(step.action)}"
+                )
+
+                console.print(
+                    f"     ({step.rationale})\n"
+                )
+
+            console.print(
+                "Each step runs one at a time, with its own confirmation.\n"
+            )
+
+        if result.plan and typer.confirm("Run this plan now?"):
+
+            for index, step in enumerate(result.plan.steps, start=1):
+
+                definition = ACTIONS.get(step.action.type)
+
+                console.print(
+                    f"\nStep {index}: {definition.command_template(step.action)}"
+                )
+
+                console.print(
+                    f"  ({step.rationale})"
+                )
+
+                if not typer.confirm("Run this step?"):
+
+                    console.print(
+                        "[yellow]Stopped - remaining steps not run.[/yellow]"
+                    )
+
+                    break
+
+                step_result = execute_action(step.action)
+
+                application.runtime.events.publish(
+                    AtlasEvent(
+                        event_type=PLAN_STEP_EVENT_TYPES[step.action.type],
+                        source="PlanStep",
+                        payload={
+                            "target": step.action.target,
+                            "result": step_result
+                        }
+                    )
+                )
+
+                if not step_result["success"]:
+
+                    console.print(
+                        f"[red]Step failed: {step_result['error']}[/red]"
+                    )
+
+                    console.print(
+                        "[yellow]Stopped - remaining steps not run.[/yellow]"
+                    )
+
+                    break
+
+                console.print(
+                    f"[green]✓ Step {index} complete[/green]"
+                )
+
+            else:
+
+                console.print(
+                    "\n[green]✓ Plan complete[/green]"
+                )
 
     store = KnowledgeStore()
 

@@ -181,7 +181,7 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas plugins` | Display registered Atlas plugins. |
 | `atlas history` | Display recorded operational events. |
 | `atlas intelligence` | Display the latest stored environment context. |
-| `atlas analyze` | Analyze the latest environment snapshot with AI (using live tool calls for current state) and print a summary plus recommendations. |
+| `atlas analyze` | Analyze the latest environment snapshot with AI (using live tool calls for current state) and print a summary plus recommendations. `--json` prints the result as JSON instead (never auto-runs a suggested plan); exits 1 on a provider error. |
 | `atlas chat` | Interactive multi-turn chat with Atlas about your infrastructure — no prior `atlas discover` required. Type `exit` to quit. |
 | `atlas web` | Serve a local, read-only web view (overview/history/trends) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). No write path. |
 | `atlas fleet doctor` | SSH into every node under `fleet.nodes` in `atlas.yaml` and run `atlas doctor --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable or unhealthy. |

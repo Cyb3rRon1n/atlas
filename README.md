@@ -122,6 +122,29 @@ atlas analyze    # sends the latest snapshot to an AI provider for a summary + r
 atlas chat       # ask Atlas about your infrastructure directly - no atlas discover needed first
 ```
 
+### Run `atlas web` as a Docker stack
+
+Atlas is deliberately not a daemon — no scheduled mode, no automation the
+tool decided to run for you. This container doesn't change that: it runs
+`atlas web` (the existing read-only dashboard) as a long-running process;
+refreshing data is still a command you run yourself.
+
+```bash
+cp atlas.yaml.example atlas.yaml   # edit: Proxmox/Prometheus/AI config
+docker compose up -d --build       # dashboard on :8420
+docker compose exec atlas atlas discover
+```
+
+Want it kept fresh without typing that by hand every time? Add a **host**
+cron entry (not inside the image) — e.g. `*/15 * * * * docker compose -f
+/path/to/docker-compose.yml exec atlas atlas discover` — your own scheduler,
+your own call, same as running any other command against this container.
+
+`docker-compose.yml` mounts `/var/run/docker.sock` for the Docker
+plugin/actions by default — comment that out if you don't need
+container-level insight; mounting it at all is root-equivalent host access
+regardless of any read-only mount flag.
+
 ---
 
 ## Screenshots

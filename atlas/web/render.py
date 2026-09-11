@@ -112,8 +112,18 @@ def render_overview_page(environment, analysis):
 
         data = environment.get(key) or {}
 
+        # collect_storage() (atlas/discovery/storage.py) always returns a
+        # list - one row per mounted filesystem - never a dict, unlike every
+        # other category here. _kv_table() unconditionally called .items()
+        # on whatever it was given, so this crashed the whole page with an
+        # AttributeError on any real host with any storage at all (found by
+        # actually running `atlas discover` + `atlas web` together, not by
+        # a unit test - the existing render tests seed data without a real
+        # `storage` key).
+        table = _list_of_dicts_table(data) if isinstance(data, list) else _kv_table(data)
+
         sections.append(
-            f"<div class=\"card\"><h2>{_esc(title)}</h2>{_kv_table(data)}</div>"
+            f"<div class=\"card\"><h2>{_esc(title)}</h2>{table}</div>"
         )
 
     # atlas discover's containers/virtualization categories are each

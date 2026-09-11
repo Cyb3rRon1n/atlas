@@ -1,0 +1,36 @@
+name: atlas
+
+# Atlas is not a daemon (see CLAUDE.md) - this runs the existing read-only
+# `atlas web` dashboard as a long-running process. Nothing refreshes the
+# data automatically; run discovery commands yourself (see README).
+#
+#   cp atlas.yaml.example atlas.yaml   # edit: Proxmox/Prometheus/AI config
+#   docker compose up -d --build
+#   docker compose exec atlas atlas discover
+
+services:
+  atlas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: atlas-web
+    restart: unless-stopped
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ./atlas.yaml:/data/atlas.yaml:ro
+      - data:/data/inventory
+      - reports:/data/reports
+      - logs:/data/logs
+      # Needed only for `atlas discover`'s Docker plugin / restart|stop|resize
+      # commands. Comment out if you don't need container-level insight —
+      # mounting this socket at all is root-equivalent host access; a `:ro`
+      # mount flag does not restrict what can be done over the socket itself.
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "${ATLAS_PORT:-8420}:8420"
+
+volumes:
+  data:
+  reports:
+  logs:

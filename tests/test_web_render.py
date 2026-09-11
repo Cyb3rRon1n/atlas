@@ -37,6 +37,27 @@ def test_render_overview_page_shows_system_and_hardware():
     assert "Test CPU" in html
 
 
+def test_render_overview_page_renders_real_storage_shape():
+
+    # collect_storage() (atlas/discovery/storage.py) always returns a list
+    # of per-mount dicts, never a dict - every other test in this file seeds
+    # "storage": {}, which masked a real crash (_kv_table called .items() on
+    # this list) that only surfaced running `atlas discover` for real.
+    environment = {
+        "timestamp": "2026-01-01 00:00:00",
+        "system": {}, "hardware": {}, "network": {},
+        "storage": [
+            {"device": "/dev/sda1", "mountpoint": "/", "filesystem": "ext4", "total_gb": 100.0, "used_percent": 50.0}
+        ],
+        "containers": {}, "virtualization": {}
+    }
+
+    html = render_overview_page(environment, None)
+
+    assert "/dev/sda1" in html
+    assert "ext4" in html
+
+
 def test_render_overview_page_flattens_containers_dict():
     """
     containers is keyed by plugin name, not container name - each

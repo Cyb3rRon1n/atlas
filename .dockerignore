@@ -1,0 +1,17 @@
+.git/
+.venv/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+docs/
+test-stack/
+inventory/
+reports/
+logs/
+atlas.yaml
+
+.env
+.env.*
+**/.env
+**/.env.*

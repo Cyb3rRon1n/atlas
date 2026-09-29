@@ -147,14 +147,22 @@ refreshing data is still a command you run yourself.
 
 ```bash
 cp atlas.yaml.example atlas.yaml   # edit: Proxmox/Prometheus/AI config
-docker compose up -d --build       # dashboard on :8420
+docker compose up -d               # pulls ghcr.io/cyb3rron1n/atlas (or builds it); dashboard on :8420
 docker compose exec atlas atlas discover
 ```
 
-Want it kept fresh without typing that by hand every time? Add a **host**
-cron entry (not inside the image) — e.g. `*/15 * * * * docker compose -f
-/path/to/docker-compose.yml exec atlas atlas discover` — your own scheduler,
-your own call, same as running any other command against this container.
+The image is published to **`ghcr.io/cyb3rron1n/atlas`** (linux/amd64 + arm64): `latest` tracks
+`main`, `sha-<commit>` pins a build, and release tags publish `X.Y.Z` / `X.Y`. Set
+`ATLAS_TAG` to pin one.
+
+Want it kept fresh without typing that by hand every time? Either add a **host** cron entry —
+e.g. `*/30 * * * * docker exec atlas atlas map` — or start the optional **`atlas-refresh`**
+container: `docker compose --profile refresh up -d`. It's the same image running nothing but a
+visible loop of `atlas discover`, `atlas proxmox scan` and `atlas map` every
+`ATLAS_REFRESH_MINUTES` (default 30) - your scheduler, your call, not a daemon inside Atlas.
+
+Values in `atlas.yaml` can reference the environment - `${NAME}` or `${NAME:-default}` - so
+secrets (a Jellyfin API key, a Proxmox token) can live in your stack's `.env` instead.
 
 `docker-compose.yml` mounts `/var/run/docker.sock` for the Docker
 plugin/actions by default — comment that out if you don't need
@@ -182,7 +190,8 @@ networks:
     external: true
 ```
 
-Then the tile, in Homepage's `services.yaml`:
+Then the tile, in Homepage's `services.yaml` - with live counts from Atlas's `/api/summary`
+(a small read-only JSON view of the latest network map):
 
 ```yaml
 - Infrastructure:
@@ -191,9 +200,27 @@ Then the tile, in Homepage's `services.yaml`:
       icon: mdi-radar
       description: Network map, inventory, history - chat via `atlas chat`
       siteMonitor: http://atlas:8420
+      widget:
+        type: customapi
+        url: http://atlas:8420/api/summary
+        refreshInterval: 60000
+        mappings:
+          - field: status
+            label: Status
+          - field: containers_running
+            label: Containers up
+          - field: hosts_up
+            label: Hosts up
+          - field: guests_running
+            label: Guests up
 ```
 
-Keep what the tile shows current with one host cron line:
+`/api/summary` returns `status` (`ok` / `degraded` when a map host is down or a container is
+unhealthy), `containers_running`/`_total`/`_unhealthy`, `guests_running`/`_total`,
+`hosts_up`/`_total`/`_down`, `ai_reachable` and `generated_at`.
+
+Keep what the tile shows current with the `atlas-refresh` container (`--profile refresh`) or one
+host cron line:
 
 ```cron
 */30 * * * * docker exec atlas atlas discover >/dev/null 2>&1; docker exec atlas atlas proxmox scan >/dev/null 2>&1; docker exec atlas atlas map >/dev/null 2>&1
@@ -267,7 +294,7 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas intelligence` | Display the latest stored environment context. |
 | `atlas analyze` | Analyze the latest environment snapshot with AI (using live tool calls for current state) and print a summary plus recommendations. `--json` prints the result as JSON instead (never auto-runs a suggested plan); exits 1 on a provider error. |
 | `atlas chat` | Interactive multi-turn chat with Atlas about your infrastructure — no prior `atlas discover` required. Type `exit` to quit. |
-| `atlas web` | Serve a local, read-only web view (overview/history/trends/network map) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). No write path. |
+| `atlas web` | Serve a local, read-only web view (overview/history/trends/network map, plus `/api/summary` JSON for dashboard widgets) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). No write path. |
 | `atlas fleet doctor` | SSH into every node under `fleet.nodes` in `atlas.yaml` and run `atlas doctor --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable or unhealthy. |
 | `atlas fleet trends` | SSH into every fleet node and run `atlas trends --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable (no fleet-wide health concept, same as `atlas trends`). |
 | `atlas fleet report` | SSH into every fleet node and run `atlas report --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable (no fleet-wide health concept, same as `atlas report`). |

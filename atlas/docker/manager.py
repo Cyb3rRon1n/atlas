@@ -291,3 +291,69 @@ def get_container_logs(name, tail=100):
         "name": container.name,
         "logs": raw.decode("utf-8", errors="replace")
     }
+
+
+def search_container_logs(name, pattern, since_minutes=1440, max_matches=100):
+    """
+    grep for a container's log: every line matching `pattern` (regex,
+    case-insensitive; an invalid regex is searched as plain text) within
+    the last `since_minutes`. Returns the total count plus the most recent
+    matches - "how often, since when" is usually the diagnosis (0 kills
+    for 9 days, then 282 today), not any single line.
+    """
+
+    import re
+    import time
+
+    client = get_client()
+
+    if not client:
+        return {
+            "found": False,
+            "error": "Docker unavailable"
+        }
+
+    try:
+        container = client.containers.get(name)
+
+    except docker.errors.NotFound:
+        return {
+            "found": False,
+            "error": f"No container named '{name}' found"
+        }
+
+    try:
+        regex = re.compile(pattern, re.IGNORECASE)
+
+    except re.error:
+        regex = re.compile(re.escape(pattern), re.IGNORECASE)
+
+    minutes = max(1, min(int(since_minutes or 1440), 7 * 1440))
+
+    try:
+        raw = container.logs(
+            since=int(time.time()) - minutes * 60,
+            timestamps=True
+        )
+
+    except Exception as error:
+        return {
+            "found": False,
+            "error": str(error)
+        }
+
+    matches = [
+        line[:300]
+        for line in raw.decode("utf-8", errors="replace").splitlines()
+        if regex.search(line)
+    ]
+
+    return {
+        "found": True,
+        "name": container.name,
+        "pattern": pattern,
+        "since_minutes": minutes,
+        "total_matches": len(matches),
+        "first_match": matches[0][:40] if matches else None,
+        "matches": matches[-max(1, min(int(max_matches), 200)):]
+    }

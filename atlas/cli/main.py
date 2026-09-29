@@ -1551,6 +1551,18 @@ def network_map(
         if client:
             guests = discover_resources(client)
 
+        from atlas.devices import Sighting
+        from atlas.devices.store import InventoryStore
+
+        InventoryStore().record_run(
+            "proxmox",
+            [Sighting("proxmox", f"pve:{guest['vmid']}", hostname=guest.get("name"),
+                      detail={"type": guest.get("type"), "status": guest.get("status")})
+             for guest in guests if not guest.get("template")],
+            ok=client is not None,
+            error="" if client else "could not connect to Proxmox"
+        )
+
     topology = collect_topology(settings, docker_client=get_client(), proxmox_resources=guests)
 
     runtime = application.runtime
@@ -1577,6 +1589,84 @@ def network_map(
         console.print(f"{mark} {host['name']} ({host['address']}) {host['role']}")
 
     console.print("\nSaved - view it at /map in atlas web.")
+
+
+@app.command(name="scan")
+def lan_scan(
+    json_output: bool = typer.Option(False, "--json", help="Print the result as JSON")
+):
+    """
+    Find every device on the LAN and update the device inventory: links
+    each sighting to a known device when certain, queues new devices for
+    triage, and sends Signal alerts (notify.signal) for new devices and
+    for important devices gone quiet. Run by the atlas-scan container.
+    """
+
+    from atlas.devices import lan
+    from atlas.devices.notify import deliver
+    from atlas.devices.store import InventoryStore
+
+    settings = load_config()
+
+    if not settings.scan.enabled:
+        console.print("LAN scanning is off (scan.enabled: false in atlas.yaml).")
+        return
+
+    store = InventoryStore()
+    store.import_manual_hosts(settings.map.hosts)
+
+    try:
+        subnets, sightings = lan.scan(settings.scan.subnets, settings.scan.timeout)
+
+    except Exception as error:  # any failure is a failed source run, shown on Coverage
+        store.record_run("lan", [], ok=False, error=str(error))
+        console.print(f"[red]Scan failed:[/red] {error}")
+        raise typer.Exit(1)
+
+    result = store.record_run("lan", sightings)
+    result["subnets"] = subnets
+    result["offline"] = store.queue_offline()
+    result["notify_errors"] = deliver(store, settings.notify.signal)
+
+    application.runtime.events.publish(
+        AtlasEvent(event_type="atlas.devices.scan.completed", source="LanScan", payload=result)
+    )
+
+    if json_output:
+        print(json.dumps(result, indent=2))
+        return
+
+    console.print(f"Scanned {', '.join(subnets)}: {result['seen']} devices, "
+                  f"{len(result['new'])} new, {result['linked']} linked"
+                  + (" (baseline - no alerts on the first scan)" if result["baseline"] else ""))
+
+    for name in result["offline"]:
+        console.print(f"[red]Offline:[/red] {name}")
+
+    for error in result["notify_errors"]:
+        console.print(f"[yellow]Signal alert not sent:[/yellow] {error}")
+
+
+@app.command()
+def devices(
+    json_output: bool = typer.Option(False, "--json", help="Print the inventory as JSON")
+):
+    """The device inventory: every device atlas knows, its status and where it was seen."""
+
+    from atlas.devices.store import InventoryStore
+
+    inventory = InventoryStore().devices()
+
+    if json_output:
+        print(json.dumps(inventory, indent=2))
+        return
+
+    colors = {"seen": "green", "quiet": "yellow", "invisible": "dim"}
+
+    for device in inventory:
+        sources = ",".join(sorted({sighting["source"] for sighting in device["sightings"]}))
+        console.print(f"[{colors.get(device['status'], 'white')}]{device['status']:<9}[/] "
+                      f"{device['name']:<24} {device['ip'] or '-':<16} {device['state']:<7} {sources}")
 
 
 @app.command()

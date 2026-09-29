@@ -72,6 +72,26 @@ def _get_container_logs(arguments):
     return get_container_logs(arguments["container"], tail=tail)
 
 
+def _check_host(arguments):
+
+    from atlas.discovery.reachability import check_host
+
+    return check_host(arguments["host"], arguments.get("ports"))
+
+
+def _notes_handler(config: AtlasConfig):
+
+    def handler(arguments):
+
+        from atlas.knowledge.notes import search_notes
+
+        limit = min(int(arguments.get("limit") or 5), 10)
+
+        return search_notes(config.knowledge.notes_paths, arguments["query"], limit=limit)
+
+    return handler
+
+
 def _proxmox_handler(config: AtlasConfig):
 
     def handler(arguments):
@@ -202,7 +222,66 @@ def build_tools(config: AtlasConfig) -> dict[str, ToolDefinition]:
             },
             handler=_get_container_logs
         ),
+        "check_host": ToolDefinition(
+            name="check_host",
+            description=(
+                "Check whether a host on the network is reachable: DNS "
+                "resolution plus which TCP ports accept a connection and "
+                "how fast. Use to diagnose 'is X down or just one service'."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "host": {
+                        "type": "string",
+                        "description": "Hostname or IP address."
+                    },
+                    "ports": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": (
+                            "TCP ports to test (default 22, 80, 443; "
+                            "max 10)."
+                        )
+                    }
+                },
+                "required": ["host"],
+                "additionalProperties": False
+            },
+            handler=_check_host
+        ),
     }
+
+    if config.knowledge.notes_paths:
+
+        tools["search_notes"] = ToolDefinition(
+            name="search_notes",
+            description=(
+                "Search the operator's own notes (runbooks, restore "
+                "guides, host/service layout, past incidents and fixes) "
+                "by keywords. Use before answering how this specific "
+                "network is set up or how something was fixed before."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": (
+                            "Keywords, e.g. 'jellyfin transcode' or "
+                            "'raid card temperature'."
+                        )
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max sections to return (default 5, max 10)."
+                    }
+                },
+                "required": ["query"],
+                "additionalProperties": False
+            },
+            handler=_notes_handler(config)
+        )
 
     if config.proxmox.enabled:
 

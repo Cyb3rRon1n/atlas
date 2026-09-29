@@ -316,7 +316,11 @@ CHAT_SYSTEM_PROMPT = (
     "the person operating a self-hosted environment. You have tools "
     "available to look up live container, service, Proxmox, and monitoring "
     "state, plus recent Atlas history - use them whenever you need current "
-    "information to answer accurately rather than guessing. Answer "
+    "information to answer accurately rather than guessing. Use check_host "
+    "to test whether a machine or service port on the network is actually "
+    "reachable, and search_notes (when offered) to look up how this "
+    "specific environment is set up or how a problem was fixed before - "
+    "check the notes before assuming a generic answer applies. Answer "
     "naturally and concisely. Only include a structured action suggestion "
     "when it is genuinely warranted by what you actually observed via a "
     "tool call - most replies should leave it null.\n\n" + ACTION_INSTRUCTIONS + "\n\n" + PLAN_INSTRUCTIONS

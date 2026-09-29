@@ -49,6 +49,12 @@ class FleetConfig(BaseModel):
     nodes: list[FleetNode] = []
 
 
+class KnowledgeConfig(BaseModel):
+    # Folders of Markdown/text notes (runbooks, restore guides, incident notes)
+    # the search_notes chat tool searches. Empty = tool not offered.
+    notes_paths: list[str] = []
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -57,3 +63,4 @@ class AtlasConfig(BaseModel):
     intelligence: IntelligenceConfig = IntelligenceConfig()
     monitoring: MonitoringConfig = MonitoringConfig()
     fleet: FleetConfig = FleetConfig()
+    knowledge: KnowledgeConfig = KnowledgeConfig()

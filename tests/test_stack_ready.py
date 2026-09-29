@@ -32,6 +32,17 @@ def test_load_config_expands_environment(isolated_cwd, monkeypatch):
     assert config.intelligence.ollama_host == "http://gpu:11434"
 
 
+def test_unset_variable_unquoted_becomes_empty_string_not_null(isolated_cwd, monkeypatch):
+
+    monkeypatch.delenv("ATLAS_UNSET_KEY", raising=False)
+    (isolated_cwd / "atlas.yaml").write_text("jellyfin:\n  api_key: ${ATLAS_UNSET_KEY}\nmap:\n  hosts:\n    - name: ${ATLAS_UNSET_KEY:-nas}\n      address: 10.0.0.2\n")
+
+    config = loader.load_config()
+
+    assert config.jellyfin.api_key == ""
+    assert config.map.hosts[0].name == "nas"
+
+
 def test_empty_config_file_is_defaults(isolated_cwd):
 
     (isolated_cwd / "atlas.yaml").write_text("")

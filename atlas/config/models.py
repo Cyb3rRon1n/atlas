@@ -55,6 +55,17 @@ class KnowledgeConfig(BaseModel):
     notes_paths: list[str] = []
 
 
+class JellyfinConfig(BaseModel):
+    enabled: bool = False
+    url: str = "http://jellyfin:8096"
+    api_key: str = ""
+
+
+class HealthConfig(BaseModel):
+    # name -> URL of a JSON status feed get_host_health also reads (e.g. a RAID watchdog)
+    status_urls: dict[str, str] = {}
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -64,3 +75,5 @@ class AtlasConfig(BaseModel):
     monitoring: MonitoringConfig = MonitoringConfig()
     fleet: FleetConfig = FleetConfig()
     knowledge: KnowledgeConfig = KnowledgeConfig()
+    jellyfin: JellyfinConfig = JellyfinConfig()
+    health: HealthConfig = HealthConfig()

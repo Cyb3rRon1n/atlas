@@ -35,3 +35,8 @@ Atlas's role is to assist — observe, understand, recommend — not to require 
 ## What this means for the rest of Atlas
 
 Every discovery path (`atlas discover`, `atlas proxmox scan`) feeds into the same local knowledge store and environment context, which `atlas analyze` reads from. Nothing about the deployment model changes the trust boundary of the intelligence layer: recommendations come from Anthropic or a local Ollama model reasoning over what Atlas observed, not from Atlas taking action on its own.
+
+## As a dashboard tile
+
+Atlas's web view (overview, history, trends, network map) makes a good dashboard tile - run it as the Docker stack, route it through your reverse proxy with authentication instead of publishing port 8420, and link the tile to `/map`. The README's [Add Atlas as a Homepage tile](https://github.com/Cyb3rRon1n/atlas#add-atlas-as-a-homepage-tile) has a Traefik + Authelia override, the Homepage `services.yaml` entry, and the host cron line (`discover`, `proxmox scan`, `map`) that keeps the tile current.
+

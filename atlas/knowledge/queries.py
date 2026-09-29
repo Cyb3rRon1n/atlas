@@ -111,3 +111,18 @@ class KnowledgeQueries:
                 "model": record.model,
                 "created_at": str(record.created_at)
             }
+
+    def latest_topology(self):
+        """
+        Newest saved network map. Every command saves only its own categories,
+        so the newest row overall is usually not the one atlas map wrote.
+        """
+
+        for row in self.environment_history(limit=200):
+
+            topology = row["data"].get("topology")
+
+            if topology:
+                return topology
+
+        return None

@@ -293,7 +293,7 @@ def get_container_logs(name, tail=100):
     }
 
 
-def search_container_logs(name, pattern, since_minutes=1440, max_matches=100):
+def search_container_logs(name, pattern, since_minutes=1440, max_matches=25):
     """
     grep for a container's log: every line matching `pattern` (regex,
     case-insensitive; an invalid regex is searched as plain text) within

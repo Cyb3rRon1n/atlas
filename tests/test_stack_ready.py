@@ -75,6 +75,19 @@ def test_summary_counts_and_status():
     assert "atlas map" in build_summary(None)["status"]
 
 
+def test_compose_has_host_network_scanner():
+
+    import yaml
+    from pathlib import Path
+
+    compose = yaml.safe_load(Path(__file__).resolve().parents[1].joinpath("docker-compose.yml").read_text())
+    scanner = compose["services"]["atlas-scan"]
+
+    assert scanner["network_mode"] == "host"
+    assert "atlas scan" in " ".join(scanner["command"])
+    assert "atlas-refresh" not in compose["services"]
+
+
 def test_api_summary_route_serves_json(monkeypatch):
 
     from atlas.web import server

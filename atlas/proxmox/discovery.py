@@ -62,6 +62,7 @@ def discover_resources(client):
                 "disk": resource.get("disk"),
                 "maxdisk": resource.get("maxdisk"),
                 "uptime": resource.get("uptime"),
+                "template": bool(resource.get("template")),
             }
         )
 

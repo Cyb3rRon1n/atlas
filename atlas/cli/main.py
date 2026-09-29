@@ -1518,6 +1518,67 @@ def _print_trend_summaries(summaries):
         )
 
 
+@app.command(name="map")
+def network_map(
+    json_output: bool = typer.Option(False, "--json", help="Print the map as JSON")
+):
+    """
+    Build the network map (atlas web /map): containers by network with
+    their public hostnames, Proxmox guests, configured LAN hosts'
+    reachability, the AI endpoint - and what atlas may act on. Saved so
+    the read-only web view can render it; run it on a schedule to keep
+    the map current.
+    """
+
+    from atlas.discovery.topology import collect_topology
+    from atlas.docker.manager import get_client
+
+    settings = load_config()
+
+    guests = []
+
+    if settings.proxmox.enabled:
+
+        client = connect(
+            settings.proxmox.host,
+            settings.proxmox.user,
+            password=settings.proxmox.password,
+            token_name=settings.proxmox.token_name,
+            token_value=settings.proxmox.token_value,
+            verify_ssl=settings.proxmox.verify_ssl
+        )
+
+        if client:
+            guests = discover_resources(client)
+
+    topology = collect_topology(settings, docker_client=get_client(), proxmox_resources=guests)
+
+    runtime = application.runtime
+
+    runtime.environment.update("topology", topology)
+
+    KnowledgeStore().save_environment(runtime.environment)
+
+    if json_output:
+        print(json.dumps(topology, indent=2))
+        return
+
+    docker_networks = topology["docker"]["networks"]
+
+    console.print("[bold blue]Atlas Network Map[/bold blue]\n")
+    console.print(f"{topology['host']}: {sum(len(m) for m in docker_networks.values())} containers on {len(docker_networks)} networks")
+
+    if settings.proxmox.enabled:
+        running = sum(guest["status"] == "running" for guest in topology["proxmox"]["guests"])
+        console.print(f"Proxmox {settings.proxmox.host}: {running}/{len(topology['proxmox']['guests'])} guests running")
+
+    for host in topology["lan"]:
+        mark = "[green]✓[/green]" if host["reachable"] else "[red]✗[/red]"
+        console.print(f"{mark} {host['name']} ({host['address']}) {host['role']}")
+
+    console.print("\nSaved - view it at /map in atlas web.")
+
+
 @app.command()
 def trends(
     limit: int = 20,

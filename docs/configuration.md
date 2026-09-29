@@ -123,3 +123,43 @@ Controls `atlas fleet doctor`. No daemon, no central server — each node just n
 | `identity_file` | `""` | Path to an SSH private key; empty uses your normal SSH agent/default key |
 
 An empty `nodes` list (the default) means "no fleet nodes configured" — `atlas fleet doctor` exits 0, the same way a disabled Proxmox/monitoring integration does, not an error state.
+
+## `knowledge`
+
+Your own notes, for `atlas chat`.
+
+| Field | Default | Description |
+|---|---|---|
+| `notes_paths` | `[]` | Folders (or files) of Markdown, text and scripts (`.sh`, `.py`, `.yml`, unit files...) to search. Empty = no `search_notes` tool. Hidden folders (`.git`) are skipped. |
+| `pinned_paths` | `[]` | Short files (a host/IP map, conventions) attached to **every** chat question. Keep them small. |
+| `auto_context` | `3` | How many best-matching note sections are attached to every question automatically (0 = only when the model calls `search_notes`). |
+
+Markdown is searched section by section; scripts whole (they document themselves in comments). Files under a folder named `incidents/` or `cases/` rank above general docs - keep one short file per solved problem there (symptom, cause, how it was found, fix) and Atlas starts from it next time. Automatic attachment exists because small local models often skip optional lookups.
+
+## `jellyfin`
+
+| Field | Default | Description |
+|---|---|---|
+| `enabled` | `false` | Offer `get_jellyfin_sessions` / `get_jellyfin_activity` / `get_jellyfin_plugins` to chat. |
+| `url` | `http://jellyfin:8096` | Jellyfin base URL as reachable from Atlas. |
+| `api_key` | `""` | A Jellyfin API key (Dashboard > API Keys) created for Atlas. |
+
+## `health`
+
+| Field | Default | Description |
+|---|---|---|
+| `status_urls` | `{}` | `name: url` of JSON status feeds that `get_host_health` includes (e.g. a RAID-card watchdog). |
+
+## `map`
+
+`hosts` lists other machines to draw on the network map (`atlas map`, web `/map`). Atlas only checks their TCP reachability - it never acts on them.
+
+| Field | Default | Description |
+|---|---|---|
+| `name` | *(required)* | Label on the map |
+| `address` | *(required)* | IP or hostname |
+| `role` | `""` | Short description |
+| `ports` | `[22]` | TCP ports to test (a machine is "up" if any accepts) |
+
+A host whose address equals `proxmox.host` gets the Proxmox guests drawn under it; the one serving `intelligence.ollama_host` is labelled as the AI endpoint.
+

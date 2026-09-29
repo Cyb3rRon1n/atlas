@@ -24,6 +24,19 @@ Everything above is real and working today. See [Project Status](#project-status
 
 ---
 
+## Why run Atlas alongside your stack
+
+A homelab media/server stack (Jellyfin, the *arr apps, a VPN'd torrent client, a reverse proxy, a Proxmox box or two) has dozens of moving parts and no single place that knows how they fit together. Atlas is that place:
+
+- **One page that shows everything** — the [network map](#network-map) draws every machine on your LAN, the containers on this host grouped by Docker network (with their public hostnames), your Proxmox guests, and what's up or down — and states plainly what Atlas is allowed to act on.
+- **Answers from evidence, not guesses** — `atlas chat` pulls live state mid-conversation: container status and logs (including searching a log for *when* a problem started), Proxmox guests, host health and reboots, reachability of any host/port, and Jellyfin playback (direct play vs remux vs transcode, plugins, play history).
+- **It learns your setup** — point it at your own notes (runbooks, scripts, a folder of solved incidents) and every question automatically comes with the most relevant ones, so "we've seen this before" answers come with the fix that worked last time. Tested on a real case: it diagnosed a Jellyfin plugin silently killing 4K remuxes from the logs plus the incident note.
+- **Private and offline-capable** — run the brain on a local Ollama model (a spare GPU laptop is plenty); nothing leaves your network. Claude is optional for heavier analysis.
+- **Safe by construction** — it observes freely but never changes anything on its own: restarts/stops/resizes are only ever *proposed*, and each step asks you first. The web view has no write path at all.
+- **Cheap to keep** — one small container, no daemon, no database server; refreshes are a host cron line.
+
+---
+
 ## Project Status
 
 Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-assisted analysis, and approval-gated automation — and it's been verified against real infrastructure, not just tests. See the [Roadmap](https://cyb3rron1n.github.io/atlas/roadmap/) for the full, detailed history, including real bugs found and fixed along the way.
@@ -48,6 +61,9 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 - ✅ Plugin architecture — a Docker plugin and a libvirt/KVM plugin (guest discovery, plus approval-gated `atlas libvirt restart`/`stop`/`resize`), proving the plugin system generalizes beyond one implementation
 - ✅ Read-only web view (`atlas web`) — overview, history, and trends over the same data the CLI already reads, no new write path
 - ✅ Multi-node fleet view (`atlas fleet doctor`/`trends`/`report`) — SSHes into each configured node and runs the matching `--json` command there, no daemon or central server
+- ✅ Network map (`atlas map` + web `/map`) — machines on the LAN, containers by network with public hostnames, Proxmox guests (templates greyed), the AI endpoint, and what Atlas may act on
+- ✅ Investigation tools for chat — full-log search over a time window, host health (boot time, temps, status feeds such as a RAID watchdog), TCP reachability checks, Jellyfin sessions/activity/plugins
+- ✅ Operator knowledge — searches your own notes; pinned facts plus the best-matching notes (solved incidents ranked first) are attached to every chat question, so a small local model uses them reliably
 
 ### Next
 
@@ -145,11 +161,56 @@ plugin/actions by default — comment that out if you don't need
 container-level insight; mounting it at all is root-equivalent host access
 regardless of any read-only mount flag.
 
+### Add Atlas as a Homepage tile
+
+If you run [Homepage](https://gethomepage.dev) (or any dashboard), give Atlas a tile so the map and dashboard are one click away. Put Atlas behind your reverse proxy instead of publishing port 8420 — e.g. with Traefik + Authelia, a `docker-compose.override.yml` next to Atlas's own:
+
+```yaml
+services:
+  atlas:
+    ports: !reset []                 # no host port; Traefik reaches it on the shared network
+    networks: [proxy]                # your Traefik network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.atlas.rule=Host(`atlas.example.com`)
+      - traefik.http.routers.atlas.entrypoints=websecure
+      - traefik.http.routers.atlas.tls=true
+      - traefik.http.routers.atlas.middlewares=authelia@docker   # admins only
+      - traefik.http.services.atlas.loadbalancer.server.port=8420
+networks:
+  proxy:
+    external: true
+```
+
+Then the tile, in Homepage's `services.yaml`:
+
+```yaml
+- Infrastructure:
+  - Atlas:
+      href: https://atlas.example.com/map
+      icon: mdi-radar
+      description: Network map, inventory, history - chat via `atlas chat`
+      siteMonitor: http://atlas:8420
+```
+
+Keep what the tile shows current with one host cron line:
+
+```cron
+*/30 * * * * docker exec atlas atlas discover >/dev/null 2>&1; docker exec atlas atlas proxmox scan >/dev/null 2>&1; docker exec atlas atlas map >/dev/null 2>&1
+```
+
+Chat lives in the terminal: `docker exec -it atlas atlas chat` (a one-line `atlas-chat` wrapper script on the host makes it easy to reach from an SSH/Guacamole session). If you use Authelia, make sure admin-only rules end with a `deny` rule for the same domains — a rule whose `subject` doesn't match falls through to the default policy.
+
 ---
 
 ## Screenshots
 
 Representative output, not a literal capture — field names and formatting match real commands; hostnames, containers, and figures are illustrative.
+
+<p align="center">
+  <img src="docs/images/network-map.png" alt="atlas web network map" width="820"><br>
+  <sub><code>atlas web</code> <code>/map</code> — every machine on the LAN, this host's containers by network, Proxmox guests (templates grey), the AI endpoint</sub>
+</p>
 
 <p align="center">
   <img src="docs/images/screenshots/doctor.svg" alt="atlas doctor example output" width="820"><br>
@@ -206,10 +267,11 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas intelligence` | Display the latest stored environment context. |
 | `atlas analyze` | Analyze the latest environment snapshot with AI (using live tool calls for current state) and print a summary plus recommendations. `--json` prints the result as JSON instead (never auto-runs a suggested plan); exits 1 on a provider error. |
 | `atlas chat` | Interactive multi-turn chat with Atlas about your infrastructure — no prior `atlas discover` required. Type `exit` to quit. |
-| `atlas web` | Serve a local, read-only web view (overview/history/trends) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). No write path. |
+| `atlas web` | Serve a local, read-only web view (overview/history/trends/network map) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). No write path. |
 | `atlas fleet doctor` | SSH into every node under `fleet.nodes` in `atlas.yaml` and run `atlas doctor --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable or unhealthy. |
 | `atlas fleet trends` | SSH into every fleet node and run `atlas trends --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable (no fleet-wide health concept, same as `atlas trends`). |
 | `atlas fleet report` | SSH into every fleet node and run `atlas report --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable (no fleet-wide health concept, same as `atlas report`). |
+| `atlas map` | Build the network map: this host's containers by Docker network (with Traefik public hostnames), Proxmox guests, configured LAN hosts' reachability, the AI endpoint, and what Atlas may act on. Saved for `atlas web`'s `/map`; `--json` prints it. |
 | `atlas runtime` | Display Atlas runtime information. |
 
 Run `atlas <command> --help` for command-specific options.
@@ -245,6 +307,10 @@ Run `atlas <command> --help` for command-specific options.
 **Remote Fleet Actions** — add `--node <name>` to `atlas restart`/`stop`/`resize` or `atlas libvirt restart`/`stop`/`resize` to act on a fleet node's Docker/libvirt instead of the local one. Same confirmation prompt as always, just retargeted — no bypass flag, no unattended remote execution. Docker's remote path uses docker-py's `ssh://` transport (requires the `paramiko` dependency); libvirt uses its own native `qemu+ssh://` transport (no new dependency). Proxmox needs nothing extra — its API already reaches any guest in the configured cluster.
 
 **AI Analysis Engine** — `atlas analyze` sends your latest environment snapshot to Claude or a local Ollama model and gets back a plain-language summary plus concrete recommendations. See [Configuration](#configuration) for provider setup.
+
+<a id="network-map"></a>**Network Map** — `atlas map` collects what Atlas can see into one snapshot and `atlas web` draws it at `/map`: Internet → LAN → one box per machine, with this host's container networks and each Proxmox host's guests underneath, green/red/grey for up/down/not-applicable, plus detail tables and a plain "what Atlas is responsible for" list.
+
+**Operator Knowledge** — `knowledge.notes_paths` points Atlas at your own Markdown/scripts (a docs repo, runbooks, an `incidents/` folder of solved problems). `search_notes` is a chat tool, and pinned files plus the top matches are attached to every question automatically — small local models often skip optional lookups, so retrieval doesn't depend on them.
 
 **Agent-Based Capabilities** — both providers can call a small, read-only tool set mid-request (containers, services, Proxmox status, metrics, logs, recent history) instead of only ever seeing one fixed snapshot. This powers `atlas chat`, an interactive command that needs no prior `atlas discover`. Either command can suggest an approval-gated action, or a multi-step **plan** for genuinely dependent steps (stop this, then restart that) — always grounded against what Atlas actually observed, and after printing, both offer to run it for you: each step still gets its own confirmation, and a declined or failed step stops the rest of the plan.
 
@@ -284,6 +350,25 @@ intelligence:
   provider: anthropic   # or "ollama"
   model: claude-opus-5  # or an Ollama model name, e.g. llama3.1
   ollama_host: http://localhost:11434
+
+knowledge:                      # optional: your own notes
+  notes_paths: [/notes]         # folders of Markdown/scripts to search
+  pinned_paths: [/notes/HOSTS.md]   # short facts attached to every chat question
+  auto_context: 3               # best-matching note sections attached per question (0 = off)
+
+jellyfin:                       # optional: playback diagnosis tools
+  enabled: true
+  url: http://jellyfin:8096
+  api_key: ""                   # a Jellyfin API key made for Atlas
+
+health:
+  status_urls:                  # optional JSON feeds shown by get_host_health
+    raid_watchdog: http://172.17.0.1:9101/status.json
+
+map:
+  hosts:                        # other LAN machines for the network map
+    - {name: proxmox, address: 192.168.1.10, role: Proxmox host, ports: [22, 8006]}
+    - {name: gpu-laptop, address: 192.168.1.19, role: Ollama, ports: [22, 11434]}
 ```
 
 The Anthropic provider reads its API key from the `ANTHROPIC_API_KEY` environment variable — it is never stored in `atlas.yaml`. For Proxmox, prefer a scoped API token over the account password: create one in the Proxmox UI under **Datacenter → Permissions → API Tokens**, and grant it only the privileges Atlas needs (read access is enough for `atlas proxmox scan`).

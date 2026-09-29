@@ -139,6 +139,7 @@ def test_discover_resources_maps_vm_and_container_fields():
         "disk": 0,
         "maxdisk": 34359738368,
         "uptime": 12345,
+        "template": False,
     }
 
     assert guests[1]["vmid"] == 101

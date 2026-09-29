@@ -7,6 +7,10 @@
 # run yourself — see README for the docker exec + optional host-cron recipe.
 FROM python:3.12-slim
 
+LABEL org.opencontainers.image.source="https://github.com/Cyb3rRon1n/atlas" \
+      org.opencontainers.image.description="Atlas - network map, inventory and ops assistant for self-hosted infrastructure" \
+      org.opencontainers.image.licenses="MIT"
+
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 

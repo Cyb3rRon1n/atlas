@@ -163,3 +163,36 @@ Markdown is searched section by section; scripts whole (they document themselves
 
 A host whose address equals `proxmox.host` gets the Proxmox guests drawn under it; the one serving `intelligence.ollama_host` is labelled as the AI endpoint.
 
+## `scan`
+
+Controls `atlas scan`, whole-LAN device discovery. Sightings link into the device inventory shown by `atlas devices` (see [CLI Reference](cli-reference.md)).
+
+| Field | Default | Description |
+|---|---|---|
+| `enabled` | `true` | Must be `true` for `atlas scan` to run |
+| `subnets` | `[]` | CIDR subnets to scan; empty = the default-route interface's own networks |
+| `timeout` | `0.5` | Per-address TCP connect timeout, in seconds |
+| `interval_minutes` | `15` | How often the `atlas-scan` container re-runs the scan (`docker-compose.yml`) |
+
+`atlas scan` never pings and never opens a raw socket: it TCP-connects to port 9 on every address in scope, which makes the kernel ARP-resolve each live host, then reads `/proc/net/arp` for the resulting IP-to-MAC table (only complete entries count — an address nobody answered for isn't in it) and does a best-effort reverse DNS lookup for a hostname. This needs host networking (`network_mode: host`) but no extra capabilities. A scan refuses to run over more than 1024 addresses at once — narrow `subnets` if your LAN is bigger than that.
+
+## `notify`
+
+Controls Signal alerts for new and offline devices, sent through [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api).
+
+```yaml
+notify:
+  signal:
+    url: http://signal-cli:8080
+    number: "+15551234567"
+    recipients: ["+15559876543"]
+```
+
+| Field | Default | Description |
+|---|---|---|
+| `url` | `""` | Base URL of a running signal-cli-rest-api instance. Empty = alerts off |
+| `number` | `""` | The registered Signal number to send from |
+| `recipients` | `[]` | Numbers (or group IDs) to send to |
+
+The first successful run of each source (`lan`, `proxmox`, ...) is a baseline — it never generates new-device alerts by itself. After that, new-device alerts roll up: if one was already sent in the last 24 hours, further new devices are held and folded into the next message instead of each firing its own alert. An important device going quiet (missed the last 2 successful runs of every source) alerts once per episode, not on every scan it stays quiet. A failed Signal send leaves the notification queued and retries on the next run.
+

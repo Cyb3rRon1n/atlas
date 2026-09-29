@@ -58,7 +58,7 @@ def test_topology_groups_by_network_and_vpn_sharing_and_checks_lan():
     assert [c["name"] for c in networks["stack_default"]] == ["gluetun", "jellyfin"]
     assert networks["via gluetun"][0]["health"] == "unhealthy"
     assert networks["stack_default"][1]["public"] == ["jellyfin.example.com"]
-    assert topo["proxmox"]["guests"] == [{"vmid": 200, "name": "mediabox", "type": "lxc", "status": "running"}]
+    assert topo["proxmox"]["guests"] == [{"vmid": 200, "name": "mediabox", "type": "lxc", "status": "running", "template": None}]
     assert topo["lan"][0]["reachable"] is True and topo["lan"][0]["open_ports"] == [port]
     assert topo["responsibility"]["proxmox_guests"]
 
@@ -103,3 +103,25 @@ def test_latest_topology_skips_rows_other_commands_saved(temp_db):
     KnowledgeStore().save_environment(later)
 
     assert KnowledgeQueries().latest_topology() == {"host": "cyberpac"}
+
+
+def test_map_merges_same_machine_and_greys_templates():
+
+    from atlas.web.render import render_map_svg
+
+    topo = {
+        "host": "cyberpac", "docker": {"available": True, "networks": {}},
+        "proxmox": {"enabled": True, "host": "10.0.0.2", "guests": [
+            {"vmid": 1000, "name": "tmpl", "type": "lxc", "status": "stopped", "template": True},
+            {"vmid": 200, "name": "box", "type": "lxc", "status": "stopped", "template": False}]},
+        "lan": [{"name": "cyberbox", "address": "10.0.0.2", "role": "", "reachable": True, "open_ports": [22]},
+                {"name": "gpu", "address": "10.0.0.3", "role": "", "reachable": True, "open_ports": [11434]}],
+        "brain": {"provider": "ollama", "model": "qwen3:8b", "address": "10.0.0.3", "reachable": True},
+    }
+
+    svg = render_map_svg(topo)
+
+    assert ">Proxmox<" not in svg and ">AI brain<" not in svg
+    assert "AI: qwen3:8b" in svg and "0/1 guests up" in svg
+    assert 'stroke="#8b949e"' in svg   # template grey
+    assert 'stroke="#f85149"' in svg   # stopped non-template red

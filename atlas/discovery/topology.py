@@ -105,7 +105,7 @@ def collect_topology(config, docker_client=None, proxmox_resources=None):
             "enabled": config.proxmox.enabled,
             "host": config.proxmox.host,
             "guests": [
-                {key: guest.get(key) for key in ("vmid", "name", "type", "status")}
+                {key: guest.get(key) for key in ("vmid", "name", "type", "status", "template")}
                 for guest in (proxmox_resources or [])
             ]
         },

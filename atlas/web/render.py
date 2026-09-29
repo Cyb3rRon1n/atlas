@@ -317,10 +317,19 @@ def render_map_svg(topology):
     proxmox = topology.get("proxmox") or {}
     brain = topology.get("brain") or {}
 
-    columns = []
     public_count = sum(len(c["public"]) for members in docker.get("networks", {}).values() for c in members)
 
-    columns.append({
+    def guest_state(guest):
+        # A stopped template is normal (grey), a stopped VM/LXC is down (red).
+        return None if guest.get("template") else guest["status"] == "running"
+
+    guests = proxmox.get("guests", []) if proxmox.get("enabled") else []
+    guest_children = [(g["name"], f"{g['type']} {g['vmid']}" + (" template" if g.get("template") else ""),
+                       guest_state(g)) for g in guests[:6]]
+    guest_detail = (f"Proxmox: {sum(g['status'] == 'running' for g in guests)}/"
+                    f"{sum(not g.get('template') for g in guests)} guests up")
+
+    columns = [{
         "title": topology.get("host", "this host"),
         "subtitle": "atlas runs here",
         "ok": docker.get("available"),
@@ -330,28 +339,35 @@ def render_map_svg(topology):
              all(m["status"] == "running" and m["health"] != "unhealthy" for m in members))
             for name, members in list(docker.get("networks", {}).items())[:6]
         ]
-    })
+    }]
 
-    if proxmox.get("enabled"):
-        guests = proxmox.get("guests", [])
-        columns.append({
-            "title": "Proxmox", "subtitle": proxmox.get("host", ""), "ok": bool(guests),
-            "detail": f"{sum(g['status'] == 'running' for g in guests)}/{len(guests)} guests running",
-            "children": [(g["name"], f"{g['type']} {g['vmid']}", g["status"] == "running") for g in guests[:6]]
-        })
-
-    if brain:
-        columns.append({
-            "title": "AI brain", "subtitle": brain.get("address", ""), "ok": brain.get("reachable"),
-            "detail": brain.get("model", ""), "children": []
-        })
+    placed_proxmox = placed_brain = False
 
     for host in topology.get("lan", []):
-        columns.append({
+
+        column = {
             "title": host["name"], "subtitle": host["address"], "ok": host["reachable"],
             "detail": "ports " + ",".join(map(str, host["open_ports"])) if host["open_ports"] else "unreachable",
             "children": []
-        })
+        }
+
+        # The same machine is one box: Proxmox guests hang under their host,
+        # the AI endpoint is a label on the machine that serves it.
+        if guests and host["address"] == proxmox.get("host"):
+            column["detail"], column["children"], placed_proxmox = guest_detail, guest_children, True
+
+        if brain and host["address"] == brain.get("address"):
+            column["subtitle"], placed_brain = f"{host['address']} - AI: {brain.get('model', '')}", True
+
+        columns.append(column)
+
+    if guests and not placed_proxmox:
+        columns.insert(1, {"title": "Proxmox", "subtitle": proxmox.get("host", ""), "ok": True,
+                           "detail": guest_detail, "children": guest_children})
+
+    if brain and not placed_brain:
+        columns.append({"title": "AI brain", "subtitle": brain.get("address", ""), "ok": brain.get("reachable"),
+                        "detail": brain.get("model", ""), "children": []})
 
     box_w, gap, host_y, child_h = 190, 20, 150, 46
     width = max(len(columns) * (box_w + gap) + gap, 600)

@@ -288,6 +288,11 @@ def render_trends_page(payload):
     return render_page("Trends", "".join(sections))
 
 
+def _count(number, word):
+
+    return f"{number} {word}" + ("" if number == 1 else "s")
+
+
 def _status_color(ok):
 
     return {True: "#3fb950", False: "#f85149"}.get(ok, "#8b949e")
@@ -333,9 +338,9 @@ def render_map_svg(topology):
         "title": topology.get("host", "this host"),
         "subtitle": "atlas runs here",
         "ok": docker.get("available"),
-        "detail": f"{sum(len(m) for m in docker.get('networks', {}).values())} containers",
+        "detail": _count(sum(len(m) for m in docker.get('networks', {}).values()), "container"),
         "children": [
-            (name, f"{len(members)} containers",
+            (name, _count(len(members), "container"),
              all(m["status"] == "running" and m["health"] != "unhealthy" for m in members))
             for name, members in list(docker.get("networks", {}).items())[:6]
         ]
@@ -377,7 +382,7 @@ def render_map_svg(topology):
 
     parts = [
         _svg_box(width / 2 - 110, 10, 220, 46, "Internet",
-                 f"{public_count} public routes via Traefik" if public_count else "no public routes", "#58a6ff"),
+                 f"{_count(public_count, 'public route')} via Traefik" if public_count else "no public routes", "#58a6ff"),
         f'<line x1="{width / 2}" y1="56" x2="{width / 2}" y2="{lan_y}" stroke="#30363d" stroke-width="2"/>',
         f'<rect x="{gap}" y="{lan_y}" width="{width - 2 * gap}" height="8" rx="4" fill="#30363d"/>',
         f'<text x="{gap + 6}" y="{lan_y - 6}" fill="#8b949e" font-size="11">LAN</text>',

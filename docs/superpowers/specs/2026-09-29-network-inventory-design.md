@@ -28,7 +28,7 @@ Two containers from the same image share `./data`, which holds `inventory/atlas.
 | Container | Network | Runs |
 |---|---|---|
 | `atlas` | stack network (Traefik + Authelia in front) | `atlas web`: pages, JSON API, chat |
-| `atlas-scan` (new) | `network_mode: host`, `cap_add: [NET_RAW]` | loops `atlas scan && atlas map` every `scan.interval_minutes` (default 15) |
+| `atlas-scan` (new) | `network_mode: host` | loops `atlas scan && atlas map` every `scan.interval_minutes` (default 15) |
 
 `atlas-scan` replaces the cyberpac cron entries and the `atlas-refresh` compose profile.
 SQLite is opened with WAL and `busy_timeout` so both containers can write.
@@ -36,14 +36,15 @@ SQLite is opened with WAL and `busy_timeout` so both containers can write.
 ### LAN discovery (`atlas scan`)
 
 1. For each subnet (config `scan.subnets`, or auto-detected from the host's default-route
-   interface when empty), ping every address concurrently. Use the `ping` binary with
-   NET_RAW, falling back to a TCP connect to 22/80/443.
+   interface when empty), TCP connect to port 9 on every address concurrently - the kernel
+   ARP-resolves each one whether or not the port is open. No ping, no NET_RAW.
 2. Read `/proc/net/arp` (host network, so this is the real LAN neighbour table) for IP to MAC.
 3. Reverse DNS for a hostname, best effort.
 4. Upsert one `sighting` per MAC, with source `lan`. An IP that answered but has no MAC
    (such as the scanning host itself) is keyed by IP.
 
-No new Python dependency is added. `iputils-ping` is added to the image if it's missing.
+No new Python dependency and no new image dependency - the TCP connect uses the stdlib
+`socket` module only.
 
 ### Data model (new SQLAlchemy models in `atlas/database/models.py`)
 
@@ -183,8 +184,6 @@ The web server stays on stdlib `http.server`, which now gains `do_POST`.
 - A signal-cli failure leaves the notification queued, is logged, and retries next run.
 - A grounding failure on Approve returns 409 "target no longer exists / state changed".
   Nothing runs.
-- A scan without NET_RAW falls back to TCP-connect discovery. Coverage notes
-  "no MACs - limited identity".
 
 ## Testing
 

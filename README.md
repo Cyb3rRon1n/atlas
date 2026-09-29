@@ -337,6 +337,8 @@ Run `atlas <command> --help` for command-specific options.
 
 <a id="network-map"></a>**Network Map** — `atlas map` collects what Atlas can see into one snapshot and `atlas web` draws it at `/map`: Internet → LAN → one box per machine, with this host's container networks and each Proxmox host's guests underneath, green/red/grey for up/down/not-applicable, plus detail tables and a plain "what Atlas is responsible for" list.
 
+**Device Inventory** — finds every device on your LAN, links duplicates, and alerts on new or offline devices.
+
 **Operator Knowledge** — `knowledge.notes_paths` points Atlas at your own Markdown/scripts (a docs repo, runbooks, an `incidents/` folder of solved problems). `search_notes` is a chat tool, and pinned files plus the top matches are attached to every question automatically — small local models often skip optional lookups, so retrieval doesn't depend on them.
 
 **Agent-Based Capabilities** — both providers can call a small, read-only tool set mid-request (containers, services, Proxmox status, metrics, logs, recent history) instead of only ever seeing one fixed snapshot. This powers `atlas chat`, an interactive command that needs no prior `atlas discover`. Either command can suggest an approval-gated action, or a multi-step **plan** for genuinely dependent steps (stop this, then restart that) — always grounded against what Atlas actually observed, and after printing, both offer to run it for you: each step still gets its own confirmation, and a declined or failed step stops the rest of the plan.

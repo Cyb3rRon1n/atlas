@@ -155,11 +155,12 @@ The image is published to **`ghcr.io/cyb3rron1n/atlas`** (linux/amd64 + arm64): 
 `main`, `sha-<commit>` pins a build, and release tags publish `X.Y.Z` / `X.Y`. Set
 `ATLAS_TAG` to pin one.
 
-Want it kept fresh without typing that by hand every time? Either add a **host** cron entry —
-e.g. `*/30 * * * * docker exec atlas atlas map` — or start the optional **`atlas-refresh`**
-container: `docker compose --profile refresh up -d`. It's the same image running nothing but a
-visible loop of `atlas discover`, `atlas proxmox scan` and `atlas map` every
-`ATLAS_REFRESH_MINUTES` (default 30) - your scheduler, your call, not a daemon inside Atlas.
+Want it kept fresh without typing that by hand every time? `docker compose up -d` already
+starts **`atlas-scan`** alongside it — the same image, on the host network so it can see the
+LAN's MAC addresses, running a visible loop of `atlas scan`, `atlas discover`, `atlas proxmox
+scan` and `atlas map` every `ATLAS_SCAN_MINUTES` (default 15). It replaces both the old
+`atlas-refresh` profile and a host cron line - your scheduler, your call, not a daemon inside
+Atlas, just on by default now.
 
 Values in `atlas.yaml` can reference the environment - `${NAME}` or `${NAME:-default}` - so
 secrets (a Jellyfin API key, a Proxmox token) can live in your stack's `.env` instead.
@@ -219,8 +220,8 @@ Then the tile, in Homepage's `services.yaml` - with live counts from Atlas's `/a
 unhealthy), `containers_running`/`_total`/`_unhealthy`, `guests_running`/`_total`,
 `hosts_up`/`_total`/`_down`, `ai_reachable` and `generated_at`.
 
-Keep what the tile shows current with the `atlas-refresh` container (`--profile refresh`) or one
-host cron line:
+Keep what the tile shows current with the `atlas-scan` container (started by default alongside
+`atlas` — nothing extra to do), or one host cron line if you're not running the compose stack:
 
 ```cron
 */30 * * * * docker exec atlas atlas discover >/dev/null 2>&1; docker exec atlas atlas proxmox scan >/dev/null 2>&1; docker exec atlas atlas map >/dev/null 2>&1

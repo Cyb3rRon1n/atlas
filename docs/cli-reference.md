@@ -1,6 +1,6 @@
 # CLI Reference
 
-All 26 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
+All 35 current Atlas commands. Run `atlas <command> --help` for any command-specific options.
 
 ## Status & health
 

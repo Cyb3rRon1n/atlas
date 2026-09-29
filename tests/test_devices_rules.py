@@ -51,6 +51,14 @@ def test_unknown_is_new():
     assert match(Sighting("lan", "aa:77", ip="192.168.10.77"), []) == ("new", None)
 
 
+def test_ip_named_device_does_not_suggest_match_on_split_octet():
+    """Two different IP-named devices in the same /8 (e.g. 192.x and 192.y) used
+    to both split down to "192" and wrongly suggest a merge with each other."""
+
+    assert match(Sighting("lan", "aa:88", hostname="192.168.10.88"),
+                 [known(6, "192.168.10.200", "lan", hostname="192.168.10.200")]) == ("new", None)
+
+
 NOW = datetime(2026, 9, 29, 12, 0)
 RUNS = {"lan": [NOW, NOW - timedelta(minutes=15), NOW - timedelta(minutes=30)]}
 

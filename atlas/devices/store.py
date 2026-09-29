@@ -82,8 +82,12 @@ class InventoryStore:
 
         with Session(self.engine) as session:
 
+            # A prior ok run only counts toward baseline if it actually saw something -
+            # an empty first run (e.g. from a wrong subnet) shouldn't consume it, so the
+            # first real run still gets treated as baseline instead of alerting on everything.
             result["baseline"] = ok and not session.scalar(select(SourceRunRecord.id).where(
-                SourceRunRecord.source == source, SourceRunRecord.ok.is_(True)))
+                SourceRunRecord.source == source, SourceRunRecord.ok.is_(True),
+                SourceRunRecord.seen_count > 0))
 
             session.add(SourceRunRecord(source=source, started_at=now, ok=ok, error=error, seen_count=result["seen"]))
 
@@ -98,6 +102,8 @@ class InventoryStore:
 
                 if row is None:
 
+                    # ponytail: O(new x total) re-query per sighting; fine at /24 scale,
+                    # cache per run if subnets grow.
                     verdict, device_id = match(new, self._known(session))
 
                     if verdict == "link":
@@ -225,6 +231,10 @@ class InventoryStore:
         return queued
 
     def due_notifications(self, now=None):
+        """Stale alerts are suppressed (sent_at set with nothing delivered), not just
+        skipped: a device deleted, ignored, or no longer in the state the alert was
+        about (a "new" device the operator already triaged; an "offline" device
+        seen again) shouldn't surface once its cause is gone."""
 
         now = now or datetime.utcnow()
         devices = {device["id"]: device for device in self.devices(now)}
@@ -239,13 +249,22 @@ class InventoryStore:
             for note in session.scalars(select(NotificationRecord).where(NotificationRecord.sent_at.is_(None))
                                         .order_by(NotificationRecord.created_at)):
 
+                device = devices.get(note.device_id)
+
+                if (device is None or device["state"] == "ignored"
+                        or (note.kind == "new" and device["state"] != "new")
+                        or (note.kind == "offline" and device["status"] != "quiet")):
+                    note.sent_at = now
+                    continue
+
                 if note.kind == "new" and last_new and now - last_new < ROLLUP:
                     continue
 
-                device = devices.get(note.device_id, {})
                 due.setdefault(note.kind, []).append({
                     "id": note.id, "device": device.get("name", "?"),
                     "ip": device.get("ip"), "last_seen": device.get("last_seen")})
+
+            session.commit()
 
         return due
 

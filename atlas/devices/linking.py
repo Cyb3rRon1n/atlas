@@ -5,10 +5,20 @@ guest's IP matching a LAN sighting). A name match is only a suggestion -
 a wrong automatic merge is worse than a visible duplicate.
 """
 
+import ipaddress
+
 
 def short_name(name):
+    """An IP-named device (no reverse DNS) isn't a dotted hostname - splitting
+    it on "." would turn e.g. "192.168.10.57" into the meaningless "192"."""
 
-    return (name or "").split(".")[0].strip().lower()
+    name = (name or "").strip().lower()
+
+    try:
+        ipaddress.ip_address(name)
+        return name
+    except ValueError:
+        return name.split(".")[0]
 
 
 def match(new, known):
@@ -20,6 +30,10 @@ def match(new, known):
 
     if new.ip:
         for entry in known:
+            # ponytail: stale IPs are offered from any past sighting, not just the
+            # source's latest ok run; safe in PR 1 (proxmox sightings carry no IP
+            # yet, manual IPs are operator claims) - restrict to sightings seen in
+            # the source's latest ok run once guest IPs are added.
             if entry["ip"] == new.ip and (entry["source"] == "manual" or {entry["source"], new.source} == {"lan", "proxmox"}):
                 return "link", entry["device_id"]
 

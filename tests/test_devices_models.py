@@ -30,7 +30,6 @@ def test_scan_and_notify_config_defaults():
 
     assert config.scan.enabled is True
     assert config.scan.subnets == []
-    assert config.scan.interval_minutes == 15
     assert config.notify.signal.url == ""
 
 

@@ -448,3 +448,37 @@ def render_map_page(topology):
     )
 
     return render_page("Network Map", body)
+
+
+def build_summary(topology):
+    """
+    One small JSON object for a dashboard tile (e.g. Homepage's customapi
+    widget): counts from the latest saved network map, plus a single
+    status word. Nothing is queried live.
+    """
+
+    if not topology:
+        return {"status": "no map yet - run atlas map"}
+
+    containers = [c for members in ((topology.get("docker") or {}).get("networks") or {}).values() for c in members]
+    guests = [g for g in (topology.get("proxmox") or {}).get("guests", []) if not g.get("template")]
+    hosts = topology.get("lan", [])
+
+    down_hosts = [h["name"] for h in hosts if not h["reachable"]]
+    stopped = [c["name"] for c in containers if c["status"] != "running"]
+    unhealthy = [c["name"] for c in containers if c["health"] == "unhealthy"]
+    brain = topology.get("brain") or {}
+
+    return {
+        "status": "degraded" if (down_hosts or unhealthy) else "ok",
+        "generated_at": topology.get("generated_at"),
+        "containers_running": len(containers) - len(stopped),
+        "containers_total": len(containers),
+        "containers_unhealthy": unhealthy,
+        "guests_running": sum(g["status"] == "running" for g in guests),
+        "guests_total": len(guests),
+        "hosts_up": len(hosts) - len(down_hosts),
+        "hosts_total": len(hosts),
+        "hosts_down": down_hosts,
+        "ai_reachable": brain.get("reachable"),
+    }

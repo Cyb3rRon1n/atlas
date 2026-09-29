@@ -7,10 +7,8 @@ name: atlas
 #   docker compose up -d               # pulls ghcr.io/cyb3rron1n/atlas (or builds it)
 #   docker compose exec atlas atlas discover
 #
-# Optional: `docker compose --profile refresh up -d` adds atlas-refresh, a
-# second container from the same image that just re-runs discover / proxmox
-# scan / map every ATLAS_REFRESH_MINUTES (default 30) - the explicit,
-# visible equivalent of a host cron line, for stacks without one.
+# atlas-scan (below) keeps the device inventory and network map fresh - the
+# explicit, visible equivalent of a host cron line, for stacks without one.
 
 x-atlas: &atlas
   image: ghcr.io/cyb3rron1n/atlas:${ATLAS_TAG:-latest}
@@ -38,12 +36,16 @@ services:
     ports:
       - "${ATLAS_PORT:-8420}:8420"
 
-  atlas-refresh:
+  # Finds every device on the LAN and refreshes discover / Proxmox / map every
+  # ATLAS_SCAN_MINUTES (default 15). Host networking is what lets it see the
+  # LAN's MAC addresses (it reads the host's ARP table); it needs no extra
+  # capabilities. Writes the same database the atlas web container reads.
+  atlas-scan:
     <<: *atlas
-    profiles: [refresh]
+    network_mode: host
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ATLAS_REFRESH_MINUTES: ${ATLAS_REFRESH_MINUTES:-30}
+      ATLAS_SCAN_MINUTES: ${ATLAS_SCAN_MINUTES:-15}
     healthcheck:
       disable: true
     command:
@@ -51,10 +53,11 @@ services:
       - -c
       - |
         while :; do
+          atlas scan
           atlas discover >/dev/null 2>&1
           atlas proxmox scan >/dev/null 2>&1
           atlas map >/dev/null 2>&1 && echo "$$(date -u +%FT%TZ) map refreshed"
-          sleep "$${ATLAS_REFRESH_MINUTES:-30}m"
+          sleep "$${ATLAS_SCAN_MINUTES:-15}m"
         done
 
 volumes:

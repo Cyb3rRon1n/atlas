@@ -82,6 +82,26 @@ class MapConfig(BaseModel):
     hosts: list[MapHost] = []
 
 
+class ScanConfig(BaseModel):
+    # Whole-LAN device discovery (atlas scan). Empty subnets = the default-route interface's network.
+    # How often atlas-scan re-runs (docker-compose.yml) is ATLAS_SCAN_MINUTES, an env
+    # var read by the compose loop itself - not a config field here.
+    enabled: bool = True
+    subnets: list[str] = []
+    timeout: float = 0.5
+
+
+class SignalNotifyConfig(BaseModel):
+    # signal-cli-rest-api, e.g. http://signal-cli:8080. Empty url = no alerts.
+    url: str = ""
+    number: str = ""
+    recipients: list[str] = []
+
+
+class NotifyConfig(BaseModel):
+    signal: SignalNotifyConfig = SignalNotifyConfig()
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -94,3 +114,5 @@ class AtlasConfig(BaseModel):
     jellyfin: JellyfinConfig = JellyfinConfig()
     health: HealthConfig = HealthConfig()
     map: MapConfig = MapConfig()
+    scan: ScanConfig = ScanConfig()
+    notify: NotifyConfig = NotifyConfig()

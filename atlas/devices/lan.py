@@ -8,6 +8,7 @@ networking (network_mode: host), no NET_RAW, no new dependency.
 import ipaddress
 import socket
 import struct
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -15,6 +16,11 @@ from atlas.devices import Sighting
 
 
 MAX_HOSTS = 1024
+
+# Slow devices (Wi-Fi IoT, phones in power-save) can take 1-3 seconds to
+# respond to ARP resolution; the kernel retries about once per second.
+# Wait before reading /proc/net/arp to catch late replies.
+ARP_SETTLE_SECONDS = 2.0
 
 POKE_PORT = 9
 
@@ -45,7 +51,8 @@ def parse_route(text):
 
     Only routes with no gateway are directly attached; a routed static
     network (via a gateway) isn't the local LAN. Link-local networks
-    (169.254.0.0/16) are never a LAN to scan either.
+    (169.254.0.0/16) are never a LAN to scan either. Host routes (/32)
+    contained in a broader network are dropped.
     """
 
     interface = default_interface(text)
@@ -63,9 +70,15 @@ def parse_route(text):
         network = ipaddress.IPv4Network(f"{_hex_ip(row[1])}/{_hex_ip(row[7])}")
 
         if not network.is_link_local:
-            networks.add(str(network))
+            networks.add(network)
 
-    return sorted(networks)
+    # Drop host routes (/32) that are contained in another network.
+    result = []
+    for network in sorted(networks, key=lambda n: (n.prefixlen, str(n))):
+        if not any(network.subnet_of(other) and network != other for other in networks):
+            result.append(str(network))
+
+    return result
 
 
 def parse_arp(text):
@@ -139,6 +152,8 @@ def scan(subnets=None, timeout=0.5):
         raise RuntimeError("no subnet to scan - set scan.subnets in atlas.yaml")
 
     sweep(subnets, timeout)
+
+    time.sleep(ARP_SETTLE_SECONDS)
 
     networks = [ipaddress.IPv4Network(subnet, strict=False) for subnet in subnets]
     arp = {

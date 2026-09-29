@@ -1,3 +1,5 @@
+import time
+
 import pytest
 
 import atlas.devices.lan as lan
@@ -7,6 +9,7 @@ from atlas.devices import Sighting
 ROUTE = """Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT
 eno1\t00000000\t010AA8C0\t0003\t0\t0\t100\t00000000\t0\t0\t0
 eno1\t000AA8C0\t00000000\t0001\t0\t0\t100\t00FFFFFF\t0\t0\t0
+eno1\t010AA8C0\t00000000\t0001\t0\t0\t100\tFFFFFFFF\t0\t0\t0
 eno1\t0000FEA9\t00000000\t0001\t0\t0\t100\t0000FFFF\t0\t0\t0
 eno1\t0000000A\t010AA8C0\t0003\t0\t0\t100\t000000FF\t0\t0\t0
 docker0\t000011AC\t00000000\t0001\t0\t0\t0\t0000FFFF\t0\t0\t0
@@ -53,6 +56,7 @@ def test_scan_filters_to_subnet_and_adds_self(monkeypatch):
     files = {"/proc/net/route": ROUTE, "/proc/net/arp": ARP}
     monkeypatch.setattr(lan, "_read", lambda path: files[path])
     monkeypatch.setattr(lan, "sweep", lambda subnets, timeout: None)
+    monkeypatch.setattr(time, "sleep", lambda seconds: None)
     monkeypatch.setattr(lan, "_reverse_dns", lambda ip: "router.lan" if ip.endswith(".1") else None)
     monkeypatch.setattr(lan, "local_sighting", lambda iface: Sighting(
         "lan", "aa:bb:cc:00:01:57", ip="192.168.10.157", mac="aa:bb:cc:00:01:57", hostname="cyberpac", detail={"self": True}))
@@ -73,3 +77,48 @@ def test_scan_with_no_subnet_raises(monkeypatch):
 
     with pytest.raises(RuntimeError):
         lan.scan()
+
+
+def test_scan_sleeps_after_sweep_and_before_reading_arp(monkeypatch):
+    """Verify that scan() sleeps ARP_SETTLE_SECONDS between sweep and /proc/net/arp read."""
+
+    call_order = []
+
+    def mock_read(path):
+        call_order.append(("read", path))
+        if path == "/proc/net/route":
+            return ROUTE
+        elif path == "/proc/net/arp":
+            return ARP
+        return ""
+
+    def mock_sweep(subnets, timeout):
+        call_order.append(("sweep",))
+
+    def mock_sleep(seconds):
+        call_order.append(("sleep", seconds))
+
+    monkeypatch.setattr(lan, "_read", mock_read)
+    monkeypatch.setattr(lan, "sweep", mock_sweep)
+    monkeypatch.setattr(time, "sleep", mock_sleep)
+    monkeypatch.setattr(lan, "_reverse_dns", lambda ip: None)
+    monkeypatch.setattr(lan, "local_sighting", lambda iface: None)
+
+    lan.scan()
+
+    # Check the order: sweep, then sleep, then read /proc/net/arp
+    sweep_idx = next(i for i, call in enumerate(call_order) if call[0] == "sweep")
+    sleep_idx = next(i for i, call in enumerate(call_order) if call[0] == "sleep")
+    arp_read_idx = next(
+        i for i, call in enumerate(call_order)
+        if call[0] == "read" and call[1] == "/proc/net/arp"
+    )
+
+    assert sweep_idx < sleep_idx < arp_read_idx, (
+        f"Expected sweep < sleep < read(/proc/net/arp), "
+        f"got indices sweep={sweep_idx}, sleep={sleep_idx}, read=/proc/net/arp={arp_read_idx}"
+    )
+
+    # Verify sleep was called with the correct duration
+    sleep_call = call_order[sleep_idx]
+    assert sleep_call == ("sleep", lan.ARP_SETTLE_SECONDS)

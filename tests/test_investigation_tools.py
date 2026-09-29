@@ -96,7 +96,8 @@ def test_host_health_reads_real_host_and_status_feed(fake_server):
 
     health = get_host_health({"raid": fake_server + "/status.json", "dead": "http://127.0.0.1:1/x"})
 
-    assert health["uptime_hours"] > 0 and health["cpu_count"] >= 1
+    # CI runners are freshly booted: uptime can round to 0
+    assert health["uptime_hours"] >= 0 and health["booted_at"].endswith("UTC") and health["cpu_count"] >= 1
     assert health["status_feeds"]["raid"] == {"temp": 81, "state": "ok"}
     assert "error" in health["status_feeds"]["dead"]
 

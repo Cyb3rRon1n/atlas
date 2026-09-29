@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from atlas.knowledge.queries import KnowledgeQueries
 from atlas.reporting.trends import build_trends_payload
-from atlas.web.render import render_history_page, render_overview_page, render_trends_page
+from atlas.web.render import render_history_page, render_map_page, render_overview_page, render_trends_page
 
 
 class AtlasWebHandler(BaseHTTPRequestHandler):
@@ -27,6 +27,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             body = render_history_page(query.recent_events(50))
         elif path == "/trends":
             body = render_trends_page(build_trends_payload())
+        elif path == "/map":
+            body = render_map_page(query.latest_topology())
         else:
             self._send(404, "text/plain; charset=utf-8", "Not found")
             return

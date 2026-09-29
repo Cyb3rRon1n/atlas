@@ -47,6 +47,7 @@ def render_page(title, body_html):
         "<a href=\"/\">Overview</a>"
         "<a href=\"/history\">History</a>"
         "<a href=\"/trends\">Trends</a>"
+        "<a href=\"/map\">Map</a>"
         "</nav>"
         f"<h1>{_esc(title)}</h1>"
         f"{body_html}"
@@ -285,3 +286,144 @@ def render_trends_page(payload):
         )
 
     return render_page("Trends", "".join(sections))
+
+
+def _status_color(ok):
+
+    return {True: "#3fb950", False: "#f85149"}.get(ok, "#8b949e")
+
+
+def _svg_box(x, y, width, height, title, subtitle, color, detail=""):
+
+    return (
+        f'<rect x="{x}" y="{y}" width="{width}" height="{height}" rx="8" fill="#161b22" '
+        f'stroke="{color}" stroke-width="2"/>'
+        f'<text x="{x + width / 2}" y="{y + 22}" text-anchor="middle" fill="#e6edf3" '
+        f'font-size="14" font-weight="600">{_esc(title)[:24]}</text>'
+        f'<text x="{x + width / 2}" y="{y + 40}" text-anchor="middle" fill="#8b949e" '
+        f'font-size="11">{_esc(subtitle)[:30]}</text>'
+        + (f'<text x="{x + width / 2}" y="{y + 56}" text-anchor="middle" fill="{color}" '
+           f'font-size="11">{_esc(detail)[:30]}</text>' if detail else "")
+    )
+
+
+def render_map_svg(topology):
+    """
+    Layered overview: Internet -> LAN -> one column per machine, with that
+    machine's container networks / Proxmox guests hanging underneath.
+    """
+
+    docker = topology.get("docker") or {}
+    proxmox = topology.get("proxmox") or {}
+    brain = topology.get("brain") or {}
+
+    columns = []
+    public_count = sum(len(c["public"]) for members in docker.get("networks", {}).values() for c in members)
+
+    columns.append({
+        "title": topology.get("host", "this host"),
+        "subtitle": "atlas runs here",
+        "ok": docker.get("available"),
+        "detail": f"{sum(len(m) for m in docker.get('networks', {}).values())} containers",
+        "children": [
+            (name, f"{len(members)} containers",
+             all(m["status"] == "running" and m["health"] != "unhealthy" for m in members))
+            for name, members in list(docker.get("networks", {}).items())[:6]
+        ]
+    })
+
+    if proxmox.get("enabled"):
+        guests = proxmox.get("guests", [])
+        columns.append({
+            "title": "Proxmox", "subtitle": proxmox.get("host", ""), "ok": bool(guests),
+            "detail": f"{sum(g['status'] == 'running' for g in guests)}/{len(guests)} guests running",
+            "children": [(g["name"], f"{g['type']} {g['vmid']}", g["status"] == "running") for g in guests[:6]]
+        })
+
+    if brain:
+        columns.append({
+            "title": "AI brain", "subtitle": brain.get("address", ""), "ok": brain.get("reachable"),
+            "detail": brain.get("model", ""), "children": []
+        })
+
+    for host in topology.get("lan", []):
+        columns.append({
+            "title": host["name"], "subtitle": host["address"], "ok": host["reachable"],
+            "detail": "ports " + ",".join(map(str, host["open_ports"])) if host["open_ports"] else "unreachable",
+            "children": []
+        })
+
+    box_w, gap, host_y, child_h = 190, 20, 150, 46
+    width = max(len(columns) * (box_w + gap) + gap, 600)
+    depth = max((len(c["children"]) for c in columns), default=0)
+    height = host_y + 70 + depth * (child_h + 10) + 30
+    lan_y = 110
+
+    parts = [
+        _svg_box(width / 2 - 110, 10, 220, 46, "Internet",
+                 f"{public_count} public routes via Traefik" if public_count else "no public routes", "#58a6ff"),
+        f'<line x1="{width / 2}" y1="56" x2="{width / 2}" y2="{lan_y}" stroke="#30363d" stroke-width="2"/>',
+        f'<rect x="{gap}" y="{lan_y}" width="{width - 2 * gap}" height="8" rx="4" fill="#30363d"/>',
+        f'<text x="{gap + 6}" y="{lan_y - 6}" fill="#8b949e" font-size="11">LAN</text>',
+    ]
+
+    for index, column in enumerate(columns):
+
+        x = gap + index * (box_w + gap)
+        color = _status_color(column["ok"])
+        parts.append(f'<line x1="{x + box_w / 2}" y1="{lan_y + 8}" x2="{x + box_w / 2}" y2="{host_y}" '
+                     f'stroke="#30363d" stroke-width="2"/>')
+        parts.append(_svg_box(x, host_y, box_w, 64, column["title"], column["subtitle"], color, column["detail"]))
+
+        for row, (name, subtitle, ok) in enumerate(column["children"]):
+            y = host_y + 80 + row * (child_h + 10)
+            parts.append(f'<line x1="{x + 14}" y1="{y - 16 if row else host_y + 64}" x2="{x + 14}" '
+                         f'y2="{y + child_h / 2}" stroke="#30363d"/>')
+            parts.append(_svg_box(x + 24, y, box_w - 24, child_h, name, subtitle, _status_color(ok)))
+
+    return (f'<svg viewBox="0 0 {width} {height}" width="100%" style="max-width:{width}px" '
+            f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Network map">{"".join(parts)}</svg>')
+
+
+def render_map_page(topology):
+
+    if not topology:
+        return render_page("Network Map", "<p class=\"muted\">No map yet. Run: <code>atlas map</code></p>")
+
+    docker = topology.get("docker") or {}
+    responsibility = topology.get("responsibility") or {}
+
+    network_sections = "".join(
+        f"<h3>{_esc(name)} <span class=\"muted\">({len(members)})</span></h3>"
+        + _list_of_dicts_table([
+            {"container": m["name"], "status": m["status"], "health": m["health"] or "-",
+             "public hostnames": ", ".join(m["public"]) or "-"}
+            for m in members
+        ])
+        for name, members in docker.get("networks", {}).items()
+    )
+
+    body = (
+        f"<p class=\"muted\">Snapshot {_esc(topology.get('generated_at', ''))} - refreshed by "
+        "<code>atlas map</code>. Green = up/reachable, red = down, grey = unknown.</p>"
+        f"<div class=\"card\">{render_map_svg(topology)}</div>"
+        "<div class=\"card\"><h2>What atlas is responsible for</h2>"
+        + _kv_table({
+            "Containers on this host": responsibility.get("containers", "") + " - proposed as a plan, you confirm each step",
+            "Proxmox guests": (responsibility.get("proxmox_guests") or "not connected")
+            + (" - proposed as a plan, you confirm each step" if responsibility.get("proxmox_guests") else ""),
+            "Other LAN machines": responsibility.get("lan_hosts", ""),
+        })
+        + "</div>"
+        f"<div class=\"card\"><h2>This host: {_esc(topology.get('host', ''))}</h2>{network_sections or '<p class=muted>Docker unavailable.</p>'}</div>"
+        "<div class=\"card\"><h2>Proxmox guests</h2>"
+        + _list_of_dicts_table((topology.get("proxmox") or {}).get("guests", []))
+        + "</div><div class=\"card\"><h2>LAN machines</h2>"
+        + _list_of_dicts_table([
+            {**host, "open_ports": ", ".join(map(str, host["open_ports"])) or "-"}
+            for host in topology.get("lan", [])
+        ])
+        + "</div>"
+    )
+
+    return render_page("Network Map", body)

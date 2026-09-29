@@ -19,6 +19,7 @@ class AtlasEnvironmentContext:
         self.containers = {}
         self.virtualization = {}
         self.monitoring = {}
+        self.topology = {}
 
 
     def ingest_discovery(self, data):
@@ -62,6 +63,7 @@ class AtlasEnvironmentContext:
             "network": self.network,
             "services": self.services,
             "containers": self.containers,
+            "topology": self.topology,
             "virtualization": self.virtualization,
             "monitoring": self.monitoring,
         }

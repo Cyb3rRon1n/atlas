@@ -70,6 +70,18 @@ class HealthConfig(BaseModel):
     status_urls: dict[str, str] = {}
 
 
+class MapHost(BaseModel):
+    name: str
+    address: str
+    role: str = ""
+    ports: list[int] = [22]
+
+
+class MapConfig(BaseModel):
+    # Other machines on the LAN to show on the network map (reachability only).
+    hosts: list[MapHost] = []
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -81,3 +93,4 @@ class AtlasConfig(BaseModel):
     knowledge: KnowledgeConfig = KnowledgeConfig()
     jellyfin: JellyfinConfig = JellyfinConfig()
     health: HealthConfig = HealthConfig()
+    map: MapConfig = MapConfig()

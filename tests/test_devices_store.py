@@ -66,6 +66,20 @@ def test_first_run_is_baseline_without_alerts_then_new_devices_alert(temp_db):
     assert by_name(store)["router"]["name"] == "router"
 
 
+def test_empty_first_run_does_not_consume_baseline(temp_db):
+
+    store = InventoryStore(temp_db)
+
+    empty = store.record_run("lan", [], now=at(0))
+    assert empty["baseline"] is True
+
+    first_real = store.record_run(
+        "lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01")], now=at(15))
+
+    assert first_real["baseline"] is True
+    assert store.due_notifications(now=at(15)) == {}
+
+
 def test_resighting_updates_not_duplicates(temp_db):
 
     store = InventoryStore(temp_db)
@@ -87,6 +101,60 @@ def test_failed_run_does_not_make_devices_quiet(temp_db):
 
     assert store.devices(now=at(30))[0]["status"] == "seen"
     assert store.source_runs()[0]["error"] == "boom"
+
+
+def test_new_alert_suppressed_for_ignored_device(temp_db):
+
+    store = InventoryStore(temp_db)
+    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01")], now=at(0))
+    store.record_run("lan", [Sighting("lan", "aa:02", ip="192.168.10.2", mac="aa:02")], now=at(15))
+
+    device = [d for d in store.devices(now=at(15)) if d["ip"] == "192.168.10.2"][0]
+    store.set_fields(device["id"], {"state": "ignored"}, now=at(15))
+
+    assert store.due_notifications(now=at(15)) == {}
+
+
+def test_new_alert_suppressed_once_device_marked_known(temp_db):
+
+    store = InventoryStore(temp_db)
+    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01")], now=at(0))
+    store.record_run("lan", [Sighting("lan", "aa:02", ip="192.168.10.2", mac="aa:02")], now=at(15))
+
+    device = [d for d in store.devices(now=at(15)) if d["ip"] == "192.168.10.2"][0]
+    store.set_fields(device["id"], {"state": "known"}, now=at(15))
+
+    assert store.due_notifications(now=at(15)) == {}
+
+
+def test_offline_alert_suppressed_once_device_seen_again(temp_db):
+
+    store = InventoryStore(temp_db)
+    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01")], now=at(0))
+    store.set_fields(store.devices()[0]["id"], {"important": True})
+
+    store.record_run("lan", [], now=at(15))
+    store.record_run("lan", [], now=at(30))
+    store.queue_offline(now=at(30))
+
+    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01")], now=at(45))
+
+    assert store.due_notifications(now=at(45)) == {}
+
+
+def test_suppressed_notification_is_not_resurrected_later(temp_db):
+
+    store = InventoryStore(temp_db)
+    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01")], now=at(0))
+    store.record_run("lan", [Sighting("lan", "aa:02", ip="192.168.10.2", mac="aa:02")], now=at(15))
+
+    device = [d for d in store.devices(now=at(15)) if d["ip"] == "192.168.10.2"][0]
+    store.set_fields(device["id"], {"state": "ignored"}, now=at(15))
+    assert store.due_notifications(now=at(15)) == {}
+
+    # Flipping back to "new" doesn't resurrect the already-suppressed note.
+    store.set_fields(device["id"], {"state": "new"}, now=at(16))
+    assert store.due_notifications(now=at(16)) == {}
 
 
 def test_important_device_offline_queues_once_and_new_alerts_roll_up(temp_db):

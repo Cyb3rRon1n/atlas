@@ -84,10 +84,11 @@ class MapConfig(BaseModel):
 
 class ScanConfig(BaseModel):
     # Whole-LAN device discovery (atlas scan). Empty subnets = the default-route interface's network.
+    # How often atlas-scan re-runs (docker-compose.yml) is ATLAS_SCAN_MINUTES, an env
+    # var read by the compose loop itself - not a config field here.
     enabled: bool = True
     subnets: list[str] = []
     timeout: float = 0.5
-    interval_minutes: int = 15
 
 
 class SignalNotifyConfig(BaseModel):

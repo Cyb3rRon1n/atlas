@@ -7,6 +7,8 @@ from atlas.devices import Sighting
 ROUTE = """Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT
 eno1\t00000000\t010AA8C0\t0003\t0\t0\t100\t00000000\t0\t0\t0
 eno1\t000AA8C0\t00000000\t0001\t0\t0\t100\t00FFFFFF\t0\t0\t0
+eno1\t0000FEA9\t00000000\t0001\t0\t0\t100\t0000FFFF\t0\t0\t0
+eno1\t0000000A\t010AA8C0\t0003\t0\t0\t100\t000000FF\t0\t0\t0
 docker0\t000011AC\t00000000\t0001\t0\t0\t0\t0000FFFF\t0\t0\t0
 """
 
@@ -19,6 +21,8 @@ ARP = """IP address       HW type     Flags       HW address            Mask    
 
 
 def test_parse_route_returns_default_interface_networks_only():
+    """Drops the default route itself, the link-local row, and the routed
+    (via-gateway) static route - only the directly-attached LAN remains."""
 
     assert lan.default_interface(ROUTE) == "eno1"
     assert lan.parse_route(ROUTE) == ["192.168.10.0/24"]

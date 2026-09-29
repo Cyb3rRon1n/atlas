@@ -41,18 +41,31 @@ def default_interface(text):
 
 
 def parse_route(text):
-    """Networks directly attached to the default-route interface - the LAN."""
+    """Networks directly attached to the default-route interface - the LAN.
+
+    Only routes with no gateway are directly attached; a routed static
+    network (via a gateway) isn't the local LAN. Link-local networks
+    (169.254.0.0/16) are never a LAN to scan either.
+    """
 
     interface = default_interface(text)
 
     if interface is None:
         return []
 
-    return sorted({
-        str(ipaddress.IPv4Network(f"{_hex_ip(row[1])}/{_hex_ip(row[7])}"))
-        for row in _route_rows(text)
-        if row[0] == interface and row[1] != "00000000"
-    })
+    networks = set()
+
+    for row in _route_rows(text):
+
+        if row[0] != interface or row[1] == "00000000" or row[2] != "00000000":
+            continue
+
+        network = ipaddress.IPv4Network(f"{_hex_ip(row[1])}/{_hex_ip(row[7])}")
+
+        if not network.is_link_local:
+            networks.add(str(network))
+
+    return sorted(networks)
 
 
 def parse_arp(text):

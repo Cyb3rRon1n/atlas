@@ -172,7 +172,8 @@ Controls `atlas scan`, whole-LAN device discovery. Sightings link into the devic
 | `enabled` | `true` | Must be `true` for `atlas scan` to run |
 | `subnets` | `[]` | CIDR subnets to scan; empty = the default-route interface's own networks |
 | `timeout` | `0.5` | Per-address TCP connect timeout, in seconds |
-| `interval_minutes` | `15` | How often the `atlas-scan` container re-runs the scan (`docker-compose.yml`) |
+
+How often the `atlas-scan` container loops `atlas scan; atlas discover; atlas proxmox scan; atlas map` is controlled by the `ATLAS_SCAN_MINUTES` environment variable (`docker-compose.yml`), default `15` - not an `atlas.yaml` field, since it's a property of the compose service's loop, not of scanning itself.
 
 `atlas scan` never pings and never opens a raw socket: it TCP-connects to port 9 on every address in scope, which makes the kernel ARP-resolve each live host, then reads `/proc/net/arp` for the resulting IP-to-MAC table (only complete entries count — an address nobody answered for isn't in it) and does a best-effort reverse DNS lookup for a hostname. This needs host networking (`network_mode: host`) but no extra capabilities. A scan refuses to run over more than 1024 addresses at once — narrow `subnets` if your LAN is bigger than that.
 

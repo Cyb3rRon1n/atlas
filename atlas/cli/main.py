@@ -1536,6 +1536,7 @@ def network_map(
     settings = load_config()
 
     guests = []
+    ok, error = True, ""
 
     if settings.proxmox.enabled:
 
@@ -1548,8 +1549,15 @@ def network_map(
             verify_ssl=settings.proxmox.verify_ssl
         )
 
-        if client:
-            guests = discover_resources(client)
+        if client is None:
+            ok, error = False, "could not connect to Proxmox"
+
+        else:
+            try:
+                guests = discover_resources(client)
+
+            except Exception as exc:  # token auth means connect() did no I/O - this can be the first real failure
+                guests, ok, error = [], False, str(exc)
 
         from atlas.devices import Sighting
         from atlas.devices.store import InventoryStore
@@ -1558,9 +1566,9 @@ def network_map(
             "proxmox",
             [Sighting("proxmox", f"pve:{guest['vmid']}", hostname=guest.get("name"),
                       detail={"type": guest.get("type"), "status": guest.get("status")})
-             for guest in guests if not guest.get("template")],
-            ok=client is not None,
-            error="" if client else "could not connect to Proxmox"
+             for guest in guests if not guest.get("template") and guest.get("status") == "running"],
+            ok=ok,
+            error=error
         )
 
     topology = collect_topology(settings, docker_client=get_client(), proxmox_resources=guests)
@@ -1628,9 +1636,10 @@ def lan_scan(
     result["offline"] = store.queue_offline()
     result["notify_errors"] = deliver(store, settings.notify.signal)
 
-    application.runtime.events.publish(
-        AtlasEvent(event_type="atlas.devices.scan.completed", source="LanScan", payload=result)
-    )
+    if result["new"] or result["offline"] or result["notify_errors"]:
+        application.runtime.events.publish(
+            AtlasEvent(event_type="atlas.devices.scan.completed", source="LanScan", payload=result)
+        )
 
     if json_output:
         print(json.dumps(result, indent=2))

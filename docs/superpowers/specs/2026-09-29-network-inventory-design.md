@@ -28,7 +28,7 @@ Two containers from the same image share `./data`, which holds `inventory/atlas.
 | Container | Network | Runs |
 |---|---|---|
 | `atlas` | stack network (Traefik + Authelia in front) | `atlas web`: pages, JSON API, chat |
-| `atlas-scan` (new) | `network_mode: host` | loops `atlas scan && atlas map` every `scan.interval_minutes` (default 15) |
+| `atlas-scan` (new) | `network_mode: host` | loops `atlas scan; atlas discover; atlas proxmox scan; atlas map` every `ATLAS_SCAN_MINUTES` (default 15) |
 
 `atlas-scan` replaces the cyberpac cron entries and the `atlas-refresh` compose profile.
 SQLite is opened with WAL and `busy_timeout` so both containers can write.

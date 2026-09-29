@@ -42,7 +42,7 @@ def get_host_health(status_urls=None):
 
     return {
         "booted_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(boot)),
-        "uptime_hours": round((time.time() - boot) / 3600, 1),
+        "uptime_hours": round((time.time() - boot) / 3600, 2),
         "load_average": [round(value, 2) for value in os.getloadavg()],
         "cpu_count": psutil.cpu_count(),
         "memory_percent": memory.percent,

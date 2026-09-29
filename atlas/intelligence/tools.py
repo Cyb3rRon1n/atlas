@@ -79,6 +79,49 @@ def _check_host(arguments):
     return check_host(arguments["host"], arguments.get("ports"))
 
 
+def _search_container_logs(arguments):
+
+    from atlas.docker.manager import search_container_logs
+
+    return search_container_logs(
+        arguments["container"],
+        arguments["pattern"],
+        since_minutes=arguments.get("since_minutes") or 1440
+    )
+
+
+def _host_health_handler(config: AtlasConfig):
+
+    def handler(arguments):
+
+        from atlas.discovery.host_health import get_host_health
+
+        return get_host_health(config.health.status_urls)
+
+    return handler
+
+
+def _jellyfin_handler(config: AtlasConfig, what):
+
+    def handler(arguments):
+
+        from atlas import jellyfin
+
+        if what == "sessions":
+            return jellyfin.get_sessions(config.jellyfin)
+
+        if what == "activity":
+            return jellyfin.get_activity(
+                config.jellyfin,
+                limit=min(int(arguments.get("limit") or 50), 200),
+                search=arguments.get("search") or ""
+            )
+
+        return jellyfin.get_plugins(config.jellyfin)
+
+    return handler
+
+
 def _notes_handler(config: AtlasConfig):
 
     def handler(arguments):
@@ -250,7 +293,101 @@ def build_tools(config: AtlasConfig) -> dict[str, ToolDefinition]:
             },
             handler=_check_host
         ),
+        "search_container_logs": ToolDefinition(
+            name="search_container_logs",
+            description=(
+                "Search a container's full log (not just the tail) for a "
+                "word or regex over the last N minutes. Returns how many "
+                "lines matched, when the first match was, and the most "
+                "recent matches - use it to find warnings/errors and to "
+                "see when a problem started."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "container": {
+                        "type": "string",
+                        "description": "Container name, as in get_containers."
+                    },
+                    "pattern": {
+                        "type": "string",
+                        "description": (
+                            "Word or regex, case-insensitive, e.g. "
+                            "'error|warn' or 'killing transcode'."
+                        )
+                    },
+                    "since_minutes": {
+                        "type": "integer",
+                        "description": "How far back to look (default 1440 = 24h, max 7 days)."
+                    }
+                },
+                "required": ["container", "pattern"],
+                "additionalProperties": False
+            },
+            handler=_search_container_logs
+        ),
+        "get_host_health": ToolDefinition(
+            name="get_host_health",
+            description=(
+                "This host's vital signs: last boot time/uptime (spot "
+                "unexpected restarts), load, memory, swap, root disk, "
+                "hottest temperature per sensor, and configured status "
+                "feeds such as the RAID card watchdog."
+            ),
+            input_schema=EMPTY_SCHEMA,
+            handler=_host_health_handler(config)
+        ),
     }
+
+    if config.jellyfin.enabled:
+
+        tools["get_jellyfin_sessions"] = ToolDefinition(
+            name="get_jellyfin_sessions",
+            description=(
+                "Jellyfin playback right now: who is watching what, on "
+                "which device/app, from which IP, and how - DirectPlay, "
+                "DirectStream (remux) or Transcode, with transcode "
+                "reasons. First stop for stutter/buffering complaints."
+            ),
+            input_schema=EMPTY_SCHEMA,
+            handler=_jellyfin_handler(config, "sessions")
+        )
+
+        tools["get_jellyfin_activity"] = ToolDefinition(
+            name="get_jellyfin_activity",
+            description=(
+                "Jellyfin's activity log, newest first: playback "
+                "start/stop per user and device, logins, plugin installs. "
+                "Use 'search' to see an item's history, e.g. whether a "
+                "movie played fine before on the same device."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "search": {
+                        "type": "string",
+                        "description": "Only entries whose text contains this (e.g. a movie title)."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max entries (default 50, max 200)."
+                    }
+                },
+                "additionalProperties": False
+            },
+            handler=_jellyfin_handler(config, "activity")
+        )
+
+        tools["get_jellyfin_plugins"] = ToolDefinition(
+            name="get_jellyfin_plugins",
+            description=(
+                "Installed Jellyfin plugins with version, status and live "
+                "settings - plugins can silently change playback "
+                "behavior (e.g. one that kills high-resolution transcodes)."
+            ),
+            input_schema=EMPTY_SCHEMA,
+            handler=_jellyfin_handler(config, "plugins")
+        )
 
     if config.knowledge.notes_paths:
 

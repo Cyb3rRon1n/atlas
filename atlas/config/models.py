@@ -53,6 +53,10 @@ class KnowledgeConfig(BaseModel):
     # Folders of Markdown/text notes (runbooks, restore guides, incident notes)
     # the search_notes chat tool searches. Empty = tool not offered.
     notes_paths: list[str] = []
+    # Short files (host/IP map, conventions) prepended to every chat question.
+    pinned_paths: list[str] = []
+    # Top note sections automatically attached to every chat question (0 = off).
+    auto_context: int = 3
 
 
 class JellyfinConfig(BaseModel):

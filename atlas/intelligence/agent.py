@@ -20,7 +20,7 @@ class AtlasAgent:
 
     def converse(self, messages: list) -> ChatReply:
 
-        reply = self.provider.converse(messages, self.tools)
+        reply = self.provider.converse(self._with_notes(messages), self.tools)
 
         if not reply.action and not reply.plan:
             return reply
@@ -50,6 +50,64 @@ class AtlasAgent:
             reply.action = None
 
         return reply
+
+    def _with_notes(self, messages: list) -> list:
+        """
+        Attach pinned notes + the best-matching note sections to the latest
+        question, instead of trusting the model to call search_notes -
+        found live: a small local model often skips the lookup and answers
+        from generic knowledge (or misreads a failed tool call). Works on a
+        copy, so the session history doesn't accumulate the excerpts.
+        """
+
+        knowledge = self.config.knowledge
+
+        if not (knowledge.pinned_paths or (knowledge.notes_paths and knowledge.auto_context)):
+            return messages
+
+        last = next(
+            (index for index in range(len(messages) - 1, -1, -1)
+             if messages[index].get("role") == "user" and isinstance(messages[index].get("content"), str)),
+            None
+        )
+
+        if last is None:
+            return messages
+
+        question = messages[last]["content"]
+        parts = []
+
+        for path in knowledge.pinned_paths:
+
+            try:
+                with open(path, errors="replace") as handle:
+                    parts.append(f"[Pinned: {path}]\n{handle.read()[:3000]}")
+
+            except OSError:
+                continue
+
+        if knowledge.notes_paths and knowledge.auto_context:
+
+            from atlas.knowledge.notes import search_notes
+
+            for hit in search_notes(knowledge.notes_paths, question, limit=knowledge.auto_context)["results"]:
+                parts.append(f"[Note: {hit['file']} - {hit['section']}]\n{hit['excerpt'][:900]}")
+
+        if not parts:
+            return messages
+
+        augmented = list(messages)
+        augmented[last] = {
+            **messages[last],
+            "content": (
+                "Background from the operator's own notes (use it if relevant, "
+                "verify with tools, ignore if unrelated):\n\n"
+                + "\n\n".join(parts)
+                + f"\n\nQuestion: {question}"
+            )
+        }
+
+        return augmented
 
     def _live_environment(self) -> dict:
         """

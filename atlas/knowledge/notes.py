@@ -11,6 +11,17 @@ EXCERPT_CHARS = 1200
 
 HEADING = re.compile(r"^#{1,6}\s+(.*)$")
 
+# Question words match everywhere and drown out the terms that matter.
+STOPWORDS = {
+    "the", "and", "for", "are", "was", "what", "why", "how", "who", "when", "where", "which",
+    "is", "it", "of", "to", "in", "on", "at", "a", "an", "do", "does", "did", "can", "should",
+    "i", "my", "me", "we", "our", "you", "your", "this", "that", "with", "from", "be", "been",
+    "check", "first", "any", "there", "have", "has", "not", "but", "or", "if", "so", "its"
+}
+
+# Solved-case write-ups outrank general docs for the same words.
+CASE_DIRS = {"incidents", "cases"}
+
 
 def _note_files(paths):
 
@@ -66,7 +77,10 @@ def search_notes(paths, query, limit=5):
     purpose: a homelab's notes are a few hundred KB, a scan is instant.
     """
 
-    terms = [term for term in re.findall(r"[\w.:/-]+", query.lower()) if len(term) > 1]
+    terms = [
+        term for term in re.findall(r"[\w.:/-]+", query.lower())
+        if len(term) > 1 and term not in STOPWORDS
+    ]
 
     if not terms:
         return {"results": [], "error": "Empty query"}
@@ -91,6 +105,9 @@ def search_notes(paths, query, limit=5):
 
             score = sum(3 * title.count(term) + body_lower.count(term) for term in terms)
             matched = sum(1 for term in terms if term in title or term in body_lower)
+
+            if CASE_DIRS & set(path.parts):
+                score *= 2
 
             if score:
                 scored.append((matched, score, str(path), heading, body))

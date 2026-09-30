@@ -8,7 +8,7 @@ import pytest
 
 from atlas.intelligence.context import AtlasEnvironmentContext
 from atlas.knowledge.store import KnowledgeStore
-from atlas.web.server import AtlasWebHandler
+from atlas.web.server import AtlasWebHandler, same_origin
 
 
 @pytest.fixture
@@ -100,7 +100,8 @@ def _post(url, body, origin=None, raw=None):
             return response.status, json.loads(response.read())
 
     except urllib.error.HTTPError as error:
-        return error.code, json.loads(error.read() or b"null")
+        with error:
+            return error.code, json.loads(error.read() or b"null")
 
 
 def _seed_device():
@@ -158,3 +159,56 @@ def test_api_get_and_summary_counts(running_server):
 
     summary = json.loads(_get(running_server + "/api/summary")[1])
     assert summary["to_triage"] == 1 and summary["devices_quiet"] == 0
+
+
+@pytest.mark.parametrize("headers, expected", [
+    ({"Sec-Fetch-Site": "same-origin"}, True),
+    ({"Sec-Fetch-Site": "same-site"}, False),
+    ({"Origin": "http://127.0.0.1:8420", "Host": "127.0.0.1:8420"}, True),
+    ({"Origin": "null", "Host": "127.0.0.1:8420"}, False),
+    ({"Referer": "http://127.0.0.1:8420/devices/1", "Host": "127.0.0.1:8420"}, True),
+    ({"Origin": "https://atlas.x@evil.com", "Host": "atlas.x"}, False),
+    ({}, False),
+], ids=[
+    "sec-fetch-site same-origin passes",
+    "sec-fetch-site same-site with no origin fails",
+    "origin matches host passes",
+    "origin null fails",
+    "referer fallback matches passes",
+    "userinfo trick fails",
+    "nothing at all fails",
+])
+def test_same_origin(headers, expected):
+
+    assert same_origin(headers) is expected
+
+
+def test_post_with_non_integer_content_length_returns_400(running_server):
+
+    import http.client
+    from urllib.parse import urlsplit
+
+    _, device_id = _seed_device()
+
+    connection = http.client.HTTPConnection(urlsplit(running_server).netloc, timeout=5)
+    connection.putrequest("POST", f"/api/devices/{device_id}")
+    connection.putheader("Origin", running_server)
+    connection.putheader("Content-Type", "application/json")
+    connection.putheader("Content-Length", "not-a-number")
+    connection.endheaders()
+    assert connection.getresponse().status == 400
+    connection.close()
+
+
+def test_post_with_no_body_returns_400(running_server):
+
+    _, device_id = _seed_device()
+    url = f"{running_server}/api/devices/{device_id}"
+    request = urllib.request.Request(url, method="POST", headers={"Origin": running_server})
+
+    try:
+        urllib.request.urlopen(request, timeout=5)
+        pytest.fail("expected an HTTPError")
+    except urllib.error.HTTPError as error:
+        with error:
+            assert error.code == 400

@@ -96,11 +96,19 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
 
         try:
             body = json.loads(self.rfile.read(length) or b"null")
-        except ValueError:
+        except (ValueError, RecursionError):
+            # RecursionError: json's decoder recurses per nesting level, so deeply
+            # nested input (still under MAX_BODY in byte size) can blow the stack
+            # rather than raise a normal decode error - treat it the same way.
             self._send(400, "application/json", json.dumps({"error": "body must be valid JSON"}))
             return
 
-        result = api.handle("POST", path, body)
+        try:
+            result = api.handle("POST", path, body)
+        except Exception as error:
+            self.log_error("unhandled error in POST %s: %r", path, error)
+            self._send(500, "application/json", json.dumps({"error": "internal error"}))
+            return
 
         if result is None:
             self._send(404, "application/json", json.dumps({"error": "not found"}))

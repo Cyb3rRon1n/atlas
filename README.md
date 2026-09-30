@@ -147,9 +147,14 @@ refreshing data is still a command you run yourself.
 
 ```bash
 cp atlas.yaml.example atlas.yaml   # edit: Proxmox/Prometheus/AI config
-docker compose up -d               # pulls ghcr.io/cyb3rron1n/atlas (or builds it); dashboard on :8420
+docker compose up -d               # pulls ghcr.io/cyb3rron1n/atlas (or builds it); dashboard on 127.0.0.1:8420
 docker compose exec atlas atlas discover
 ```
+
+The port is bound to `127.0.0.1` by default, not published to the LAN: `atlas web`'s
+`/api/*` write routes (device triage) are only same-origin-gated, not authenticated, so
+publishing this port beyond localhost without an auth proxy (e.g. Authelia) in front of it
+exposes the device-edit API to anyone who can reach it. See below for reverse-proxy setup.
 
 The image is published to **`ghcr.io/cyb3rron1n/atlas`** (linux/amd64 + arm64): `latest` tracks
 `main`, `sha-<commit>` pins a build, and release tags publish `X.Y.Z` / `X.Y`. Set

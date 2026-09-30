@@ -76,8 +76,17 @@ def test_merge_and_split(temp_db):
 
 def test_graph_route(temp_db):
 
-    two_devices()
+    ids = two_devices()
+    router_node = f"d{ids['router']}"
 
     status, graph = api.handle("GET", "/api/graph")
     assert status == 200 and {"internet", "lan"} <= {node["data"]["id"] for node in graph["nodes"]}
-    assert api.handle("GET", "/api/graph?ignored=1")[0] == 200
+    assert router_node in {node["data"]["id"] for node in graph["nodes"]}
+
+    InventoryStore().set_fields(ids["router"], {"state": "ignored"})
+
+    status, graph = api.handle("GET", "/api/graph")
+    assert status == 200 and router_node not in {node["data"]["id"] for node in graph["nodes"]}
+
+    status, graph = api.handle("GET", "/api/graph?ignored=1")
+    assert status == 200 and router_node in {node["data"]["id"] for node in graph["nodes"]}

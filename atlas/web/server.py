@@ -122,6 +122,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/javascript; charset=utf-8")
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", "max-age=86400")
+            self.send_header("X-Content-Type-Options", "nosniff")
             self.end_headers()
             self.wfile.write(data)
             return

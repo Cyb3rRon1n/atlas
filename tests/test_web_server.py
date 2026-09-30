@@ -171,6 +171,19 @@ def test_api_get_and_summary_counts(running_server):
     assert summary["to_triage"] == 1 and summary["devices_quiet"] == 0
 
 
+def test_graph_route_with_ignored_flag(running_server):
+
+    store, device_id = _seed_device()
+    store.set_fields(device_id, {"state": "ignored"})
+    node_id = f"d{device_id}"
+
+    status, body = _get(running_server + "/api/graph?ignored=1")
+    graph = json.loads(body)
+
+    assert status == 200
+    assert node_id in {node["data"]["id"] for node in graph["nodes"]}
+
+
 @pytest.mark.parametrize("headers, expected", [
     ({"Sec-Fetch-Site": "same-origin"}, True),
     ({"Sec-Fetch-Site": "same-site"}, False),
@@ -300,7 +313,11 @@ def test_static_serves_only_allow_listed_files(running_server):
         assert response.status == 200
         assert response.headers["Content-Type"] == "application/javascript; charset=utf-8"
         assert "max-age" in response.headers["Cache-Control"]
+        assert response.headers["X-Content-Type-Options"] == "nosniff"
         assert len(response.read()) > 100_000
+
+    with urllib.request.urlopen(running_server + "/static/cytoscape.min.js?v=3.34.3", timeout=5) as response:
+        assert response.status == 200
 
     for path in ("/static/README.md", "/static/../server.py", "/static/%2e%2e/server.py", "/static/", "/static/x.js"):
         try:

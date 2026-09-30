@@ -14,6 +14,10 @@ def _classes(*names):
 def build_graph(devices, topology, include_ignored=False):
 
     topology = topology or {}
+    # Both proxmox_host and brain are matched below by exact IP - if
+    # proxmox.host (or the AI brain's configured address) is a hostname
+    # rather than a literal IP, that match silently fails and guests
+    # won't nest under their host.
     proxmox_host_ip = (topology.get("proxmox") or {}).get("host")
     brain = topology.get("brain") or {}
     networks = (topology.get("docker") or {}).get("networks") or {}

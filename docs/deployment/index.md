@@ -38,5 +38,7 @@ Every discovery path (`atlas discover`, `atlas proxmox scan`) feeds into the sam
 
 ## As a dashboard tile
 
-Atlas's web view (overview, history, trends, network map) makes a good dashboard tile - run it as the Docker stack, route it through your reverse proxy with authentication instead of publishing port 8420, and link the tile to `/map`. The README's [Add Atlas as a Homepage tile](https://github.com/Cyb3rRon1n/atlas#add-atlas-as-a-homepage-tile) has a Traefik + Authelia override, the Homepage `services.yaml` entry, and the host cron line (`discover`, `proxmox scan`, `map`) that keeps the tile current.
+Atlas's web view (overview, history, trends, network map, device triage) makes a good dashboard tile - run it as the Docker stack, route it through your reverse proxy with authentication instead of publishing port 8420, and link the tile to `/map`. The README's [Add Atlas as a Homepage tile](https://github.com/Cyb3rRon1n/atlas#add-atlas-as-a-homepage-tile) has a Traefik + Authelia override, the Homepage `services.yaml` entry, and the host cron line (`discover`, `proxmox scan`, `map`) that keeps the tile current.
+
+**Publishing atlas web beyond localhost without an auth proxy (e.g. Authelia) in front of it exposes its device-edit API unauthenticated** - the same-origin check on its `/api/*` write routes stops cross-site requests, not a direct request from another LAN client. `docker-compose.yml`'s default port mapping binds `127.0.0.1` for exactly this reason; widen it only behind a reverse proxy that authenticates first.
 

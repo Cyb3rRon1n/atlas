@@ -1,7 +1,7 @@
 name: atlas
 
-# Atlas is not a daemon (see CLAUDE.md) - `atlas` runs the read-only
-# `atlas web` dashboard; nothing inside it refreshes data on its own.
+# Atlas is not a daemon (see CLAUDE.md) - `atlas` runs the `atlas web`
+# dashboard with device inventory triage/edit; nothing inside it refreshes data on its own.
 #
 #   cp atlas.yaml.example atlas.yaml   # edit: Proxmox/Prometheus/AI config
 #   docker compose up -d               # pulls ghcr.io/cyb3rron1n/atlas (or builds it)
@@ -34,7 +34,13 @@ services:
   atlas:
     <<: *atlas
     ports:
-      - "${ATLAS_PORT:-8420}:8420"
+      # Bound to localhost by default: atlas web's /api/* now has a write path
+      # (device triage), guarded only by a same-origin check, not auth - fine
+      # against same-machine requests, not fine on an open LAN port, where any
+      # LAN client or a DNS-rebinding page could reach it. Reach it through a
+      # reverse proxy with auth (see docs/deployment) or change this bind
+      # deliberately, not by widening it to satisfy a "can't connect" issue.
+      - "127.0.0.1:${ATLAS_PORT:-8420}:8420"
 
   # Finds every device on the LAN and refreshes discover / Proxmox / map every
   # ATLAS_SCAN_MINUTES (default 15). Host networking is what lets it see the

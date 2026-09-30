@@ -1,18 +1,44 @@
 """
-A local, read-only HTTP server over Atlas's existing stored data - no
-new dependency, stdlib http.server only, matching this project's
-"lightweight" scoping for this feature. Every route is a GET; there is
-no POST route and no route calls into atlas.docker/atlas.proxmox/
-atlas.actions at all, so there is no write path reachable from this
-module by construction, not just by convention.
+A local HTTP server over Atlas's existing stored data - no new
+dependency, stdlib http.server only, matching this project's
+"lightweight" scoping for this feature. The server is read-only except
+for the device inventory's /api/* POST routes: those are gated by a
+same-origin check, capped at 64 KB of JSON, and write only through
+InventoryStore. The Authelia admin rule in front of the host is the
+auth boundary - this module doesn't authenticate requests itself.
 """
 
 import json
+import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlsplit
 
+from atlas.devices.store import InventoryStore
 from atlas.knowledge.queries import KnowledgeQueries
 from atlas.reporting.trends import build_trends_payload
+from atlas.web import api
+from atlas.web.devices_pages import render_coverage_page, render_device_page, render_devices_page, render_triage_page
 from atlas.web.render import build_summary, render_history_page, render_map_page, render_overview_page, render_trends_page
+
+
+MAX_BODY = 65536
+
+DEVICE_PAGE = re.compile(r"^/devices/(\d+)$")
+
+
+def same_origin(headers):
+    """
+    Cross-site request forgery guard for the write routes: Authelia's cookie rides along
+    on any request the browser makes, so a POST must provably come from atlas's own pages.
+    """
+
+    if headers.get("Sec-Fetch-Site") == "same-origin":
+        return True
+
+    origin = headers.get("Origin") or headers.get("Referer") or ""
+    host = headers.get("Host") or ""
+
+    return bool(origin and host) and urlsplit(origin).netloc == host
 
 
 class AtlasWebHandler(BaseHTTPRequestHandler):
@@ -31,13 +57,100 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         elif path == "/map":
             body = render_map_page(query.latest_topology())
         elif path == "/api/summary":
-            self._send(200, "application/json", json.dumps(build_summary(query.latest_topology())))
+            self._send(200, "application/json",
+                       json.dumps(build_summary(query.latest_topology(), InventoryStore().devices())))
+            return
+        elif path == "/triage":
+            try:
+                body = render_triage_page(InventoryStore().triage())
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "text/plain; charset=utf-8", "Internal error")
+                return
+        elif path == "/devices":
+            try:
+                body = render_devices_page(InventoryStore().devices())
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "text/plain; charset=utf-8", "Internal error")
+                return
+        elif path == "/coverage":
+            try:
+                body = render_coverage_page(InventoryStore().coverage())
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "text/plain; charset=utf-8", "Internal error")
+                return
+        elif DEVICE_PAGE.match(path):
+            device_id = int(DEVICE_PAGE.match(path).group(1))
+            try:
+                devices = InventoryStore().devices()
+                device = next((d for d in devices if d["id"] == device_id), None)
+                if device is None:
+                    self._send(404, "text/plain; charset=utf-8", "Not found")
+                    return
+                body = render_device_page(device, devices)
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "text/plain; charset=utf-8", "Internal error")
+                return
+        elif path.startswith("/api/"):
+            try:
+                result = api.handle("GET", path)
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "application/json", json.dumps({"error": "internal error"}))
+                return
+            if result is None:
+                self._send(404, "application/json", json.dumps({"error": "not found"}))
+            else:
+                self._send(result[0], "application/json", json.dumps(result[1]))
             return
         else:
             self._send(404, "text/plain; charset=utf-8", "Not found")
             return
 
         self._send(200, "text/html; charset=utf-8", body)
+
+    def do_POST(self):
+
+        path = self.path.split("?", 1)[0]
+
+        if not same_origin(self.headers):
+            self._send(403, "application/json", json.dumps({"error": "cross-origin request refused"}))
+            return
+
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = -1
+
+        if length < 0 or length > MAX_BODY:
+            self.close_connection = True  # the unread body must not be parsed as a next request
+            self._send(413 if length > MAX_BODY else 400, "application/json",
+                       json.dumps({"error": "body must be JSON, at most 64 KB"}))
+            return
+
+        try:
+            body = json.loads(self.rfile.read(length) or b"null")
+        except (ValueError, RecursionError):
+            # RecursionError: json's decoder recurses per nesting level, so deeply
+            # nested input (still under MAX_BODY in byte size) can blow the stack
+            # rather than raise a normal decode error - treat it the same way.
+            self._send(400, "application/json", json.dumps({"error": "body must be valid JSON"}))
+            return
+
+        try:
+            result = api.handle("POST", path, body)
+        except Exception as error:
+            self.log_error("unhandled error in POST %s: %r", path, error)
+            self._send(500, "application/json", json.dumps({"error": "internal error"}))
+            return
+
+        if result is None:
+            self._send(404, "application/json", json.dumps({"error": "not found"}))
+        else:
+            self._send(result[0], "application/json", json.dumps(result[1]))
 
     def _send(self, status, content_type, body):
 

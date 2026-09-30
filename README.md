@@ -32,7 +32,7 @@ A homelab media/server stack (Jellyfin, the *arr apps, a VPN'd torrent client, a
 - **Answers from evidence, not guesses** — `atlas chat` pulls live state mid-conversation: container status and logs (including searching a log for *when* a problem started), Proxmox guests, host health and reboots, reachability of any host/port, and Jellyfin playback (direct play vs remux vs transcode, plugins, play history).
 - **It learns your setup** — point it at your own notes (runbooks, scripts, a folder of solved incidents) and every question automatically comes with the most relevant ones, so "we've seen this before" answers come with the fix that worked last time. Tested on a real case: it diagnosed a Jellyfin plugin silently killing 4K remuxes from the logs plus the incident note.
 - **Private and offline-capable** — run the brain on a local Ollama model (a spare GPU laptop is plenty); nothing leaves your network. Claude is optional for heavier analysis.
-- **Safe by construction** — it observes freely but never changes anything on its own: restarts/stops/resizes are only ever *proposed*, and each step asks you first. The web view has no write path at all.
+- **Safe by construction** — it observes freely but never changes anything on its own: restarts/stops/resizes are only ever *proposed*, and each step asks you first. Device inventory edits in the web view are same-origin-gated but not authenticated — run behind an auth proxy beyond localhost.
 - **Cheap to keep** — one small container, no daemon, no database server; refreshes are a host cron line.
 
 ---
@@ -59,7 +59,7 @@ Atlas has a working CLI covering discovery, Docker and Proxmox integration, AI-a
 - ✅ `--json` output and cron-friendly exit codes on `atlas doctor`/`atlas monitor`/`atlas trends` — wire either health check into your own cron job or systemd timer without Atlas becoming a daemon
 - ✅ Event-driven architecture with persistent operational history
 - ✅ Plugin architecture — a Docker plugin and a libvirt/KVM plugin (guest discovery, plus approval-gated `atlas libvirt restart`/`stop`/`resize`), proving the plugin system generalizes beyond one implementation
-- ✅ Read-only web view (`atlas web`) — overview, history, and trends over the same data the CLI already reads, no new write path
+- ✅ Web dashboard (`atlas web`) — overview, triage, devices, map, coverage, history, and trends over the same data the CLI already reads, plus a device inventory editor (name/kind/state/tags/notes/important flag, merge/split)
 - ✅ Multi-node fleet view (`atlas fleet doctor`/`trends`/`report`) — SSHes into each configured node and runs the matching `--json` command there, no daemon or central server
 - ✅ Network map (`atlas map` + web `/map`) — machines on the LAN, containers by network with public hostnames, Proxmox guests (templates greyed), the AI endpoint, and what Atlas may act on
 - ✅ Investigation tools for chat — full-log search over a time window, host health (boot time, temps, status feeds such as a RAID watchdog), TCP reachability checks, Jellyfin sessions/activity/plugins
@@ -142,7 +142,7 @@ atlas chat       # ask Atlas about your infrastructure directly - no atlas disco
 
 Atlas is deliberately not a daemon — no scheduled mode, no automation the
 tool decided to run for you. This container doesn't change that: it runs
-`atlas web` (the existing read-only dashboard) as a long-running process;
+`atlas web` (a local dashboard with device inventory triage/edit) as a long-running process;
 refreshing data is still a command you run yourself.
 
 ```bash
@@ -300,7 +300,7 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas intelligence` | Display the latest stored environment context. |
 | `atlas analyze` | Analyze the latest environment snapshot with AI (using live tool calls for current state) and print a summary plus recommendations. `--json` prints the result as JSON instead (never auto-runs a suggested plan); exits 1 on a provider error. |
 | `atlas chat` | Interactive multi-turn chat with Atlas about your infrastructure — no prior `atlas discover` required. Type `exit` to quit. |
-| `atlas web` | Serve a local, read-only web view (overview/history/trends/network map, plus `/api/summary` JSON for dashboard widgets) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). No write path. |
+| `atlas web` | Serve a local web view (overview/triage/devices/map/coverage/history/trends, plus `/api/summary` JSON for dashboard widgets and `/api/devices/<id>` edit API) over the same data `atlas report`/`atlas history`/`atlas trends` already read. `--host`/`--port` (defaults `127.0.0.1:8420`). Device edits are same-origin-gated but not authenticated — run behind an auth proxy beyond localhost. |
 | `atlas fleet doctor` | SSH into every node under `fleet.nodes` in `atlas.yaml` and run `atlas doctor --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable or unhealthy. |
 | `atlas fleet trends` | SSH into every fleet node and run `atlas trends --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable (no fleet-wide health concept, same as `atlas trends`). |
 | `atlas fleet report` | SSH into every fleet node and run `atlas report --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable (no fleet-wide health concept, same as `atlas report`). |
@@ -333,7 +333,7 @@ Run `atlas <command> --help` for command-specific options.
 
 **Operational Memory** — every meaningful action publishes an event onto an internal bus and is persisted automatically — `atlas history` shows the full record: discoveries, scans, restarts, chat sessions, and more.
 
-**Read-Only Web View** — `atlas web` serves a local overview/history/trends dashboard over the exact same reads `atlas report`/`atlas history`/`atlas trends` already do — no new write path, no automation. Runs in the foreground until `Ctrl+C`, same on-demand shape as every other Atlas command.
+**Web Dashboard** — `atlas web` serves a local overview/triage/devices/map/coverage/history/trends dashboard over the exact same reads `atlas report`/`atlas history`/`atlas trends` already do, plus a device inventory editor for name/kind/state/tags/notes and merge/split operations. Runs in the foreground until `Ctrl+C`, same on-demand shape as every other Atlas command. The device-edit API is same-origin-gated but not authenticated — run it behind an auth proxy whenever reachable beyond localhost.
 
 **Fleet View** — `atlas fleet doctor`/`trends`/`report` run `atlas doctor`/`trends`/`report` over SSH on every node listed under `fleet.nodes` in `atlas.yaml` and aggregate the results into one view — no daemon, no central server, no new dependency (shells out to `ssh`). Just needs each node reachable over SSH with Atlas already installed there.
 
@@ -343,7 +343,7 @@ Run `atlas <command> --help` for command-specific options.
 
 <a id="network-map"></a>**Network Map** — `atlas map` collects what Atlas can see into one snapshot and `atlas web` draws it at `/map`: Internet → LAN → one box per machine, with this host's container networks and each Proxmox host's guests underneath, green/red/grey for up/down/not-applicable, plus detail tables and a plain "what Atlas is responsible for" list.
 
-**Device Inventory** — finds every device on your LAN, links duplicates, and alerts on new or offline devices.
+**Device Inventory** — finds every device on your LAN, links duplicates, and alerts on new or offline devices. In the web UI, triage new devices, rename/tag/merge them and check coverage.
 
 **Operator Knowledge** — `knowledge.notes_paths` points Atlas at your own Markdown/scripts (a docs repo, runbooks, an `incidents/` folder of solved problems). `search_notes` is a chat tool, and pinned files plus the top matches are attached to every question automatically — small local models often skip optional lookups, so retrieval doesn't depend on them.
 

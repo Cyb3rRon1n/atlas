@@ -1,11 +1,11 @@
 """
-Pure HTML-rendering functions for the read-only web view (`atlas web`).
+Pure HTML-rendering functions for the web view (`atlas web`).
 Every function here takes already-fetched data (from KnowledgeQueries/
 build_trends_payload) and returns a plain HTML string - no I/O, no
 database access, so these are unit-testable the same way format_change()/
-_trend_summary() already are elsewhere in this codebase. No form, no
-POST route, no write path anywhere in this module - view only, per the
-roadmap's own scoping for this feature.
+_trend_summary() already are elsewhere in this codebase. These pages are
+pure renderers; the write path (device edit/merge/split) lives in api.py
+and server.py.
 """
 
 from html import escape

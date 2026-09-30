@@ -88,6 +88,26 @@ def test_map_page_without_data_says_how_to_create_it():
     assert "atlas map" in render_map_page(None)
 
 
+def test_map_page_has_interactive_graph_panel_and_vendored_scripts():
+
+    config = AtlasConfig()
+    page = render_map_page(collect_topology(config, docker_client=_docker()))
+
+    assert '<div id="graph"' in page and '<aside id="panel" hidden' in page
+    assert '<script src="/static/cytoscape.min.js"></script>' in page
+    assert '<script src="/static/cytoscape-dagre.js"></script>' in page
+    assert "<noscript>" in page and page.index("<noscript>") < page.index("<svg")
+    assert 'id="show-ignored"' in page and "/api/graph" in page
+    assert "innerHTML" not in page
+
+
+def test_map_page_without_topology_still_offers_the_graph():
+
+    page = render_map_page(None)
+
+    assert "atlas map" in page and '<div id="graph"' in page
+
+
 def test_latest_topology_skips_rows_other_commands_saved(temp_db):
 
     from atlas.intelligence.context import AtlasEnvironmentContext

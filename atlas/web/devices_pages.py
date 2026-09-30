@@ -29,8 +29,12 @@ document.addEventListener("click", async (event) => {
   try {
     const response = await fetch(button.dataset.post, {method: "POST", credentials: "same-origin",
       headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
-    const data = await response.json();
-    if (!response.ok) { message.textContent = data.error || ("Failed: " + response.status); return; }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const expired = response.status === 401 || response.status === 403 || response.redirected;
+      message.textContent = data.error || ("Failed: " + response.status + (expired ? " (session expired? reload the page)" : ""));
+      return;
+    }
     if (button.dataset.after === "goto" && data.device_id) { location.href = "/devices/" + data.device_id; return; }
     location.reload();
   } catch (error) { message.textContent = "Request failed: " + error; }
@@ -134,7 +138,7 @@ def _options(values, selected):
 def render_device_page(device, devices):
 
     form = (
-        f"<form id=\"edit\" onsubmit=\"return false\">"
+        f"<form id=\"edit\" onsubmit=\"this.querySelector('[data-form]').click(); return false\">"
         f"<label>Name</label><input name=\"name\" value=\"{_esc(device['name'])}\" size=\"40\">"
         f"<label>Kind</label><select name=\"kind\">{_options(KINDS, device['kind'])}</select>"
         f"<label>State</label><select name=\"state\">{_options(STATES, device['state'])}</select>"

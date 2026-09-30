@@ -9,7 +9,7 @@ patches.
 import json
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from atlas.database import initialize_database
@@ -124,6 +124,14 @@ class InventoryStore:
                 SourceRunRecord.seen_count > 0))
 
             session.add(SourceRunRecord(source=source, started_at=now, ok=ok, error=error, seen_count=result["seen"]))
+            session.flush()
+
+            # Runs are only ever read for the last 2 ok runs and the latest run per source -
+            # keep the newest 50 per source and drop the rest so this table can't grow forever.
+            keep = session.scalars(select(SourceRunRecord.id).where(SourceRunRecord.source == source)
+                                   .order_by(SourceRunRecord.started_at.desc()).limit(50)).all()
+            session.execute(delete(SourceRunRecord).where(
+                SourceRunRecord.source == source, SourceRunRecord.id.not_in(keep)))
 
             if not ok:
                 session.commit()
@@ -211,7 +219,9 @@ class InventoryStore:
         return next((device for device in self.devices() if device["id"] == device_id), None)
 
     def merge(self, device_id, into_id, now=None):
-        """Operator merge: every sighting and queued alert moves to into_id, the empty device goes."""
+        """Operator merge: every sighting and queued alert moves to into_id, the empty device goes.
+        Set-based updates, not select-then-loop: a sighting atlas-scan commits between this
+        method's SELECT and its delete would otherwise be orphaned instead of moved."""
 
         with Session(self.engine) as session:
 
@@ -223,16 +233,27 @@ class InventoryStore:
             if device_id == into_id:
                 return {"found": True, "error": "can't merge a device into itself"}
 
-            for row in session.scalars(select(SightingRecord).where(SightingRecord.device_id == device_id)).all():
-                row.device_id = into_id
+            session.execute(update(SightingRecord).where(SightingRecord.device_id == device_id)
+                            .values(device_id=into_id))
 
-            for note in session.scalars(select(NotificationRecord)
-                                        .where(NotificationRecord.device_id == device_id)).all():
-                note.device_id = into_id
+            # Dedupe: if the target already has an unsent "new" alert queued, drop the
+            # source's instead of moving a redundant second one.
+            target_has_new = session.scalar(select(NotificationRecord.id).where(
+                NotificationRecord.device_id == into_id, NotificationRecord.kind == "new",
+                NotificationRecord.sent_at.is_(None)))
 
-            for other in session.scalars(select(DeviceRecord)
-                                         .where(DeviceRecord.suggested_merge_id == device_id)).all():
-                other.suggested_merge_id = None if other.id == into_id else into_id
+            if target_has_new:
+                session.execute(delete(NotificationRecord).where(
+                    NotificationRecord.device_id == device_id, NotificationRecord.kind == "new",
+                    NotificationRecord.sent_at.is_(None)))
+
+            session.execute(update(NotificationRecord).where(NotificationRecord.device_id == device_id)
+                            .values(device_id=into_id))
+
+            session.execute(update(DeviceRecord).where(DeviceRecord.suggested_merge_id == device_id,
+                                                       DeviceRecord.id != into_id).values(suggested_merge_id=into_id))
+            session.execute(update(DeviceRecord).where(DeviceRecord.suggested_merge_id == device_id,
+                                                       DeviceRecord.id == into_id).values(suggested_merge_id=None))
 
             target.updated_at = now or datetime.utcnow()
             session.delete(source)
@@ -259,6 +280,7 @@ class InventoryStore:
                 return {"found": True, "error": "that's the device's only sighting"}
 
             device = DeviceRecord(name=(row.hostname or "").split(".")[0] or row.ip or row.external_id,
+                                  kind=GUEST_KINDS.get(json.loads(row.detail or "{}").get("type"), "other"),
                                   created_at=now, updated_at=now)
             session.add(device)
             session.flush()

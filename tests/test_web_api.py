@@ -1,3 +1,4 @@
+from atlas.core.application import application
 from atlas.devices import Sighting
 from atlas.devices.store import InventoryStore
 from atlas.knowledge.queries import KnowledgeQueries
@@ -40,6 +41,21 @@ def test_edit_publishes_event_and_maps_errors(temp_db):
     assert api.handle("POST", "/api/devices/999", {"name": "x"}) == (404, {"error": "not found"})
     assert api.handle("POST", f"/api/devices/{ids['router']}", ["not", "an", "object"]) == \
         (400, {"error": "expected a JSON object"})
+
+
+def test_publish_failure_still_returns_200_and_the_change_persists(temp_db, monkeypatch):
+
+    ids = two_devices()
+
+    def boom(event):
+        raise RuntimeError("event bus is down")
+
+    monkeypatch.setattr(application.runtime.events, "publish", boom)
+
+    status, payload = api.handle("POST", f"/api/devices/{ids['router']}", {"name": "UniFi"})
+
+    assert status == 200 and payload == {"ok": True}
+    assert InventoryStore().device(ids["router"])["name"] == "UniFi"
 
 
 def test_merge_and_split(temp_db):

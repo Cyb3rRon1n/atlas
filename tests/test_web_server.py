@@ -40,6 +40,16 @@ def _get(url):
         return response.status, response.read().decode("utf-8")
 
 
+def _get_allow_error(url):
+
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            return response.status, response.read().decode("utf-8")
+    except urllib.error.HTTPError as error:
+        with error:
+            return error.code, error.read().decode("utf-8")
+
+
 def test_overview_route_with_no_data(running_server):
 
     status, body = _get(running_server + "/")
@@ -213,6 +223,44 @@ def test_device_pages_render(running_server):
     # appears there; assert on the source row it does produce instead.
     status, body = _get(running_server + "/coverage")
     assert status == 200 and "lan" in body
+
+
+def test_get_500s_are_plain_text_for_pages_and_json_for_api(running_server, monkeypatch):
+
+    from atlas.devices.store import InventoryStore
+
+    def boom(self, now=None):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(InventoryStore, "devices", boom)
+
+    status, body = _get_allow_error(running_server + "/devices")
+    assert status == 500 and body == "Internal error"
+
+    status, body = _get_allow_error(running_server + "/api/devices")
+    assert status == 500 and json.loads(body) == {"error": "internal error"}
+
+
+def test_device_page_scans_devices_only_once(running_server, monkeypatch):
+    """The device page used to call InventoryStore.devices() twice (once inside
+    store.device(), once again to pass to the renderer) - now it's a single scan."""
+
+    from atlas.devices.store import InventoryStore
+
+    _, device_id = _seed_device()
+    original = InventoryStore.devices
+    calls = []
+
+    def counting(self, now=None):
+        calls.append(1)
+        return original(self, now)
+
+    monkeypatch.setattr(InventoryStore, "devices", counting)
+
+    status, body = _get(running_server + f"/devices/{device_id}")
+
+    assert status == 200 and "router" in body
+    assert len(calls) == 1
 
 
 def test_post_with_no_body_returns_400(running_server):

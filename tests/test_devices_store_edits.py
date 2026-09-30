@@ -78,6 +78,26 @@ def test_merge_moves_sightings_and_notifications_and_deletes_source(temp_db):
     assert store.merge(99999, 99999) == {"found": False}
 
 
+def test_merge_dedupes_queued_new_alerts(temp_db):
+    """Both new devices already have a queued "new" alert - merging must leave exactly
+    one due item for the target, not two (which would double-alert on one device)."""
+
+    store = InventoryStore(temp_db)
+    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01")], now=at(0))
+    store.record_run("lan", [Sighting("lan", "aa:02", ip="192.168.10.2", mac="aa:02")], now=at(15))
+    store.record_run("lan", [Sighting("lan", "aa:03", ip="192.168.10.3", mac="aa:03")], now=at(30))
+
+    devices = store.devices(now=at(30))
+    target = next(d for d in devices if d["ip"] == "192.168.10.2")
+    source = next(d for d in devices if d["ip"] == "192.168.10.3")
+
+    assert store.merge(source["id"], target["id"]) == {"found": True, "device_id": target["id"]}
+
+    due = store.due_notifications(now=at(30))["new"]
+    assert len(due) == 1
+    assert due[0]["device"] == target["name"]
+
+
 def test_split_makes_a_new_device_but_never_empties_one(temp_db):
 
     store, known, guest, phone = seeded(temp_db)
@@ -91,6 +111,23 @@ def test_split_makes_a_new_device_but_never_empties_one(temp_db):
     only = store.device(phone["id"])["sightings"][0]
     assert store.split(only["id"]) == {"found": True, "error": "that's the device's only sighting"}
     assert store.split(99999) == {"found": False}
+
+
+def test_split_sets_kind_from_the_sighting_type(temp_db):
+    """A proxmox lxc sighting split off its device becomes its own device with kind "lxc"."""
+
+    store = InventoryStore(temp_db)
+    store.import_manual_hosts([MapHost(name="mediabox", address="192.168.10.57")], now=T0)
+    store.record_run("proxmox", [Sighting("proxmox", "pve:200", ip="192.168.10.57", detail={"type": "lxc"})], now=at(0))
+
+    known = store.devices(now=at(0))[0]
+    assert {s["source"] for s in known["sightings"]} == {"manual", "proxmox"}
+
+    proxmox_sighting = next(s for s in known["sightings"] if s["source"] == "proxmox")
+    result = store.split(proxmox_sighting["id"])
+
+    assert result["found"] is True
+    assert store.device(result["device_id"])["kind"] == "lxc"
 
 
 def test_triage_lists_new_with_suggestion_names_and_quiet_known(temp_db):

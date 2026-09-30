@@ -1,4 +1,4 @@
-from atlas.web.devices_pages import (render_coverage_page, render_device_page, render_devices_page,
+from atlas.web.devices_pages import (ACTIONS_SCRIPT, render_coverage_page, render_device_page, render_devices_page,
                                      render_triage_page)
 
 
@@ -39,6 +39,13 @@ def test_devices_page_lists_with_filter_box():
     assert 'id="filter"' in html and 'href="/devices/1"' in html and "pixel" in html
 
 
+def test_actions_script_tolerates_a_non_json_body_and_flags_session_expiry():
+
+    assert "response.json().catch(() => ({}))" in ACTIONS_SCRIPT
+    assert "session expired? reload the page" in ACTIONS_SCRIPT
+    assert "response.status === 401 || response.status === 403 || response.redirected" in ACTIONS_SCRIPT
+
+
 def test_device_page_split_only_with_several_sightings_and_merge_targets():
 
     single = render_device_page(device(1, "pixel"), [device(1, "pixel"), device(2, "router")])
@@ -46,6 +53,7 @@ def test_device_page_split_only_with_several_sightings_and_merge_targets():
     assert '<option value="2">router</option>' in single
     assert '<option value="1">' not in single
     assert 'id="edit"' in single and 'data-form="edit"' in single
+    assert 'onsubmit="this.querySelector(\'[data-form]\').click(); return false"' in single
 
     two = device(1, "mediabox", sightings=[device(1, "a")["sightings"][0], device(9, "b")["sightings"][0]])
     assert 'data-post="/api/sightings/10/split"' in render_device_page(two, [two])

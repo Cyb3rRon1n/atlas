@@ -7,6 +7,7 @@ same persistence path as every other atlas state change.
 """
 
 import re
+import sys
 
 from atlas.core.application import application
 from atlas.devices.store import InventoryStore
@@ -30,7 +31,12 @@ def _result(result, event_type, payload):
     if result.get("error"):
         return 400, {"error": result["error"]}
 
-    application.runtime.events.publish(AtlasEvent(event_type=event_type, source="AtlasWeb", payload=payload))
+    try:
+        application.runtime.events.publish(AtlasEvent(event_type=event_type, source="AtlasWeb", payload=payload))
+    except Exception as error:
+        # The store change already committed - a broken event listener shouldn't turn
+        # a successful write into an error response the caller would wrongly retry.
+        print(f"atlas.web.api: event publish failed for {event_type}: {error!r}", file=sys.stderr)
 
     return 200, {"ok": True, **{key: value for key, value in result.items() if key != "found"}}
 

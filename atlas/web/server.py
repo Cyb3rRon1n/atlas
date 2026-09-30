@@ -61,20 +61,46 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                        json.dumps(build_summary(query.latest_topology(), InventoryStore().devices())))
             return
         elif path == "/triage":
-            body = render_triage_page(InventoryStore().triage())
-        elif path == "/devices":
-            body = render_devices_page(InventoryStore().devices())
-        elif path == "/coverage":
-            body = render_coverage_page(InventoryStore().coverage())
-        elif DEVICE_PAGE.match(path):
-            store = InventoryStore()
-            device = store.device(int(DEVICE_PAGE.match(path).group(1)))
-            if device is None:
-                self._send(404, "text/plain; charset=utf-8", "Not found")
+            try:
+                body = render_triage_page(InventoryStore().triage())
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "text/plain; charset=utf-8", "Internal error")
                 return
-            body = render_device_page(device, store.devices())
+        elif path == "/devices":
+            try:
+                body = render_devices_page(InventoryStore().devices())
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "text/plain; charset=utf-8", "Internal error")
+                return
+        elif path == "/coverage":
+            try:
+                body = render_coverage_page(InventoryStore().coverage())
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "text/plain; charset=utf-8", "Internal error")
+                return
+        elif DEVICE_PAGE.match(path):
+            device_id = int(DEVICE_PAGE.match(path).group(1))
+            try:
+                devices = InventoryStore().devices()
+                device = next((d for d in devices if d["id"] == device_id), None)
+                if device is None:
+                    self._send(404, "text/plain; charset=utf-8", "Not found")
+                    return
+                body = render_device_page(device, devices)
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "text/plain; charset=utf-8", "Internal error")
+                return
         elif path.startswith("/api/"):
-            result = api.handle("GET", path)
+            try:
+                result = api.handle("GET", path)
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "application/json", json.dumps({"error": "internal error"}))
+                return
             if result is None:
                 self._send(404, "application/json", json.dumps({"error": "not found"}))
             else:

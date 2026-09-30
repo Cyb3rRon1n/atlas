@@ -200,6 +200,21 @@ def test_post_with_non_integer_content_length_returns_400(running_server):
     connection.close()
 
 
+def test_device_pages_render(running_server):
+
+    _, device_id = _seed_device()
+
+    for path in ("/triage", "/devices", f"/devices/{device_id}"):
+        status, body = _get(running_server + path)
+        assert status == 200 and "router" in body, path
+
+    # Coverage only lists sources plus quiet/invisible devices - the freshly
+    # seeded "router" (state "new", status "seen") is neither, so it never
+    # appears there; assert on the source row it does produce instead.
+    status, body = _get(running_server + "/coverage")
+    assert status == 200 and "lan" in body
+
+
 def test_post_with_no_body_returns_400(running_server):
 
     _, device_id = _seed_device()

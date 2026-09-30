@@ -29,6 +29,16 @@ PAGE_STYLE = """
   code, pre { background: #010409; border: 1px solid #30363d; border-radius: 4px;
               padding: 0.15rem 0.4rem; font-size: 0.85rem; }
   pre { padding: 0.75rem; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+  button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px;
+           padding: 0.25rem 0.7rem; margin: 0 0.25rem 0.25rem 0; cursor: pointer; font: inherit; }
+  button:hover { border-color: #58a6ff; }
+  button.primary { background: #1f6feb; border-color: #1f6feb; }
+  input, select, textarea { background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
+           border-radius: 6px; padding: 0.25rem 0.5rem; font: inherit; }
+  textarea { width: 100%; min-height: 4rem; }
+  label { display: block; margin: 0.5rem 0 0.2rem; color: #8b949e; font-size: 0.85rem; }
+  .status-seen { color: #3fb950; } .status-quiet { color: #d29922; } .status-invisible { color: #8b949e; }
+  #msg { color: #f85149; min-height: 1.2rem; }
 """
 
 
@@ -45,9 +55,12 @@ def render_page(title, body_html):
         f"<style>{PAGE_STYLE}</style></head><body>"
         "<nav>"
         "<a href=\"/\">Overview</a>"
+        "<a href=\"/triage\">Triage</a>"
+        "<a href=\"/devices\">Devices</a>"
+        "<a href=\"/map\">Map</a>"
+        "<a href=\"/coverage\">Coverage</a>"
         "<a href=\"/history\">History</a>"
         "<a href=\"/trends\">Trends</a>"
-        "<a href=\"/map\">Map</a>"
         "</nav>"
         f"<h1>{_esc(title)}</h1>"
         f"{body_html}"

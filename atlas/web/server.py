@@ -17,6 +17,7 @@ from atlas.devices.store import InventoryStore
 from atlas.knowledge.queries import KnowledgeQueries
 from atlas.reporting.trends import build_trends_payload
 from atlas.web import api
+from atlas.web.devices_pages import render_coverage_page, render_device_page, render_devices_page, render_triage_page
 from atlas.web.render import build_summary, render_history_page, render_map_page, render_overview_page, render_trends_page
 
 
@@ -59,9 +60,19 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             self._send(200, "application/json",
                        json.dumps(build_summary(query.latest_topology(), InventoryStore().devices())))
             return
-        elif path in ("/triage", "/devices", "/coverage") or DEVICE_PAGE.match(path):
-            self._send(501, "text/plain; charset=utf-8", "Not implemented yet")  # replaced in Task 4
-            return
+        elif path == "/triage":
+            body = render_triage_page(InventoryStore().triage())
+        elif path == "/devices":
+            body = render_devices_page(InventoryStore().devices())
+        elif path == "/coverage":
+            body = render_coverage_page(InventoryStore().coverage())
+        elif DEVICE_PAGE.match(path):
+            store = InventoryStore()
+            device = store.device(int(DEVICE_PAGE.match(path).group(1)))
+            if device is None:
+                self._send(404, "text/plain; charset=utf-8", "Not found")
+                return
+            body = render_device_page(device, store.devices())
         elif path.startswith("/api/"):
             result = api.handle("GET", path)
             if result is None:

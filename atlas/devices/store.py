@@ -9,7 +9,7 @@ patches.
 import json
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from atlas.database import initialize_database
@@ -24,6 +24,40 @@ ROLLUP = timedelta(hours=24)
 EDITABLE = {"name", "kind", "tags", "notes", "important", "state"}
 
 GUEST_KINDS = {"qemu": "vm", "lxc": "lxc"}
+
+KINDS = ("server", "vm", "lxc", "container-host", "workstation", "phone", "tv", "iot", "network", "other")
+
+STATES = ("new", "known", "ignored")
+
+
+def _validate(fields):
+    """First problem with an edit, or None. Checked before anything is applied."""
+
+    for key, value in fields.items():
+
+        if key not in EDITABLE:
+            return f"{key} can't be edited"
+
+        if key == "name" and not (isinstance(value, str) and value.strip() and len(value.strip()) <= 64):
+            return "name must be 1-64 characters"
+
+        if key == "kind" and value not in KINDS:
+            return f"kind must be one of: {', '.join(KINDS)}"
+
+        if key == "state" and value not in STATES:
+            return f"state must be one of: {', '.join(STATES)}"
+
+        if key == "important" and not isinstance(value, bool):
+            return "important must be true or false"
+
+        if key == "notes" and not (isinstance(value, str) and len(value) <= 2000):
+            return "notes must be text, at most 2000 characters"
+
+        if key == "tags" and not (isinstance(value, list) and len(value) <= 20
+                                  and all(isinstance(tag, str) and 0 < len(tag) <= 32 for tag in value)):
+            return "tags must be a list of up to 20 tags, each 1-32 characters"
+
+    return None
 
 
 def _iso(value):
@@ -90,6 +124,14 @@ class InventoryStore:
                 SourceRunRecord.seen_count > 0))
 
             session.add(SourceRunRecord(source=source, started_at=now, ok=ok, error=error, seen_count=result["seen"]))
+            session.flush()
+
+            # Runs are only ever read for the last 2 ok runs and the latest run per source -
+            # keep the newest 50 per source and drop the rest so this table can't grow forever.
+            keep = session.scalars(select(SourceRunRecord.id).where(SourceRunRecord.source == source)
+                                   .order_by(SourceRunRecord.started_at.desc()).limit(50)).all()
+            session.execute(delete(SourceRunRecord).where(
+                SourceRunRecord.source == source, SourceRunRecord.id.not_in(keep)))
 
             if not ok:
                 session.commit()
@@ -136,7 +178,9 @@ class InventoryStore:
         return result
 
     def set_fields(self, device_id, fields, now=None):
-        """Operator edit: applies only EDITABLE fields and locks each one it sets."""
+        """Operator edit: all-or-nothing validation, then applies and locks each field it sets."""
+
+        error = _validate(fields)
 
         with Session(self.engine) as session:
 
@@ -145,15 +189,24 @@ class InventoryStore:
             if device is None:
                 return {"found": False}
 
+            if error:
+                return {"found": True, "error": error}
+
             locked = set(json.loads(device.locked_fields))
 
             for key, value in fields.items():
 
-                if key not in EDITABLE:
-                    continue
+                if key == "tags":
+                    value = json.dumps(value)
+                elif key == "name":
+                    value = value.strip()
 
-                setattr(device, key, json.dumps(value) if key == "tags" else value)
+                setattr(device, key, value)
                 locked.add(key)
+
+            # Triaging a device (keep or ignore) answers its merge suggestion.
+            if fields.get("state") in ("known", "ignored"):
+                device.suggested_merge_id = None
 
             device.locked_fields = json.dumps(sorted(locked))
             device.updated_at = now or datetime.utcnow()
@@ -161,13 +214,126 @@ class InventoryStore:
 
         return {"found": True}
 
+    def device(self, device_id):
+
+        return next((device for device in self.devices() if device["id"] == device_id), None)
+
+    def merge(self, device_id, into_id, now=None):
+        """Operator merge: every sighting and queued alert moves to into_id, the empty device goes.
+        Set-based updates, not select-then-loop: a sighting atlas-scan commits between this
+        method's SELECT and its delete would otherwise be orphaned instead of moved."""
+
+        with Session(self.engine) as session:
+
+            source, target = session.get(DeviceRecord, device_id), session.get(DeviceRecord, into_id)
+
+            if source is None or target is None:
+                return {"found": False}
+
+            if device_id == into_id:
+                return {"found": True, "error": "can't merge a device into itself"}
+
+            session.execute(update(SightingRecord).where(SightingRecord.device_id == device_id)
+                            .values(device_id=into_id))
+
+            # Dedupe: if the target already has an unsent "new" alert queued, drop the
+            # source's instead of moving a redundant second one.
+            target_has_new = session.scalar(select(NotificationRecord.id).where(
+                NotificationRecord.device_id == into_id, NotificationRecord.kind == "new",
+                NotificationRecord.sent_at.is_(None)))
+
+            if target_has_new:
+                session.execute(delete(NotificationRecord).where(
+                    NotificationRecord.device_id == device_id, NotificationRecord.kind == "new",
+                    NotificationRecord.sent_at.is_(None)))
+
+            session.execute(update(NotificationRecord).where(NotificationRecord.device_id == device_id)
+                            .values(device_id=into_id))
+
+            session.execute(update(DeviceRecord).where(DeviceRecord.suggested_merge_id == device_id,
+                                                       DeviceRecord.id != into_id).values(suggested_merge_id=into_id))
+            session.execute(update(DeviceRecord).where(DeviceRecord.suggested_merge_id == device_id,
+                                                       DeviceRecord.id == into_id).values(suggested_merge_id=None))
+
+            target.updated_at = now or datetime.utcnow()
+            session.delete(source)
+            session.commit()
+
+        return {"found": True, "device_id": into_id}
+
+    def split(self, sighting_id, now=None):
+        """Operator split: one sighting becomes its own new device (lands in Triage)."""
+
+        now = now or datetime.utcnow()
+
+        with Session(self.engine) as session:
+
+            row = session.get(SightingRecord, sighting_id)
+
+            if row is None:
+                return {"found": False}
+
+            siblings = session.scalar(select(func.count()).select_from(SightingRecord)
+                                      .where(SightingRecord.device_id == row.device_id))
+
+            if siblings < 2:
+                return {"found": True, "error": "that's the device's only sighting"}
+
+            device = DeviceRecord(name=(row.hostname or "").split(".")[0] or row.ip or row.external_id,
+                                  kind=GUEST_KINDS.get(json.loads(row.detail or "{}").get("type"), "other"),
+                                  created_at=now, updated_at=now)
+            session.add(device)
+            session.flush()
+            row.device_id = device.id
+            session.commit()
+
+            return {"found": True, "device_id": device.id}
+
+    def triage(self):
+
+        devices = self.devices()
+        names = {device["id"]: device["name"] for device in devices}
+
+        return {
+            "new": [{**device, "suggested_merge_name": names.get(device["suggested_merge_id"])}
+                    for device in devices if device["state"] == "new"],
+            "quiet": [device for device in devices if device["state"] == "known" and device["status"] == "quiet"],
+        }
+
+    def coverage(self):
+
+        with Session(self.engine) as session:
+
+            sources = []
+
+            for source in sorted(session.scalars(select(SourceRunRecord.source).distinct())):
+
+                latest = session.scalar(select(SourceRunRecord).where(SourceRunRecord.source == source)
+                                        .order_by(SourceRunRecord.started_at.desc()).limit(1))
+                last_ok = session.scalar(select(SourceRunRecord.started_at)
+                                         .where(SourceRunRecord.source == source, SourceRunRecord.ok.is_(True))
+                                         .order_by(SourceRunRecord.started_at.desc()).limit(1))
+
+                sources.append({"source": source, "last_run": _iso(latest.started_at), "ok": latest.ok,
+                                "error": latest.error, "seen_count": latest.seen_count, "last_ok": _iso(last_ok)})
+
+        devices = [device for device in self.devices() if device["state"] != "ignored"]
+
+        return {
+            "sources": sources,
+            "quiet": [device for device in devices if device["status"] == "quiet"],
+            "invisible": [device for device in devices if device["status"] == "invisible"],
+        }
+
     def _ok_runs(self, session):
 
         runs = {}
 
-        for run in session.scalars(select(SourceRunRecord).where(SourceRunRecord.ok.is_(True))
-                                   .order_by(SourceRunRecord.started_at.desc())):
-            runs.setdefault(run.source, []).append(run.started_at)
+        for source in session.scalars(select(SourceRunRecord.source).distinct()):
+            runs[source] = list(session.scalars(
+                select(SourceRunRecord.started_at)
+                .where(SourceRunRecord.source == source, SourceRunRecord.ok.is_(True))
+                .order_by(SourceRunRecord.started_at.desc()).limit(2)))
 
         return runs
 

@@ -66,8 +66,9 @@ No new Python dependency and no new image dependency - the TCP connect uses the 
 - `device_id`: FK, nullable. Null means an unlinked sighting.
 
 `SourceRunRecord`:
-- `source`, `started_at`, `finished_at`, `ok`, `error`, `seen_count`
+- `source`, `started_at`, `ok`, `error`, `seen_count`
 - Powers the Coverage tab and prevents a failed source from making devices look quiet.
+- Runs are short (seconds), so `started_at` is what Coverage shows; old runs are pruned to the newest 50 per source.
 
 `NotificationRecord`:
 - `device_id`, `kind` (`new` / `offline`), `created_at`, `sent_at`

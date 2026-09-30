@@ -1,11 +1,11 @@
 """
-Pure HTML-rendering functions for the read-only web view (`atlas web`).
+Pure HTML-rendering functions for the web view (`atlas web`).
 Every function here takes already-fetched data (from KnowledgeQueries/
 build_trends_payload) and returns a plain HTML string - no I/O, no
 database access, so these are unit-testable the same way format_change()/
-_trend_summary() already are elsewhere in this codebase. No form, no
-POST route, no write path anywhere in this module - view only, per the
-roadmap's own scoping for this feature.
+_trend_summary() already are elsewhere in this codebase. These pages are
+pure renderers; the write path (device edit/merge/split) lives in api.py
+and server.py.
 """
 
 from html import escape
@@ -29,6 +29,16 @@ PAGE_STYLE = """
   code, pre { background: #010409; border: 1px solid #30363d; border-radius: 4px;
               padding: 0.15rem 0.4rem; font-size: 0.85rem; }
   pre { padding: 0.75rem; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+  button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px;
+           padding: 0.25rem 0.7rem; margin: 0 0.25rem 0.25rem 0; cursor: pointer; font: inherit; }
+  button:hover { border-color: #58a6ff; }
+  button.primary { background: #1f6feb; border-color: #1f6feb; }
+  input, select, textarea { background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
+           border-radius: 6px; padding: 0.25rem 0.5rem; font: inherit; }
+  textarea { width: 100%; min-height: 4rem; }
+  label { display: block; margin: 0.5rem 0 0.2rem; color: #8b949e; font-size: 0.85rem; }
+  .status-seen { color: #3fb950; } .status-quiet { color: #d29922; } .status-invisible { color: #8b949e; }
+  #msg { color: #f85149; min-height: 1.2rem; }
 """
 
 
@@ -45,9 +55,12 @@ def render_page(title, body_html):
         f"<style>{PAGE_STYLE}</style></head><body>"
         "<nav>"
         "<a href=\"/\">Overview</a>"
+        "<a href=\"/triage\">Triage</a>"
+        "<a href=\"/devices\">Devices</a>"
+        "<a href=\"/map\">Map</a>"
+        "<a href=\"/coverage\">Coverage</a>"
         "<a href=\"/history\">History</a>"
         "<a href=\"/trends\">Trends</a>"
-        "<a href=\"/map\">Map</a>"
         "</nav>"
         f"<h1>{_esc(title)}</h1>"
         f"{body_html}"
@@ -450,15 +463,21 @@ def render_map_page(topology):
     return render_page("Network Map", body)
 
 
-def build_summary(topology):
+def build_summary(topology, devices=()):
     """
     One small JSON object for a dashboard tile (e.g. Homepage's customapi
-    widget): counts from the latest saved network map, plus a single
-    status word. Nothing is queried live.
+    widget): counts from the latest saved network map and the device
+    inventory, plus a single status word. Nothing is queried live.
     """
 
+    counts = {
+        "to_triage": sum(device["state"] == "new" or (device["state"] == "known" and device["status"] == "quiet")
+                         for device in devices),
+        "devices_quiet": sum(device["status"] == "quiet" and device["state"] != "ignored" for device in devices),
+    }
+
     if not topology:
-        return {"status": "no map yet - run atlas map"}
+        return {"status": "no map yet - run atlas map", **counts}
 
     containers = [c for members in ((topology.get("docker") or {}).get("networks") or {}).values() for c in members]
     guests = [g for g in (topology.get("proxmox") or {}).get("guests", []) if not g.get("template")]
@@ -481,4 +500,5 @@ def build_summary(topology):
         "hosts_total": len(hosts),
         "hosts_down": down_hosts,
         "ai_reachable": brain.get("reachable"),
+        **counts,
     }

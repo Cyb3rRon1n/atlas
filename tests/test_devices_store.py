@@ -103,6 +103,23 @@ def test_failed_run_does_not_make_devices_quiet(temp_db):
     assert store.source_runs()[0]["error"] == "boom"
 
 
+def test_record_run_prunes_old_runs_keeping_newest_50(temp_db):
+
+    store = InventoryStore(temp_db)
+
+    for minute in range(60):
+        store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01")], now=at(minute))
+
+    runs = store.source_runs(limit=1000)
+    assert len(runs) == 50
+    assert runs[0]["started_at"] == at(59).isoformat()
+
+    # status/coverage still work off the surviving rows
+    assert store.devices(now=at(59))[0]["status"] == "seen"
+    coverage = store.coverage()
+    assert coverage["sources"][0]["last_ok"] == at(59).isoformat()
+
+
 def test_new_alert_suppressed_for_ignored_device(temp_db):
 
     store = InventoryStore(temp_db)

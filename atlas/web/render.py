@@ -87,6 +87,7 @@ MAP_SCRIPT = """
 cytoscape.use(cytoscapeDagre);
 const panel = document.getElementById("panel");
 const message = document.getElementById("panel-msg");
+const graphMsg = document.getElementById("graph-msg");
 let current = null;
 let cy = null;
 
@@ -112,23 +113,42 @@ const STYLE = [
 
 async function load() {
   const ignored = document.getElementById("show-ignored").checked ? "?ignored=1" : "";
-  const graph = await (await fetch("/api/graph" + ignored, {credentials: "same-origin"})).json();
-  if (cy) cy.destroy();
-  cy = cytoscape({container: document.getElementById("graph"), elements: graph, style: STYLE,
-    layout: {name: "dagre", rankDir: "TB", nodeSep: 25, rankSep: 60}, wheelSensitivity: 0.2});
-  cy.on("tap", "node.device", (event) => openPanel(event.target.data("device_id")));
-  cy.on("dbltap", "node.host", (event) => {
-    const children = event.target.children();
-    children.style("display", children.first().style("display") === "none" ? "element" : "none");
-  });
+  try {
+    const response = await fetch("/api/graph" + ignored, {credentials: "same-origin"});
+    if (!response.ok || response.redirected) {
+      graphMsg.textContent = "Couldn't load the map (status " + response.status + ") - session expired? reload the page";
+      return;
+    }
+    const graph = await response.json();
+    graphMsg.textContent = "";
+    if (cy) cy.destroy();
+    cy = cytoscape({container: document.getElementById("graph"), elements: graph, style: STYLE,
+      layout: {name: "dagre", rankDir: "TB", nodeSep: 25, rankSep: 60, nodeDimensionsIncludeLabels: true}});
+    cy.on("tap", "node.device", (event) => openPanel(event.target.data("device_id")));
+    cy.on("dbltap", "node.host", (event) => {
+      const children = event.target.children();
+      children.style("display", children.first().style("display") === "none" ? "element" : "none");
+    });
+  } catch (error) {
+    graphMsg.textContent = "Couldn't load the map (network error) - session expired? reload the page";
+  }
 }
 
 function field(name) { return document.getElementById("panel-" + name); }
 
 async function openPanel(deviceId) {
-  const response = await fetch("/api/devices/" + deviceId, {credentials: "same-origin"});
-  if (!response.ok) return;
-  current = await response.json();
+  try {
+    const response = await fetch("/api/devices/" + deviceId, {credentials: "same-origin"});
+    if (!response.ok || response.redirected) {
+      graphMsg.textContent = "Couldn't load the map (status " + response.status + ") - session expired? reload the page";
+      return;
+    }
+    current = await response.json();
+  } catch (error) {
+    graphMsg.textContent = "Couldn't load the map (network error) - session expired? reload the page";
+    return;
+  }
+  graphMsg.textContent = "";
   panel.hidden = false;
   message.textContent = "";
   document.getElementById("panel-title").textContent = current.name;
@@ -146,11 +166,21 @@ async function openPanel(deviceId) {
 
 document.getElementById("panel-save").addEventListener("click", async () => {
   if (!current) return;
+  const id = current.id;
   const body = {name: field("name").value, kind: field("kind").value, state: field("state").value,
     notes: field("notes").value, important: field("important").checked,
     tags: field("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean)};
+  for (const key of Object.keys(body)) {
+    const value = key === "tags" ? body[key].join(",") : body[key];
+    const currentValue = key === "tags" ? current[key].join(",") : current[key];
+    if (value === currentValue) delete body[key];
+  }
+  if (Object.keys(body).length === 0) {
+    message.textContent = "Nothing changed.";
+    return;
+  }
   try {
-    const response = await fetch("/api/devices/" + current.id, {method: "POST", credentials: "same-origin",
+    const response = await fetch("/api/devices/" + id, {method: "POST", credentials: "same-origin",
       headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -160,7 +190,7 @@ document.getElementById("panel-save").addEventListener("click", async () => {
     }
     message.textContent = "Saved.";
     await load();
-    openPanel(current.id);
+    openPanel(id);
   } catch (error) { message.textContent = "Request failed: " + error; }
 });
 document.getElementById("panel-close").addEventListener("click", () => { panel.hidden = true; current = null; });
@@ -180,6 +210,7 @@ def _map_block():
         "<span style=\"color:#8b949e\">● never seen</span><span>dashed = new, needs triage</span>"
         "<span>click a device to edit - double-click a host to fold it</span>"
         "<label style=\"display:inline\"><input type=\"checkbox\" id=\"show-ignored\"> show ignored</label></p>"
+        "<p id=\"graph-msg\" class=\"muted\"></p>"
         "<div class=\"map-wrap\"><div id=\"graph\"></div>"
         "<aside id=\"panel\" hidden><h2 id=\"panel-title\"></h2><p class=\"muted\" id=\"panel-meta\"></p>"
         "<label>Name</label><input id=\"panel-name\">"
@@ -191,8 +222,8 @@ def _map_block():
         "<p><button class=\"primary\" id=\"panel-save\">Save</button><button id=\"panel-close\">Close</button></p>"
         "<p id=\"panel-msg\" class=\"muted\"></p>"
         "<p><a id=\"panel-link\" href=\"#\">Full page - merge, split, every sighting</a></p></aside></div>"
-        "<script src=\"/static/cytoscape.min.js\"></script>"
-        "<script src=\"/static/cytoscape-dagre.js\"></script>"
+        "<script src=\"/static/cytoscape.min.js?v=3.34.3\"></script>"
+        "<script src=\"/static/cytoscape-dagre.js?v=4.0.1\"></script>"
         + MAP_SCRIPT
     )
 

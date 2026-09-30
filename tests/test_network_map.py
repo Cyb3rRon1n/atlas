@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from atlas.config.models import AtlasConfig, MapHost
 from atlas.discovery.topology import collect_topology
-from atlas.web.render import render_map_page
+from atlas.web.render import MAP_SCRIPT, render_map_page
 
 
 def _container(name, networks=None, mode="bridge", labels=None, status="running", health=None, cid=None):
@@ -94,11 +94,39 @@ def test_map_page_has_interactive_graph_panel_and_vendored_scripts():
     page = render_map_page(collect_topology(config, docker_client=_docker()))
 
     assert '<div id="graph"' in page and '<aside id="panel" hidden' in page
-    assert '<script src="/static/cytoscape.min.js"></script>' in page
-    assert '<script src="/static/cytoscape-dagre.js"></script>' in page
+    assert '<script src="/static/cytoscape.min.js?v=3.34.3"></script>' in page
+    assert '<script src="/static/cytoscape-dagre.js?v=4.0.1"></script>' in page
     assert "<noscript>" in page and page.index("<noscript>") < page.index("<svg")
     assert 'id="show-ignored"' in page and "/api/graph" in page
     assert "innerHTML" not in page
+    assert '<p id="graph-msg" class="muted"></p>' in page
+    assert page.index('id="graph-msg"') < page.index('id="graph"')
+
+
+def test_map_script_load_and_open_panel_handle_errors():
+
+    assert "!response.ok || response.redirected" in MAP_SCRIPT
+    assert MAP_SCRIPT.count("!response.ok || response.redirected") == 2
+    assert "Couldn't load the map (status " in MAP_SCRIPT
+    assert "network error" in MAP_SCRIPT
+    assert "graphMsg.textContent" in MAP_SCRIPT
+
+
+def test_map_script_save_sends_only_changed_fields_and_avoids_the_id_race():
+
+    assert "const id = current.id;" in MAP_SCRIPT
+    assert 'fetch("/api/devices/" + id,' in MAP_SCRIPT
+    assert "openPanel(id);" in MAP_SCRIPT
+    assert '"/api/devices/" + current.id' not in MAP_SCRIPT
+    assert "Nothing changed." in MAP_SCRIPT
+    assert 'current[key].join(",")' in MAP_SCRIPT
+
+
+def test_map_script_layout_options():
+
+    assert "nodeDimensionsIncludeLabels: true" in MAP_SCRIPT
+    assert 'rankDir: "TB"' in MAP_SCRIPT
+    assert "wheelSensitivity" not in MAP_SCRIPT
 
 
 def test_map_page_without_topology_still_offers_the_graph():

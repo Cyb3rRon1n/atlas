@@ -1,3 +1,6 @@
+import json
+from html import unescape
+
 from atlas.web.devices_pages import (ACTIONS_SCRIPT, render_coverage_page, render_device_page, render_devices_page,
                                      render_triage_page)
 
@@ -44,6 +47,28 @@ def test_actions_script_tolerates_a_non_json_body_and_flags_session_expiry():
     assert "response.json().catch(() => ({}))" in ACTIONS_SCRIPT
     assert "session expired? reload the page" in ACTIONS_SCRIPT
     assert "response.status === 401 || response.status === 403 || response.redirected" in ACTIONS_SCRIPT
+
+
+def test_actions_script_sends_only_changed_form_fields():
+
+    assert "formEl.dataset.original" in ACTIONS_SCRIPT
+    assert "Nothing changed." in ACTIONS_SCRIPT
+    assert 'original[key] || []).join(",")' in ACTIONS_SCRIPT
+
+
+def test_device_page_form_carries_data_original_with_device_values():
+
+    dev = device(1, "pixel", state="known", kind="network", tags=["a", "b"], notes="hello", important=True)
+
+    html = render_device_page(dev, [dev])
+
+    assert 'data-original="' in html
+    start = html.index('data-original="') + len('data-original="')
+    end = html.index('"', start)
+    original = json.loads(unescape(html[start:end]))
+
+    assert original == {"name": "pixel", "kind": "network", "state": "known",
+                        "tags": ["a", "b"], "notes": "hello", "important": True}
 
 
 def test_device_page_split_only_with_several_sightings_and_merge_targets():

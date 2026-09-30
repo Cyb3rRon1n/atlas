@@ -16,16 +16,25 @@ ACTIONS_SCRIPT = """
 document.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-post]");
   if (!button) return;
+  const message = document.getElementById("msg");
   const body = JSON.parse(button.dataset.body || "{}");
   if (button.dataset.nameFrom) body.name = document.getElementById(button.dataset.nameFrom).value;
   if (button.dataset.intoFrom) body.into = parseInt(document.getElementById(button.dataset.intoFrom).value, 10);
   if (button.dataset.form) {
-    const field = (name) => document.getElementById(button.dataset.form).elements.namedItem(name);
-    Object.assign(body, {name: field("name").value, kind: field("kind").value, state: field("state").value,
+    const formEl = document.getElementById(button.dataset.form);
+    const field = (name) => formEl.elements.namedItem(name);
+    const original = JSON.parse(formEl.dataset.original || "{}");
+    const fields = {name: field("name").value, kind: field("kind").value, state: field("state").value,
       notes: field("notes").value, important: field("important").checked,
-      tags: field("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean)});
+      tags: field("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean)};
+    for (const key of Object.keys(fields)) {
+      const value = key === "tags" ? fields[key].join(",") : fields[key];
+      const originalValue = key === "tags" ? (original[key] || []).join(",") : original[key];
+      if (value === originalValue) delete fields[key];
+    }
+    if (Object.keys(fields).length === 0) { message.textContent = "Nothing changed."; return; }
+    Object.assign(body, fields);
   }
-  const message = document.getElementById("msg");
   try {
     const response = await fetch(button.dataset.post, {method: "POST", credentials: "same-origin",
       headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
@@ -137,8 +146,14 @@ def _options(values, selected):
 
 def render_device_page(device, devices):
 
+    original = _esc(json.dumps({
+        "name": device["name"], "kind": device["kind"], "state": device["state"],
+        "tags": device["tags"], "notes": device["notes"], "important": device["important"],
+    }))
+
     form = (
-        f"<form id=\"edit\" onsubmit=\"this.querySelector('[data-form]').click(); return false\">"
+        f"<form id=\"edit\" data-original=\"{original}\" "
+        "onsubmit=\"this.querySelector('[data-form]').click(); return false\">"
         f"<label>Name</label><input name=\"name\" value=\"{_esc(device['name'])}\" size=\"40\">"
         f"<label>Kind</label><select name=\"kind\">{_options(KINDS, device['kind'])}</select>"
         f"<label>State</label><select name=\"state\">{_options(STATES, device['state'])}</select>"

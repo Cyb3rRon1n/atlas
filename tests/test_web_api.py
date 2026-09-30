@@ -72,3 +72,12 @@ def test_merge_and_split(temp_db):
     assert status == 200 and payload["ok"] is True and payload["device_id"] != router
     assert KnowledgeQueries().recent_events(5)[0].event_type == "atlas.devices.split"
     assert api.handle("POST", "/api/other", {}) is None
+
+
+def test_graph_route(temp_db):
+
+    two_devices()
+
+    status, graph = api.handle("GET", "/api/graph")
+    assert status == 200 and {"internet", "lan"} <= {node["data"]["id"] for node in graph["nodes"]}
+    assert api.handle("GET", "/api/graph?ignored=1")[0] == 200

@@ -12,6 +12,8 @@ import sys
 from atlas.core.application import application
 from atlas.devices.store import InventoryStore
 from atlas.events import AtlasEvent
+from atlas.knowledge.queries import KnowledgeQueries
+from atlas.web.graph import build_graph
 
 
 DEVICE = re.compile(r"^/api/devices/(\d+)$")
@@ -41,7 +43,7 @@ def _result(result, event_type, payload):
     return 200, {"ok": True, **{key: value for key, value in result.items() if key != "found"}}
 
 
-def _get(path):
+def _get(path, query=""):
 
     store = InventoryStore()
 
@@ -53,6 +55,10 @@ def _get(path):
 
     if path == "/api/coverage":
         return 200, store.coverage()
+
+    if path == "/api/graph":
+        return 200, build_graph(store.devices(), KnowledgeQueries().latest_topology(),
+                                include_ignored="ignored=1" in query.split("&"))
 
     match = DEVICE.match(path)
 
@@ -98,8 +104,10 @@ def _post(path, body):
 
 def handle(method, path, body=None):
 
+    path, _, query = path.partition("?")
+
     if method == "GET":
-        return _get(path)
+        return _get(path, query)
 
     if method == "POST":
         return _post(path, body)

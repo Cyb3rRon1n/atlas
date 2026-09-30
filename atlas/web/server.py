@@ -102,7 +102,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 return
         elif path.startswith("/api/"):
             try:
-                result = api.handle("GET", path)
+                result = api.handle("GET", self.path)
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)
                 self._send(500, "application/json", json.dumps({"error": "internal error"}))

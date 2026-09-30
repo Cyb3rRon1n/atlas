@@ -1,3 +1,4 @@
+import json
 import threading
 import urllib.error
 import urllib.request
@@ -84,13 +85,76 @@ def test_unknown_route_returns_404(running_server):
     assert exc_info.value.code == 404
 
 
-def test_only_get_routes_exist_no_write_path():
-    """
-    A structural guard, not just a behavioral one: confirms this
-    handler defines no do_POST/do_PUT/do_DELETE at all, so a write
-    path can't be silently added to this class without this test
-    naming it - matches this feature's own "no new write path" scope.
-    """
+def _post(url, body, origin=None, raw=None):
 
-    for verb in ("do_POST", "do_PUT", "do_DELETE", "do_PATCH"):
-        assert not hasattr(AtlasWebHandler, verb)
+    headers = {"Content-Type": "application/json"}
+
+    if origin:
+        headers["Origin"] = origin
+
+    data = raw if raw is not None else json.dumps(body).encode()
+    request = urllib.request.Request(url, data=data, headers=headers, method="POST")
+
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            return response.status, json.loads(response.read())
+
+    except urllib.error.HTTPError as error:
+        return error.code, json.loads(error.read() or b"null")
+
+
+def _seed_device():
+
+    from atlas.devices import Sighting
+    from atlas.devices.store import InventoryStore
+
+    store = InventoryStore()
+    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01", hostname="router")])
+
+    return store, store.devices()[0]["id"]
+
+
+def test_post_requires_same_origin(running_server):
+
+    store, device_id = _seed_device()
+    url = f"{running_server}/api/devices/{device_id}"
+
+    assert _post(url, {"name": "x"})[0] == 403
+    assert _post(url, {"name": "x"}, origin="https://evil.example")[0] == 403
+    assert store.device(device_id)["name"] == "router"
+
+    assert _post(url, {"name": "UniFi"}, origin=running_server) == (200, {"ok": True})
+    assert store.device(device_id)["name"] == "UniFi"
+
+
+def test_post_rejects_bad_json_big_bodies_and_unknown_paths(running_server):
+
+    store, device_id = _seed_device()
+    url = f"{running_server}/api/devices/{device_id}"
+
+    assert _post(url, None, origin=running_server, raw=b"{nope")[0] == 400
+    assert _post(f"{running_server}/api/whatever", {}, origin=running_server)[0] == 404
+
+    # Oversized: send only the headers - the server must refuse on Content-Length alone,
+    # without reading (a real body would race the early 413 and reset the connection).
+    import http.client
+    from urllib.parse import urlsplit
+    connection = http.client.HTTPConnection(urlsplit(running_server).netloc, timeout=5)
+    connection.putrequest("POST", f"/api/devices/{device_id}")
+    connection.putheader("Origin", running_server)
+    connection.putheader("Content-Type", "application/json")
+    connection.putheader("Content-Length", "70000")
+    connection.endheaders()
+    assert connection.getresponse().status == 413
+    connection.close()
+
+
+def test_api_get_and_summary_counts(running_server):
+
+    _seed_device()
+
+    status, body = _get(running_server + "/api/devices")
+    assert status == 200 and json.loads(body)[0]["name"] == "router"
+
+    summary = json.loads(_get(running_server + "/api/summary")[1])
+    assert summary["to_triage"] == 1 and summary["devices_quiet"] == 0

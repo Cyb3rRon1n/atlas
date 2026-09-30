@@ -450,15 +450,21 @@ def render_map_page(topology):
     return render_page("Network Map", body)
 
 
-def build_summary(topology):
+def build_summary(topology, devices=()):
     """
     One small JSON object for a dashboard tile (e.g. Homepage's customapi
-    widget): counts from the latest saved network map, plus a single
-    status word. Nothing is queried live.
+    widget): counts from the latest saved network map and the device
+    inventory, plus a single status word. Nothing is queried live.
     """
 
+    counts = {
+        "to_triage": sum(device["state"] == "new" or (device["state"] == "known" and device["status"] == "quiet")
+                         for device in devices),
+        "devices_quiet": sum(device["status"] == "quiet" and device["state"] != "ignored" for device in devices),
+    }
+
     if not topology:
-        return {"status": "no map yet - run atlas map"}
+        return {"status": "no map yet - run atlas map", **counts}
 
     containers = [c for members in ((topology.get("docker") or {}).get("networks") or {}).values() for c in members]
     guests = [g for g in (topology.get("proxmox") or {}).get("guests", []) if not g.get("template")]
@@ -481,4 +487,5 @@ def build_summary(topology):
         "hosts_total": len(hosts),
         "hosts_down": down_hosts,
         "ai_reachable": brain.get("reachable"),
+        **counts,
     }

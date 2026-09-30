@@ -275,3 +275,37 @@ def test_post_with_no_body_returns_400(running_server):
     except urllib.error.HTTPError as error:
         with error:
             assert error.code == 400
+
+
+import hashlib
+from pathlib import Path
+
+PINNED = {
+    "cytoscape.min.js": "5f3b5b529546d5af1fc5628590af033b74511a5b6f789f5f4682845863228b91",
+    "cytoscape-dagre.js": "d7ce98b7addb74a53df03b58c743266b6abd3d85b0e428d255e9285cde3de8c0",
+}
+
+
+def test_vendored_files_match_pinned_hashes():
+
+    static = Path(__file__).resolve().parents[1] / "atlas" / "web" / "static"
+
+    for name, digest in PINNED.items():
+        assert hashlib.sha256((static / name).read_bytes()).hexdigest() == digest, name
+
+
+def test_static_serves_only_allow_listed_files(running_server):
+
+    with urllib.request.urlopen(running_server + "/static/cytoscape.min.js", timeout=5) as response:
+        assert response.status == 200
+        assert response.headers["Content-Type"] == "application/javascript; charset=utf-8"
+        assert "max-age" in response.headers["Cache-Control"]
+        assert len(response.read()) > 100_000
+
+    for path in ("/static/README.md", "/static/../server.py", "/static/%2e%2e/server.py", "/static/", "/static/x.js"):
+        try:
+            urllib.request.urlopen(running_server + path, timeout=5)
+            raise AssertionError(f"{path} should be 404")
+        except urllib.error.HTTPError as error:
+            with error:
+                assert error.code == 404, path

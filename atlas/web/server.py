@@ -11,6 +11,7 @@ auth boundary - this module doesn't authenticate requests itself.
 import json
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from urllib.parse import urlsplit
 
 from atlas.devices.store import InventoryStore
@@ -24,6 +25,11 @@ from atlas.web.render import build_summary, render_history_page, render_map_page
 MAX_BODY = 65536
 
 DEVICE_PAGE = re.compile(r"^/devices/(\d+)$")
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+# Explicit allow-list - never build a filesystem path from the request.
+STATIC_FILES = {"cytoscape.min.js", "cytoscape-dagre.js"}
 
 
 def same_origin(headers):
@@ -105,6 +111,19 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 self._send(404, "application/json", json.dumps({"error": "not found"}))
             else:
                 self._send(result[0], "application/json", json.dumps(result[1]))
+            return
+        elif path.startswith("/static/"):
+            name = path[len("/static/"):]
+            if name not in STATIC_FILES:
+                self._send(404, "text/plain; charset=utf-8", "Not found")
+                return
+            data = (STATIC_DIR / name).read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "max-age=86400")
+            self.end_headers()
+            self.wfile.write(data)
             return
         else:
             self._send(404, "text/plain; charset=utf-8", "Not found")

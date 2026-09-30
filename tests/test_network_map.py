@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from atlas.config.models import AtlasConfig, MapHost
 from atlas.discovery.topology import collect_topology
-from atlas.web.render import MAP_SCRIPT, render_map_page
+from atlas.web.render import MAP_SCRIPT, MAP_STYLE, render_map_page
 
 
 def _container(name, networks=None, mode="bridge", labels=None, status="running", health=None, cid=None):
@@ -95,7 +95,7 @@ def test_map_page_has_interactive_graph_panel_and_vendored_scripts():
 
     assert '<div id="graph"' in page and '<aside id="panel" hidden' in page
     assert '<script src="/static/cytoscape.min.js?v=3.34.3"></script>' in page
-    assert '<script src="/static/cytoscape-dagre.js?v=4.0.1"></script>' in page
+    assert "cytoscape-dagre" not in page
     assert "<noscript>" in page and page.index("<noscript>") < page.index("<svg")
     assert 'id="show-ignored"' in page and "/api/graph" in page
     assert "innerHTML" not in page
@@ -116,17 +116,35 @@ def test_map_script_save_sends_only_changed_fields_and_avoids_the_id_race():
 
     assert "const id = current.id;" in MAP_SCRIPT
     assert 'fetch("/api/devices/" + id,' in MAP_SCRIPT
-    assert "openPanel(id);" in MAP_SCRIPT
+    assert "openPanel(id, true);" in MAP_SCRIPT
     assert '"/api/devices/" + current.id' not in MAP_SCRIPT
     assert "Nothing changed." in MAP_SCRIPT
     assert 'current[key].join(",")' in MAP_SCRIPT
 
 
-def test_map_script_layout_options():
+def test_map_script_layout_is_deterministic_preset_not_dagre():
 
-    assert "nodeDimensionsIncludeLabels: true" in MAP_SCRIPT
-    assert 'rankDir: "TB"' in MAP_SCRIPT
+    assert "cytoscape.use(cytoscapeDagre)" not in MAP_SCRIPT
+    assert 'layout: {name: "preset"}' in MAP_SCRIPT
+    assert "arrange(cy)" in MAP_SCRIPT
+    assert "function arrange(cy) {" in MAP_SCRIPT
     assert "wheelSensitivity" not in MAP_SCRIPT
+    assert '"opacity": 0.12' in MAP_SCRIPT
+
+
+def test_map_script_keeps_saved_message_and_resizes_the_canvas():
+
+    assert "async function openPanel(deviceId, keepMessage)" in MAP_SCRIPT
+    assert "if (!keepMessage) message.textContent" in MAP_SCRIPT
+    assert MAP_SCRIPT.count("cy.resize();") == 2
+    assert MAP_SCRIPT.count("cy.fit(undefined, 20);") >= 2
+
+
+def test_map_style_lets_the_panel_stay_on_screen():
+
+    assert "min-width: 0" in MAP_STYLE
+    assert "#panel { flex: 0 0 320px;" in MAP_STYLE
+    assert "#panel input[type=checkbox] { width: auto; }" in MAP_STYLE
 
 
 def test_map_page_without_topology_still_offers_the_graph():

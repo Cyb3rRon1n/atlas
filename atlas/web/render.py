@@ -45,10 +45,11 @@ PAGE_STYLE = """
 
 MAP_STYLE = """
   .map-wrap { display: flex; gap: 1rem; align-items: flex-start; }
-  #graph { flex: 1; height: 70vh; min-height: 420px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; }
-  #panel { width: 320px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem; }
+  #graph { flex: 1; min-width: 0; height: 70vh; min-height: 420px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; }
+  #panel { flex: 0 0 320px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem; }
   #panel h2 { margin-top: 0; }
   #panel input, #panel select, #panel textarea { width: 100%; box-sizing: border-box; }
+  #panel input[type=checkbox] { width: auto; }
   .map-legend span { margin-right: 1rem; }
   @media (max-width: 900px) { .map-wrap { flex-direction: column; } #panel { width: 100%; box-sizing: border-box; } }
 """
@@ -84,7 +85,6 @@ def render_page(title, body_html):
 
 MAP_SCRIPT = """
 <script>
-cytoscape.use(cytoscapeDagre);
 const panel = document.getElementById("panel");
 const message = document.getElementById("panel-msg");
 const graphMsg = document.getElementById("graph-msg");
@@ -107,9 +107,32 @@ const STYLE = [
   {selector: ".important", style: {"border-width": 4}},
   {selector: ".state-new", style: {"border-style": "dashed", "border-color": "#58a6ff"}},
   {selector: ".state-ignored", style: {"opacity": 0.4}},
-  {selector: "edge", style: {"width": 1.5, "line-color": "#30363d", "curve-style": "bezier"}},
+  {selector: "edge", style: {"width": 1.5, "line-color": "#30363d", "curve-style": "bezier", "opacity": 0.12}},
   {selector: ":selected", style: {"border-color": "#58a6ff", "border-width": 4}},
 ];
+
+function arrange(cy) {
+  // Hosts (boxes holding guests / Docker networks) in a row, every other device in a grid under them,
+  // most important first. Deterministic and readable at ~40 devices; dagre put all LAN devices in one row.
+  const W = cy.width(), CW = 150, CH = 70, GAP = 50;
+  const rank = (n) => n.hasClass("alert") ? 0 : n.hasClass("important") ? 1 : n.hasClass("state-known") ? 2 : 3;
+  cy.$("#internet").position({x: CW / 2, y: 20});
+  cy.$("#lan").position({x: CW / 2 + CW, y: 20});
+  let left = 0, bottom = 110;
+  cy.nodes(".host").forEach((host) => {
+    const kids = host.children(), cols = Math.min(kids.length, 4) || 1;
+    kids.forEach((kid, i) => kid.position({x: left + CW / 2 + (i % cols) * CW, y: 110 + Math.floor(i / cols) * CH}));
+    kids.shift({x: left - host.boundingBox({includeLabels: true}).x1, y: 0});
+    const box = host.boundingBox({includeLabels: true});
+    left = box.x2 + GAP;
+    bottom = Math.max(bottom, box.y2);
+  });
+  const cols = Math.max(4, Math.floor(Math.max(W - 40, left) / CW));
+  cy.nodes(".device").filter((n) => !n.isParent() && !n.parent().length)
+    .sort((a, b) => rank(a) - rank(b) || a.data("label").localeCompare(b.data("label")))
+    .forEach((n, i) => n.position({x: CW / 2 + (i % cols) * CW, y: bottom + 50 + Math.floor(i / cols) * CH}));
+  cy.fit(undefined, 20);
+}
 
 async function load() {
   const ignored = document.getElementById("show-ignored").checked ? "?ignored=1" : "";
@@ -123,7 +146,8 @@ async function load() {
     graphMsg.textContent = "";
     if (cy) cy.destroy();
     cy = cytoscape({container: document.getElementById("graph"), elements: graph, style: STYLE,
-      layout: {name: "dagre", rankDir: "TB", nodeSep: 25, rankSep: 60, nodeDimensionsIncludeLabels: true}});
+      layout: {name: "preset"}});
+    arrange(cy);
     cy.on("tap", "node.device", (event) => openPanel(event.target.data("device_id")));
     cy.on("dbltap", "node.host", (event) => {
       const children = event.target.children();
@@ -136,7 +160,7 @@ async function load() {
 
 function field(name) { return document.getElementById("panel-" + name); }
 
-async function openPanel(deviceId) {
+async function openPanel(deviceId, keepMessage) {
   try {
     const response = await fetch("/api/devices/" + deviceId, {credentials: "same-origin"});
     if (!response.ok || response.redirected) {
@@ -150,7 +174,7 @@ async function openPanel(deviceId) {
   }
   graphMsg.textContent = "";
   panel.hidden = false;
-  message.textContent = "";
+  if (!keepMessage) message.textContent = "";
   document.getElementById("panel-title").textContent = current.name;
   document.getElementById("panel-meta").textContent =
     current.status + " - " + (current.ip || "no ip") + " - seen by " +
@@ -162,6 +186,8 @@ async function openPanel(deviceId) {
   field("notes").value = current.notes;
   field("important").checked = current.important;
   document.getElementById("panel-link").href = "/devices/" + current.id;
+  cy.resize();
+  cy.fit(undefined, 20);
 }
 
 document.getElementById("panel-save").addEventListener("click", async () => {
@@ -190,10 +216,15 @@ document.getElementById("panel-save").addEventListener("click", async () => {
     }
     message.textContent = "Saved.";
     await load();
-    openPanel(id);
+    openPanel(id, true);
   } catch (error) { message.textContent = "Request failed: " + error; }
 });
-document.getElementById("panel-close").addEventListener("click", () => { panel.hidden = true; current = null; });
+document.getElementById("panel-close").addEventListener("click", () => {
+  panel.hidden = true;
+  current = null;
+  cy.resize();
+  cy.fit(undefined, 20);
+});
 document.getElementById("show-ignored").addEventListener("change", load);
 load();
 </script>
@@ -223,7 +254,6 @@ def _map_block():
         "<p id=\"panel-msg\" class=\"muted\"></p>"
         "<p><a id=\"panel-link\" href=\"#\">Full page - merge, split, every sighting</a></p></aside></div>"
         "<script src=\"/static/cytoscape.min.js?v=3.34.3\"></script>"
-        "<script src=\"/static/cytoscape-dagre.js?v=4.0.1\"></script>"
         + MAP_SCRIPT
     )
 

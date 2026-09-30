@@ -29,7 +29,7 @@ DEVICE_PAGE = re.compile(r"^/devices/(\d+)$")
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 # Explicit allow-list - never build a filesystem path from the request.
-STATIC_FILES = {"cytoscape.min.js", "cytoscape-dagre.js"}
+STATIC_FILES = {"cytoscape.min.js"}
 
 
 def same_origin(headers):

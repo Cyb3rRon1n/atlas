@@ -75,6 +75,7 @@ def test_merge_moves_sightings_and_notifications_and_deletes_source(temp_db):
 
     assert store.merge(known["id"], known["id"]) == {"found": True, "error": "can't merge a device into itself"}
     assert store.merge(12345, known["id"]) == {"found": False}
+    assert store.merge(99999, 99999) == {"found": False}
 
 
 def test_split_makes_a_new_device_but_never_empties_one(temp_db):

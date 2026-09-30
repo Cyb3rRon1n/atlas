@@ -213,15 +213,15 @@ class InventoryStore:
     def merge(self, device_id, into_id, now=None):
         """Operator merge: every sighting and queued alert moves to into_id, the empty device goes."""
 
-        if device_id == into_id:
-            return {"found": True, "error": "can't merge a device into itself"}
-
         with Session(self.engine) as session:
 
             source, target = session.get(DeviceRecord, device_id), session.get(DeviceRecord, into_id)
 
             if source is None or target is None:
                 return {"found": False}
+
+            if device_id == into_id:
+                return {"found": True, "error": "can't merge a device into itself"}
 
             for row in session.scalars(select(SightingRecord).where(SightingRecord.device_id == device_id)).all():
                 row.device_id = into_id

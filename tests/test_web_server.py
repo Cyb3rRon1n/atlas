@@ -295,7 +295,6 @@ from pathlib import Path
 
 PINNED = {
     "cytoscape.min.js": "5f3b5b529546d5af1fc5628590af033b74511a5b6f789f5f4682845863228b91",
-    "cytoscape-dagre.js": "d7ce98b7addb74a53df03b58c743266b6abd3d85b0e428d255e9285cde3de8c0",
 }
 
 
@@ -319,7 +318,8 @@ def test_static_serves_only_allow_listed_files(running_server):
     with urllib.request.urlopen(running_server + "/static/cytoscape.min.js?v=3.34.3", timeout=5) as response:
         assert response.status == 200
 
-    for path in ("/static/README.md", "/static/../server.py", "/static/%2e%2e/server.py", "/static/", "/static/x.js"):
+    for path in ("/static/README.md", "/static/../server.py", "/static/%2e%2e/server.py", "/static/", "/static/x.js",
+                 "/static/cytoscape-dagre.js"):
         try:
             urllib.request.urlopen(running_server + path, timeout=5)
             raise AssertionError(f"{path} should be 404")

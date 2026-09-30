@@ -1526,7 +1526,7 @@ def network_map(
     Build the network map (atlas web /map): containers by network with
     their public hostnames, Proxmox guests, configured LAN hosts'
     reachability, the AI endpoint - and what atlas may act on. Saved so
-    the read-only web view can render it; run it on a schedule to keep
+    the web view can render it; run it on a schedule to keep
     the map current.
     """
 
@@ -2766,8 +2766,10 @@ def web(
     port: int = 8420
 ):
     """
-    Serve a local, read-only web view over Atlas's existing data
-    (overview, history, trends) - no new automation, no write path.
+    Serve a local web view over Atlas's existing data (overview, triage,
+    devices, map, coverage, history, trends) — read-only except the
+    device inventory's edit/merge/split, which are same-origin-gated JSON
+    POSTs. Put an auth proxy in front if it's reachable beyond localhost.
     """
 
     from atlas.web.server import run_server

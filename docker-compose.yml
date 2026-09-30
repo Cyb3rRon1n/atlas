@@ -1,7 +1,7 @@
 name: atlas
 
-# Atlas is not a daemon (see CLAUDE.md) - `atlas` runs the read-only
-# `atlas web` dashboard; nothing inside it refreshes data on its own.
+# Atlas is not a daemon (see CLAUDE.md) - `atlas` runs the `atlas web`
+# dashboard with device inventory triage/edit; nothing inside it refreshes data on its own.
 #
 #   cp atlas.yaml.example atlas.yaml   # edit: Proxmox/Prometheus/AI config
 #   docker compose up -d               # pulls ghcr.io/cyb3rron1n/atlas (or builds it)

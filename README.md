@@ -333,7 +333,7 @@ Run `atlas <command> --help` for command-specific options.
 
 **Operational Memory** — every meaningful action publishes an event onto an internal bus and is persisted automatically — `atlas history` shows the full record: discoveries, scans, restarts, chat sessions, and more.
 
-**Web Dashboard** — `atlas web` serves a local overview/triage/devices/map/coverage/history/trends dashboard over the exact same reads `atlas report`/`atlas history`/`atlas trends` already do, plus a device inventory editor for name/kind/state/tags/notes and merge/split operations. Runs in the foreground until `Ctrl+C`, same on-demand shape as every other Atlas command. The device-edit API is same-origin-gated but not authenticated — run it behind an auth proxy whenever reachable beyond localhost.
+**Web Dashboard** — `atlas web` serves a local overview/triage/devices/map/coverage/history/trends dashboard over the exact same reads `atlas report`/`atlas history`/`atlas trends` already do, plus a device inventory editor for name/kind/state/tags/notes/important flag and merge/split operations. Runs in the foreground until `Ctrl+C`, same on-demand shape as every other Atlas command. The device-edit API is same-origin-gated but not authenticated — run it behind an auth proxy whenever reachable beyond localhost.
 
 **Fleet View** — `atlas fleet doctor`/`trends`/`report` run `atlas doctor`/`trends`/`report` over SSH on every node listed under `fleet.nodes` in `atlas.yaml` and aggregate the results into one view — no daemon, no central server, no new dependency (shells out to `ssh`). Just needs each node reachable over SSH with Atlas already installed there.
 

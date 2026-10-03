@@ -1,4 +1,6 @@
 import json
+import logging
+import time
 
 import requests
 
@@ -20,6 +22,8 @@ from atlas.intelligence.tools import execute_tool
 
 MAX_TOOL_ITERATIONS = 6
 
+logger = logging.getLogger(__name__)
+
 
 class OllamaProvider(AIProvider):
 
@@ -27,7 +31,8 @@ class OllamaProvider(AIProvider):
         self,
         model: str,
         host: str = "http://localhost:11434",
-        timeout: int = 240
+        timeout: int = 240,
+        think: bool | None = False
     ):
         """
         timeout default was 120 before tool-use existed, when analyze()
@@ -39,11 +44,18 @@ class OllamaProvider(AIProvider):
         so 120s per individual request cut it close enough to actually
         fail. Doubled with headroom rather than tuned to the exact
         measurement.
+
+        think=False keeps a thinking model (e.g. qwen3) from reasoning
+        silently before answering - a real chat turn with thinking on
+        took ~100s, close enough to Cloudflare's 100s limit to matter.
+        None omits the field entirely, for an Ollama/model combination
+        that rejects it outright.
         """
 
         self.model = model
         self.host = host.rstrip("/")
         self.timeout = timeout
+        self.think = think
 
     def analyze(self, context: dict, tools: dict | None = None) -> AnalysisResult:
 
@@ -157,6 +169,11 @@ class OllamaProvider(AIProvider):
         if ollama_tools:
             payload["tools"] = ollama_tools
 
+        if self.think is not None:
+            payload["think"] = self.think
+
+        started = time.monotonic()
+
         try:
             response = requests.post(
                 f"{self.host}/api/chat",
@@ -177,6 +194,8 @@ class OllamaProvider(AIProvider):
             raise AIProviderError(
                 f"Ollama API error: {error}"
             ) from error
+
+        logger.debug("Ollama request to %s took %.2fs", self.host, time.monotonic() - started)
 
         return response.json().get("message", {})
 

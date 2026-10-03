@@ -1,6 +1,7 @@
 from atlas.core.application import application
 from atlas.devices import Sighting
 from atlas.devices.store import InventoryStore
+from atlas.intelligence.providers.base import AIProviderError, ChatReply, SuggestedAction
 from atlas.knowledge.queries import KnowledgeQueries
 from atlas.web import api
 
@@ -90,3 +91,51 @@ def test_graph_route(temp_db):
 
     status, graph = api.handle("GET", "/api/graph?ignored=1")
     assert status == 200 and router_node in {node["data"]["id"] for node in graph["nodes"]}
+
+
+class StubAgent:
+
+    def converse(self, messages):
+        return ChatReply(text=f"you said {messages[-1]['content']}", action=SuggestedAction("restart_container", "sonarr"))
+
+
+def test_chat_route(temp_db, monkeypatch):
+
+    monkeypatch.setattr(api, "_agent", lambda: StubAgent())
+
+    status, payload = api.handle("POST", "/api/chat", {"message": "hi"})
+    assert status == 200 and payload["text"] == "you said hi" and payload["action"]["command"] == "atlas restart sonarr"
+
+    again = api.handle("POST", "/api/chat", {"message": "again", "session": payload["session"]})[1]
+    assert again["session"] == payload["session"]
+
+
+def test_chat_route_maps_provider_error_to_502(temp_db, monkeypatch):
+
+    def boom():
+        raise AIProviderError("no key")
+
+    monkeypatch.setattr(api, "_agent", boom)
+
+    assert api.handle("POST", "/api/chat", {"message": "hi"}) == (502, {"error": "no key"})
+
+
+def test_execute_route(temp_db, monkeypatch):
+
+    monkeypatch.setattr(api, "_environment", lambda: {"containers": {"Docker": {"containers": [{"name": "sonarr"}]}}})
+    monkeypatch.setattr("atlas.web.chat.execute_action", lambda action: {"success": True})
+
+    assert api.handle("POST", "/api/actions/execute", {"action": {"type": "restart_container", "target": "sonarr"}}) == \
+        (200, {"ok": True, "result": {"success": True}})
+    assert api.handle("POST", "/api/actions/execute", {"action": {"type": "restart_container", "target": "nope"}})[0] == 409
+
+
+def test_execute_route_maps_live_state_failure_to_503(temp_db, monkeypatch):
+
+    def boom():
+        raise RuntimeError("docker down")
+
+    monkeypatch.setattr(api, "_environment", boom)
+
+    assert api.handle("POST", "/api/actions/execute", {"action": {"type": "restart_container", "target": "sonarr"}}) == \
+        (503, {"error": "could not check live state: docker down"})

@@ -18,6 +18,7 @@ from atlas.devices.store import InventoryStore
 from atlas.knowledge.queries import KnowledgeQueries
 from atlas.reporting.trends import build_trends_payload
 from atlas.web import api
+from atlas.web.chat_page import render_chat_page
 from atlas.web.devices_pages import render_coverage_page, render_device_page, render_devices_page, render_triage_page
 from atlas.web.render import build_summary, render_history_page, render_map_page, render_overview_page, render_trends_page
 
@@ -62,6 +63,22 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             body = render_trends_page(build_trends_payload())
         elif path == "/map":
             body = render_map_page(query.latest_topology())
+        elif path == "/chat":
+            try:
+                prefill = ""
+                match = re.search(r"(?:^|&)device=(\d+)", self.path.partition("?")[2])
+                if match:
+                    device = InventoryStore().device(int(match.group(1)))
+                    if device:
+                        sources = ", ".join(sorted({sighting["source"] for sighting in device["sightings"]}))
+                        name = device["name"] or device["ip"] or f"device {device['id']}"
+                        prefill = (f"Tell me about {name} ({device['ip'] or 'no ip'}): it is {device['status']}, "
+                                   f"state {device['state']}, seen by {sources}. Anything wrong with it?")
+                body = render_chat_page(prefill)
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "text/plain; charset=utf-8", "Internal error")
+                return
         elif path == "/api/summary":
             self._send(200, "application/json",
                        json.dumps(build_summary(query.latest_topology(), InventoryStore().devices())))

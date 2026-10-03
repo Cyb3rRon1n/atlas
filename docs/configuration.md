@@ -89,6 +89,7 @@ Controls the AI backend behind `atlas analyze`.
 | `provider` | `anthropic` | `anthropic` or `ollama` |
 | `model` | `claude-opus-5` | The Claude model ID, or an Ollama model name (e.g. `llama3.1`) when `provider: ollama` |
 | `ollama_host` | `http://localhost:11434` | Only used when `provider: ollama` |
+| `think` | `false` | Only used when `provider: ollama`. Thinking models such as qwen3 reason silently before answering, which is much slower — `false` keeps replies fast. Set `null` if your Ollama or model rejects the field. |
 
 The Anthropic provider reads its API key from the `ANTHROPIC_API_KEY` environment variable — it is never stored in `atlas.yaml`.
 

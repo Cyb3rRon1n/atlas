@@ -20,6 +20,8 @@ from atlas.intelligence.providers.base import AIProviderError, SuggestedAction
 
 RESIZE_TYPES = {action_type for action_type in ACTIONS if action_type.startswith("resize_")}
 
+PROXMOX_GUEST_TYPES = {"restart_guest", "stop_guest", "resize_guest"}
+
 
 ACTION_FIELDS = ("type", "target", "cpus", "memory")
 
@@ -221,7 +223,18 @@ def execute_step(action_data, environment_factory, executor=execute_action):
     if error:
         return 400, {"error": error}
 
-    if not is_action_grounded(action, environment_factory()):
+    environment = environment_factory()
+
+    if not is_action_grounded(action, environment):
+
+        if action.type.endswith("_container") and not environment.get(
+            "containers", {}
+        ).get("Docker", {}).get("available", True):
+            return 503, {"error": "could not check live state: Docker unavailable"}
+
+        if action.type in PROXMOX_GUEST_TYPES and environment.get("virtualization", {}).get("error"):
+            return 503, {"error": "could not check live state: Proxmox unavailable"}
+
         return 409, {"error": "target no longer exists / state changed"}
 
     try:

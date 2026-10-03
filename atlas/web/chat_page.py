@@ -107,7 +107,7 @@ async function send() {
   ask.value = "";
   sendButton.disabled = true;
   newChat.disabled = true;  // a reset mid-flight must not let this reply's setSession() overwrite the new session
-  status.textContent = "atlas is thinking... (a local model can take 10-30 seconds)";
+  status.textContent = "atlas is thinking... (a local model can take up to a minute)";
   try {
     const {response, data} = await post("/api/chat", {message, session: getSession()});
     if (!response.ok || !data) { bubble(failureText(response, data), "atlas"); return; }
@@ -136,9 +136,9 @@ def render_chat_page(prefill=""):
 
     body = (
         CHAT_STYLE
-        + "<p class=\"muted\">Same assistant as <code>atlas-chat</code>: it can look at containers, logs, Proxmox, "
-          "Jellyfin and your notes. Anything it suggests runs only when you press Approve, one step at a time, "
-          "after atlas re-checks the target still exists.</p>"
+        + "<p class=\"muted\">Same assistant as <code>atlas chat</code>: it can look at containers, logs and "
+          "whatever integrations are configured, plus your notes. Anything it suggests runs only when you press "
+          "Approve, one step at a time, after atlas re-checks the target still exists.</p>"
         + "<div id=\"log\"></div>"
         + f"<textarea id=\"ask\" placeholder=\"Ask about your network...\">{_esc(prefill)}</textarea>"
         + "<p><button class=\"primary\" id=\"send\">Send</button> <button id=\"new-chat\">New conversation</button> "

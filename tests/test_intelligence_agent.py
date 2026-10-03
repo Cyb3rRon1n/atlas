@@ -202,3 +202,40 @@ def test_agent_builds_tools_from_config_once():
 
     assert "get_monitoring" in agent.tools
     assert "get_proxmox_status" not in agent.tools
+
+
+def test_live_environment_carries_proxmox_error_for_503_gating():
+    """
+    atlas/web/chat.py's execute_step() needs to tell "Proxmox is down" (503)
+    apart from "this target genuinely doesn't exist" (409) - it does that by
+    reading environment["virtualization"]["error"], which _live_environment()
+    only sets when get_proxmox_status's own tool call came back with one.
+    """
+
+    config = AtlasConfig()
+    config.proxmox.enabled = True
+
+    agent = AtlasAgent(FakeProvider(ChatReply(text="ok")), config)
+
+    with patch("atlas.docker.collect_containers", return_value={"available": True, "containers": []}), \
+         patch("atlas.intelligence.agent.execute_tool", return_value={"error": "Could not reach Proxmox at https://pve:8006."}):
+
+        environment = agent._live_environment()
+
+    assert environment["virtualization"]["error"] == "Could not reach Proxmox at https://pve:8006."
+    assert environment["virtualization"]["guests"] == []
+
+
+def test_live_environment_omits_error_key_when_proxmox_is_healthy():
+
+    config = AtlasConfig()
+    config.proxmox.enabled = True
+
+    agent = AtlasAgent(FakeProvider(ChatReply(text="ok")), config)
+
+    with patch("atlas.docker.collect_containers", return_value={"available": True, "containers": []}), \
+         patch("atlas.intelligence.agent.execute_tool", return_value={"guests": [{"vmid": 100}]}):
+
+        environment = agent._live_environment()
+
+    assert "error" not in environment["virtualization"]

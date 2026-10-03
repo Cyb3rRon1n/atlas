@@ -154,6 +154,13 @@ def test_map_page_without_topology_still_offers_the_graph():
     assert "atlas map" in page and '<div id="graph"' in page
 
 
+def test_map_panel_links_to_chat():
+
+    page = render_map_page(None)
+
+    assert 'id="panel-ask"' in page and '"/chat?device=" + current.id' in page
+
+
 def test_latest_topology_skips_rows_other_commands_saved(temp_db):
 
     from atlas.intelligence.context import AtlasEnvironmentContext

@@ -26,7 +26,23 @@ CHAT_SCRIPT = """
 const log = document.getElementById("log");
 const ask = document.getElementById("ask");
 const sendButton = document.getElementById("send");
+const newChat = document.getElementById("new-chat");
 const status = document.getElementById("chat-status");
+
+let memorySession = null;
+
+function getSession() {
+  // Private-browsing/quota-denied sessionStorage must not crash the page - fall back to a plain variable.
+  try { return sessionStorage.getItem("atlasChat"); } catch (error) { return memorySession; }
+}
+
+function setSession(value) {
+  try { sessionStorage.setItem("atlasChat", value); } catch (error) { memorySession = value; }
+}
+
+function clearSession() {
+  try { sessionStorage.removeItem("atlasChat"); } catch (error) { memorySession = null; }
+}
 
 function bubble(text, who) {
   const div = document.createElement("div");
@@ -84,16 +100,18 @@ function renderSteps(container, steps) {
 }
 
 async function send() {
+  if (sendButton.disabled) return;  // in-flight guard - also blocks Enter firing a second send mid-request
   const message = ask.value.trim();
   if (!message) return;
   bubble(message, "you");
   ask.value = "";
   sendButton.disabled = true;
+  newChat.disabled = true;  // a reset mid-flight must not let this reply's setSession() overwrite the new session
   status.textContent = "atlas is thinking... (a local model can take 10-30 seconds)";
   try {
-    const {response, data} = await post("/api/chat", {message, session: sessionStorage.getItem("atlasChat")});
+    const {response, data} = await post("/api/chat", {message, session: getSession()});
     if (!response.ok || !data) { bubble(failureText(response, data), "atlas"); return; }
-    sessionStorage.setItem("atlasChat", data.session);
+    setSession(data.session);
     const reply = bubble(data.text, "atlas");
     if (data.plan) {
       const title = document.createElement("div");
@@ -104,12 +122,12 @@ async function send() {
       renderSteps(reply, [{action: data.action, rationale: ""}]);
     }
   } catch (error) { bubble("Request failed: " + error, "atlas"); }
-  finally { sendButton.disabled = false; status.textContent = ""; }
+  finally { sendButton.disabled = false; newChat.disabled = false; status.textContent = ""; }
 }
 
 sendButton.addEventListener("click", send);
 ask.addEventListener("keydown", (event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); send(); } });
-document.getElementById("new-chat").addEventListener("click", () => { sessionStorage.removeItem("atlasChat"); log.textContent = ""; });
+newChat.addEventListener("click", () => { clearSession(); log.textContent = ""; });
 </script>
 """
 

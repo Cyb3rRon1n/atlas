@@ -28,7 +28,8 @@ def get_provider(config) -> AIProvider:
 
         return OllamaProvider(
             model=config.model,
-            host=config.ollama_host
+            host=config.ollama_host,
+            think=config.think
         )
 
     raise AIProviderError(

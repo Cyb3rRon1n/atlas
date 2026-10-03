@@ -160,6 +160,37 @@ def test_post_rejects_bad_json_big_bodies_and_unknown_paths(running_server):
     connection.close()
 
 
+def test_chat_page_and_device_prefill(running_server):
+
+    _, device_id = _seed_device()
+
+    status, body = _get(running_server + "/chat")
+    assert status == 200 and 'id="ask"' in body
+
+    status, body = _get(running_server + f"/chat?device={device_id}")
+    assert status == 200 and "Tell me about router" in body
+
+
+def test_chat_prefill_falls_back_to_ip_then_id_when_name_is_none(running_server, monkeypatch):
+    """
+    device['name'] is normally always set, but the prefill must not assume
+    that: a nameless device used to render "Tell me about None".
+    """
+
+    from atlas.devices.store import InventoryStore
+
+    nameless = {"id": 9, "name": None, "ip": "10.0.0.5", "status": "online", "state": "known",
+                "sightings": [{"source": "lan"}]}
+
+    monkeypatch.setattr(InventoryStore, "device", lambda self, device_id: nameless)
+
+    status, body = _get(running_server + "/chat?device=9")
+
+    assert status == 200
+    assert "Tell me about 10.0.0.5" in body
+    assert "Tell me about None" not in body
+
+
 def test_api_get_and_summary_counts(running_server):
 
     _seed_device()

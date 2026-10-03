@@ -136,4 +136,12 @@ class AtlasAgent:
                 "guests": proxmox_data.get("guests", [])
             }
 
+            if "error" in proxmox_data:
+
+                # Lets atlas/web/chat.py's execute_step() tell "Proxmox is
+                # down" (503) apart from "this target genuinely doesn't
+                # exist" (409) - known_guest_ids()/the CLI only ever read
+                # "guests", so this extra key doesn't affect them.
+                environment["virtualization"]["error"] = proxmox_data["error"]
+
         return environment

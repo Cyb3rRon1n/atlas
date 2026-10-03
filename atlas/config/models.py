@@ -25,6 +25,11 @@ class IntelligenceConfig(BaseModel):
     provider: str = "anthropic"
     model: str = "claude-opus-5"
     ollama_host: str = "http://localhost:11434"
+    # Ollama-only: thinking models (e.g. qwen3) reason silently before
+    # answering, which is much slower - False keeps replies fast enough for
+    # Cloudflare's 100s limit. None omits the field for an Ollama/model
+    # combination that rejects it outright.
+    think: bool | None = False
 
 
 class MonitoringConfig(BaseModel):

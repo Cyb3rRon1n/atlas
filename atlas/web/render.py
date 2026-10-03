@@ -74,6 +74,7 @@ def render_page(title, body_html):
         "<a href=\"/devices\">Devices</a>"
         "<a href=\"/map\">Map</a>"
         "<a href=\"/coverage\">Coverage</a>"
+        "<a href=\"/chat\">Chat</a>"
         "<a href=\"/history\">History</a>"
         "<a href=\"/trends\">Trends</a>"
         "</nav>"
@@ -186,6 +187,7 @@ async function openPanel(deviceId, keepMessage) {
   field("notes").value = current.notes;
   field("important").checked = current.important;
   document.getElementById("panel-link").href = "/devices/" + current.id;
+  document.getElementById("panel-ask").href = "/chat?device=" + current.id;
   cy.resize();
   cy.fit(undefined, 20);
 }
@@ -252,6 +254,7 @@ def _map_block():
         "<label><input type=\"checkbox\" id=\"panel-important\"> Important - alert when it goes quiet</label>"
         "<p><button class=\"primary\" id=\"panel-save\">Save</button><button id=\"panel-close\">Close</button></p>"
         "<p id=\"panel-msg\" class=\"muted\"></p>"
+        "<p><a id=\"panel-ask\" href=\"#\">Ask atlas about this device</a></p>"
         "<p><a id=\"panel-link\" href=\"#\">Full page - merge, split, every sighting</a></p></aside></div>"
         "<script src=\"/static/cytoscape.min.js?v=3.34.3\"></script>"
         + MAP_SCRIPT

@@ -160,6 +160,17 @@ def test_post_rejects_bad_json_big_bodies_and_unknown_paths(running_server):
     connection.close()
 
 
+def test_chat_page_and_device_prefill(running_server):
+
+    _, device_id = _seed_device()
+
+    status, body = _get(running_server + "/chat")
+    assert status == 200 and 'id="ask"' in body
+
+    status, body = _get(running_server + f"/chat?device={device_id}")
+    assert status == 200 and "Tell me about router" in body
+
+
 def test_api_get_and_summary_counts(running_server):
 
     _seed_device()

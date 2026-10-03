@@ -118,8 +118,10 @@ The pages share one tab bar: Overview, **Map**, **Triage**, **Devices**, **Cover
 History, Trends. The existing pages stay as they are.
 
 - **Map**
-  - Cytoscape.js with a dagre layered layout. Both are **vendored** under
-    `atlas/web/static/`, so there is no CDN and the page works offline.
+  - Cytoscape.js, **vendored** under `atlas/web/static/`, so there is no CDN and the page
+    works offline. Layout: hosts in a row with their guests and Docker networks inside, and every
+    other device in a grid under them, most important first. (A dagre layered layout was tried and
+    dropped: on real data it put all ~30 LAN devices in one unreadable row.)
   - Structure: Internet, then the LAN, then devices, with guests and Docker networks as
     compound children inside their host. Templates and ignored devices are hidden
     behind a toggle.
@@ -213,7 +215,7 @@ The web server stays on stdlib `http.server`, which now gains `do_POST`.
 1. Inventory core and scanner: models, `atlas scan`, linking, status, notifications,
    `atlas devices` CLI list, and the `atlas-scan` compose service.
 2. The web write API, plus the Triage, Devices and Coverage tabs.
-3. Map v2 (vendored Cytoscape and dagre) and the side panel.
+3. Map v2 (vendored Cytoscape, hosts-row + device-grid layout) and the side panel.
 4. The Chat tab and Approve.
 5. vulcan PR (the `atlas-scan` service and `notify` settings), then the cyberpac switchover:
    drop the cron jobs, configure Signal, verify.

@@ -10,6 +10,8 @@ and server.py.
 
 from html import escape
 
+from atlas.devices.store import KINDS, STATES
+
 
 PAGE_STYLE = """
   body { font-family: system-ui, sans-serif; background: #0d1117; color: #e6edf3;
@@ -41,6 +43,19 @@ PAGE_STYLE = """
   #msg { color: #f85149; min-height: 1.2rem; }
 """
 
+MAP_STYLE = """
+  .map-wrap { display: flex; gap: 1rem; align-items: flex-start; }
+  #graph { flex: 1; min-width: 0; height: 70vh; min-height: 420px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; }
+  #panel { flex: 0 0 320px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem; }
+  #panel h2 { margin-top: 0; }
+  #panel input, #panel select, #panel textarea { width: 100%; box-sizing: border-box; }
+  #panel input[type=checkbox] { width: auto; }
+  .map-legend span { margin-right: 1rem; }
+  @media (max-width: 900px) { .map-wrap { flex-direction: column; } #panel { width: 100%; box-sizing: border-box; } }
+"""
+
+PAGE_STYLE += MAP_STYLE
+
 
 def _esc(value):
     return escape(str(value))
@@ -65,6 +80,181 @@ def render_page(title, body_html):
         f"<h1>{_esc(title)}</h1>"
         f"{body_html}"
         "</body></html>"
+    )
+
+
+MAP_SCRIPT = """
+<script>
+const panel = document.getElementById("panel");
+const message = document.getElementById("panel-msg");
+const graphMsg = document.getElementById("graph-msg");
+let current = null;
+let cy = null;
+
+const STYLE = [
+  {selector: "node", style: {"label": "data(label)", "color": "#e6edf3", "font-size": 11, "text-wrap": "wrap",
+    "text-valign": "bottom", "text-margin-y": 4, "background-color": "#8b949e", "width": 22, "height": 22,
+    "border-width": 2, "border-color": "#30363d"}},
+  {selector: ".fixed", style: {"shape": "round-rectangle", "background-color": "#1f6feb", "width": 60, "height": 24,
+    "text-valign": "center", "text-margin-y": 0}},
+  {selector: ".host", style: {"shape": "round-rectangle", "background-opacity": 0.08, "text-valign": "top",
+    "padding": 12, "border-width": 2}},
+  {selector: ".network", style: {"shape": "round-rectangle", "width": 16, "height": 16}},
+  {selector: ".status-seen", style: {"background-color": "#3fb950", "border-color": "#3fb950"}},
+  {selector: ".status-quiet", style: {"background-color": "#d29922", "border-color": "#d29922"}},
+  {selector: ".status-invisible", style: {"background-color": "#8b949e", "border-color": "#8b949e"}},
+  {selector: ".alert", style: {"background-color": "#f85149", "border-color": "#f85149"}},
+  {selector: ".important", style: {"border-width": 4}},
+  {selector: ".state-new", style: {"border-style": "dashed", "border-color": "#58a6ff"}},
+  {selector: ".state-ignored", style: {"opacity": 0.4}},
+  {selector: "edge", style: {"width": 1.5, "line-color": "#30363d", "curve-style": "bezier", "opacity": 0.12}},
+  {selector: ":selected", style: {"border-color": "#58a6ff", "border-width": 4}},
+];
+
+function arrange(cy) {
+  // Hosts (boxes holding guests / Docker networks) in a row, every other device in a grid under them,
+  // most important first. Deterministic and readable at ~40 devices; dagre put all LAN devices in one row.
+  const W = cy.width(), CW = 150, CH = 70, GAP = 50;
+  const rank = (n) => n.hasClass("alert") ? 0 : n.hasClass("important") ? 1 : n.hasClass("state-known") ? 2 : 3;
+  cy.$("#internet").position({x: CW / 2, y: 20});
+  cy.$("#lan").position({x: CW / 2 + CW, y: 20});
+  let left = 0, bottom = 110;
+  cy.nodes(".host").forEach((host) => {
+    const kids = host.children(), cols = Math.min(kids.length, 4) || 1;
+    kids.forEach((kid, i) => kid.position({x: left + CW / 2 + (i % cols) * CW, y: 110 + Math.floor(i / cols) * CH}));
+    kids.shift({x: left - host.boundingBox({includeLabels: true}).x1, y: 0});
+    const box = host.boundingBox({includeLabels: true});
+    left = box.x2 + GAP;
+    bottom = Math.max(bottom, box.y2);
+  });
+  const cols = Math.max(4, Math.floor(Math.max(W - 40, left) / CW));
+  cy.nodes(".device").filter((n) => !n.isParent() && !n.parent().length)
+    .sort((a, b) => rank(a) - rank(b) || a.data("label").localeCompare(b.data("label")))
+    .forEach((n, i) => n.position({x: CW / 2 + (i % cols) * CW, y: bottom + 50 + Math.floor(i / cols) * CH}));
+  cy.fit(undefined, 20);
+}
+
+async function load() {
+  const ignored = document.getElementById("show-ignored").checked ? "?ignored=1" : "";
+  try {
+    const response = await fetch("/api/graph" + ignored, {credentials: "same-origin"});
+    if (!response.ok || response.redirected) {
+      graphMsg.textContent = "Couldn't load the map (status " + response.status + ") - session expired? reload the page";
+      return;
+    }
+    const graph = await response.json();
+    graphMsg.textContent = "";
+    if (cy) cy.destroy();
+    cy = cytoscape({container: document.getElementById("graph"), elements: graph, style: STYLE,
+      layout: {name: "preset"}});
+    arrange(cy);
+    cy.on("tap", "node.device", (event) => openPanel(event.target.data("device_id")));
+    cy.on("dbltap", "node.host", (event) => {
+      const children = event.target.children();
+      children.style("display", children.first().style("display") === "none" ? "element" : "none");
+    });
+  } catch (error) {
+    graphMsg.textContent = "Couldn't load the map (network error) - session expired? reload the page";
+  }
+}
+
+function field(name) { return document.getElementById("panel-" + name); }
+
+async function openPanel(deviceId, keepMessage) {
+  try {
+    const response = await fetch("/api/devices/" + deviceId, {credentials: "same-origin"});
+    if (!response.ok || response.redirected) {
+      graphMsg.textContent = "Couldn't load the map (status " + response.status + ") - session expired? reload the page";
+      return;
+    }
+    current = await response.json();
+  } catch (error) {
+    graphMsg.textContent = "Couldn't load the map (network error) - session expired? reload the page";
+    return;
+  }
+  graphMsg.textContent = "";
+  panel.hidden = false;
+  if (!keepMessage) message.textContent = "";
+  document.getElementById("panel-title").textContent = current.name;
+  document.getElementById("panel-meta").textContent =
+    current.status + " - " + (current.ip || "no ip") + " - seen by " +
+    [...new Set(current.sightings.map((s) => s.source))].join(", ");
+  field("name").value = current.name;
+  field("kind").value = current.kind;
+  field("state").value = current.state;
+  field("tags").value = current.tags.join(", ");
+  field("notes").value = current.notes;
+  field("important").checked = current.important;
+  document.getElementById("panel-link").href = "/devices/" + current.id;
+  cy.resize();
+  cy.fit(undefined, 20);
+}
+
+document.getElementById("panel-save").addEventListener("click", async () => {
+  if (!current) return;
+  const id = current.id;
+  const body = {name: field("name").value, kind: field("kind").value, state: field("state").value,
+    notes: field("notes").value, important: field("important").checked,
+    tags: field("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean)};
+  for (const key of Object.keys(body)) {
+    const value = key === "tags" ? body[key].join(",") : body[key];
+    const currentValue = key === "tags" ? current[key].join(",") : current[key];
+    if (value === currentValue) delete body[key];
+  }
+  if (Object.keys(body).length === 0) {
+    message.textContent = "Nothing changed.";
+    return;
+  }
+  try {
+    const response = await fetch("/api/devices/" + id, {method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      message.textContent = data.error || ("Failed: " + response.status +
+        ((response.status === 401 || response.status === 403 || response.redirected) ? " (session expired? reload the page)" : ""));
+      return;
+    }
+    message.textContent = "Saved.";
+    await load();
+    openPanel(id, true);
+  } catch (error) { message.textContent = "Request failed: " + error; }
+});
+document.getElementById("panel-close").addEventListener("click", () => {
+  panel.hidden = true;
+  current = null;
+  cy.resize();
+  cy.fit(undefined, 20);
+});
+document.getElementById("show-ignored").addEventListener("change", load);
+load();
+</script>
+"""
+
+
+def _map_block():
+
+    options = lambda values: "".join(f"<option>{_esc(value)}</option>" for value in values)
+
+    return (
+        "<p class=\"map-legend muted\"><span style=\"color:#3fb950\">● seen</span>"
+        "<span style=\"color:#d29922\">● quiet</span><span style=\"color:#f85149\">● important &amp; quiet</span>"
+        "<span style=\"color:#8b949e\">● never seen</span><span>dashed = new, needs triage</span>"
+        "<span>click a device to edit - double-click a host to fold it</span>"
+        "<label style=\"display:inline\"><input type=\"checkbox\" id=\"show-ignored\"> show ignored</label></p>"
+        "<p id=\"graph-msg\" class=\"muted\"></p>"
+        "<div class=\"map-wrap\"><div id=\"graph\"></div>"
+        "<aside id=\"panel\" hidden><h2 id=\"panel-title\"></h2><p class=\"muted\" id=\"panel-meta\"></p>"
+        "<label>Name</label><input id=\"panel-name\">"
+        f"<label>Kind</label><select id=\"panel-kind\">{options(KINDS)}</select>"
+        f"<label>State</label><select id=\"panel-state\">{options(STATES)}</select>"
+        "<label>Tags (comma separated)</label><input id=\"panel-tags\">"
+        "<label>Notes</label><textarea id=\"panel-notes\"></textarea>"
+        "<label><input type=\"checkbox\" id=\"panel-important\"> Important - alert when it goes quiet</label>"
+        "<p><button class=\"primary\" id=\"panel-save\">Save</button><button id=\"panel-close\">Close</button></p>"
+        "<p id=\"panel-msg\" class=\"muted\"></p>"
+        "<p><a id=\"panel-link\" href=\"#\">Full page - merge, split, every sighting</a></p></aside></div>"
+        "<script src=\"/static/cytoscape.min.js?v=3.34.3\"></script>"
+        + MAP_SCRIPT
     )
 
 
@@ -422,7 +612,8 @@ def render_map_svg(topology):
 def render_map_page(topology):
 
     if not topology:
-        return render_page("Network Map", "<p class=\"muted\">No map yet. Run: <code>atlas map</code></p>")
+        return render_page("Network Map", "<p class=\"muted\">No map yet for this host's containers - run "
+                            "<code>atlas map</code>. Devices below come from the inventory.</p>" + _map_block())
 
     docker = topology.get("docker") or {}
     responsibility = topology.get("responsibility") or {}
@@ -440,7 +631,8 @@ def render_map_page(topology):
     body = (
         f"<p class=\"muted\">Snapshot {_esc(topology.get('generated_at', ''))} - refreshed by "
         "<code>atlas map</code>. Green = up/reachable, red = down, grey = unknown.</p>"
-        f"<div class=\"card\">{render_map_svg(topology)}</div>"
+        + _map_block()
+        + f"<noscript><div class=\"card\">{render_map_svg(topology)}</div></noscript>"
         "<div class=\"card\"><h2>What atlas is responsible for</h2>"
         + _kv_table({
             "Containers on this host": responsibility.get("containers", "") + " - proposed as a plan, you confirm each step",

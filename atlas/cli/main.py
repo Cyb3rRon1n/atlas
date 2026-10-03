@@ -2,7 +2,7 @@ import json
 from dataclasses import asdict
 
 import typer
-from atlas.actions import ACTIONS, execute_action
+from atlas.actions import ACTIONS, PLAN_STEP_EVENT_TYPES, execute_action
 from atlas.discovery import run_discovery
 from atlas.inventory import save_inventory
 from atlas.inventory import load_inventory
@@ -56,17 +56,6 @@ app = typer.Typer(
 )
 
 console = Console()
-
-PLAN_STEP_EVENT_TYPES = {
-    "restart_container": "atlas.action.container_restarted",
-    "stop_container": "atlas.action.container_stopped",
-    "resize_container": "atlas.action.container_resized",
-    "restart_guest": "atlas.action.guest_restarted",
-    "stop_guest": "atlas.action.guest_stopped",
-    "resize_guest": "atlas.action.guest_resized",
-    "restart_libvirt_guest": "atlas.action.libvirt_guest_restarted",
-    "stop_libvirt_guest": "atlas.action.libvirt_guest_stopped",
-}
 
 
 def _resolve_fleet_node(node_name):

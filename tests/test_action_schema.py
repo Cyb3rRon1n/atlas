@@ -1,13 +1,27 @@
 from atlas.intelligence.providers.base import (
+    ACTION_INSTRUCTIONS,
     ACTION_OBJECT_SCHEMA,
     ACTION_SCHEMA,
     ANALYSIS_SCHEMA,
     CHAT_SCHEMA,
+    CHAT_SYSTEM_PROMPT,
     PLAN_SCHEMA,
     chat_reply_from_dict,
     plan_from_dict,
     recommendation_from_dict,
 )
+
+
+def test_action_instructions_use_propose_only_wording():
+
+    assert "can suggest eight actions" in ACTION_INSTRUCTIONS
+    assert "Atlas can currently execute eight actions" not in ACTION_INSTRUCTIONS
+
+
+def test_chat_system_prompt_states_it_cannot_run_anything_itself():
+
+    assert "cannot run anything yourself" in CHAT_SYSTEM_PROMPT
+    assert "Restarting it now" in CHAT_SYSTEM_PROMPT  # the example of what NOT to say
 
 
 def test_action_schema_includes_cpus_and_memory_as_required_nullable():

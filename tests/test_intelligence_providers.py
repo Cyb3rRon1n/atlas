@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, patch
 import anthropic
 import pytest
 
+from atlas.config.models import IntelligenceConfig
+from atlas.intelligence.providers import get_provider
 from atlas.intelligence.providers.anthropic_provider import AnthropicProvider
 from atlas.intelligence.providers.base import AIProviderError
 from atlas.intelligence.providers.ollama_provider import OllamaProvider
@@ -495,3 +497,54 @@ class TestOllamaProvider:
                 "role": "assistant",
                 "content": "Everything looks fine right now."
             }
+
+    def test_think_defaults_to_false_in_the_request_payload(self):
+
+        with patch("requests.post") as mock_post:
+
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "message": {"content": SAMPLE_RESPONSE_JSON}
+            }
+            mock_post.return_value = mock_response
+
+            provider = OllamaProvider(model="llama3.1")
+            provider.analyze(SAMPLE_CONTEXT)
+
+            _, kwargs = mock_post.call_args
+            assert kwargs["json"]["think"] is False
+
+    def test_think_none_omits_the_key_entirely(self):
+
+        with patch("requests.post") as mock_post:
+
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "message": {"content": SAMPLE_RESPONSE_JSON}
+            }
+            mock_post.return_value = mock_response
+
+            provider = OllamaProvider(model="llama3.1", think=None)
+            provider.analyze(SAMPLE_CONTEXT)
+
+            _, kwargs = mock_post.call_args
+            assert "think" not in kwargs["json"]
+
+
+class TestGetProvider:
+
+    def test_get_provider_passes_think_through_to_ollama(self):
+
+        config = IntelligenceConfig(provider="ollama", model="llama3.1", think=None)
+
+        provider = get_provider(config)
+
+        assert provider.think is None
+
+    def test_get_provider_ollama_think_default(self):
+
+        config = IntelligenceConfig(provider="ollama", model="llama3.1")
+
+        provider = get_provider(config)
+
+        assert provider.think is False

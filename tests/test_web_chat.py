@@ -245,6 +245,42 @@ def test_execute_step_executor_exception_becomes_ok_false(temp_db):
     assert json.loads(event.payload)["result"] == {"success": False, "error": "docker exploded"}
 
 
+def test_execute_step_docker_unavailable_gives_503_and_does_not_run(temp_db):
+
+    def executor(action):
+        raise AssertionError("must not run")
+
+    environment = {"containers": {"Docker": {"available": False, "containers": []}}}
+
+    status, payload = execute_step({"type": "restart_container", "target": "sonarr"}, lambda: environment, executor)
+
+    assert status == 503 and payload == {"error": "could not check live state: Docker unavailable"}
+
+
+def test_execute_step_proxmox_error_gives_503_and_does_not_run(temp_db):
+
+    def executor(action):
+        raise AssertionError("must not run")
+
+    environment = {"virtualization": {"guests": [], "error": "Could not reach Proxmox at https://pve:8006."}}
+
+    status, payload = execute_step({"type": "restart_guest", "target": "100"}, lambda: environment, executor)
+
+    assert status == 503 and payload == {"error": "could not check live state: Proxmox unavailable"}
+
+
+def test_execute_step_missing_target_with_docker_available_stays_409(temp_db):
+
+    def executor(action):
+        raise AssertionError("must not run")
+
+    environment = {"containers": {"Docker": {"available": True, "containers": [{"name": "sonarr"}]}}}
+
+    status, payload = execute_step({"type": "restart_container", "target": "ghost"}, lambda: environment, executor)
+
+    assert status == 409 and payload == {"error": "target no longer exists / state changed"}
+
+
 def test_execute_step_valid_resize_reaches_executor_intact(temp_db):
 
     calls = []

@@ -227,7 +227,8 @@ CHAT_SCHEMA = {
 
 
 ACTION_INSTRUCTIONS = (
-    "Atlas can currently execute eight actions. (1) Restart a Docker "
+    "Atlas can suggest eight actions; none of them runs unless the operator "
+    "explicitly approves it afterwards. (1) Restart a Docker "
     "container (action type \"restart_container\", with \"target\" set to a "
     "container name that literally appears in the provided containers data) "
     "- use when that container is crash-looping, unhealthy, unexpectedly "
@@ -335,7 +336,13 @@ CHAT_SYSTEM_PROMPT = (
     "over a guess, and never present a guess as a finding.\n\nAnswer "
     "naturally and concisely. Only include a structured action suggestion "
     "when it is genuinely warranted by what you actually observed via a "
-    "tool call - most replies should leave it null.\n\n" + ACTION_INSTRUCTIONS + "\n\n" + PLAN_INSTRUCTIONS
+    "tool call - most replies should leave it null. You cannot run anything "
+    "yourself: a suggested action or plan is only a proposal, and it runs "
+    "only if the operator approves it after reading your reply. In \"text\", "
+    "never say or imply that you are doing, have done, or will now do it "
+    "(no \"Restarting it now\", \"I've restarted it\", \"Done\") - say what "
+    "you recommend and that it needs their approval, e.g. \"I suggest "
+    "restarting X; approve it to run it.\"\n\n" + ACTION_INSTRUCTIONS + "\n\n" + PLAN_INSTRUCTIONS
 )
 
 

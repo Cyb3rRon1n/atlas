@@ -16,6 +16,10 @@ def test_chat_page_structure_and_prefill_escaping():
     assert "&lt;b&gt;&quot;tv&quot;&lt;/b&gt;" in page and "<b>" not in page.split("<script>")[0].split("<h1>")[1]
     assert "/api/chat" in page and "/api/actions/execute" in page
     assert "innerHTML" not in CHAT_SCRIPT
+    assert "<code>atlas chat</code>" in page and "<code>atlas-chat</code>" not in page
+    assert "whatever integrations are configured, plus your notes" in page
+    assert "a local model can take up to a minute" in CHAT_SCRIPT
+    assert "10-30 seconds" not in CHAT_SCRIPT
 
 
 def test_chat_script_enables_next_step_only_after_success():

@@ -52,6 +52,23 @@ def test_known_guest_ids_empty_when_no_virtualization_key():
     assert known_guest_ids({"system": {}}) == set()
 
 
+def test_known_guest_ids_unaffected_by_extra_error_key():
+    """
+    AtlasAgent._live_environment() adds environment["virtualization"]["error"]
+    when a Proxmox tool call fails - known_guest_ids() must keep reading just
+    "guests" and ignore the extra key rather than choke on it.
+    """
+
+    environment = {
+        "virtualization": {
+            "guests": [{"vmid": 100, "name": "plex"}],
+            "error": "Could not reach Proxmox at https://pve:8006."
+        }
+    }
+
+    assert known_guest_ids(environment) == {"100"}
+
+
 def test_known_libvirt_guest_names_flattens_across_plugins():
 
     environment = {

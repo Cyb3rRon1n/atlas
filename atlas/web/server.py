@@ -71,7 +71,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                     device = InventoryStore().device(int(match.group(1)))
                     if device:
                         sources = ", ".join(sorted({sighting["source"] for sighting in device["sightings"]}))
-                        prefill = (f"Tell me about {device['name']} ({device['ip'] or 'no ip'}): it is {device['status']}, "
+                        name = device["name"] or device["ip"] or f"device {device['id']}"
+                        prefill = (f"Tell me about {name} ({device['ip'] or 'no ip'}): it is {device['status']}, "
                                    f"state {device['state']}, seen by {sources}. Anything wrong with it?")
                 body = render_chat_page(prefill)
             except Exception as error:

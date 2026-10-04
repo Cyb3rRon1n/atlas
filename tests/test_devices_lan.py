@@ -71,6 +71,32 @@ def test_scan_filters_to_subnet_and_adds_self(monkeypatch):
     assert all(s.source == "lan" for s in sightings)
 
 
+def test_default_gateway_returns_dotted_ip():
+
+    assert lan.default_gateway(ROUTE) == "192.168.10.1"
+
+
+def test_default_gateway_none_without_default_route():
+
+    assert lan.default_gateway(ROUTE.splitlines()[0] + "\n") is None
+
+
+def test_scan_flags_only_the_gateway_sighting(monkeypatch):
+
+    files = {"/proc/net/route": ROUTE, "/proc/net/arp": ARP}
+    monkeypatch.setattr(lan, "_read", lambda path: files[path])
+    monkeypatch.setattr(lan, "sweep", lambda subnets, timeout: None)
+    monkeypatch.setattr(time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(lan, "_reverse_dns", lambda ip: None)
+    monkeypatch.setattr(lan, "local_sighting", lambda iface: None)
+
+    _, sightings = lan.scan()
+
+    by_ip = {s.ip: s for s in sightings}
+    assert by_ip["192.168.10.1"].detail.get("gateway") is True
+    assert by_ip["192.168.10.57"].detail.get("gateway") is None
+
+
 def test_scan_with_no_subnet_raises(monkeypatch):
 
     monkeypatch.setattr(lan, "_read", lambda path: "Iface\n")

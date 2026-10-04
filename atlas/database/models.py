@@ -91,6 +91,14 @@ class DeviceRecord(Base):
     # A name match is only ever a suggestion, never an automatic merge.
     suggested_merge_id: Mapped[int | None] = mapped_column(default=None)
 
+    # unknown / wired / wireless - "unknown" lets atlas.devices.wiring guess
+    # without overwriting what the operator actually knows.
+    connection: Mapped[str] = mapped_column(default="unknown")
+
+    # The device this one's switch port/AP uplinks through, for drawing the
+    # wired map. Self-referential: another row in this same table.
+    uplink_id: Mapped[int | None] = mapped_column(ForeignKey("devices.id"), default=None)
+
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)

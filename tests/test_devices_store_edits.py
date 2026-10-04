@@ -1,8 +1,12 @@
+import json
 from datetime import datetime, timedelta
 
+from sqlalchemy.orm import Session
+
 from atlas.config.models import MapHost
+from atlas.database.models import DeviceRecord
 from atlas.devices import Sighting
-from atlas.devices.store import KINDS, InventoryStore
+from atlas.devices.store import CONNECTIONS, KINDS, InventoryStore
 
 
 T0 = datetime(2026, 9, 30, 12, 0)
@@ -57,6 +61,94 @@ def test_set_fields_applies_locks_and_clears_suggestion_when_triaged(temp_db):
 
     store.set_fields(guest["id"], {"state": "ignored"})
     assert store.device(guest["id"])["suggested_merge_id"] is None
+
+
+def test_set_fields_validates_connection(temp_db):
+
+    store, known, guest, phone = seeded(temp_db)
+
+    assert store.set_fields(phone["id"], {"connection": "bluetooth"}) == \
+        {"found": True, "error": f"connection must be one of: {', '.join(CONNECTIONS)}"}
+
+    assert store.set_fields(phone["id"], {"connection": "wired"}) == {"found": True}
+    assert store.device(phone["id"])["connection"] == "wired"
+
+
+def test_set_fields_validates_uplink_id_before_applying_anything(temp_db):
+
+    store, known, guest, phone = seeded(temp_db)
+
+    assert store.set_fields(phone["id"], {"uplink_id": "x"}) == \
+        {"found": True, "error": "uplink_id must be a device id or null"}
+    assert store.set_fields(phone["id"], {"uplink_id": True}) == \
+        {"found": True, "error": "uplink_id must be a device id or null"}
+    assert store.set_fields(phone["id"], {"uplink_id": phone["id"]}) == \
+        {"found": True, "error": "a device can't be connected to itself"}
+    assert store.set_fields(phone["id"], {"uplink_id": 999999}) == \
+        {"found": True, "error": "uplink_id must be an existing device"}
+    assert store.device(phone["id"])["uplink_id"] is None
+
+    assert store.set_fields(phone["id"], {"uplink_id": known["id"]}) == {"found": True}
+    assert store.device(phone["id"])["uplink_id"] == known["id"]
+
+    assert store.set_fields(phone["id"], {"uplink_id": None}) == {"found": True}
+    assert store.device(phone["id"])["uplink_id"] is None
+
+
+def test_connection_and_uplink_id_get_locked(temp_db):
+
+    store, known, guest, phone = seeded(temp_db)
+
+    store.set_fields(phone["id"], {"connection": "wired", "uplink_id": known["id"]})
+
+    with Session(store.engine) as session:
+        locked = set(json.loads(session.get(DeviceRecord, phone["id"]).locked_fields))
+
+    assert {"connection", "uplink_id"} <= locked
+
+
+def test_merge_repoints_uplinks_and_clears_a_resulting_self_reference(temp_db):
+
+    store, known, guest, phone = seeded(temp_db)
+
+    store.set_fields(phone["id"], {"uplink_id": guest["id"]})
+    store.set_fields(known["id"], {"uplink_id": guest["id"]})
+
+    store.merge(guest["id"], known["id"])
+
+    assert store.device(phone["id"])["uplink_id"] == known["id"]
+    assert store.device(known["id"])["uplink_id"] is None
+
+
+def test_devices_exposes_connection_fields(temp_db):
+
+    store = InventoryStore(temp_db)
+    store.record_run("lan", [Sighting("lan", "00:11:32:aa:bb:cc", ip="192.168.10.5", mac="00:11:32:aa:bb:cc")])
+
+    device = store.devices()[0]
+    assert device["connection"] == "unknown"
+    assert device["connection_guessed"] is False
+    assert device["uplink_id"] is None
+
+    store.set_fields(device["id"], {"connection": "wired"})
+    device = store.device(device["id"])
+    assert device["connection"] == "wired"
+    assert device["connection_guessed"] is False
+
+
+def test_devices_guesses_wireless_from_a_locally_administered_mac(temp_db):
+    """The effective connection is the guess, but the stored value underneath
+    stays "unknown" - recoverable, not silently overwritten by the guess."""
+
+    store = InventoryStore(temp_db)
+    store.record_run("lan", [Sighting("lan", "da:a1:19:00:00:01", ip="192.168.10.6", mac="da:a1:19:00:00:01")])
+
+    device = store.devices()[0]
+    assert device["connection"] == "wireless"
+    assert device["connection_guessed"] is True
+
+    with Session(store.engine) as session:
+        assert session.get(DeviceRecord, device["id"]).connection == "unknown"
 
 
 def test_merge_moves_sightings_and_notifications_and_deletes_source(temp_db):

@@ -1,9 +1,9 @@
 from atlas.devices.wiring import effective_connection
 
 
-def device(connection="unknown", kind="other", sightings=None):
+def device(connection="unknown", kind="other", name="device", sightings=None):
 
-    return {"connection": connection, "kind": kind, "sightings": sightings or []}
+    return {"connection": connection, "kind": kind, "name": name, "sightings": sightings or []}
 
 
 def test_operator_value_always_wins():
@@ -26,6 +26,33 @@ def test_phone_kind_is_guessed_wireless_even_with_a_global_mac():
 
     assert effective_connection(device(kind="phone", sightings=[{"mac": "00:11:32:aa:bb:cc"}])) == \
         ("wireless", True)
+
+
+def test_iot_kind_is_guessed_wireless_even_with_a_global_mac():
+
+    assert effective_connection(device(kind="iot", sightings=[{"mac": "00:11:32:aa:bb:cc"}])) == \
+        ("wireless", True)
+
+
+def test_wlan_in_device_name_is_guessed_wireless():
+
+    assert effective_connection(device(name="wlan0", sightings=[{"mac": "00:11:32:aa:bb:cc"}])) == \
+        ("wireless", True)
+
+
+def test_wlan_in_a_sighting_hostname_is_guessed_wireless():
+
+    assert effective_connection(device(sightings=[{"mac": "00:11:32:aa:bb:cc", "hostname": "iot-WLAN-bridge"}])) == \
+        ("wireless", True)
+
+
+def test_proxmox_guest_with_a_locally_administered_mac_stays_unknown():
+    """VMs/LXCs can have locally administered MACs by nature of being virtual -
+    that's never evidence of wireless, so a proxmox sighting short-circuits the
+    guess entirely, even if some other sighting on the same device would qualify."""
+
+    assert effective_connection(device(sightings=[{"source": "proxmox", "mac": "da:a1:19:00:00:01"}])) == \
+        ("unknown", False)
 
 
 def test_junk_or_missing_mac_never_raises():

@@ -8,7 +8,7 @@ from atlas.web.devices_pages import (ACTIONS_SCRIPT, render_coverage_page, rende
 def device(id, name, state="new", status="seen", sightings=None, **extra):
 
     return {"id": id, "name": name, "kind": "other", "tags": [], "notes": "", "important": False,
-            "state": state, "suggested_merge_id": None, "status": status, "ip": f"192.168.10.{id}",
+            "state": state, "connection": "unknown", "connection_guessed": False, "uplink_id": None, "suggested_merge_id": None, "status": status, "ip": f"192.168.10.{id}",
             "last_seen": "2026-09-30T12:00:00",
             "sightings": sightings or [{"id": id * 10, "source": "lan", "external_id": f"aa:{id}",
                                         "ip": f"192.168.10.{id}", "mac": f"aa:{id}", "hostname": None,
@@ -68,7 +68,8 @@ def test_device_page_form_carries_data_original_with_device_values():
     original = json.loads(unescape(html[start:end]))
 
     assert original == {"name": "pixel", "kind": "network", "state": "known",
-                        "tags": ["a", "b"], "notes": "hello", "important": True}
+                        "tags": ["a", "b"], "notes": "hello", "important": True,
+                        "connection": "unknown", "uplink_id": None}
 
 
 def test_device_page_split_only_with_several_sightings_and_merge_targets():
@@ -82,6 +83,42 @@ def test_device_page_split_only_with_several_sightings_and_merge_targets():
 
     two = device(1, "mediabox", sightings=[device(1, "a")["sightings"][0], device(9, "b")["sightings"][0]])
     assert 'data-post="/api/sightings/10/split"' in render_device_page(two, [two])
+
+
+def test_device_page_connection_and_uplink_fields():
+
+    switch = device(2, "switch", kind="network")
+    nas = device(3, "nas", kind="server")
+    phone = device(4, "phone")
+    dev = device(1, "pc", kind="server", connection="wired", uplink_id=2)
+
+    html = render_device_page(dev, [dev, switch, nas, phone])
+
+    assert '<select name="connection">' in html and "<option selected>wired</option>" in html
+    assert '<select name="uplink">' in html and '<option value="">router / not set</option>' in html
+    assert '<option value="2" selected>switch</option>' in html and '<option value="3">nas</option>' in html
+    assert '<option value="4">phone</option>' not in html.split('name="uplink"')[1].split("</select>")[0]
+    assert '<option value="1"' not in html.split('name="uplink"')[1].split("</select>")[0]
+
+    start = html.index('data-original="') + len('data-original="')
+    original = json.loads(unescape(html[start:html.index('"', start)]))
+    assert original["connection"] == "wired" and original["uplink_id"] == 2
+
+
+def test_device_page_shows_stored_connection_when_guessed():
+
+    dev = device(1, "pixel", connection="wireless", connection_guessed=True)
+
+    html = render_device_page(dev, [dev])
+
+    assert "<option selected>unknown</option>" in html and "guessed wireless" in html
+    assert '<option value="" selected>router / not set</option>' in html
+
+
+def test_actions_script_diffs_connection_and_uplink():
+
+    assert 'field("connection").value' in ACTIONS_SCRIPT
+    assert "String(original.uplink_id ?? \"\")" in ACTIONS_SCRIPT
 
 
 def test_coverage_page_shows_source_failures():

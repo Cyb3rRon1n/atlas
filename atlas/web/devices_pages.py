@@ -7,7 +7,7 @@ data into innerHTML.
 
 import json
 
-from atlas.devices.store import KINDS, STATES
+from atlas.devices.store import CONNECTIONS, KINDS, STATES
 from atlas.web.render import _esc, render_page
 
 
@@ -26,12 +26,15 @@ document.addEventListener("click", async (event) => {
     const original = JSON.parse(formEl.dataset.original || "{}");
     const fields = {name: field("name").value, kind: field("kind").value, state: field("state").value,
       notes: field("notes").value, important: field("important").checked,
-      tags: field("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean)};
+      tags: field("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean),
+      connection: field("connection").value, uplink_id: field("uplink").value};
     for (const key of Object.keys(fields)) {
       const value = key === "tags" ? fields[key].join(",") : fields[key];
-      const originalValue = key === "tags" ? (original[key] || []).join(",") : original[key];
+      const originalValue = key === "tags" ? (original[key] || []).join(",")
+        : key === "uplink_id" ? String(original.uplink_id ?? "") : original[key];
       if (value === originalValue) delete fields[key];
     }
+    if ("uplink_id" in fields) fields.uplink_id = fields.uplink_id === "" ? null : parseInt(fields.uplink_id, 10);
     if (Object.keys(fields).length === 0) { message.textContent = "Nothing changed."; return; }
     Object.assign(body, fields);
   }
@@ -146,10 +149,20 @@ def _options(values, selected):
 
 def render_device_page(device, devices):
 
+    # The form edits the stored value, which is "unknown" whenever the shown one is a guess.
+    connection = "unknown" if device["connection_guessed"] else device["connection"]
     original = _esc(json.dumps({
         "name": device["name"], "kind": device["kind"], "state": device["state"],
         "tags": device["tags"], "notes": device["notes"], "important": device["important"],
+        "connection": connection, "uplink_id": device["uplink_id"],
     }))
+
+    uplinks = "".join(
+        f"<option value=\"{other['id']}\"{' selected' if other['id'] == device['uplink_id'] else ''}>{_esc(other['name'])}</option>"
+        for other in devices
+        if other["id"] != device["id"] and (other["kind"] in ("network", "server") or other["id"] == device["uplink_id"])
+    )
+    guess = "guessed wireless (randomized MAC or phone)" if device["connection_guessed"] else ""
 
     form = (
         f"<form id=\"edit\" data-original=\"{original}\" "
@@ -157,6 +170,10 @@ def render_device_page(device, devices):
         f"<label>Name</label><input name=\"name\" value=\"{_esc(device['name'])}\" size=\"40\">"
         f"<label>Kind</label><select name=\"kind\">{_options(KINDS, device['kind'])}</select>"
         f"<label>State</label><select name=\"state\">{_options(STATES, device['state'])}</select>"
+        f"<label>Connection</label><select name=\"connection\">{_options(CONNECTIONS, connection)}</select> "
+        f"<span class=\"muted\">{_esc(guess)}</span>"
+        "<label>Connected to</label><select name=\"uplink\">"
+        f"<option value=\"\"{'' if device['uplink_id'] is not None else ' selected'}>router / not set</option>{uplinks}</select>"
         f"<label>Tags (comma separated)</label><input name=\"tags\" value=\"{_esc(', '.join(device['tags']))}\" size=\"40\">"
         f"<label>Notes</label><textarea name=\"notes\">{_esc(device['notes'])}</textarea>"
         f"<label><input type=\"checkbox\" name=\"important\"{' checked' if device['important'] else ''}> "

@@ -10,7 +10,7 @@ and server.py.
 
 from html import escape
 
-from atlas.devices.store import KINDS, STATES
+from atlas.devices.store import CONNECTIONS, KINDS, STATES
 
 
 PAGE_STYLE = """
@@ -91,6 +91,7 @@ const message = document.getElementById("panel-msg");
 const graphMsg = document.getElementById("graph-msg");
 let current = null;
 let cy = null;
+let graph = null;
 
 const STYLE = [
   {selector: "node", style: {"label": "data(label)", "color": "#e6edf3", "font-size": 11, "text-wrap": "wrap",
@@ -106,6 +107,9 @@ const STYLE = [
   {selector: ".status-invisible", style: {"background-color": "#8b949e", "border-color": "#8b949e"}},
   {selector: ".alert", style: {"background-color": "#f85149", "border-color": "#f85149"}},
   {selector: ".important", style: {"border-width": 4}},
+  {selector: ".router, .infra", style: {"shape": "diamond"}},
+  {selector: ".conn-unknown", style: {"border-style": "dotted"}},
+  {selector: ".conn-wireless", style: {"opacity": 0.6}},
   {selector: ".state-new", style: {"border-style": "dashed", "border-color": "#58a6ff"}},
   {selector: ".state-ignored", style: {"opacity": 0.4}},
   {selector: "edge", style: {"width": 1.5, "line-color": "#30363d", "curve-style": "bezier", "opacity": 0.12}},
@@ -113,40 +117,90 @@ const STYLE = [
 ];
 
 function arrange(cy) {
-  // Hosts (boxes holding guests / Docker networks) in a row, every other device in a grid under them,
-  // most important first. Deterministic and readable at ~40 devices; dagre put all LAN devices in one row.
-  const W = cy.width(), CW = 150, CH = 70, GAP = 50;
+  // Layered tree from the Internet node: every device under whatever it hangs off (BFS over edges, so
+  // uplink cycles can't loop), leaves wrapped in a grid of at most 4 columns under their parent, branches
+  // side by side. Compound hosts are laid out inside first, then treated as one wide node.
+  const CW = 150, CH = 70, GAP = 50;
   const rank = (n) => n.hasClass("alert") ? 0 : n.hasClass("important") ? 1 : n.hasClass("state-known") ? 2 : 3;
-  cy.$("#internet").position({x: CW / 2, y: 20});
-  cy.$("#lan").position({x: CW / 2 + CW, y: 20});
-  let left = 0, bottom = 110;
-  cy.nodes(".host").forEach((host) => {
-    const kids = host.children(), cols = Math.min(kids.length, 4) || 1;
-    kids.forEach((kid, i) => kid.position({x: left + CW / 2 + (i % cols) * CW, y: 110 + Math.floor(i / cols) * CH}));
-    kids.shift({x: left - host.boundingBox({includeLabels: true}).x1, y: 0});
-    const box = host.boundingBox({includeLabels: true});
-    left = box.x2 + GAP;
-    bottom = Math.max(bottom, box.y2);
+  const order = (a, b) => rank(a) - rank(b) || String(a.data("label")).localeCompare(String(b.data("label")), undefined, {numeric: true});
+  const top = cy.nodes().filter((n) => !n.isChild()).sort(order);
+  const byId = {}, out = {}, kids = {}, own = {}, block = {};
+  top.forEach((n) => { byId[n.id()] = n; out[n.id()] = []; });
+  cy.edges().forEach((e) => { if (out[e.data("source")] && byId[e.data("target")]) out[e.data("source")].push(byId[e.data("target")]); });
+  top.forEach((n) => {
+    if (!n.isParent()) { own[n.id()] = {w: CW, h: CH}; return; }
+    const inner = n.children().sort(order), cols = Math.min(inner.length, 4) || 1;
+    inner.forEach((kid, i) => kid.position({x: (i % cols) * CW, y: Math.floor(i / cols) * CH}));
+    const box = n.boundingBox({includeLabels: true});
+    own[n.id()] = {w: box.w + GAP, h: box.h + GAP, box};
   });
-  const cols = Math.max(4, Math.floor(Math.max(W - 40, left) / CW));
-  cy.nodes(".device").filter((n) => !n.isParent() && !n.parent().length)
-    .sort((a, b) => rank(a) - rank(b) || a.data("label").localeCompare(b.data("label")))
-    .forEach((n, i) => n.position({x: CW / 2 + (i % cols) * CW, y: bottom + 50 + Math.floor(i / cols) * CH}));
+  const visited = new Set();
+  const grow = (root) => {
+    visited.add(root.id());
+    const queue = [root];
+    while (queue.length) {
+      const n = queue.shift();
+      kids[n.id()] = [];
+      out[n.id()].sort(order).forEach((m) => {
+        if (!visited.has(m.id())) { visited.add(m.id()); kids[n.id()].push(m); queue.push(m); }
+      });
+    }
+  };
+  const isLeaf = (n) => !n.isParent() && !kids[n.id()].length;
+  const measure = (n, maxCols) => {
+    const leaves = kids[n.id()].filter(isLeaf), branches = kids[n.id()].filter((m) => !isLeaf(m));
+    const cols = Math.min(leaves.length, maxCols);
+    let rowW = cols * CW, rowH = cols ? Math.ceil(leaves.length / cols) * CH : 0;
+    branches.forEach((m) => { const b = measure(m, 4); rowW += b.w; rowH = Math.max(rowH, b.h); });
+    return block[n.id()] = {w: Math.max(own[n.id()].w, rowW), h: own[n.id()].h + rowH, leaves, branches, cols, rowW};
+  };
+  const place = (n, x, y) => {
+    const b = block[n.id()], o = own[n.id()];
+    if (o.box) {
+      const dx = x + b.w / 2 - (o.box.x1 + o.box.x2) / 2, dy = y + GAP / 2 - o.box.y1;
+      n.descendants().filter((d) => !d.isParent())
+        .forEach((d) => { const p = d.position(); d.position({x: p.x + dx, y: p.y + dy}); });
+    } else if (o.w) n.position({x: x + b.w / 2, y: y + CH / 2});
+    let left = x + (b.w - b.rowW) / 2;
+    const below = y + o.h;
+    b.leaves.forEach((m, i) => m.position({x: left + (i % b.cols) * CW + CW / 2, y: below + Math.floor(i / b.cols) * CH + CH / 2}));
+    left += b.cols * CW;
+    b.branches.forEach((m) => { place(m, left, below); left += block[m.id()].w; });
+  };
+  let bottom = 0, width = 0;
+  if (byId.internet) {
+    grow(byId.internet);
+    measure(byId.internet, 4);
+    place(byId.internet, 0, 0);
+    bottom = block.internet.h + GAP;
+    width = block.internet.w;
+  }
+  // Unreachable from the Internet (an uplink loop, a stale edge): one final row, each loop rooted at its
+  // first member, under an invisible root.
+  const rest = {id: () => "_rest", isParent: () => false};
+  kids._rest = [];
+  top.forEach((n) => { if (!visited.has(n.id())) { grow(n); kids._rest.push(n); } });
+  own._rest = {w: 0, h: 0};
+  measure(rest, Math.max(4, Math.floor(Math.max(cy.width() - 40, width) / CW)));
+  place(rest, 0, bottom);
   cy.fit(undefined, 20);
 }
 
 async function load() {
-  const ignored = document.getElementById("show-ignored").checked ? "?ignored=1" : "";
+  const params = [];
+  if (document.getElementById("show-ignored").checked) params.push("ignored=1");
+  if (document.getElementById("show-wireless").checked) params.push("wireless=1");
   try {
-    const response = await fetch("/api/graph" + ignored, {credentials: "same-origin"});
+    const response = await fetch("/api/graph" + (params.length ? "?" + params.join("&") : ""), {credentials: "same-origin"});
     if (!response.ok || response.redirected) {
       graphMsg.textContent = "Couldn't load the map (status " + response.status + ") - session expired? reload the page";
       return;
     }
-    const graph = await response.json();
+    graph = await response.json();
     graphMsg.textContent = "";
+    document.getElementById("hidden-wireless").textContent = graph.hidden_wireless + " wireless hidden";
     if (cy) cy.destroy();
-    cy = cytoscape({container: document.getElementById("graph"), elements: graph, style: STYLE,
+    cy = cytoscape({container: document.getElementById("graph"), elements: {nodes: graph.nodes, edges: graph.edges}, style: STYLE,
       layout: {name: "preset"}});
     arrange(cy);
     cy.on("tap", "node.device", (event) => openPanel(event.target.data("device_id")));
@@ -160,6 +214,28 @@ async function load() {
 }
 
 function field(name) { return document.getElementById("panel-" + name); }
+
+function storedConnection(device) { return device.connection_guessed ? "unknown" : device.connection; }
+
+function option(value, label) {
+  const element = document.createElement("option");
+  element.value = value;
+  element.textContent = label;
+  return element;
+}
+
+function fillUplinks(device) {
+  // Anything a device can plug into: router / network gear on the map, plus servers.
+  const choices = graph.nodes.filter((node) => node.data.device_id !== undefined && node.data.device_id !== device.id &&
+      (node.classes.split(" ").some((c) => c === "router" || c === "infra") || node.data.kind === "server"))
+    .sort((a, b) => a.data.label.localeCompare(b.data.label));
+  const options = [option("", "router / not set"), ...choices.map((node) => option(String(node.data.device_id), node.data.label))];
+  // Keep a current uplink that isn't on the map (hidden, ignored) selectable, so saving doesn't clear it.
+  if (device.uplink_id !== null && !choices.some((node) => node.data.device_id === device.uplink_id))
+    options.push(option(String(device.uplink_id), "device #" + device.uplink_id));
+  field("uplink").replaceChildren(...options);
+  field("uplink").value = device.uplink_id === null ? "" : String(device.uplink_id);
+}
 
 async function openPanel(deviceId, keepMessage) {
   try {
@@ -186,6 +262,9 @@ async function openPanel(deviceId, keepMessage) {
   field("tags").value = current.tags.join(", ");
   field("notes").value = current.notes;
   field("important").checked = current.important;
+  field("connection").value = storedConnection(current);
+  field("guess").textContent = current.connection_guessed ? "guessed wireless (randomized MAC or phone)" : "";
+  fillUplinks(current);
   document.getElementById("panel-link").href = "/devices/" + current.id;
   document.getElementById("panel-ask").href = "/chat?device=" + current.id;
   cy.resize();
@@ -197,10 +276,12 @@ document.getElementById("panel-save").addEventListener("click", async () => {
   const id = current.id;
   const body = {name: field("name").value, kind: field("kind").value, state: field("state").value,
     notes: field("notes").value, important: field("important").checked,
-    tags: field("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean)};
+    tags: field("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean),
+    connection: field("connection").value,
+    uplink_id: field("uplink").value === "" ? null : parseInt(field("uplink").value, 10)};
   for (const key of Object.keys(body)) {
     const value = key === "tags" ? body[key].join(",") : body[key];
-    const currentValue = key === "tags" ? current[key].join(",") : current[key];
+    const currentValue = key === "tags" ? current[key].join(",") : key === "connection" ? storedConnection(current) : current[key];
     if (value === currentValue) delete body[key];
   }
   if (Object.keys(body).length === 0) {
@@ -228,6 +309,7 @@ document.getElementById("panel-close").addEventListener("click", () => {
   cy.fit(undefined, 20);
 });
 document.getElementById("show-ignored").addEventListener("change", load);
+document.getElementById("show-wireless").addEventListener("change", load);
 load();
 </script>
 """
@@ -240,15 +322,20 @@ def _map_block():
     return (
         "<p class=\"map-legend muted\"><span style=\"color:#3fb950\">● seen</span>"
         "<span style=\"color:#d29922\">● quiet</span><span style=\"color:#f85149\">● important &amp; quiet</span>"
-        "<span style=\"color:#8b949e\">● never seen</span><span>dashed = new, needs triage</span>"
-        "<span>click a device to edit - double-click a host to fold it</span>"
-        "<label style=\"display:inline\"><input type=\"checkbox\" id=\"show-ignored\"> show ignored</label></p>"
+        "<span style=\"color:#8b949e\">● never seen</span><span>◆ router / network gear</span>"
+        "<span>dashed = new, needs triage</span><span>dotted = connection unknown</span>"
+        "<span>click a device to edit - double-click a host to fold it</span><span id=\"hidden-wireless\"></span>"
+        "<label style=\"display:inline\"><input type=\"checkbox\" id=\"show-ignored\"> show ignored</label> "
+        "<label style=\"display:inline\"><input type=\"checkbox\" id=\"show-wireless\"> show wireless</label></p>"
         "<p id=\"graph-msg\" class=\"muted\"></p>"
         "<div class=\"map-wrap\"><div id=\"graph\"></div>"
         "<aside id=\"panel\" hidden><h2 id=\"panel-title\"></h2><p class=\"muted\" id=\"panel-meta\"></p>"
         "<label>Name</label><input id=\"panel-name\">"
         f"<label>Kind</label><select id=\"panel-kind\">{options(KINDS)}</select>"
         f"<label>State</label><select id=\"panel-state\">{options(STATES)}</select>"
+        f"<label>Connection</label><select id=\"panel-connection\">{options(CONNECTIONS)}</select>"
+        "<span class=\"muted\" id=\"panel-guess\"></span>"
+        "<label>Connected to</label><select id=\"panel-uplink\"></select>"
         "<label>Tags (comma separated)</label><input id=\"panel-tags\">"
         "<label>Notes</label><textarea id=\"panel-notes\"></textarea>"
         "<label><input type=\"checkbox\" id=\"panel-important\"> Important - alert when it goes quiet</label>"

@@ -1,4 +1,5 @@
 from sqlalchemy import inspect, text
+from sqlalchemy.exc import OperationalError
 
 from atlas.database.engine import DATABASE_PATH, engine as default_engine
 from atlas.database.models import Base
@@ -22,8 +23,20 @@ def _migrate_devices_table(engine):
 
         for column, definition in DEVICE_COLUMN_MIGRATIONS.items():
 
-            if column not in existing:
+            if column in existing:
+                continue
+
+            try:
                 connection.execute(text(f"ALTER TABLE devices ADD COLUMN {column} {definition}"))
+
+            except OperationalError as error:
+
+                # atlas-web and atlas-scan share this database and can both
+                # start the migration at once; both read `existing` before
+                # either ALTERs, so the loser hits exactly this error, which
+                # means the column is already there - not a real failure.
+                if "duplicate column name" not in str(error).lower():
+                    raise
 
 
 def initialize_database(engine=None):

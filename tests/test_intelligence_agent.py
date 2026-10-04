@@ -239,3 +239,73 @@ def test_live_environment_omits_error_key_when_proxmox_is_healthy():
         environment = agent._live_environment()
 
     assert "error" not in environment["virtualization"]
+
+
+def test_live_environment_grounds_libvirt_guest_restart_action():
+    """
+    _live_environment() never collected libvirt guests, so
+    restart_libvirt_guest/stop_libvirt_guest suggestions were always
+    dropped as ungrounded - known_libvirt_guest_names() already reads
+    the plugin-keyed shape (environment["virtualization"]["Libvirt"]),
+    this just needs to actually be populated from collect_guests().
+    """
+
+    from atlas.actions import is_action_grounded
+    from atlas.intelligence.providers.base import SuggestedAction
+
+    agent = AtlasAgent(FakeProvider(ChatReply(text="ok")), AtlasConfig())
+
+    with patch("atlas.docker.collect_containers", return_value={"available": True, "containers": []}), \
+         patch(
+             "atlas.libvirt.collect_guests",
+             return_value={"available": True, "guests": [{"name": "win11", "state": "running"}]}
+         ):
+
+        environment = agent._live_environment()
+
+    assert is_action_grounded(
+        SuggestedAction(type="restart_libvirt_guest", target="win11"),
+        environment
+    )
+
+
+def test_live_environment_omits_libvirt_key_when_unavailable():
+
+    agent = AtlasAgent(FakeProvider(ChatReply(text="ok")), AtlasConfig())
+
+    with patch("atlas.docker.collect_containers", return_value={"available": True, "containers": []}), \
+         patch("atlas.libvirt.collect_guests", return_value={"available": False, "guests": []}):
+
+        environment = agent._live_environment()
+
+    assert "Libvirt" not in environment.get("virtualization", {})
+
+
+def test_live_environment_keeps_proxmox_guests_grounded_alongside_libvirt():
+
+    from atlas.actions import is_action_grounded
+    from atlas.intelligence.providers.base import SuggestedAction
+
+    config = AtlasConfig()
+    config.proxmox.enabled = True
+
+    agent = AtlasAgent(FakeProvider(ChatReply(text="ok")), config)
+
+    with patch("atlas.docker.collect_containers", return_value={"available": True, "containers": []}), \
+         patch("atlas.intelligence.agent.execute_tool", return_value={"guests": [{"vmid": 100}]}), \
+         patch(
+             "atlas.libvirt.collect_guests",
+             return_value={"available": True, "guests": [{"name": "win11", "state": "running"}]}
+         ):
+
+        environment = agent._live_environment()
+
+    assert is_action_grounded(
+        SuggestedAction(type="restart_guest", target="100"),
+        environment
+    )
+
+    assert is_action_grounded(
+        SuggestedAction(type="restart_libvirt_guest", target="win11"),
+        environment
+    )

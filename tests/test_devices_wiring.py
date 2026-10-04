@@ -58,3 +58,21 @@ def test_proxmox_guest_with_a_locally_administered_mac_stays_unknown():
 def test_junk_or_missing_mac_never_raises():
 
     assert effective_connection(device(sightings=[{"mac": "zz"}, {"mac": None}])) == ("unknown", False)
+
+
+def test_qemu_virtual_nic_prefix_is_not_guessed_wireless():
+    """52:54:00 is QEMU/libvirt's default MAC prefix - its locally administered bit
+    comes from being virtual, same reasoning as the proxmox-sighting short-circuit."""
+
+    assert effective_connection(device(sightings=[{"mac": "52:54:00:12:34:56"}])) == ("unknown", False)
+
+
+def test_docker_virtual_nic_prefix_is_not_guessed_wireless():
+
+    assert effective_connection(device(sightings=[{"mac": "02:42:ac:11:00:02"}])) == ("unknown", False)
+
+
+def test_virtual_nic_prefix_match_is_case_insensitive():
+
+    assert effective_connection(device(sightings=[{"mac": "52:54:00:AB:CD:EF".upper()}])) == ("unknown", False)
+    assert effective_connection(device(sightings=[{"mac": "02:42:AC:11:00:02".lower()}])) == ("unknown", False)

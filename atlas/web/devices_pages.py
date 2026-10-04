@@ -157,12 +157,17 @@ def render_device_page(device, devices):
         "connection": connection, "uplink_id": device["uplink_id"],
     }))
 
+    def is_router(other):
+        return any(sighting.get("source") == "lan" and (sighting.get("detail") or {}).get("gateway") is True
+                   for sighting in other.get("sightings", []))
+
     uplinks = "".join(
         f"<option value=\"{other['id']}\"{' selected' if other['id'] == device['uplink_id'] else ''}>{_esc(other['name'])}</option>"
         for other in devices
-        if other["id"] != device["id"] and (other["kind"] in ("network", "server") or other["id"] == device["uplink_id"])
+        if other["id"] != device["id"] and (other["kind"] in ("network", "server")
+                                             or other["id"] == device["uplink_id"] or is_router(other))
     )
-    guess = "guessed wireless (randomized MAC or phone)" if device["connection_guessed"] else ""
+    guess = "guessed wireless" if device["connection_guessed"] else ""
 
     form = (
         f"<form id=\"edit\" data-original=\"{original}\" "

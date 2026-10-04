@@ -6,9 +6,14 @@ Docker networks nested inside the atlas host, all hanging off Internet ->
 
 The root is the device whose `lan` sighting carries `detail["gateway"] is
 True` (the default-gateway device found by a real scan) - that device
-becomes "router" and there's no separate `lan` hub node. Older data (or a
-scan that never saw a gateway) falls back to today's `internet -> lan`
-hub, with `lan` playing the router's role for every top-level device.
+becomes "router" and there's no separate `lan` hub node. If several
+devices carry a gateway-flagged sighting (a stale flag left behind by a
+replaced router), the one whose gateway sighting has the latest
+`last_seen` wins. Older data (or a scan that never saw a gateway) falls
+back to today's `internet -> lan` hub, with `lan` playing the router's
+role for every top-level device. The router is never nested (e.g. inside
+a Proxmox host it also happens to be a guest of) - nesting it would leave
+no top-level node for the layout to root the tree at.
 
 A device whose effective `connection` is "wireless" is left out entirely
 (no node, no edge) unless `include_wireless` - counted in `hidden_wireless`
@@ -50,19 +55,29 @@ def build_graph(devices, topology, include_ignored=False, include_wireless=False
     atlas_host = next((device for device in candidates
                        if has(device, "lan", lambda sighting: (sighting.get("detail") or {}).get("self"))), None)
 
+    def gateway_sighting(device):
+        return next((sighting for sighting in device["sightings"]
+                     if sighting["source"] == "lan" and (sighting.get("detail") or {}).get("gateway") is True), None)
+
+    # Several devices can carry a gateway-flagged lan sighting at once (a stale flag left
+    # behind by a replaced router) - the one with the most recently seen gateway sighting
+    # wins, not just whichever candidate happens to be first.
+    gateway_candidates = [(device, gateway_sighting(device)) for device in candidates]
+    gateway_candidates = [pair for pair in gateway_candidates if pair[1] is not None]
+    router = max(gateway_candidates, key=lambda pair: pair[1].get("last_seen") or "")[0] if gateway_candidates else None
+
     parents = {}
 
     for device in candidates:
-        if proxmox_host and device is not proxmox_host and has(device, "proxmox"):
+        # The router is never nested (e.g. a Proxmox-guest router): nesting it would leave
+        # arrange() with no top-level node to root the tree at.
+        if proxmox_host and device is not proxmox_host and device is not router and has(device, "proxmox"):
             parents[device["id"]] = f"d{proxmox_host['id']}"
 
     has_children = set(parents.values())
 
     if atlas_host and networks:
         has_children.add(f"d{atlas_host['id']}")
-
-    router = next((device for device in candidates
-                   if has(device, "lan", lambda sighting: (sighting.get("detail") or {}).get("gateway") is True)), None)
 
     def is_wireless(device):
         return device["connection"] == "wireless"
@@ -113,7 +128,9 @@ def build_graph(devices, topology, include_ignored=False, include_wireless=False
 
         if device["id"] in parents:
             data["parent"] = parents[device["id"]]
-        else:
+        elif device is not router:
+            # The router already has its internet->hub_id edge above; falling through to
+            # the hub-edge branch here would add a d{router}->d{router} self-loop.
             uplink_id = device["uplink_id"]
             source_id = f"d{uplink_id}" if is_uplink_target(uplink_id, device["id"]) else hub_id
             edges.append({"data": {"id": f"e:{source_id}-{node_id}", "source": source_id, "target": node_id}})

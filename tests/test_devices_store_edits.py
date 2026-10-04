@@ -82,6 +82,12 @@ def test_set_fields_validates_uplink_id_before_applying_anything(temp_db):
         {"found": True, "error": "uplink_id must be a device id or null"}
     assert store.set_fields(phone["id"], {"uplink_id": True}) == \
         {"found": True, "error": "uplink_id must be a device id or null"}
+    assert store.set_fields(phone["id"], {"uplink_id": 2 ** 63}) == \
+        {"found": True, "error": "uplink_id must be a device id or null"}
+    assert store.set_fields(phone["id"], {"uplink_id": -1}) == \
+        {"found": True, "error": "uplink_id must be a device id or null"}
+    assert store.set_fields(phone["id"], {"uplink_id": 0}) == \
+        {"found": True, "error": "uplink_id must be a device id or null"}
     assert store.set_fields(phone["id"], {"uplink_id": phone["id"]}) == \
         {"found": True, "error": "a device can't be connected to itself"}
     assert store.set_fields(phone["id"], {"uplink_id": 999999}) == \

@@ -120,7 +120,9 @@ def _seed_device():
     from atlas.devices.store import InventoryStore
 
     store = InventoryStore()
-    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01", hostname="router")])
+    # A globally-assigned-looking MAC (locally-administered bit unset) - atlas.devices.wiring
+    # guesses "wireless" from that bit, and this device needs to default to visible/wired.
+    store.record_run("lan", [Sighting("lan", "00:01", ip="192.168.10.1", mac="00:01", hostname="router")])
 
     return store, store.devices()[0]["id"]
 

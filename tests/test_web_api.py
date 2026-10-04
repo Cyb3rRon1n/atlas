@@ -9,8 +9,11 @@ from atlas.web import api
 def two_devices():
 
     store = InventoryStore()
-    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01", hostname="router"),
-                             Sighting("lan", "aa:02", ip="192.168.10.2", mac="aa:02")])
+    # Globally-assigned-looking MACs (first octet's locally-administered bit unset) -
+    # atlas.devices.wiring guesses "wireless" from that bit, and these two devices
+    # need to default to visible/non-wireless for the rest of this module's tests.
+    store.record_run("lan", [Sighting("lan", "00:01", ip="192.168.10.1", mac="00:01", hostname="router"),
+                             Sighting("lan", "00:02", ip="192.168.10.2", mac="00:02")])
 
     return {d["name"]: d["id"] for d in store.devices()}
 
@@ -91,6 +94,17 @@ def test_graph_route(temp_db):
 
     status, graph = api.handle("GET", "/api/graph?ignored=1")
     assert status == 200 and router_node in {node["data"]["id"] for node in graph["nodes"]}
+
+    other_node = f"d{ids['192.168.10.2']}"
+    InventoryStore().set_fields(ids["192.168.10.2"], {"connection": "wireless"})
+
+    status, graph = api.handle("GET", "/api/graph")
+    assert status == 200 and other_node not in {node["data"]["id"] for node in graph["nodes"]}
+    assert graph["hidden_wireless"] == 1
+
+    status, graph = api.handle("GET", "/api/graph?wireless=1")
+    assert status == 200 and other_node in {node["data"]["id"] for node in graph["nodes"]}
+    assert graph["hidden_wireless"] == 0
 
 
 class StubAgent:

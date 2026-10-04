@@ -144,4 +144,16 @@ class AtlasAgent:
                 # "guests", so this extra key doesn't affect them.
                 environment["virtualization"]["error"] = proxmox_data["error"]
 
+        from atlas.libvirt import collect_guests
+
+        libvirt = collect_guests()
+
+        if libvirt.get("available"):
+
+            # Plugin-keyed, same shape atlas discover's LibvirtPlugin already
+            # writes - known_libvirt_guest_names() reads this directly, and
+            # known_guest_ids()'s own flat "guests" read (set just above, for
+            # Proxmox) is unaffected since that's a different dict key.
+            environment.setdefault("virtualization", {})["Libvirt"] = libvirt
+
         return environment

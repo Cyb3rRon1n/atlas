@@ -119,9 +119,9 @@ History, Trends. The existing pages stay as they are.
 
 - **Map**
   - Cytoscape.js, **vendored** under `atlas/web/static/`, so there is no CDN and the page
-    works offline. Layout: hosts in a row with their guests and Docker networks inside, and every
-    other device in a grid under them, most important first. (A dagre layered layout was tried and
-    dropped: on real data it put all ~30 LAN devices in one unreadable row.)
+    works offline. Layout: a layered tree from the Internet (see [Wired map](#wired-map)), most
+    important first. (A dagre layered layout was tried and dropped: on real data it put all
+    ~30 LAN devices in one unreadable row.)
   - Structure: Internet, then the LAN, then devices, with guests and Docker networks as
     compound children inside their host. Templates and ignored devices are hidden
     behind a toggle.
@@ -178,6 +178,48 @@ The web server stays on stdlib `http.server`, which now gains `do_POST`.
   before running.
 - The module docstring changes from "no write path by construction" to "writes only
   through these routes".
+
+## Wired map
+
+Added after the first release, once the map had real data: the map shows what each device is
+plugged into, not just that it's on the LAN.
+
+- **Fields** on `DeviceRecord`:
+  - `connection`: `unknown` (default), `wired` or `wireless`.
+  - `uplink_id`: nullable FK to another device (the switch, AP or server it hangs off).
+  - Both are operator-edited like the other fields. An uplink can't point at the device itself or
+    at a missing device. Merging re-points uplinks at the surviving device.
+- **Guess rules** (`atlas/devices/wiring.py`, computed on read, never stored):
+  - An operator-set `connection` always wins.
+  - A device with a Proxmox sighting is never guessed: its MAC is virtual.
+  - Otherwise any of these makes it *guessed wireless*:
+    - kind `phone` or `iot`;
+    - "wlan" in its name or in any sighting's hostname;
+    - a locally administered MAC (randomized Wi-Fi MACs set that bit).
+  - The API returns the effective value plus `connection_guessed`. The stored value stays `unknown`, so
+    a wrong guess is undone just by setting the real value.
+- **Router detection**:
+  - The root under Internet is the device whose LAN sighting is the default gateway
+    (`detail["gateway"]`, recorded by a real scan).
+  - With no gateway sighting (older data), a plain `LAN` hub node takes its place.
+  - Each top-level device hangs off its uplink when it has one shown on the map, otherwise off the
+    router/hub.
+  - Uplink loops are tolerated: devices in a loop land in a final row.
+- **Layout**: a tree in BFS order from the Internet. Leaves sit in a grid under their parent, with
+  columns scaling with the leaf count so a flat LAN stays wide. Branches sit side by side. A
+  Proxmox/atlas host is laid out with its guests inside, then treated as one wide node. Router and
+  `network`-kind devices are diamonds. A dotted border means the connection is unknown.
+- **Wireless hidden by default**:
+  - Wireless devices are left off the map, and the legend says how many (`N wireless hidden`).
+  - A **show wireless** toggle (`/api/graph?wireless=1`) brings them back.
+  - The router, hosts with guests, and any device something else uses as its uplink always stay.
+- **Editing**:
+  - The map's side panel and the device page both have a **Connection** select and a
+    **Connected to** select.
+  - The uplink choices are the router, network gear and servers.
+  - Only changed fields are sent.
+- **Deferred**: filling `uplink_id` automatically from UniFi or SNMP/LLDP neighbour tables. For now
+  it is entered by hand.
 
 ## Error handling
 

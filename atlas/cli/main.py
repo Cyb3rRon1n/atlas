@@ -3101,15 +3101,22 @@ def chat():
         })
 
         try:
-            reply = agent.converse(messages)
+            reply = agent.converse(list(messages))
 
         except AIProviderError as error:
+
+            messages.pop()  # drop the question - this turn never got a reply
 
             console.print(
                 f"\n[red]{error}[/red]\n"
             )
 
             continue
+
+        messages.append({
+            "role": "assistant",
+            "content": reply.text
+        })
 
         transcript.append({
             "role": "assistant",

@@ -91,7 +91,8 @@ def _get(path, query=""):
 
     if path == "/api/graph":
         return 200, build_graph(store.devices(), KnowledgeQueries().latest_topology(),
-                                include_ignored="ignored=1" in query.split("&"))
+                                include_ignored="ignored=1" in query.split("&"),
+                                include_wireless="wireless=1" in query.split("&"))
 
     match = DEVICE.match(path)
 

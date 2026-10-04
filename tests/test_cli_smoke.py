@@ -1096,6 +1096,105 @@ def test_chat_exiting_immediately_does_not_save_a_transcript(
     assert transcript_events == []
 
 
+def test_chat_keeps_assistant_reply_in_messages_when_notes_are_configured(
+    isolated_cwd, temp_db
+):
+    """
+    AtlasAgent.converse() may hand the provider a *copy* of messages
+    (e.g. _with_notes() copies before the provider appends its own
+    assistant turn to that copy) - the CLI's own messages list must
+    still carry the assistant turn itself, the same "append it
+    ourselves" approach atlas/web/chat.py's chat_turn() already uses.
+    """
+
+    from atlas.intelligence.providers.base import ChatReply
+
+    class FakeAgent:
+
+        def __init__(self):
+            self.received_messages = []
+
+        def converse(self, messages):
+
+            self.received_messages.append(list(messages))
+
+            copy = list(messages)
+
+            copy.append({
+                "role": "assistant",
+                "content": "ignored - the provider's own private copy"
+            })
+
+            return ChatReply(text="Plex is steady.")
+
+    fake_agent = FakeAgent()
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=MagicMock()
+    ), patch(
+        "atlas.cli.main.AtlasAgent",
+        return_value=fake_agent
+    ):
+
+        result = runner.invoke(
+            app, ["chat"], input="first\nsecond\nexit\n"
+        )
+
+    assert result.exit_code == 0
+
+    assert fake_agent.received_messages[1] == [
+        {"role": "user", "content": "first"},
+        {"role": "assistant", "content": "Plex is steady."},
+        {"role": "user", "content": "second"},
+    ]
+
+
+def test_chat_drops_failed_question_from_messages_on_provider_error(
+    isolated_cwd, temp_db
+):
+
+    from atlas.intelligence.providers import AIProviderError
+    from atlas.intelligence.providers.base import ChatReply
+
+    class FlakyAgent:
+
+        def __init__(self):
+            self.received_messages = []
+            self.calls = 0
+
+        def converse(self, messages):
+
+            self.calls += 1
+
+            if self.calls == 1:
+                raise AIProviderError("model is overloaded")
+
+            self.received_messages.append(list(messages))
+
+            return ChatReply(text="All clear now.")
+
+    fake_agent = FlakyAgent()
+
+    with patch(
+        "atlas.cli.main.get_provider",
+        return_value=MagicMock()
+    ), patch(
+        "atlas.cli.main.AtlasAgent",
+        return_value=fake_agent
+    ):
+
+        result = runner.invoke(
+            app, ["chat"], input="first\nsecond\nexit\n"
+        )
+
+    assert result.exit_code == 0
+
+    assert fake_agent.received_messages == [
+        [{"role": "user", "content": "second"}],
+    ]
+
+
 def test_trends_when_no_monitoring_history_prints_hint(isolated_cwd, temp_db):
 
     result = runner.invoke(app, ["trends"])

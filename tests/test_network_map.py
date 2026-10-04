@@ -226,7 +226,7 @@ def test_map_page_has_wired_map_legend_toggles_and_panel_fields():
 ARRANGE_FAKE = """
 "use strict";
 const CW = 150;
-function makeCy(spec, edges) {
+function makeCy(spec, edges, width = 1200) {
   const nodes = spec.map((s) => {
     const pos = {x: 0, y: 0};
     return {s, id: () => s.id, data: (key) => s[key], hasClass: (c) => (s.classes || "").split(" ").includes(c),
@@ -242,7 +242,7 @@ function makeCy(spec, edges) {
       }};
   });
   const byId = Object.fromEntries(nodes.map((n) => [n.id(), n]));
-  return {byId, fitted: false, width: () => 1200, nodes: () => nodes.slice(),
+  return {byId, fitted: false, width: () => width, nodes: () => nodes.slice(),
     edges: () => edges.map(([source, target]) => ({data: (key) => key === "source" ? source : target})),
     fit() { this.fitted = true; }};
 }
@@ -264,6 +264,13 @@ if (y("a") !== y("b") || x("a") === x("b")) fail("leaves not side by side in a g
 if (!(y("g") > y("r"))) fail("host not below router");
 if (!(y("x") > y("a") && y("y") > y("a"))) fail("unreachable cycle not in the final row");
 if (!cy.fitted) fail("no fit");
+const flat = [{id: "internet", label: "Internet"}, {id: "r", label: "router", classes: "device router"}];
+const flatEdges = [["internet", "r"]];
+for (let i = 0; i < 30; i++) { flat.push({id: "l" + i, label: "leaf" + i, classes: "device"}); flatEdges.push(["r", "l" + i]); }
+const wide = makeCy(flat, flatEdges, 1500);
+arrange(wide);
+const columns = new Set(flat.slice(2).map((s) => wide.byId[s.id].position().x)).size;
+if (!(columns > 4)) fail("30 leaves laid out in only " + columns + " columns");
 console.log("OK");
 """
 

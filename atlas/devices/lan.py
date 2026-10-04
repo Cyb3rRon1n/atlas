@@ -81,6 +81,15 @@ def parse_route(text):
     return result
 
 
+def default_gateway(route_text):
+    """The dotted IPv4 gateway of the default route (destination 00000000),
+    or None if there's no default route at all."""
+
+    row = next((row for row in _route_rows(route_text) if row[1] == "00000000"), None)
+
+    return _hex_ip(row[2]) if row else None
+
+
 def parse_arp(text):
     """Complete neighbour entries only (flag 0x2); incomplete means nobody answered."""
 
@@ -165,6 +174,12 @@ def scan(subnets=None, timeout=0.5):
         names = dict(zip(arp, pool.map(_reverse_dns, arp)))
 
     sightings = [Sighting("lan", mac, ip=ip, mac=mac, hostname=names[ip]) for ip, mac in arp.items()]
+
+    gateway = default_gateway(route)
+
+    for sighting in sightings:
+        if sighting.ip == gateway:
+            sighting.detail["gateway"] = True
 
     interface = default_interface(route)
     me = local_sighting(interface) if interface else None

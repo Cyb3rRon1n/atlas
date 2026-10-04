@@ -17,17 +17,20 @@ from atlas.database.engine import engine
 from atlas.database.models import DeviceRecord, NotificationRecord, SightingRecord, SourceRunRecord
 from atlas.devices.linking import match
 from atlas.devices.status import device_status
+from atlas.devices.wiring import effective_connection
 
 
 ROLLUP = timedelta(hours=24)
 
-EDITABLE = {"name", "kind", "tags", "notes", "important", "state"}
+EDITABLE = {"name", "kind", "tags", "notes", "important", "state", "connection", "uplink_id"}
 
 GUEST_KINDS = {"qemu": "vm", "lxc": "lxc"}
 
 KINDS = ("server", "vm", "lxc", "container-host", "workstation", "phone", "tv", "iot", "network", "other")
 
 STATES = ("new", "known", "ignored")
+
+CONNECTIONS = ("unknown", "wired", "wireless")
 
 
 def _validate(fields):
@@ -46,6 +49,13 @@ def _validate(fields):
 
         if key == "state" and value not in STATES:
             return f"state must be one of: {', '.join(STATES)}"
+
+        if key == "connection" and value not in CONNECTIONS:
+            return f"connection must be one of: {', '.join(CONNECTIONS)}"
+
+        # Existence/self-reference checks need the session - see set_fields.
+        if key == "uplink_id" and value is not None and not (isinstance(value, int) and not isinstance(value, bool)):
+            return "uplink_id must be a device id or null"
 
         if key == "important" and not isinstance(value, bool):
             return "important must be true or false"
@@ -189,6 +199,18 @@ class InventoryStore:
             if device is None:
                 return {"found": False}
 
+            # uplink_id's existence/self-reference checks need the session,
+            # so they happen here rather than in _validate - still before
+            # any setattr below, same all-or-nothing contract as _validate.
+            if error is None and "uplink_id" in fields and fields["uplink_id"] is not None:
+
+                uplink_id = fields["uplink_id"]
+
+                if uplink_id == device_id:
+                    error = "a device can't be connected to itself"
+                elif session.get(DeviceRecord, uplink_id) is None:
+                    error = "uplink_id must be an existing device"
+
             if error:
                 return {"found": True, "error": error}
 
@@ -254,6 +276,14 @@ class InventoryStore:
                                                        DeviceRecord.id != into_id).values(suggested_merge_id=into_id))
             session.execute(update(DeviceRecord).where(DeviceRecord.suggested_merge_id == device_id,
                                                        DeviceRecord.id == into_id).values(suggested_merge_id=None))
+
+            # Same repoint-then-detangle-self-reference shape as suggested_merge_id
+            # just above: anything uplinked through the device that's going away
+            # now uplinks through the survivor, unless that survivor is itself.
+            session.execute(update(DeviceRecord).where(DeviceRecord.uplink_id == device_id,
+                                                       DeviceRecord.id != into_id).values(uplink_id=into_id))
+            session.execute(update(DeviceRecord).where(DeviceRecord.uplink_id == device_id,
+                                                       DeviceRecord.id == into_id).values(uplink_id=None))
 
             target.updated_at = now or datetime.utcnow()
             session.delete(source)
@@ -355,10 +385,11 @@ class InventoryStore:
                 observed = [row for row in rows if row.source != "manual"] or rows
                 preferred = sorted(observed, key=lambda row: (row.source != "lan", row.ip is None))
 
-                output.append({
+                entry = {
                     "id": device.id, "name": device.name, "kind": device.kind,
                     "tags": json.loads(device.tags), "notes": device.notes, "important": device.important,
                     "state": device.state, "suggested_merge_id": device.suggested_merge_id,
+                    "connection": device.connection, "uplink_id": device.uplink_id,
                     "status": device_status([{"source": row.source, "last_seen": row.last_seen} for row in rows], ok_runs),
                     "ip": next((row.ip for row in preferred if row.ip), None),
                     "last_seen": _iso(max((row.last_seen for row in observed), default=None)),
@@ -366,7 +397,14 @@ class InventoryStore:
                                    "ip": row.ip, "mac": row.mac, "hostname": row.hostname,
                                    "detail": json.loads(row.detail), "first_seen": _iso(row.first_seen),
                                    "last_seen": _iso(row.last_seen)} for row in rows],
-                })
+                }
+
+                # "connection" becomes the effective value (operator value, or a
+                # guess from the sightings just built above); the raw stored
+                # value stays recoverable - it's "unknown" whenever guessed.
+                entry["connection"], entry["connection_guessed"] = effective_connection(entry)
+
+                output.append(entry)
 
         return output
 

@@ -195,13 +195,20 @@ plugged into, not just that it's on the LAN.
   - Otherwise any of these makes it *guessed wireless*:
     - kind `phone` or `iot`;
     - "wlan" in its name or in any sighting's hostname;
-    - a locally administered MAC (randomized Wi-Fi MACs set that bit).
+    - a locally administered MAC (randomized Wi-Fi MACs set that bit) - except known virtual-NIC
+      prefixes (`52:54:00` QEMU/libvirt, `02:42` Docker, matched case-insensitively), which set that
+      same bit for reasons that have nothing to do with radios.
   - The API returns the effective value plus `connection_guessed`. The stored value stays `unknown`, so
-    a wrong guess is undone just by setting the real value.
+    a wrong guess is undone just by setting the real value. API clients should send
+    `connection: "unknown"` (or omit `connection`) when `connection_guessed` is true - sending the
+    guessed value back locks the guess in as the operator-set value.
 - **Router detection**:
   - The root under Internet is the device whose LAN sighting is the default gateway
-    (`detail["gateway"]`, recorded by a real scan).
+    (`detail["gateway"]`, recorded by a real scan). When several devices carry a gateway-flagged
+    sighting (a stale flag left behind by a replaced router), the one with the latest `last_seen` wins.
   - With no gateway sighting (older data), a plain `LAN` hub node takes its place.
+  - The router is never nested, even if it's also a Proxmox guest - nesting it would leave the layout
+    with no top-level node to root the tree at.
   - Each top-level device hangs off its uplink when it has one shown on the map, otherwise off the
     router/hub.
   - Uplink loops are tolerated: devices in a loop land in a final row.
@@ -216,7 +223,8 @@ plugged into, not just that it's on the LAN.
 - **Editing**:
   - The map's side panel and the device page both have a **Connection** select and a
     **Connected to** select.
-  - The uplink choices are the router, network gear and servers.
+  - The uplink choices are the router (the device with the gateway-flagged LAN sighting), network
+    gear and servers.
   - Only changed fields are sent.
 - **Deferred**: filling `uplink_id` automatically from UniFi or SNMP/LLDP neighbour tables. For now
   it is entered by hand.

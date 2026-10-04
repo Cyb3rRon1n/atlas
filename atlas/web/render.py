@@ -118,8 +118,9 @@ const STYLE = [
 
 function arrange(cy) {
   // Layered tree from the Internet node: every device under whatever it hangs off (BFS over edges, so
-  // uplink cycles can't loop), leaves wrapped in a grid of at most 4 columns under their parent, branches
-  // side by side. Compound hosts are laid out inside first, then treated as one wide node.
+  // uplink cycles can't loop), leaves wrapped in a grid under their parent (columns scale with leaf
+  // count via gridCols, capped to fit the canvas width), branches side by side. Compound hosts are laid
+  // out inside first, then treated as one wide node.
   const CW = 150, CH = 70, GAP = 50;
   const rank = (n) => n.hasClass("alert") ? 0 : n.hasClass("important") ? 1 : n.hasClass("state-known") ? 2 : 3;
   const order = (a, b) => rank(a) - rank(b) || String(a.data("label")).localeCompare(String(b.data("label")), undefined, {numeric: true});
@@ -268,7 +269,7 @@ async function openPanel(deviceId, keepMessage) {
   field("notes").value = current.notes;
   field("important").checked = current.important;
   field("connection").value = storedConnection(current);
-  field("guess").textContent = current.connection_guessed ? "guessed wireless (randomized MAC or phone)" : "";
+  field("guess").textContent = current.connection_guessed ? "guessed wireless" : "";
   fillUplinks(current);
   document.getElementById("panel-link").href = "/devices/" + current.id;
   document.getElementById("panel-ask").href = "/chat?device=" + current.id;

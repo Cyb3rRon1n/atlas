@@ -115,6 +115,20 @@ def test_device_page_shows_stored_connection_when_guessed():
     assert '<option value="" selected>router / not set</option>' in html
 
 
+def test_device_page_uplink_choices_include_the_router_regardless_of_kind():
+
+    router = device(2, "router", kind="workstation",
+                    sightings=[{"id": 20, "source": "lan", "external_id": "aa:2", "ip": "192.168.10.1",
+                                "mac": "aa:2", "hostname": None, "detail": {"gateway": True},
+                                "first_seen": "2026-09-30T11:00:00", "last_seen": "2026-09-30T12:00:00"}])
+    dev = device(1, "pc", kind="server")
+
+    html = render_device_page(dev, [dev, router])
+    uplink_options = html.split('name="uplink"')[1].split("</select>")[0]
+
+    assert '<option value="2">router</option>' in uplink_options
+
+
 def test_actions_script_diffs_connection_and_uplink():
 
     assert 'field("connection").value' in ACTIONS_SCRIPT

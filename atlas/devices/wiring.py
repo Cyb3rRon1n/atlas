@@ -9,15 +9,24 @@ entirely rather than letting that bit mislead it. Otherwise, the guess
 looks for a kind that's typically radio-only (phone, iot), "wlan" in the
 device's own name or any sighting's hostname, or a locally administered
 MAC (the kind randomized/virtual interfaces use - Wi-Fi radios, phones -
-set the second-lowest bit of the first octet).
+set the second-lowest bit of the first octet). Known virtual-NIC prefixes
+(`52:54:00` - QEMU/libvirt, `02:42` - Docker) also set that bit for reasons
+that have nothing to do with radios either, so they're excluded from the
+locally-administered check the same way a proxmox sighting is - matched
+case-insensitively, since a MAC's hex letters can come back either case.
 """
 
 WIRELESS_KINDS = {"phone", "iot"}
+
+VIRTUAL_NIC_PREFIXES = ("52:54:00", "02:42")
 
 
 def _locally_administered(mac):
 
     try:
+        if (mac or "").lower().startswith(VIRTUAL_NIC_PREFIXES):
+            return False
+
         return bool(int(mac[:2], 16) & 0x02)
 
     except (TypeError, ValueError):

@@ -88,11 +88,48 @@ def test_router_is_root_with_no_lan_node():
 
     graph = build_graph(devices, None)
     by_id = nodes(graph)
+    edges = edge_pairs(graph)
 
     assert "lan" not in by_id
-    assert ("internet", "d1") in edge_pairs(graph)
-    assert ("d1", "d2") in edge_pairs(graph)
     assert "router" in by_id["d1"]["classes"]
+    assert ("d1", "d1") not in edges
+    assert edges == {("internet", "d1"), ("d1", "d2")}
+
+
+def test_router_chosen_by_latest_gateway_sighting_when_several_flagged():
+
+    devices = [device(1, "old-router", [lan("192.168.10.1", gateway=True) | {"last_seen": "2026-01-01T00:00:00"}],
+                      kind="network"),
+               device(2, "new-router", [lan("192.168.10.254", gateway=True) | {"last_seen": "2026-06-01T00:00:00"}],
+                      kind="network"),
+               device(3, "pc", [lan("192.168.10.2")])]
+
+    graph = build_graph(devices, None)
+    by_id = nodes(graph)
+
+    assert "router" in by_id["d2"]["classes"]
+    assert "router" not in by_id["d1"]["classes"]
+    assert ("internet", "d2") in edge_pairs(graph)
+
+
+def test_router_is_never_nested_even_if_it_is_a_proxmox_guest():
+
+    topology = {"proxmox": {"host": "192.168.10.10"}}
+
+    devices = [
+        device(1, "proxmox-host", [lan("192.168.10.10")], kind="container-host"),
+        device(2, "router-guest", [lan("192.168.10.1", gateway=True),
+                                   {"source": "proxmox", "ip": None, "detail": {"type": "lxc"}}], kind="network"),
+        device(3, "pc", [lan("192.168.10.2")]),
+    ]
+
+    graph = build_graph(devices, topology)
+    by_id = nodes(graph)
+    edges = edge_pairs(graph)
+
+    assert "parent" not in by_id["d2"]["data"]
+    assert ("internet", "d2") in edges
+    assert ("d2", "d3") in edges
 
 
 def test_fallback_lan_hub_used_when_no_gateway_flag():

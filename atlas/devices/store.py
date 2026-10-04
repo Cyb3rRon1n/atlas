@@ -53,8 +53,11 @@ def _validate(fields):
         if key == "connection" and value not in CONNECTIONS:
             return f"connection must be one of: {', '.join(CONNECTIONS)}"
 
-        # Existence/self-reference checks need the session - see set_fields.
-        if key == "uplink_id" and value is not None and not (isinstance(value, int) and not isinstance(value, bool)):
+        # Existence/self-reference checks need the session - see set_fields. The range
+        # check keeps an out-of-range int (e.g. 2**64) from reaching SQLite's integer
+        # column and raising OverflowError instead of failing validation cleanly.
+        if key == "uplink_id" and value is not None and not (
+                isinstance(value, int) and not isinstance(value, bool) and 0 < value < 2 ** 63):
             return "uplink_id must be a device id or null"
 
         if key == "important" and not isinstance(value, bool):

@@ -147,11 +147,15 @@ function arrange(cy) {
     }
   };
   const isLeaf = (n) => !n.isParent() && !kids[n.id()].length;
-  const measure = (n, maxCols) => {
+  // Leaf grids scale with their count (about 30 leaves -> ~9 columns) so a flat LAN stays wide, not tall,
+  // but never wider than the canvas; a few leaves just sit in one row.
+  const maxCols = Math.max(4, Math.floor((cy.width() - 40) / CW));
+  const gridCols = (count) => Math.min(count, Math.max(4, Math.min(Math.ceil(Math.sqrt(count * 2.5)), maxCols)));
+  const measure = (n) => {
     const leaves = kids[n.id()].filter(isLeaf), branches = kids[n.id()].filter((m) => !isLeaf(m));
-    const cols = Math.min(leaves.length, maxCols);
+    const cols = gridCols(leaves.length);
     let rowW = cols * CW, rowH = cols ? Math.ceil(leaves.length / cols) * CH : 0;
-    branches.forEach((m) => { const b = measure(m, 4); rowW += b.w; rowH = Math.max(rowH, b.h); });
+    branches.forEach((m) => { const b = measure(m); rowW += b.w; rowH = Math.max(rowH, b.h); });
     return block[n.id()] = {w: Math.max(own[n.id()].w, rowW), h: own[n.id()].h + rowH, leaves, branches, cols, rowW};
   };
   const place = (n, x, y) => {
@@ -167,21 +171,20 @@ function arrange(cy) {
     left += b.cols * CW;
     b.branches.forEach((m) => { place(m, left, below); left += block[m.id()].w; });
   };
-  let bottom = 0, width = 0;
+  let bottom = 0;
   if (byId.internet) {
     grow(byId.internet);
-    measure(byId.internet, 4);
+    measure(byId.internet);
     place(byId.internet, 0, 0);
     bottom = block.internet.h + GAP;
-    width = block.internet.w;
   }
   // Unreachable from the Internet (an uplink loop, a stale edge): one final row, each loop rooted at its
   // first member, under an invisible root.
   const rest = {id: () => "_rest", isParent: () => false};
   kids._rest = [];
   top.forEach((n) => { if (!visited.has(n.id())) { grow(n); kids._rest.push(n); } });
-  own._rest = {w: 0, h: 0};
-  measure(rest, Math.max(4, Math.floor(Math.max(cy.width() - 40, width) / CW)));
+  own._rest = {w: 0, h: 0};  // zero-size stand-in node: measure/place lay out its children and draw nothing for it
+  measure(rest);
   place(rest, 0, bottom);
   cy.fit(undefined, 20);
 }
@@ -231,6 +234,8 @@ function fillUplinks(device) {
     .sort((a, b) => a.data.label.localeCompare(b.data.label));
   const options = [option("", "router / not set"), ...choices.map((node) => option(String(node.data.device_id), node.data.label))];
   // Keep a current uplink that isn't on the map (hidden, ignored) selectable, so saving doesn't clear it.
+  // The fallback is "device #N", not a name: the map only has nodes for what it shows, and fetching the
+  // name would cost another request for a rare case.
   if (device.uplink_id !== null && !choices.some((node) => node.data.device_id === device.uplink_id))
     options.push(option(String(device.uplink_id), "device #" + device.uplink_id));
   field("uplink").replaceChildren(...options);

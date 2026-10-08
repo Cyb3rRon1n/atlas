@@ -8,6 +8,8 @@ same persistence path as every other atlas state change.
 
 import re
 import sys
+from datetime import datetime
+from urllib.parse import unquote
 
 import atlas.web.chat as chat_module
 from atlas.config import load_config
@@ -17,6 +19,8 @@ from atlas.events import AtlasEvent
 from atlas.intelligence.agent import AtlasAgent
 from atlas.intelligence.providers import get_provider
 from atlas.knowledge.queries import KnowledgeQueries
+from atlas.posture.model import WINDOWS, build_posture, node_details
+from atlas.posture.store import PostureStore
 from atlas.web.chat import ChatSessions, chat_turn, execute_step
 from atlas.web.graph import build_graph
 
@@ -78,6 +82,18 @@ def _result(result, event_type, payload):
 
 def _get(path, query=""):
 
+    if path == "/api/posture":
+        params = dict(part.partition("=")[::2] for part in query.split("&") if part)
+        window = unquote(params.get("window", "24h"))
+        if window not in WINDOWS:
+            return 400, {"error": "window must be one of: " + ", ".join(WINDOWS)}
+        return 200, build_posture(PostureStore(), datetime.utcnow(), window)
+
+    if path == "/api/posture/node":
+        params = dict(part.partition("=")[::2] for part in query.split("&") if part)
+        details = node_details(PostureStore(), unquote(params.get("id", "")), datetime.utcnow())
+        return (200, details) if details else NOT_FOUND
+
     store = InventoryStore()
 
     if path == "/api/devices":
@@ -104,6 +120,24 @@ def _get(path, query=""):
 
 
 def _post(path, body):
+
+    if path == "/api/posture/known":
+
+        if not isinstance(body, dict):
+            return 400, {"error": "expected a JSON object"}
+
+        result = PostureStore().mark_known(body.get("source"), body.get("asn_key"), body.get("note", ""))
+
+        if not result["ok"]:
+            return 400, {"error": result["error"]}
+
+        try:
+            application.runtime.events.publish(AtlasEvent(event_type="atlas.posture.marked_known", source="AtlasWeb",
+                                                           payload={"source": body["source"], "asn_key": body["asn_key"]}))
+        except Exception as error:
+            print(f"atlas.web.api: event publish failed for atlas.posture.marked_known: {error!r}", file=sys.stderr)
+
+        return 200, result
 
     if path in ("/api/chat", "/api/actions/execute"):
 

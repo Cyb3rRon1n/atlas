@@ -3243,6 +3243,55 @@ def chat():
     )
 
 
+posture_app = typer.Typer(
+    name="posture",
+    help="Egress/posture collector"
+)
+
+@posture_app.command("watch")
+def posture_watch(
+    once: bool = typer.Option(False, "--once", help="Collect a single sample and exit"),
+    json_output: bool = typer.Option(False, "--json", help="Print each sample's result as JSON")
+):
+    """
+    Poll the connection table, routes, tunnel, VPN and CrowdSec every
+    posture.interval seconds for the posture page. Runs in the atlas-scan
+    container; needs NET_ADMIN for conntrack (read-only listing).
+    """
+
+    import time
+    from datetime import datetime
+
+    from atlas.docker.manager import get_client
+    from atlas.posture.collect import Collector
+    from atlas.posture.store import PostureStore
+
+    settings = load_config()
+
+    if not settings.posture.enabled:
+        console.print("Posture collection is off (posture.enabled: false in atlas.yaml).")
+        return
+
+    client = get_client()
+
+    if client is None:
+        console.print("[red]Docker is unavailable - posture needs the Docker socket.[/red]")
+        raise typer.Exit(1)
+
+    collector = Collector(settings.posture, PostureStore(), client)
+
+    while True:
+        result = collector.run_once(datetime.utcnow())
+        if json_output:
+            print(json.dumps(result, default=str))
+        elif result["new"]:
+            for item in result["new"]:
+                console.print(f"new destination: {item['source']} -> {item['asn_key']} {item['org']} {item['cc']}")
+        if once:
+            return
+        time.sleep(settings.posture.interval)
+
+
 app.add_typer(
     proxmox_app
 )
@@ -3253,6 +3302,10 @@ app.add_typer(
 
 app.add_typer(
     fleet_app
+)
+
+app.add_typer(
+    posture_app
 )
 
 

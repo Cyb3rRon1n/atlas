@@ -1,6 +1,8 @@
+import time
 from datetime import datetime, timedelta
 
-from atlas.posture.model import build_posture, node_details
+import atlas.posture.model as model_module
+from atlas.posture.model import _reverse_dns, build_posture, node_details
 from atlas.posture.store import PostureStore
 
 
@@ -94,3 +96,18 @@ def test_node_details_for_destination(temp_db):
     assert details["ips"][0] == {"ip": "203.0.113.75", "rdns": "edge.example.test"}
     assert node_details(store, "dst:AS99999", NOW) is None
     assert node_details(store, "bogus", NOW) is None
+
+
+def test_reverse_dns_bound_by_one_second_even_when_lookup_hangs(monkeypatch):
+
+    def slow_lookup(ip):
+        time.sleep(2)
+        return ("slow.example.test", [], [ip])
+
+    monkeypatch.setattr(model_module.socket, "gethostbyaddr", slow_lookup)
+
+    start = time.monotonic()
+    result = _reverse_dns("192.0.2.1")
+    elapsed = time.monotonic() - start
+
+    assert result == "" and elapsed < 1.5

@@ -167,12 +167,19 @@ def build_posture(store, now, window="24h"):
             "review": [{**r, "first_seen": r["first_seen"].isoformat()} for r in review]}
 
 
+_RDNS = ThreadPoolExecutor(max_workers=4, thread_name_prefix="rdns")   # never shut down per call - see below
+
+
 def _reverse_dns(ip):
-    with ThreadPoolExecutor(max_workers=1) as pool:
-        try:
-            return pool.submit(lambda: socket.gethostbyaddr(ip)[0]).result(timeout=1)
-        except (FutureTimeout, OSError):
-            return ""
+    # A `with ThreadPoolExecutor(...)` here would call shutdown(wait=True) on exit, which
+    # blocks for the lookup to actually finish even after result(timeout=1) raises - a slow
+    # socket.gethostbyaddr would make the 1s bound fake. One shared, never-shut-down executor
+    # means a timed-out lookup is simply abandoned (thread keeps running in the background,
+    # result discarded) instead of blocking the request that gave up on it.
+    try:
+        return _RDNS.submit(lambda: socket.gethostbyaddr(ip)[0]).result(timeout=1)
+    except (FutureTimeout, OSError):
+        return ""
 
 
 def node_details(store, node_id, now, resolve=_reverse_dns):

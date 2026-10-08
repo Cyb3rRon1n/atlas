@@ -47,8 +47,9 @@ def gluetun_status(base_url, api_key, get=requests.get):
         response = get(f"{base_url}/v1/publicip/ip", headers={"X-API-Key": api_key}, timeout=5)
         response.raise_for_status()
         data = response.json() or {}
-        return {"ok": bool(data.get("public_ip")), "exit_ip": data.get("public_ip", ""),
-                "country": data.get("country", "")}
+        if not data.get("public_ip"):
+            return _fail("gluetun returned no public_ip")
+        return {"ok": True, "exit_ip": data["public_ip"], "country": data.get("country", "")}
     except (requests.RequestException, ValueError) as error:
         return _fail(error)
 

@@ -35,6 +35,13 @@ def test_gluetun_status_reports_errors_without_raising():
     assert gluetun_status("http://x", "k", get=lambda url, headers, timeout: Response(401))["ok"] is False
 
 
+def test_gluetun_status_returns_error_when_no_public_ip():
+    def get(url, headers, timeout):
+        return Response(data={})
+    result = gluetun_status("http://172.18.0.3:8000", "k", get=get)
+    assert result["ok"] is False and "no public_ip" in result["error"]
+
+
 def test_crowdsec_counts_active_decisions_including_null():
     def get(url, headers, timeout):
         assert url == "http://172.18.0.7:8080/v1/decisions" and headers == {"X-Api-Key": "b"}

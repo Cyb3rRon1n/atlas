@@ -12,7 +12,7 @@ import json
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from atlas.devices.store import InventoryStore
 from atlas.knowledge.queries import KnowledgeQueries
@@ -69,14 +69,19 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         elif path == "/chat":
             try:
                 prefill = ""
-                match = re.search(r"(?:^|&)device=(\d+)", self.path.partition("?")[2])
-                if match:
-                    device = InventoryStore().device(int(match.group(1)))
-                    if device:
-                        sources = ", ".join(sorted({sighting["source"] for sighting in device["sightings"]}))
-                        name = device["name"] or device["ip"] or f"device {device['id']}"
-                        prefill = (f"Tell me about {name} ({device['ip'] or 'no ip'}): it is {device['status']}, "
-                                   f"state {device['state']}, seen by {sources}. Anything wrong with it?")
+                query_string = self.path.partition("?")[2]
+                params = parse_qs(query_string)
+                if "q" in params:
+                    prefill = params["q"][0][:2000]
+                else:
+                    match = re.search(r"(?:^|&)device=(\d+)", query_string)
+                    if match:
+                        device = InventoryStore().device(int(match.group(1)))
+                        if device:
+                            sources = ", ".join(sorted({sighting["source"] for sighting in device["sightings"]}))
+                            name = device["name"] or device["ip"] or f"device {device['id']}"
+                            prefill = (f"Tell me about {name} ({device['ip'] or 'no ip'}): it is {device['status']}, "
+                                       f"state {device['state']}, seen by {sources}. Anything wrong with it?")
                 body = render_chat_page(prefill)
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)

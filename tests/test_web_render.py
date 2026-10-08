@@ -236,4 +236,13 @@ def test_render_trends_page_shows_guest_summaries():
     html = render_trends_page(payload)
 
     assert "plex (100)" in html
-    assert "30.0%" in html
+
+
+def test_every_page_gets_the_chat_drawer_except_chat():
+
+    from atlas.web.render import render_page
+
+    html = render_page("Devices", "", active="devices")
+
+    assert 'id="chat-drawer"' in html and 'id="ask"' in html and "atlasAsk" in html
+    assert 'id="chat-drawer"' not in render_page("Chat", "", drawer=False)

@@ -8,6 +8,14 @@ import pytest
 from atlas.web.chat_page import CHAT_SCRIPT, render_chat_page
 
 
+def test_chat_page_prefills_from_q_and_has_no_drawer():
+
+    html = render_chat_page("hello <b>")
+
+    assert "hello &lt;b&gt;" in html and 'id="chat-drawer"' not in html
+    assert html.count('id="ask"') == 1
+
+
 def test_chat_page_structure_and_prefill_escaping():
 
     page = render_chat_page('Tell me about <b>"tv"</b>')

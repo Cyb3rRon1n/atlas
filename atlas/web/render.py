@@ -11,6 +11,7 @@ and server.py.
 from html import escape
 
 from atlas.devices.store import CONNECTIONS, KINDS, STATES
+from atlas.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE, DRAWER_HTML, DRAWER_STYLE
 
 
 PAGE_STYLE = """
@@ -96,6 +97,12 @@ def render_page(title, body_html, active="", tabs=None, drawer=True):
             f'<a href="{href}"{here if current else ""}>{_esc(label)}</a>'
             for href, label, current in tabs) + "</nav>"
 
+    chat_link = (
+        '<button id="chat-toggle" class="chat-link">Atlas</button>' if drawer
+        else "<a class=\"chat-link\" href=\"/chat\">Chat</a>"
+    )
+    drawer_html = CHAT_STYLE + DRAWER_STYLE + DRAWER_HTML + CHAT_SCRIPT if drawer else ""
+
     return (
         "<!doctype html>\n"
         "<html lang=\"en\"><head><meta charset=\"utf-8\">"
@@ -105,8 +112,9 @@ def render_page(title, body_html, active="", tabs=None, drawer=True):
         "<header class=\"topbar\"><span class=\"brand\">ATLAS</span>"
         f"<nav class=\"main\" aria-label=\"Main\">{links}</nav>"
         "<span class=\"spacer\"></span>"
-        "<a class=\"chat-link\" href=\"/chat\">Chat</a></header>"
+        f"{chat_link}</header>"
         f"<main class=\"page\"><h1>{_esc(title)}</h1>{tab_html}{body_html}</main>"
+        f"{drawer_html}"
         "</body></html>"
     )
 

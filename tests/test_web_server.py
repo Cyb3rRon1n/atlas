@@ -50,9 +50,17 @@ def _get_allow_error(url):
             return error.code, error.read().decode("utf-8")
 
 
-def test_overview_route_with_no_data(running_server):
+def test_posture_route_at_root(running_server):
 
     status, body = _get(running_server + "/")
+
+    assert status == 200
+    assert 'id="posture-map"' in body
+
+
+def test_overview_route_with_no_data(running_server):
+
+    status, body = _get(running_server + "/overview")
 
     assert status == 200
     assert "No inventory found" in body
@@ -65,7 +73,7 @@ def test_overview_route_with_real_saved_environment(running_server):
     environment.ingest_discovery({"system": {"hostname": "sentinel"}})
     store.save_environment(environment)
 
-    status, body = _get(running_server + "/")
+    status, body = _get(running_server + "/overview")
 
     assert status == 200
     assert "sentinel" in body

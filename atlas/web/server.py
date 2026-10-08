@@ -20,6 +20,7 @@ from atlas.reporting.trends import build_trends_payload
 from atlas.web import api
 from atlas.web.chat_page import render_chat_page
 from atlas.web.devices_pages import render_coverage_page, render_device_page, render_devices_page, render_triage_page
+from atlas.web.posture_page import render_posture_page
 from atlas.web.render import build_summary, render_history_page, render_map_page, render_overview_page, render_trends_page
 
 
@@ -56,6 +57,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         query = KnowledgeQueries()
 
         if path == "/":
+            body = render_posture_page()
+        elif path == "/overview":
             body = render_overview_page(query.latest_environment(), query.latest_analysis())
         elif path == "/history":
             body = render_history_page(query.recent_events(50))

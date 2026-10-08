@@ -80,15 +80,21 @@ def _status(device):
     return f'<span class="status-{_esc(device["status"])}">{_esc(device["status"])}</span>'
 
 
-def _page(title, body):
+def device_tabs(current):
+    return [("/devices", "Devices", current == "devices"), ("/triage", "Triage", current == "triage"),
+            ("/coverage", "Coverage", current == "coverage")]
 
-    return render_page(title, f'<p id="msg"></p>{body}{ACTIONS_SCRIPT}')
+
+def _page(title, body, tabs=None):
+
+    return render_page(title, f'<p id="msg"></p>{body}{ACTIONS_SCRIPT}', active="devices", tabs=tabs)
 
 
 def render_triage_page(triage):
 
     if not triage["new"] and not triage["quiet"]:
-        return _page("Triage", '<p class="muted">Nothing to triage - every device is known or ignored.</p>')
+        return _page("Triage", '<p class="muted">Nothing to triage - every device is known or ignored.</p>',
+                      device_tabs("triage"))
 
     new_rows = "".join(
         f"<tr><td><input id=\"name-{device['id']}\" value=\"{_esc(device['name'])}\"></td>"
@@ -121,7 +127,7 @@ def render_triage_page(triage):
                  "its last two runs.</p><table><thead><tr><th>name</th><th>ip</th><th>last seen</th><th></th>"
                  f"</tr></thead><tbody>{quiet_rows}</tbody></table></div>")
 
-    return _page("Triage", body)
+    return _page("Triage", body, device_tabs("triage"))
 
 
 def render_devices_page(devices):
@@ -139,7 +145,7 @@ def render_devices_page(devices):
             "<th>ip</th><th>tags</th><th>seen by</th><th>last seen</th></tr></thead>"
             f"<tbody>{rows}</tbody></table></div>")
 
-    return _page(f"Devices ({len(devices)})", body)
+    return _page(f"Devices ({len(devices)})", body, device_tabs("devices"))
 
 
 def _options(values, selected):
@@ -240,4 +246,4 @@ def render_coverage_page(coverage):
         f"{listing(coverage['invisible'], 'None.')}</div>"
     )
 
-    return _page("Coverage", body)
+    return _page("Coverage", body, device_tabs("coverage"))

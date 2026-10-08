@@ -107,6 +107,27 @@ class NotifyConfig(BaseModel):
     signal: SignalNotifyConfig = SignalNotifyConfig()
 
 
+class PostureConfig(BaseModel):
+    """Egress/posture collector (atlas posture watch). Off unless enabled."""
+    enabled: bool = False
+    interval: int = 30
+    retention_days: int = 30
+    host_ip: str = ""
+    gluetun_container: str = "gluetun"
+    gluetun_port: int = 8000
+    gluetun_api_key: str = ""
+    crowdsec_container: str = "crowdsec"
+    crowdsec_port: int = 8080
+    crowdsec_api_key: str = ""
+    cloudflared_container: str = "cloudflared"
+    traefik_container: str = "traefik"
+    traefik_dynamic_dir: str = ""
+    auth_middleware: str = "authelia"
+    ip_echo_url: str = "https://api.ipify.org"
+    asn_url: str = "https://iptoasn.com/data/ip2asn-v4.tsv.gz"
+    asn_path: str = "inventory/ip2asn-v4.tsv.gz"
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -121,3 +142,4 @@ class AtlasConfig(BaseModel):
     map: MapConfig = MapConfig()
     scan: ScanConfig = ScanConfig()
     notify: NotifyConfig = NotifyConfig()
+    posture: PostureConfig = PostureConfig()

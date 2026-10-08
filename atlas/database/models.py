@@ -163,3 +163,74 @@ class NotificationRecord(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     sent_at: Mapped[datetime | None] = mapped_column(default=None)
+
+
+class PostureFlowRecord(Base):
+    """Bytes/connections per hour per (source container, destination ip:port/proto)."""
+
+    __tablename__ = "posture_flows"
+    __table_args__ = (UniqueConstraint("hour", "source", "dest_ip", "dest_port", "proto"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    hour: Mapped[datetime]
+    source: Mapped[str]
+    band: Mapped[str]
+    dest_ip: Mapped[str]
+    dest_port: Mapped[int]
+    proto: Mapped[str]
+    asn: Mapped[int] = mapped_column(default=0)
+    org: Mapped[str] = mapped_column(default="")
+    cc: Mapped[str] = mapped_column(default="")
+    bytes_out: Mapped[int] = mapped_column(default=0)
+    bytes_in: Mapped[int] = mapped_column(default=0)
+    conns: Mapped[int] = mapped_column(default=0)
+
+
+class PostureSeenRecord(Base):
+    """First/last time a source talked to a network (ASN, or the bare IP when unknown)."""
+
+    __tablename__ = "posture_seen"
+    __table_args__ = (UniqueConstraint("source", "asn_key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str]
+    asn_key: Mapped[str]
+    org: Mapped[str] = mapped_column(default="")
+    cc: Mapped[str] = mapped_column(default="")
+    first_seen: Mapped[datetime]
+    last_seen: Mapped[datetime]
+
+
+class PostureKnownRecord(Base):
+    """Operator said this source->network pair is expected (Mark as expected)."""
+
+    __tablename__ = "posture_known"
+    __table_args__ = (UniqueConstraint("source", "asn_key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str]
+    asn_key: Mapped[str]
+    note: Mapped[str] = mapped_column(default="")
+    marked_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+
+class PostureRouteRecord(Base):
+    """Snapshot of public routes; a new snapshot is written only when the set changes."""
+
+    __tablename__ = "posture_routes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    snapshot_at: Mapped[datetime]
+    routes: Mapped[str]
+
+
+class PostureStatusRecord(Base):
+    """Last result per collector source - drives greying out stale bands."""
+
+    __tablename__ = "posture_status"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str] = mapped_column(unique=True)
+    ok: Mapped[bool]
+    detail: Mapped[str] = mapped_column(default="{}")
+    updated_at: Mapped[datetime]

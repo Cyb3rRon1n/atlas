@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from atlas.core.application import application
 from atlas.devices import Sighting
 from atlas.devices.store import InventoryStore
@@ -153,3 +155,17 @@ def test_execute_route_maps_live_state_failure_to_503(temp_db, monkeypatch):
 
     assert api.handle("POST", "/api/actions/execute", {"action": {"type": "restart_container", "target": "sonarr"}}) == \
         (503, {"error": "could not check live state: docker down"})
+
+
+def test_posture_endpoints(temp_db):
+    from atlas.posture.store import PostureStore
+    from atlas.web import api
+    store = PostureStore(temp_db)
+    store.set_status("conntrack", True, {"flows": 1}, datetime.utcnow())
+    status, body = api.handle("GET", "/api/posture?window=1h")
+    assert status == 200 and {"strip", "nodes", "edges", "bands", "exposure", "review"} <= set(body)
+    assert api.handle("GET", "/api/posture?window=bogus")[0] == 400
+    assert api.handle("GET", "/api/posture/node?id=dst:AS1")[0] == 404
+    assert api.handle("POST", "/api/posture/known", {"source": "sonarr", "asn_key": "AS64500"}) == (200, {"ok": True})
+    assert api.handle("POST", "/api/posture/known", {"source": "sonarr", "asn_key": "x"})[0] == 400
+    assert api.handle("POST", "/api/posture/known", ["x"])[0] == 400

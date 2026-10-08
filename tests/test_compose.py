@@ -47,3 +47,11 @@ def test_parse_compose_file_parses_services(tmp_path):
 
     assert sonarr.image == "linuxserver/sonarr"
     assert sonarr.ports == []
+
+
+def test_atlas_scan_runs_posture_watch_with_net_admin():
+    import yaml
+    data = yaml.safe_load(open("docker-compose.yml"))
+    scan = data["services"]["atlas-scan"]
+    assert "NET_ADMIN" in scan["cap_add"]
+    assert "atlas posture watch" in "\n".join(scan["command"])

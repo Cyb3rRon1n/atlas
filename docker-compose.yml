@@ -44,11 +44,14 @@ services:
 
   # Finds every device on the LAN and refreshes discover / Proxmox / map every
   # ATLAS_SCAN_MINUTES (default 15). Host networking is what lets it see the
-  # LAN's MAC addresses (it reads the host's ARP table); it needs no extra
-  # capabilities. Writes the same database the atlas web container reads.
+  # LAN's MAC addresses (it reads the host's ARP table); it needs NET_ADMIN
+  # only for the posture collector's read-only conntrack listing. Writes the
+  # same database the atlas web container reads.
   atlas-scan:
     <<: *atlas
     network_mode: host
+    cap_add:
+      - NET_ADMIN   # conntrack -L only (posture page); atlas never writes netfilter state
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ATLAS_SCAN_MINUTES: ${ATLAS_SCAN_MINUTES:-15}
@@ -58,6 +61,7 @@ services:
       - sh
       - -c
       - |
+        atlas posture watch &
         while :; do
           atlas scan
           atlas discover >/dev/null 2>&1

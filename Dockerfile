@@ -15,6 +15,15 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
+
+# conntrack lists the kernel connection table for the posture page. The file
+# capability lets the non-root atlas user use NET_ADMIN (granted only to the
+# atlas-scan service via cap_add) without running as root.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends conntrack libcap2-bin \
+    && setcap cap_net_admin+ep /usr/sbin/conntrack \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml README.md LICENSE ./
 COPY atlas/ atlas/
 RUN pip install .

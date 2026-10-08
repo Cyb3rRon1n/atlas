@@ -85,3 +85,45 @@ def test_unexpected_exception_from_a_source_is_recorded_not_raised(temp_db):
     status = collector.store.statuses()["gluetun"]
     assert status["ok"] is False and "boom" in status["detail"]["error"]
     assert isinstance(result, dict)
+
+
+def test_unexpected_exception_from_public_ip_is_recorded_not_raised(temp_db):
+    def broken_get(url, headers=None, timeout=None):
+        if url == "https://api.ipify.org":
+            raise KeyError("boom")
+        return fake_get(url, headers, timeout)
+    collector = make(temp_db)
+    collector.get = broken_get
+    result = collector.run_once(NOW)
+    status = collector.store.statuses()["public_ip"]
+    assert status["ok"] is False and "boom" in status["detail"]["error"]
+    assert isinstance(result, dict)
+
+
+class BrokenListClient:
+    """Wraps a real fake client but makes containers.list() raise, simulating
+    a Docker API/socket error - containers.get() (used by _service/container_ip)
+    still works, since the collector's per-source isolation should mean those
+    aren't affected by the top-of-run_once Docker lookups failing."""
+
+    def __init__(self, inner):
+        self._inner = inner
+        outer = self
+        class containers:
+            @staticmethod
+            def list():
+                raise RuntimeError("Cannot connect to the Docker daemon")
+            @staticmethod
+            def get(name):
+                return outer._inner.containers.get(name)
+        self.containers = containers
+
+
+def test_docker_lookup_failure_at_top_of_run_once_is_recorded_not_raised(temp_db):
+    collector = make(temp_db)
+    collector.client = BrokenListClient(collector.client)
+    result = collector.run_once(NOW)
+    statuses = collector.store.statuses()
+    assert isinstance(result, dict)
+    assert "conntrack" in statuses and statuses["conntrack"]["ok"] is True
+    assert "tunnel" in statuses and "inbound" in statuses

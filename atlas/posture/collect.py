@@ -72,10 +72,13 @@ class Collector:
         elif self.last_asn_check is None or now - self.last_asn_check >= ASN_CHECK_EVERY:
             self._asn(now)
 
-        sources = container_ips(self.client)
-        cloudflared_ip = container_ip(self.client, s.cloudflared_container)
-        traefik_ip = container_ip(self.client, s.traefik_container)
-        vpn = {s.gluetun_container, *vpn_members(self.client, s.gluetun_container)}
+        try:
+            sources = container_ips(self.client)
+            cloudflared_ip = container_ip(self.client, s.cloudflared_container)
+            traefik_ip = container_ip(self.client, s.traefik_container)
+            vpn = {s.gluetun_container, *vpn_members(self.client, s.gluetun_container)}
+        except Exception:
+            sources, cloudflared_ip, traefik_ip, vpn = {}, None, None, {s.gluetun_container}
 
         result = {"flows": 0, "deltas": 0, "new": []}
 

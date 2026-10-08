@@ -3281,7 +3281,14 @@ def posture_watch(
     collector = Collector(settings.posture, PostureStore(), client)
 
     while True:
-        result = collector.run_once(datetime.utcnow())
+        try:
+            result = collector.run_once(datetime.utcnow())
+        except Exception as error:
+            console.print(f"[red]posture watch: {str(error)[:300]}[/red]")
+            if once:
+                return
+            time.sleep(settings.posture.interval)
+            continue
         if json_output:
             print(json.dumps(result, default=str))
         elif result["new"]:

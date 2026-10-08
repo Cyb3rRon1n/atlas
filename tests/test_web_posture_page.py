@@ -20,3 +20,11 @@ def test_posture_page_shell():
     for marker in ('id="strip"', 'id="posture-map"', 'data-window="live"', 'data-window="1h"',
                    'data-window="24h"', 'id="posture-panel"', 'id="exposure"', "/static/cytoscape.min.js"):
         assert marker in html
+
+
+def test_posture_script_contract():
+    html = render_posture_page()
+    for marker in ('fetch("/api/posture?window="', "/api/posture/node?id=", "/api/posture/known",
+                   "preset", "textContent", "atlasAsk", "setInterval"):
+        assert marker in html
+    assert "innerHTML" not in html.split("<script>")[-1]

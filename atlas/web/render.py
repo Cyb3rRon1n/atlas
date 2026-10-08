@@ -18,8 +18,6 @@ PAGE_STYLE = """
          margin: 0; padding: 2rem; line-height: 1.5; }
   a { color: #58a6ff; text-decoration: none; }
   a:hover { text-decoration: underline; }
-  nav { margin-bottom: 1.5rem; }
-  nav a { margin-right: 1.25rem; font-weight: 600; }
   h1 { margin-top: 0; }
   h2 { border-bottom: 1px solid #30363d; padding-bottom: 0.3rem; }
   table { border-collapse: collapse; width: 100%; margin: 0.75rem 0 1.5rem; }
@@ -56,30 +54,59 @@ MAP_STYLE = """
 
 PAGE_STYLE += MAP_STYLE
 
+SHELL_STYLE = """
+:root { --bg:#0e131a; --surface:#151c25; --surface2:#1b2430; --line:#263140; --text:#e7edf3; --muted:#a3b0bd;
+        --blue:#5aa7f0; --green:#43c08f; --orange:#f0a23a; --red:#f47a5c; }
+body { margin:0; background:var(--bg); color:var(--text);
+       font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+.topbar { display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:12px 24px;
+          background:#111821; border-bottom:1px solid #222c38; }
+.topbar .brand { font-weight:600; letter-spacing:.14em; }
+.topbar nav.main { display:flex; flex-wrap:wrap; gap:4px; }
+.topbar nav.main a, .topbar .chat-link { padding:10px 14px; border-radius:8px; color:var(--muted); text-decoration:none; }
+.topbar nav.main a[aria-current="page"] { background:var(--surface2); color:var(--text); }
+.topbar .spacer { flex:1; }
+.page { padding:16px 24px 32px; }
+.tabs { display:flex; gap:4px; margin:0 0 16px; border-bottom:1px solid var(--line); }
+.tabs a { padding:10px 14px; color:var(--muted); text-decoration:none; border-bottom:2px solid transparent; }
+.tabs a[aria-current="page"] { color:var(--text); border-bottom-color:var(--blue); }
+"""
+
+PAGE_STYLE += SHELL_STYLE
+
 
 def _esc(value):
     return escape(str(value))
 
 
-def render_page(title, body_html):
+NAV = [("/", "Posture", "posture"), ("/devices", "Devices", "devices"), ("/map", "LAN map", "lan"),
+       ("/history", "History", "history")]
+
+
+def render_page(title, body_html, active="", tabs=None, drawer=True):
+
+    here = ' aria-current="page"'   # built outside the f-strings: backslashes in f-string expressions need 3.12
+    links = "".join(
+        f'<a href="{href}"{here if key == active else ""}>{_esc(label)}</a>'
+        for href, label, key in NAV
+    )
+    tab_html = ""
+    if tabs:
+        tab_html = '<nav class="tabs" aria-label="Section">' + "".join(
+            f'<a href="{href}"{here if current else ""}>{_esc(label)}</a>'
+            for href, label, current in tabs) + "</nav>"
 
     return (
         "<!doctype html>\n"
-        "<html><head><meta charset=\"utf-8\">"
+        "<html lang=\"en\"><head><meta charset=\"utf-8\">"
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
         f"<title>Atlas - {_esc(title)}</title>"
         f"<style>{PAGE_STYLE}</style></head><body>"
-        "<nav>"
-        "<a href=\"/\">Overview</a>"
-        "<a href=\"/triage\">Triage</a>"
-        "<a href=\"/devices\">Devices</a>"
-        "<a href=\"/map\">Map</a>"
-        "<a href=\"/coverage\">Coverage</a>"
-        "<a href=\"/chat\">Chat</a>"
-        "<a href=\"/history\">History</a>"
-        "<a href=\"/trends\">Trends</a>"
-        "</nav>"
-        f"<h1>{_esc(title)}</h1>"
-        f"{body_html}"
+        "<header class=\"topbar\"><span class=\"brand\">ATLAS</span>"
+        f"<nav class=\"main\" aria-label=\"Main\">{links}</nav>"
+        "<span class=\"spacer\"></span>"
+        "<a class=\"chat-link\" href=\"/chat\">Chat</a></header>"
+        f"<main class=\"page\"><h1>{_esc(title)}</h1>{tab_html}{body_html}</main>"
         "</body></html>"
     )
 
@@ -396,11 +423,14 @@ def render_overview_page(environment, analysis):
     KnowledgeQueries().latest_analysis()'s (or None).
     """
 
+    overview_tabs = [("/", "Posture", False), ("/overview", "Host overview", True)]
+
     if environment is None:
 
         return render_page(
             "Overview",
-            "<p class=\"muted\">No inventory found. Run <code>atlas discover</code> first.</p>"
+            "<p class=\"muted\">No inventory found. Run <code>atlas discover</code> first.</p>",
+            active="posture", tabs=overview_tabs
         )
 
     sections = []
@@ -488,7 +518,7 @@ def render_overview_page(environment, analysis):
 
     header = f"<p class=\"muted\">Latest snapshot: {_esc(timestamp)}</p>" if timestamp else ""
 
-    return render_page("Overview", header + "".join(sections))
+    return render_page("Overview", header + "".join(sections), active="posture", tabs=overview_tabs)
 
 
 def render_history_page(events):
@@ -497,11 +527,14 @@ def render_history_page(events):
     list of EventRecord ORM objects, same as `atlas history` prints.
     """
 
+    history_tabs = [("/history", "Events", True), ("/trends", "Trends", False)]
+
     if not events:
 
         return render_page(
             "History",
-            "<p class=\"muted\">No historical events found.</p>"
+            "<p class=\"muted\">No historical events found.</p>",
+            active="history", tabs=history_tabs
         )
 
     rows = "".join(
@@ -519,7 +552,7 @@ def render_history_page(events):
         f"<th>Payload</th></tr></thead><tbody>{rows}</tbody></table>"
     )
 
-    return render_page("History", body)
+    return render_page("History", body, active="history", tabs=history_tabs)
 
 
 def _trend_summary_row(metric_name, summary):
@@ -558,13 +591,16 @@ def render_trends_page(payload):
     prints, so this page and the CLI can never disagree.
     """
 
+    trends_tabs = [("/history", "Events", False), ("/trends", "Trends", True)]
+
     if not payload["host"] and not payload["containers"] and not payload["guests"]:
 
         return render_page(
             "Trends",
             "<p class=\"muted\">No monitoring history found. Run "
             "<code>atlas monitor</code> and/or <code>atlas proxmox scan</code> "
-            "a few times to build history.</p>"
+            "a few times to build history.</p>",
+            active="history", tabs=trends_tabs
         )
 
     sections = [f"<div class=\"card\"><h2>Host</h2>{_trend_table(payload['host'])}</div>"]
@@ -584,7 +620,7 @@ def render_trends_page(payload):
             f"<div class=\"card\"><h2>{_esc(name)} ({_esc(vmid)})</h2>{_trend_table(metrics)}</div>"
         )
 
-    return render_page("Trends", "".join(sections))
+    return render_page("Trends", "".join(sections), active="history", tabs=trends_tabs)
 
 
 def _count(number, word):
@@ -709,7 +745,8 @@ def render_map_page(topology):
 
     if not topology:
         return render_page("Network Map", "<p class=\"muted\">No map yet for this host's containers - run "
-                            "<code>atlas map</code>. Devices below come from the inventory.</p>" + _map_block())
+                            "<code>atlas map</code>. Devices below come from the inventory.</p>" + _map_block(),
+                            active="lan")
 
     docker = topology.get("docker") or {}
     responsibility = topology.get("responsibility") or {}
@@ -748,7 +785,7 @@ def render_map_page(topology):
         + "</div>"
     )
 
-    return render_page("Network Map", body)
+    return render_page("Network Map", body, active="lan")
 
 
 def build_summary(topology, devices=()):

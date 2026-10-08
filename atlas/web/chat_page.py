@@ -146,4 +146,4 @@ def render_chat_page(prefill=""):
         + CHAT_SCRIPT
     )
 
-    return render_page("Chat", body)
+    return render_page("Chat", body, drawer=False)

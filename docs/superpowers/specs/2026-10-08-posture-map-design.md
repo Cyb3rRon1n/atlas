@@ -119,7 +119,7 @@ public routes / blocked-24h; "N to review" with the one-line reason and a link t
 - Auth boundary unchanged: Authelia admin rule in front of atlas.
 - New secrets (CrowdSec bouncer key, gluetun key) only in host `atlas.yaml` (600); never rendered or logged.
 - `NET_ADMIN` is used only to list conntrack entries; Atlas never writes netfilter state.
-- ASN/country lookups are offline; no destination IPs leave the host.
+- ASN/country lookups are offline; no destination IPs leave the host - with one exception: opening a destination's details does one reverse-DNS (PTR) lookup of its top address through the host's resolver (bounded to 1 s). That is the only time a destination IP leaves the host.
 
 ## Testing
 

@@ -7,6 +7,7 @@ Refreshed at most weekly; a missing file just means unknown owners.
 import bisect
 import gzip
 import ipaddress
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -31,9 +32,11 @@ def parse_ip2asn(lines):
             continue
         try:
             start, end = int(ipaddress.IPv4Address(parts[0])), int(ipaddress.IPv4Address(parts[1]))
+            asn = int(parts[2])
         except ValueError:
             continue
-        rows.append((start, end, int(parts[2]), parts[3], parts[4]))
+        # ~500k rows repeat a few thousand org/cc strings - intern them so they are stored once.
+        rows.append((start, end, asn, sys.intern(parts[3]), sys.intern(parts[4])))
 
     return sorted(rows)
 
@@ -78,7 +81,13 @@ def refresh(path, url, now, max_age=timedelta(days=7), get=requests.get):
     response = get(url, timeout=60)
     response.raise_for_status()
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp = path.with_name(path.stem + ".tmp" + path.suffix)   # keeps .gz so load_table opens it the same way
     tmp.write_bytes(response.content)
+    try:
+        if not len(load_table(tmp)):
+            raise ValueError("downloaded ASN table has no usable rows")
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
     tmp.replace(path)
     return True

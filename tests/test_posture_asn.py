@@ -42,3 +42,20 @@ def test_refresh_downloads_when_missing_or_stale_only(tmp_path):
     assert refresh(path, "https://example.test/a.gz", now, get=get) is False
     assert refresh(path, "https://example.test/a.gz", now + timedelta(days=8), get=get) is True
     assert len(calls) == 2 and load_table(path).lookup("1.0.0.1") is not None
+
+
+def test_parse_skips_rows_with_a_bad_asn_field():
+    rows = parse_ip2asn(["1.0.0.0\t1.0.0.255\tnot-a-number\tUS\tX", "1.0.1.0\t1.0.1.255\t13335\tUS\tCLOUDFLARENET"])
+    assert [r[2] for r in rows] == [13335]
+
+
+def test_refresh_never_replaces_a_good_file_with_a_bad_download(tmp_path):
+    import pytest
+    path = tmp_path / "ip2asn-v4.tsv.gz"
+    path.write_bytes(gzip.compress(FIXTURE.read_bytes()))
+    stale = datetime.now() + timedelta(days=8)
+    for garbage in (b"<html>rate limited</html>", gzip.compress(b"<html>nope</html>")):
+        with pytest.raises(Exception):
+            refresh(path, "https://example.test/a.gz", stale, get=lambda url, timeout: FakeResponse(garbage))
+        assert load_table(path).lookup("1.0.0.1").org == "CLOUDFLARENET"
+        assert [p.name for p in tmp_path.iterdir()] == ["ip2asn-v4.tsv.gz"]

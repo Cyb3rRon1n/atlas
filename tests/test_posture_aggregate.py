@@ -54,3 +54,9 @@ def test_inbound_and_tunnel_counts(monkeypatch):
     assert inbound_counts(FLOWS, HOST, "172.18.0.9") == {"public": 0, "private": 1}
     assert tunnel_connections(FLOWS, "172.18.0.38") == 1
     assert tunnel_connections(FLOWS, None) == 0
+
+
+def test_missing_asn_table_means_unknown_owners(monkeypatch):
+    monkeypatch.setattr("atlas.posture.aggregate.is_public", lambda ip: not ip.startswith(("192.168.", "172.", "100.64.", "224.")))
+    deltas = Accountant().deltas(FLOWS, SOURCES, HOST, {"gluetun"}, None)
+    assert deltas and all((d["asn"], d["org"], d["cc"]) == (0, "", "") for d in deltas)

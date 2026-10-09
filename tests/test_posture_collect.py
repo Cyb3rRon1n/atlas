@@ -177,3 +177,37 @@ def test_store_failure_while_recording_flows_keeps_other_statuses(temp_db, monke
     assert result["new"] == []
     assert statuses["conntrack"]["ok"] is True and "locked" in statuses["conntrack"]["detail"]["store_error"]
     assert {"tunnel", "inbound", "routes", "gluetun", "crowdsec", "public_ip"} <= set(statuses)
+
+
+def test_watch_logs_an_error_once_per_change(isolated_cwd, monkeypatch):
+    import time
+    from typer.testing import CliRunner
+    from atlas.cli.main import app
+
+    (isolated_cwd / "atlas.yaml").write_text("posture:\n  enabled: true\n")
+    errors = iter(["database is locked", "database is locked", "disk full", None, "disk full", "disk full"])
+
+    class Stub:
+        def __init__(self, *args, **kwargs):
+            pass
+        def run_once(self, now):
+            error = next(errors)
+            if error:
+                raise RuntimeError(error)
+            return {"new": []}
+
+    class Stop(Exception):
+        pass
+
+    calls = []
+    def sleep(seconds):
+        calls.append(seconds)
+        if len(calls) == 6:
+            raise Stop()
+
+    monkeypatch.setattr("atlas.docker.manager.get_client", lambda: object())
+    monkeypatch.setattr("atlas.posture.collect.Collector", Stub)
+    monkeypatch.setattr("atlas.posture.store.PostureStore", lambda *a, **k: None)
+    monkeypatch.setattr(time, "sleep", sleep)
+    output = CliRunner().invoke(app, ["posture", "watch"]).output
+    assert output.count("database is locked") == 1 and output.count("disk full") == 2

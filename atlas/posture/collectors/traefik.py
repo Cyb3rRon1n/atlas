@@ -27,7 +27,7 @@ def _split(value):
 
 
 def _route(name, rule, entrypoints, middlewares, auth_middleware, provider):
-    protected = any(m.split("@")[0].startswith(auth_middleware) for m in middlewares)
+    protected = any(m.split("@")[0] == auth_middleware for m in middlewares)
     return {"name": name, "hosts": _hosts(rule), "entrypoints": entrypoints,
             "protection": "authelia" if protected else "public", "provider": provider}
 

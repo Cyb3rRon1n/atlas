@@ -54,4 +54,4 @@ def test_atlas_scan_runs_posture_watch_with_net_admin():
     data = yaml.safe_load(open("docker-compose.yml"))
     scan = data["services"]["atlas-scan"]
     assert "NET_ADMIN" in scan["cap_add"]
-    assert "atlas posture watch" in "\n".join(scan["command"])
+    assert "while :; do atlas posture watch; sleep 30; done &" in "\n".join(scan["command"])   # restarts if it dies

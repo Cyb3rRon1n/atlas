@@ -3270,7 +3270,12 @@ def posture_watch(
 
     if not settings.posture.enabled:
         console.print("Posture collection is off (posture.enabled: false in atlas.yaml).")
-        return
+        if once:
+            return
+        # Idle instead of exiting: atlas-scan restarts this command in a loop, and exiting
+        # would print the line above every 30 s forever on default installs.
+        while True:
+            time.sleep(3600)
 
     client = get_client()
 

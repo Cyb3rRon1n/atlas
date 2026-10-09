@@ -246,3 +246,19 @@ def test_every_page_gets_the_chat_drawer_except_chat():
 
     assert 'id="chat-drawer"' in html and 'id="ask"' in html and "atlasAsk" in html
     assert 'id="chat-drawer"' not in render_page("Chat", "", drawer=False)
+
+
+def test_summary_posture_block():
+    from atlas.web.render import build_summary
+    posture = {"strip": [
+        {"key": "ingress", "state": "ok", "value": "Tunnel up", "label": "Ingress", "detail": ""},
+        {"key": "vpn", "state": "ok", "value": "Verified", "label": "VPN egress", "detail": ""},
+        {"key": "exposure", "state": "ok", "value": "14 routes", "label": "Exposure", "detail": ""},
+        {"key": "blocked", "state": "ok", "value": "37", "label": "Blocked", "detail": ""},
+        {"key": "new", "state": "review", "value": "1", "label": "New destinations", "detail": ""}],
+        "exposure": [{}] * 14,
+        "review": [{"source": "sonarr", "asn_key": "AS64500", "org": "EXAMPLE-NET", "cc": "US", "first_seen": ""}]}
+    block = build_summary(None, (), posture)["posture"]
+    assert block == {"state": "review", "tunnel": "Tunnel up", "vpn": "Verified", "routes": 14, "blocked": "37",
+                     "review_count": 1, "message": "sonarr reached EXAMPLE-NET (US)", "link": "/"}
+    assert "posture" not in build_summary(None, (), None)

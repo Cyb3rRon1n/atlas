@@ -796,7 +796,29 @@ def render_map_page(topology):
     return render_page("Network Map", body, active="lan")
 
 
-def build_summary(topology, devices=()):
+def _posture_block(posture):
+
+    items = {item["key"]: item for item in posture["strip"]}
+    warn = next((item for item in posture["strip"] if item["state"] == "warn"), None)
+
+    if warn:
+        state, message = "warn", f"{warn['label']}: {warn['value']}"
+    elif items["new"]["state"] == "review" and posture["review"]:
+        first = posture["review"][0]
+        org = first["org"] or first["asn_key"]
+        cc = first["cc"] or "?"
+        state, message = "review", f"{first['source']} reached {org} ({cc})"
+    elif items["ingress"]["state"] == "unknown":
+        state, message = "unknown", "No posture data yet"
+    else:
+        state, message = "ok", "All good"
+
+    return {"state": state, "tunnel": items["ingress"]["value"], "vpn": items["vpn"]["value"],
+            "routes": len(posture["exposure"]), "blocked": items["blocked"]["value"],
+            "review_count": len(posture["review"]), "message": message, "link": "/"}
+
+
+def build_summary(topology, devices=(), posture=None):
     """
     One small JSON object for a dashboard tile (e.g. Homepage's customapi
     widget): counts from the latest saved network map and the device
@@ -808,9 +830,10 @@ def build_summary(topology, devices=()):
                          for device in devices),
         "devices_quiet": sum(device["status"] == "quiet" and device["state"] != "ignored" for device in devices),
     }
+    posture_extra = {"posture": _posture_block(posture)} if posture else {}
 
     if not topology:
-        return {"status": "no map yet - run atlas map", **counts}
+        return {"status": "no map yet - run atlas map", **counts, **posture_extra}
 
     containers = [c for members in ((topology.get("docker") or {}).get("networks") or {}).values() for c in members]
     guests = [g for g in (topology.get("proxmox") or {}).get("guests", []) if not g.get("template")]
@@ -834,4 +857,5 @@ def build_summary(topology, devices=()):
         "hosts_down": down_hosts,
         "ai_reachable": brain.get("reachable"),
         **counts,
+        **posture_extra,
     }

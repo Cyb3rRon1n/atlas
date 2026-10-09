@@ -5,6 +5,7 @@ explicit engine (tests pass a temp one); defaults to this module's `engine`,
 which tests/conftest.py's temp_db also patches.
 """
 
+import ipaddress
 import json
 import re
 from datetime import datetime
@@ -18,7 +19,19 @@ from atlas.database.models import (PostureFlowRecord, PostureKnownRecord, Postur
                                    PostureStatusRecord)
 
 
-ASN_KEY = re.compile(r"^(AS\d+|ip:[0-9.]+)$")
+ASN_KEY = re.compile(r"^AS\d+$")
+
+
+def valid_asn_key(key):
+    if not isinstance(key, str):
+        return False
+    if key.startswith("ip:"):
+        try:
+            ipaddress.ip_address(key[3:])
+        except ValueError:
+            return False
+        return True
+    return bool(ASN_KEY.fullmatch(key))
 
 
 def asn_key(asn, dest_ip):
@@ -43,7 +56,9 @@ class PostureStore:
         self.engine = engine_ or engine
         initialize_database(self.engine)
 
-    def record_flows(self, deltas, now):
+    def record_flows(self, deltas, now, track_seen=True):
+        # track_seen=False (no ASN table yet): keep the traffic, but don't record first-seen networks -
+        # every destination would be a bare ip: key and flood the review list.
 
         hour = _hour(now)
         new = []
@@ -68,6 +83,9 @@ class PostureStore:
                 row.bytes_out += d["bytes_out"]
                 row.bytes_in += d["bytes_in"]
                 row.conns += 1 if d["new_conn"] else 0
+
+                if not track_seen:
+                    continue
 
                 key = asn_key(d["asn"], d["dest_ip"])
                 seen = session.scalars(select(PostureSeenRecord).where(
@@ -103,8 +121,8 @@ class PostureStore:
         if not (isinstance(source, str) and source.strip() and len(source) <= 128):
             return {"ok": False, "error": "source must be a container name"}
 
-        if not (isinstance(key, str) and ASN_KEY.match(key)):
-            return {"ok": False, "error": "asn_key must look like AS123 or ip:1.2.3.4"}
+        if not valid_asn_key(key):
+            return {"ok": False, "error": "asn_key must look like AS123 or ip:<IPv4/IPv6 address>"}
 
         with Session(self.engine) as session:
             exists = session.scalars(select(PostureKnownRecord).where(

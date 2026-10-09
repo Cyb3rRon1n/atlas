@@ -42,9 +42,10 @@ def test_gluetun_status_returns_error_when_no_public_ip():
     assert result["ok"] is False and "no public_ip" in result["error"]
 
 
-def test_crowdsec_counts_active_decisions_including_null():
+def test_crowdsec_counts_local_decisions_only_including_null():
     def get(url, headers, timeout):
-        assert url == "http://172.18.0.7:8080/v1/decisions" and headers == {"X-Api-Key": "b"}
+        # the origins= filter keeps the shared community blocklist (origin CAPI) out of the count
+        assert url == "http://172.18.0.7:8080/v1/decisions?origins=crowdsec,cscli" and headers == {"X-Api-Key": "b"}
         return Response(data=[{"value": "203.0.113.5"}, {"value": "203.0.113.6"}])
     assert crowdsec_bans("http://172.18.0.7:8080", "b", get=get) == {"ok": True, "active": 2}
     assert crowdsec_bans("http://x", "b", get=lambda url, headers, timeout: Response(data=None)) == {

@@ -68,7 +68,7 @@ body { margin:0; background:var(--bg); color:var(--text);
 .topbar nav.main a[aria-current="page"] { background:var(--surface2); color:var(--text); }
 .topbar .spacer { flex:1; }
 .page { padding:16px 24px 32px; }
-.tabs { display:flex; gap:4px; margin:0 0 16px; border-bottom:1px solid var(--line); }
+.tabs { display:flex; flex-wrap:wrap; gap:4px; margin:0 0 16px; border-bottom:1px solid var(--line); }
 .tabs a { padding:10px 14px; color:var(--muted); text-decoration:none; border-bottom:2px solid transparent; }
 .tabs a[aria-current="page"] { color:var(--text); border-bottom-color:var(--blue); }
 """

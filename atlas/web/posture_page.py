@@ -11,7 +11,7 @@ POSTURE_STYLE = """
 <style>
 #strip { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
 #strip .chip { padding:14px 16px; background:var(--surface); border:1px solid var(--line); border-radius:12px;
-               color:var(--text); text-align:left; font:inherit; cursor:pointer; }
+               color:var(--text); text-align:left; font:inherit; }
 #strip .chip .k { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
 #strip .chip .v { font-size:20px; font-weight:600; margin-top:4px; }
 #strip .chip .d { font-size:13px; color:var(--muted); }
@@ -38,6 +38,12 @@ POSTURE_STYLE = """
 #posture-panel .big { font-size:18px; margin:4px 0 12px; }
 .review-label { color:#ffd08a; font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
 #posture-panel button { margin:8px 8px 0 0; }
+#posture-off { padding:12px 16px; margin-bottom:16px; border:1px solid var(--orange); border-radius:12px;
+               background:#2b2213; color:#ffd08a; }
+#review { list-style:none; margin:0; padding:0; }
+#review li { padding:8px 0; border-top:1px solid var(--line); font-size:13px; }
+#review li:first-child { border-top:0; }
+#review button { margin-top:6px; }
 </style>
 """
 
@@ -49,6 +55,11 @@ const strip = document.getElementById("strip");
 const panel = document.getElementById("posture-panel");
 const exposure = document.getElementById("exposure");
 const msg = document.getElementById("posture-msg");
+const reviewList = document.getElementById("review");
+const off = document.getElementById("posture-off");
+const DEFAULT_MSG = msg.textContent;
+const OFF_TEXT = "Posture collection is off - set posture.enabled: true in atlas.yaml and run `atlas posture watch` (atlas-scan does this).";
+off.textContent = OFF_TEXT;
 const COLORS = {inbound: "#5aa7f0", direct: "#8b98a6", vpn: "#43c08f"};
 let windowName = "24h", cy = null, timer = null;
 
@@ -57,10 +68,9 @@ function fmt(n) { const u = ["B","KB","MB","GB","TB"]; let i = 0; while (n >= 10
 
 function renderStrip(items) {
   strip.replaceChildren(...items.map((item) => {
-    const b = el("button", undefined, "chip " + item.state);
-    b.append(el("div", item.label, "k"), el("div", item.value, "v"), el("div", item.detail, "d"));
-    b.addEventListener("click", () => { if (cy) cy.nodes().removeClass("dim"); });
-    return b;
+    const chip = el("div", undefined, "chip " + item.state);
+    chip.append(el("div", item.label, "k"), el("div", item.value, "v"), el("div", item.detail, "d"));
+    return chip;
   }));
 }
 
@@ -71,6 +81,30 @@ function renderExposure(routes) {
     return li;
   }));
   if (!routes.length) exposure.replaceChildren(el("li", "No routes seen yet.", "muted"));
+}
+
+async function markExpected(button, source, asnKey) {
+  button.disabled = true;
+  try {
+    const r = await fetch("/api/posture/known", {method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify({source: source, asn_key: asnKey})});
+    if (r.ok) { button.textContent = "Marked expected"; load(); return; }
+    button.textContent = "Failed (" + r.status + ") - try again";
+  } catch (error) { button.textContent = "Network error - try again"; }
+  button.disabled = false;
+}
+
+function renderReview(items) {
+  if (!items.length) { reviewList.replaceChildren(el("li", "Nothing new to review.", "muted")); return; }
+  reviewList.replaceChildren(...items.map((r) => {
+    const li = el("li");
+    li.append(el("div", r.source + " -> " + (r.org || r.asn_key) + " (" + r.asn_key + ", " + (r.cc || "?") + ")"),
+      el("div", "first seen " + new Date(r.first_seen + "Z").toLocaleString(), "muted"));
+    const mark = el("button", "Mark expected");
+    mark.addEventListener("click", () => markExpected(mark, r.source, r.asn_key));
+    li.append(mark);
+    return li;
+  }));
 }
 
 function elements(data) {
@@ -121,8 +155,14 @@ async function select(id) {
   panel.firstChild.style.cssText = "margin:0 0 8px;font-size:15px";
   if (!id.startsWith("dst:") || id === "dst:others") { panel.append(el("p", "Pick a destination box to see who talks to it.", "muted")); return; }
   panel.append(el("p", "Loading...", "muted"));
-  const response = await fetch("/api/posture/node?id=" + encodeURIComponent(id), {credentials: "same-origin"});
-  const d = response.ok ? await response.json() : null;
+  let d = null;
+  try {
+    const response = await fetch("/api/posture/node?id=" + encodeURIComponent(id), {credentials: "same-origin"});
+    d = response.ok ? await response.json() : null;
+  } catch (error) {
+    panel.lastChild.textContent = "Could not load details: " + error;
+    return;
+  }
   panel.lastChild.remove();
   if (!d) { panel.append(el("p", "No traffic recorded for this in the last 24 h.", "muted")); return; }
   panel.append(el("div", d.known ? "Expected destination" : "Not reviewed yet", d.known ? "muted" : "review-label"));
@@ -144,13 +184,7 @@ async function select(id) {
   panel.append(ask);
   if (!d.known) d.sources.forEach((s) => {
     const mark = el("button", "Mark expected for " + s.source);
-    mark.addEventListener("click", async () => {
-      mark.disabled = true;
-      const r = await fetch("/api/posture/known", {method: "POST", credentials: "same-origin",
-        headers: {"Content-Type": "application/json"}, body: JSON.stringify({source: s.source, asn_key: d.asn_key})});
-      mark.textContent = r.ok ? "Marked expected" : "Failed (" + r.status + ")";
-      if (r.ok) load();
-    });
+    mark.addEventListener("click", () => markExpected(mark, s.source, d.asn_key));
     panel.append(mark);
   });
 }
@@ -160,7 +194,9 @@ async function load() {
     const response = await fetch("/api/posture?window=" + windowName, {credentials: "same-origin"});
     if (!response.ok) { msg.textContent = "Could not load posture data (" + response.status + ")."; return; }
     const data = await response.json();
-    renderStrip(data.strip); renderExposure(data.exposure); draw(data);
+    msg.textContent = DEFAULT_MSG;
+    off.hidden = data.enabled !== false;
+    renderStrip(data.strip); renderExposure(data.exposure); renderReview(data.review); draw(data);
   } catch (error) { msg.textContent = "Could not load posture data: " + error; }
 }
 
@@ -182,11 +218,12 @@ def render_posture_page():
 
     body = (
         POSTURE_STYLE
+        + '<p id="posture-off" role="status" hidden></p>'
         + '<section id="strip" aria-label="Posture summary"><p class="muted">Loading...</p></section>'
         + '<div class="posture"><section class="mapcard">'
         + '<div class="mapbar"><h2 style="margin:0;font-size:16px">Network posture</h2>'
         + '<div class="windows" role="group" aria-label="Time window">'
-        + '<button data-window="live" aria-pressed="false">Live</button>'
+        + '<button data-window="live" aria-pressed="false">This hour</button>'
         + '<button data-window="1h" aria-pressed="false">1 h</button>'
         + '<button data-window="24h" aria-pressed="true">24 h</button></div>'
         + '<div class="legend"><span><i style="background:#5aa7f0"></i>Inbound</span>'
@@ -199,9 +236,12 @@ def render_posture_page():
         + '<aside><section id="posture-panel"><h2 style="margin:0 0 8px;font-size:15px">Details</h2>'
         + '<p class="muted">Select a destination on the map.</p></section>'
         + '<section><h2 style="margin:0 0 8px;font-size:15px">Public exposure</h2><ul id="exposure" '
-          'style="list-style:none;margin:0;padding:0"></ul></section></aside></div>'
+          'style="list-style:none;margin:0;padding:0"></ul></section>'
+        + '<section><h2 style="margin:0 0 8px;font-size:15px">Needs review</h2><ul id="review"></ul></section>'
+        + '</aside></div>'
         + '<script src="/static/cytoscape.min.js?v=3.34.3"></script>'
         + POSTURE_SCRIPT
     )
 
-    return render_page("Posture", body, active="posture")
+    return render_page("Posture", body, active="posture",
+                       tabs=[("/", "Posture", True), ("/overview", "Host overview", False)])

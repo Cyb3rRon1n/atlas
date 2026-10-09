@@ -175,6 +175,28 @@ plugin/actions by default — comment that out if you don't need
 container-level insight; mounting it at all is root-equivalent host access
 regardless of any read-only mount flag.
 
+<a id="posture-page"></a>
+### Posture page
+
+The home page (`/`) is a posture map of what reaches the internet and what the internet can reach.
+It stays empty (with a banner saying so) until `atlas posture watch` runs - the atlas-scan container
+starts it once `posture.enabled: true` is set (see the `posture:` block in `atlas.yaml.example`).
+On the Docker host:
+
+- Byte counts need conntrack accounting: `sysctl -w net.netfilter.nf_conntrack_acct=1` (persist it in
+  `/etc/sysctl.d/`). atlas-scan already has `NET_ADMIN`, used only for the read-only `conntrack -L`.
+- `posture.crowdsec_api_key`: a bouncer key from `docker exec crowdsec cscli bouncers add atlas`.
+- `posture.gluetun_api_key`: an API key for gluetun's control server (an `apikey` role in its
+  `config.toml`), so the VPN exit IP can be compared with the home IP.
+- `posture.traefik_dynamic_dir`: Traefik's file-provider directory, mounted read-only into atlas-scan,
+  so file-defined routes count toward public exposure (docker-label routes are read from the socket).
+- `posture.host_ip`: the host's LAN address, so traffic from the host itself is attributed to "host".
+
+Destinations are named by a local copy of the free iptoasn.com table (refreshed weekly); no destination
+IP leaves the host except the one reverse-DNS lookup made when you open a destination's details. The
+first day is a learning baseline; after that, a network a container never used before shows up under
+"Needs review" until marked expected.
+
 ### Add Atlas as a Homepage tile
 
 If you run [Homepage](https://gethomepage.dev) (or any dashboard), give Atlas a tile so the map and dashboard are one click away. Put Atlas behind your reverse proxy instead of publishing port 8420 — e.g. with Traefik + Authelia, a `docker-compose.override.yml` next to Atlas's own:
@@ -232,7 +254,7 @@ Then the tile, in Homepage's `services.yaml` - with live counts from Atlas's `/a
 `/api/summary` returns `status` (`ok` / `degraded` when a map host is down or a container is
 unhealthy), `containers_running`/`_total`/`_unhealthy`, `guests_running`/`_total`,
 `hosts_up`/`_total`/`_down`, `ai_reachable` and `generated_at`. It also returns a `posture` object
-(present once the posture collectors have run at least once) — `state` (`ok`/`review`/`warn`/`unknown`),
+(always present when the posture data can be read; `unknown` values until the collector has run) — `state` (`ok`/`review`/`warn`/`unknown`),
 `tunnel`, `vpn`, `routes`, `blocked`, `review_count`, `message` and `link`, backing the four extra
 mappings above.
 
@@ -316,6 +338,7 @@ More examples (monitoring, resource-usage trends, multi-step plans) are on the [
 | `atlas fleet trends` | SSH into every fleet node and run `atlas trends --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable (no fleet-wide health concept, same as `atlas trends`). |
 | `atlas fleet report` | SSH into every fleet node and run `atlas report --json` there, aggregating results. `--json` for machine-readable output; exits 1 if any node is unreachable (no fleet-wide health concept, same as `atlas report`). |
 | `atlas map` | Build the interactive network map (Cytoscape.js, vendored locally, offline-capable) drawn from the device inventory and this snapshot: Internet → router (the default gateway; a LAN hub when none was seen) → each device under its uplink, with containers by Docker network, Proxmox/libvirt guests, configured LAN hosts' reachability, the AI endpoint, what Atlas may act on. Laid out as a tree: leaves in a grid under their parent, hosts drawn with their guests and Docker networks inside, most important first. Router and network gear are diamonds and a dotted border means the connection is unknown. Wireless devices (operator-set, or guessed from kind phone/iot, "wlan" in the name, or a randomized MAC) are hidden unless "show wireless" is ticked. Connection and uplink are edited in the click-to-edit panel or on the device page. Colour-coded. Saved for `atlas web`'s `/map` and `/api/graph` endpoint; `--json` prints it. |
+| `atlas posture watch` | Collect the posture page's data every `posture.interval` seconds (default 30): outbound connections per container (from conntrack), Traefik routes and their protection, the Cloudflare tunnel, VPN exit vs home IP (gluetun) and active CrowdSec bans. `--once` for a single sample, `--json` to print each sample. Needs `posture.enabled: true`; atlas-scan runs it by default. See [Posture page](#posture-page). |
 | `atlas runtime` | Display Atlas runtime information. |
 
 Run `atlas <command> --help` for command-specific options.

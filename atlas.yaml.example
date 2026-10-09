@@ -27,3 +27,12 @@ fleet:
       user: atlas
       port: 22
       identity_file: ''
+# Posture page (`atlas posture watch`, run by the atlas-scan container). Off by default.
+# Needs net.netfilter.nf_conntrack_acct=1 on the host and NET_ADMIN on atlas-scan
+# (already in docker-compose.yml) for the read-only conntrack listing.
+# posture:
+#   enabled: true
+#   host_ip: 192.168.1.5              # this host's LAN address
+#   gluetun_api_key: ''               # gluetun control-server API key (VPN exit IP check)
+#   crowdsec_api_key: ''              # cscli bouncers add atlas
+#   traefik_dynamic_dir: /traefik/dynamic   # Traefik file-provider dir, mounted read-only

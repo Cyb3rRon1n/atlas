@@ -14,6 +14,7 @@ from atlas.posture.store import asn_key
 
 WINDOWS = {"live": timedelta(0), "1h": timedelta(hours=1), "24h": timedelta(hours=24)}
 NEW_FOR = timedelta(days=7)
+BASELINE = timedelta(hours=24)   # posture_seen's first day is learning, not "new"
 STALE_AFTER = timedelta(minutes=5)
 MAX_SOURCES, MAX_DESTS = 8, 10
 COL, ROW = 200, 64
@@ -72,6 +73,10 @@ def _strip(statuses, routes, review, now):
     ]
 
 
+def _baseline_end(seen):
+    return min(s["first_seen"] for s in seen) + BASELINE if seen else None
+
+
 def _node(node_id, label, sub, band, x, y, state="ok", w=170):
     return {"id": node_id, "label": label, "sub": sub, "band": band, "state": state, "x": x, "y": y, "w": w}
 
@@ -84,8 +89,10 @@ def build_posture(store, now, window="24h"):
 
     statuses, routes = store.statuses(), store.latest_routes()
     seen = store.seen()
+    baseline_end = _baseline_end(seen)
     review = sorted(({k: s[k] for k in ("source", "asn_key", "org", "cc", "first_seen")}
-                     for s in seen if not s["known"] and now - s["first_seen"] <= NEW_FOR),
+                     for s in seen if not s["known"] and now - s["first_seen"] <= NEW_FOR
+                     and s["first_seen"] > baseline_end),
                     key=lambda s: s["first_seen"], reverse=True)
     review_keys = {(r["source"], r["asn_key"]) for r in review}
     flows = store.flows(now - WINDOWS[window])
@@ -162,7 +169,7 @@ def build_posture(store, now, window="24h"):
          "stale": not _fresh(statuses, "gluetun", now)},
     ]
 
-    return {"generated_at": now.isoformat(), "window": window, "strip": strip_items,
+    return {"generated_at": now.isoformat(), "window": window, "enabled": bool(statuses), "strip": strip_items,
             "nodes": nodes, "edges": edges, "bands": bands, "exposure": routes,
             "review": [{**r, "first_seen": r["first_seen"].isoformat()} for r in review]}
 
@@ -192,17 +199,20 @@ def node_details(store, node_id, now, resolve=_reverse_dns):
     if not flows:
         return None
 
-    seen = [s for s in store.seen() if s["asn_key"] == key]
     sources, ips = {}, {}
     for f in flows:
         total = f["bytes_out"] + f["bytes_in"]
         sources[f["source"]] = sources.get(f["source"], 0) + total
         ips[f["dest_ip"]] = ips.get(f["dest_ip"], 0) + total
+    all_seen = store.seen()
+    baseline_end = _baseline_end(all_seen)
+    # Only the sources listed (24 h window); a first-day baseline row counts as expected, as on the map.
+    seen = [s for s in all_seen if s["asn_key"] == key and s["source"] in sources]
     top_ips = sorted(ips, key=ips.get, reverse=True)[:5]
 
     return {"id": node_id, "asn_key": key, "asn": flows[0]["asn"], "org": flows[0]["org"], "cc": flows[0]["cc"],
             "first_seen": min(s["first_seen"] for s in seen).isoformat() if seen else None,
-            "known": all(s["known"] for s in seen) if seen else False,
+            "known": all(s["known"] or s["first_seen"] <= baseline_end for s in seen) if seen else False,
             "sources": [{"source": s, "bytes": b} for s, b in sorted(sources.items(), key=lambda kv: -kv[1])],
             "ips": [{"ip": ip, "rdns": resolve(ip) if i == 0 else ""} for i, ip in enumerate(top_ips)],
             "ports": sorted({f["dest_port"] for f in flows})}

@@ -127,3 +127,28 @@ def test_docker_lookup_failure_at_top_of_run_once_is_recorded_not_raised(temp_db
     assert isinstance(result, dict)
     assert "conntrack" in statuses and statuses["conntrack"]["ok"] is True
     assert "tunnel" in statuses and "inbound" in statuses
+
+
+def test_corrupt_asn_data_does_not_stop_the_collector(temp_db, tmp_path):
+    asn_path = tmp_path / "ip2asn-v4.tsv.gz"
+    asn_path.write_bytes(b"<html>not gzip</html>")
+    os_time = (NOW - timedelta(days=30)).timestamp()
+    import os
+    os.utime(asn_path, (os_time, os_time))
+
+    def garbage_get(url, headers=None, timeout=None):
+        if "ip2asn" in url:
+            return Response(text="<html>")   # .content missing/garbage
+        return fake_get(url, headers, timeout)
+
+    settings = PostureConfig(enabled=True, host_ip="192.168.10.157", gluetun_api_key="g", crowdsec_api_key="c",
+                             asn_path=str(asn_path))
+    flows = parse_conntrack((FIX / "conntrack.txt").read_text())
+    collector = Collector(settings, PostureStore(temp_db), client(), read_flows=lambda: flows, get=garbage_get)
+
+    for step, now in enumerate((NOW, NOW + timedelta(hours=25))):
+        collector.run_once(now)
+        statuses = collector.store.statuses()
+        assert statuses["asn"]["ok"] is False, step
+        for source in ("routes", "gluetun", "public_ip", "conntrack"):
+            assert statuses[source]["updated_at"] == now, (step, source)

@@ -4,6 +4,7 @@ import requests
 class Response:
     def __init__(self, status=200, data=None, text=""):
         self.status_code, self._data, self.text = status, data, text
+        self.content = text.encode()
     def json(self):
         return self._data
     def raise_for_status(self):

@@ -53,7 +53,7 @@ class Accountant:
             if not (bytes_out or bytes_in or new_conn):
                 continue
 
-            info = asn.lookup(flow.dst)
+            info = asn.lookup(flow.dst) if asn is not None else None
             out.append({"source": source, "band": "vpn" if source in vpn_sources else "direct",
                         "dest_ip": flow.dst, "dest_port": flow.dport or 0, "proto": flow.proto,
                         "asn": info.asn if info else 0, "org": info.org if info else "",

@@ -152,3 +152,28 @@ def test_corrupt_asn_data_does_not_stop_the_collector(temp_db, tmp_path):
         assert statuses["asn"]["ok"] is False, step
         for source in ("routes", "gluetun", "public_ip", "conntrack"):
             assert statuses[source]["updated_at"] == now, (step, source)
+
+
+def test_empty_asn_table_records_flows_but_no_new_destinations(temp_db, monkeypatch):
+    monkeypatch.setattr("atlas.posture.aggregate.is_public", lambda ip: ip.startswith(("203.", "198.")))
+    collector = make(temp_db)
+    collector.asn_table = AsnTable([])
+    result = collector.run_once(NOW)
+    assert result["deltas"] == 4 and result["new"] == []
+    assert collector.store.seen() == [] and collector.store.flows(NOW - timedelta(hours=1))
+
+
+class FailingStore(PostureStore):
+    def record_flows(self, deltas, now, track_seen=True):
+        raise RuntimeError("database is locked")
+
+
+def test_store_failure_while_recording_flows_keeps_other_statuses(temp_db, monkeypatch):
+    monkeypatch.setattr("atlas.posture.aggregate.is_public", lambda ip: ip.startswith(("203.", "198.")))
+    collector = make(temp_db)
+    collector.store = FailingStore(temp_db)
+    result = collector.run_once(NOW)
+    statuses = collector.store.statuses()
+    assert result["new"] == []
+    assert statuses["conntrack"]["ok"] is True and "locked" in statuses["conntrack"]["detail"]["store_error"]
+    assert {"tunnel", "inbound", "routes", "gluetun", "crowdsec", "public_ip"} <= set(statuses)

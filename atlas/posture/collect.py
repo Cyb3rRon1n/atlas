@@ -95,7 +95,11 @@ class Collector:
 
         if flows:
             deltas = self.accountant.deltas(flows, sources, s.host_ip, vpn, self.asn_table)
-            result.update(flows=len(flows), deltas=len(deltas), new=self.store.record_flows(deltas, now))
+            result.update(flows=len(flows), deltas=len(deltas))
+            try:
+                result["new"] = self.store.record_flows(deltas, now, track_seen=bool(self.asn_table))
+            except Exception as error:
+                self._status("conntrack", {"ok": True, "flows": len(flows), "store_error": str(error)[:300]}, now)
 
         tunnel = tunnel_connections(flows, cloudflared_ip)
         self._status("tunnel", {"ok": tunnel > 0, "connections": tunnel}, now)

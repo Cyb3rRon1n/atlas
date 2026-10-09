@@ -17,6 +17,9 @@ def seed(store):
                             bytes_in=10, bytes_out=900000),
                         d(source="gluetun", band="vpn", dest_ip="198.51.100.44", asn=64502, org="EXAMPLE-VPN",
                           bytes_out=800000, bytes_in=9000000)], NOW - timedelta(minutes=10))
+    # First-day baseline: posture_seen's earliest rows are the learning window, never "new".
+    store.record_flows([d(source="prowlarr", dest_ip="198.51.100.99", asn=64503, org="EXAMPLE-OLD")],
+                       NOW - timedelta(days=3))
     store.mark_known("jellyfin", "AS64501")
     store.set_status("tunnel", True, {"connections": 4}, NOW)
     store.set_status("gluetun", True, {"exit_ip": "198.51.100.9", "country": "NL"}, NOW)
@@ -111,3 +114,33 @@ def test_reverse_dns_bound_by_one_second_even_when_lookup_hangs(monkeypatch):
     elapsed = time.monotonic() - start
 
     assert result == "" and elapsed < 1.5
+
+
+def flow(**o):
+    return [{**{"source": "lidarr", "band": "direct", "dest_ip": "203.0.113.50", "dest_port": 443, "proto": "tcp",
+                "asn": 64504, "org": "EXAMPLE-LATE", "cc": "DE", "bytes_out": 1, "bytes_in": 1, "new_conn": True}, **o}]
+
+
+def test_first_day_is_a_baseline_and_older_review_items_stay(temp_db):
+    store = PostureStore(temp_db)
+    seed(store)
+    store.record_flows(flow(source="bazarr"), NOW - timedelta(days=3) + timedelta(hours=2))   # inside baseline
+    store.record_flows(flow(), NOW - timedelta(hours=36))                                     # after baseline, > 24 h old
+    review = {(r["source"], r["asn_key"]) for r in build_posture(store, NOW)["review"]}
+    assert review == {("sonarr", "AS64500"), ("gluetun", "AS64502"), ("lidarr", "AS64504")}
+
+
+def test_enabled_reflects_whether_any_collector_ever_ran(temp_db):
+    store = PostureStore(temp_db)
+    assert build_posture(store, NOW)["enabled"] is False
+    seed(store)
+    assert build_posture(store, NOW)["enabled"] is True
+
+
+def test_node_details_known_only_considers_sources_listed(temp_db):
+    store = PostureStore(temp_db)
+    seed(store)
+    store.record_flows(flow(asn=64500, org="EXAMPLE-NET", cc="US"), NOW - timedelta(days=2))   # lidarr, outside 24 h
+    store.mark_known("sonarr", "AS64500")
+    details = node_details(store, "dst:AS64500", NOW, resolve=lambda ip: "")
+    assert [s["source"] for s in details["sources"]] == ["sonarr"] and details["known"] is True

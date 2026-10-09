@@ -55,8 +55,11 @@ def gluetun_status(base_url, api_key, get=requests.get):
 
 
 def crowdsec_bans(base_url, api_key, get=requests.get):
+    # origins= keeps the shared community blocklist out: its ~22k IPs (origin CAPI) have nothing
+    # to do with this host. Without the filter the LAPI silently returns them as "active bans".
     try:
-        response = get(f"{base_url}/v1/decisions", headers={"X-Api-Key": api_key}, timeout=5)
+        response = get(f"{base_url}/v1/decisions?origins=crowdsec,cscli",
+                       headers={"X-Api-Key": api_key}, timeout=5)
         response.raise_for_status()
         return {"ok": True, "active": len(response.json() or [])}
     except (requests.RequestException, ValueError) as error:

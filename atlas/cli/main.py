@@ -3279,16 +3279,21 @@ def posture_watch(
         raise typer.Exit(1)
 
     collector = Collector(settings.posture, PostureStore(), client)
+    last_error = None
 
     while True:
         try:
             result = collector.run_once(datetime.utcnow())
         except Exception as error:
-            console.print(f"[red]posture watch: {str(error)[:300]}[/red]")
+            message = str(error)[:300]
+            if message != last_error:   # log once per state change, not every poll
+                console.print(f"[red]posture watch: {message}[/red]")
+            last_error = message
             if once:
                 return
             time.sleep(settings.posture.interval)
             continue
+        last_error = None
         if json_output:
             print(json.dumps(result, default=str))
         elif result["new"]:

@@ -61,3 +61,12 @@ def test_collect_routes_merges_docker_and_files(tmp_path):
 
     names = [r["name"] for r in collect_routes(Client, str(tmp_path), "authelia")]
     assert names == ["a", "atlas", "jellyfin"]
+
+
+def test_auth_middleware_must_match_exactly():
+    containers = [{"name": n, "labels": {"traefik.enable": "true",
+                                         f"traefik.http.routers.{n}.rule": f"Host(`{n}.example.test`)",
+                                         f"traefik.http.routers.{n}.middlewares": mw}}
+                  for n, mw in (("a", "authelia-headers@docker"), ("b", "authelia"), ("c", "crowdsec,authelia@file"))]
+    assert {r["name"]: r["protection"] for r in routes_from_labels(containers, "authelia")} == {
+        "a": "public", "b": "authelia", "c": "authelia"}

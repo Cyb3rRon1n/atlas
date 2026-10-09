@@ -61,7 +61,7 @@ services:
       - sh
       - -c
       - |
-        atlas posture watch &
+        while :; do atlas posture watch; sleep 30; done &
         while :; do
           atlas scan
           atlas discover >/dev/null 2>&1

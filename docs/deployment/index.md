@@ -38,7 +38,26 @@ Every discovery path (`atlas discover`, `atlas proxmox scan`) feeds into the sam
 
 ## As a dashboard tile
 
-Atlas's web view (overview, history, trends, network map, device triage) makes a good dashboard tile - run it as the Docker stack, route it through your reverse proxy with authentication instead of publishing port 8420, and link the tile to `/map`. The README's [Add Atlas as a Homepage tile](https://github.com/Cyb3rRon1n/atlas#add-atlas-as-a-homepage-tile) has a Traefik + Authelia override, the Homepage `services.yaml` entry, and the host cron line (`discover`, `proxmox scan`, `map`) that keeps the tile current.
+Atlas's web view (overview, history, trends, network map, device triage, posture) makes a good dashboard tile - run it as the Docker stack, route it through your reverse proxy with authentication instead of publishing port 8420, and link the tile to `/map`. The README's [Add Atlas as a Homepage tile](https://github.com/Cyb3rRon1n/atlas#add-atlas-as-a-homepage-tile) has a Traefik + Authelia override, the Homepage `services.yaml` entry, and the host cron line (`discover`, `proxmox scan`, `map`) that keeps the tile current.
+
+`/api/summary`'s Homepage widget also carries a `posture` object once the posture collectors have run - `state` (`ok`/`review`/`warn`/`unknown`), a one-line `message`, `tunnel`, `vpn`, `routes` and `blocked` counts, and `link`. Example `services.yaml` mappings (host shown as a placeholder):
+
+```yaml
+- Atlas:
+    href: https://atlas.example.test/
+    widget:
+      type: customapi
+      url: http://atlas:8420/api/summary
+      mappings:
+        - field: { posture: message }
+          label: Posture
+        - field: { posture: tunnel }
+          label: Tunnel
+        - field: { posture: vpn }
+          label: VPN
+        - field: { posture: routes }
+          label: Public routes
+```
 
 **Publishing atlas web beyond localhost without an auth proxy (e.g. Authelia) in front of it exposes its device-edit API unauthenticated** - the same-origin check on its `/api/*` write routes stops cross-site requests, not a direct request from another LAN client. `docker-compose.yml`'s default port mapping binds `127.0.0.1` for exactly this reason; widen it only behind a reverse proxy that authenticates first.
 

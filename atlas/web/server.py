@@ -10,12 +10,15 @@ auth boundary - this module doesn't authenticate requests itself.
 
 import json
 import re
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from atlas.devices.store import InventoryStore
 from atlas.knowledge.queries import KnowledgeQueries
+from atlas.posture.model import build_posture
+from atlas.posture.store import PostureStore
 from atlas.reporting.trends import build_trends_payload
 from atlas.web import api
 from atlas.web.chat_page import render_chat_page
@@ -88,8 +91,13 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 self._send(500, "text/plain; charset=utf-8", "Internal error")
                 return
         elif path == "/api/summary":
+            try:
+                posture = build_posture(PostureStore(), datetime.utcnow(), "24h")
+            except Exception as error:
+                self.log_error("posture summary failed: %r", error)
+                posture = None
             self._send(200, "application/json",
-                       json.dumps(build_summary(query.latest_topology(), InventoryStore().devices())))
+                       json.dumps(build_summary(query.latest_topology(), InventoryStore().devices(), posture)))
             return
         elif path == "/triage":
             try:

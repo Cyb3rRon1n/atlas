@@ -219,11 +219,22 @@ Then the tile, in Homepage's `services.yaml` - with live counts from Atlas's `/a
             label: Hosts up
           - field: guests_running
             label: Guests up
+          - field: { posture: message }
+            label: Posture
+          - field: { posture: tunnel }
+            label: Tunnel
+          - field: { posture: vpn }
+            label: VPN
+          - field: { posture: routes }
+            label: Public routes
 ```
 
 `/api/summary` returns `status` (`ok` / `degraded` when a map host is down or a container is
 unhealthy), `containers_running`/`_total`/`_unhealthy`, `guests_running`/`_total`,
-`hosts_up`/`_total`/`_down`, `ai_reachable` and `generated_at`.
+`hosts_up`/`_total`/`_down`, `ai_reachable` and `generated_at`. It also returns a `posture` object
+(present once the posture collectors have run at least once) — `state` (`ok`/`review`/`warn`/`unknown`),
+`tunnel`, `vpn`, `routes`, `blocked`, `review_count`, `message` and `link`, backing the four extra
+mappings above.
 
 Keep what the tile shows current with the `atlas-scan` container (started by default alongside
 `atlas` — nothing extra to do), or one host cron line if you're not running the compose stack:

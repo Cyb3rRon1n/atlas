@@ -50,9 +50,14 @@ def _get_allow_error(url):
             return error.code, error.read().decode("utf-8")
 
 
-def test_posture_route_at_root(running_server):
+def test_home_at_root_and_posture_route(running_server):
 
     status, body = _get(running_server + "/")
+
+    assert status == 200
+    assert "Security posture" in body and "Hosts health" in body and "Recent activity" in body
+
+    status, body = _get(running_server + "/posture")
 
     assert status == 200
     assert 'id="posture-map"' in body

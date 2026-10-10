@@ -16,7 +16,10 @@ def discover_nodes(client):
         nodes.append(
             {
                 "name": node["node"],
-                "status": node["status"]
+                "status": node["status"],
+                # Usage numbers from the same /nodes list (absent on offline nodes).
+                **{key: node[key] for key in ("cpu", "maxcpu", "mem", "maxmem", "disk", "maxdisk", "uptime")
+                   if key in node}
             }
         )
 

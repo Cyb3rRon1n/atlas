@@ -58,7 +58,7 @@ PAGE_STYLE += MAP_STYLE
 SHELL_STYLE = """
 :root { --bg:#0e131a; --surface:#151c25; --surface2:#1b2430; --line:#263140; --text:#e7edf3; --muted:#a3b0bd;
         --blue:#5aa7f0; --green:#43c08f; --orange:#f0a23a; --red:#f47a5c; }
-body { margin:0; background:var(--bg); color:var(--text);
+body { margin:0; padding:0; background:var(--bg); color:var(--text);
        font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
 .topbar { display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:12px 24px;
           background:#111821; border-bottom:1px solid #222c38; }
@@ -80,8 +80,15 @@ def _esc(value):
     return escape(str(value))
 
 
-NAV = [("/", "Posture", "posture"), ("/devices", "Devices", "devices"), ("/map", "LAN map", "lan"),
-       ("/history", "History", "history")]
+NAV = [("/", "Home", "home"), ("/posture", "Posture", "posture"), ("/overview", "Hosts", "hosts"),
+       ("/devices", "Devices", "devices"), ("/map", "LAN map", "lan"), ("/history", "History", "history")]
+
+HOSTS_TABS = (("/overview", "Overview"), ("/trends", "Trends"))
+
+
+def _hosts_tabs(current):
+
+    return [(href, label, href == current) for href, label in HOSTS_TABS]
 
 
 def render_page(title, body_html, active="", tabs=None, drawer=True):
@@ -98,7 +105,7 @@ def render_page(title, body_html, active="", tabs=None, drawer=True):
             for href, label, current in tabs) + "</nav>"
 
     chat_link = (
-        '<button id="chat-toggle" class="chat-link">Atlas</button>' if drawer
+        '<button id="chat-toggle" class="chat-link" aria-controls="chat-drawer">Chat</button>' if drawer
         else "<a class=\"chat-link\" href=\"/chat\">Chat</a>"
     )
     drawer_html = CHAT_STYLE + DRAWER_STYLE + DRAWER_HTML + CHAT_SCRIPT if drawer else ""
@@ -113,8 +120,9 @@ def render_page(title, body_html, active="", tabs=None, drawer=True):
         f"<nav class=\"main\" aria-label=\"Main\">{links}</nav>"
         "<span class=\"spacer\"></span>"
         f"{chat_link}</header>"
+        f"<div class=\"shell{' docked' if drawer else ''}\">"
         f"<main class=\"page\"><h1>{_esc(title)}</h1>{tab_html}{body_html}</main>"
-        f"{drawer_html}"
+        f"{drawer_html}</div>"
         "</body></html>"
     )
 
@@ -431,14 +439,14 @@ def render_overview_page(environment, analysis):
     KnowledgeQueries().latest_analysis()'s (or None).
     """
 
-    overview_tabs = [("/", "Posture", False), ("/overview", "Host overview", True)]
+    overview_tabs = _hosts_tabs("/overview")
 
     if environment is None:
 
         return render_page(
             "Overview",
             "<p class=\"muted\">No inventory found. Run <code>atlas discover</code> first.</p>",
-            active="posture", tabs=overview_tabs
+            active="hosts", tabs=overview_tabs
         )
 
     sections = []
@@ -526,7 +534,7 @@ def render_overview_page(environment, analysis):
 
     header = f"<p class=\"muted\">Latest snapshot: {_esc(timestamp)}</p>" if timestamp else ""
 
-    return render_page("Overview", header + "".join(sections), active="posture", tabs=overview_tabs)
+    return render_page("Overview", header + "".join(sections), active="hosts", tabs=overview_tabs)
 
 
 def render_history_page(events):
@@ -535,14 +543,13 @@ def render_history_page(events):
     list of EventRecord ORM objects, same as `atlas history` prints.
     """
 
-    history_tabs = [("/history", "Events", True), ("/trends", "Trends", False)]
 
     if not events:
 
         return render_page(
             "History",
             "<p class=\"muted\">No historical events found.</p>",
-            active="history", tabs=history_tabs
+            active="history"
         )
 
     rows = "".join(
@@ -560,7 +567,7 @@ def render_history_page(events):
         f"<th>Payload</th></tr></thead><tbody>{rows}</tbody></table>"
     )
 
-    return render_page("History", body, active="history", tabs=history_tabs)
+    return render_page("History", body, active="history")
 
 
 def _trend_summary_row(metric_name, summary):
@@ -599,7 +606,7 @@ def render_trends_page(payload):
     prints, so this page and the CLI can never disagree.
     """
 
-    trends_tabs = [("/history", "Events", False), ("/trends", "Trends", True)]
+    trends_tabs = _hosts_tabs("/trends")
 
     if not payload["host"] and not payload["containers"] and not payload["guests"]:
 
@@ -608,7 +615,7 @@ def render_trends_page(payload):
             "<p class=\"muted\">No monitoring history found. Run "
             "<code>atlas monitor</code> and/or <code>atlas proxmox scan</code> "
             "a few times to build history.</p>",
-            active="history", tabs=trends_tabs
+            active="hosts", tabs=trends_tabs
         )
 
     sections = [f"<div class=\"card\"><h2>Host</h2>{_trend_table(payload['host'])}</div>"]
@@ -628,7 +635,7 @@ def render_trends_page(payload):
             f"<div class=\"card\"><h2>{_esc(name)} ({_esc(vmid)})</h2>{_trend_table(metrics)}</div>"
         )
 
-    return render_page("Trends", "".join(sections), active="history", tabs=trends_tabs)
+    return render_page("Trends", "".join(sections), active="hosts", tabs=trends_tabs)
 
 
 def _count(number, word):
@@ -815,7 +822,7 @@ def _posture_block(posture):
 
     return {"state": state, "tunnel": items["ingress"]["value"], "vpn": items["vpn"]["value"],
             "routes": len(posture["exposure"]), "blocked": items["blocked"]["value"],
-            "review_count": len(posture["review"]), "message": message, "link": "/"}
+            "review_count": len(posture["review"]), "message": message, "link": "/posture"}
 
 
 def build_summary(topology, devices=(), posture=None):

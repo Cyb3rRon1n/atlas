@@ -35,10 +35,27 @@ POSTURE_STYLE = """
 .mapbar .windows button[aria-pressed="true"] { background:var(--surface2); color:var(--text); }
 .legend { margin-left:auto; display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); }
 .legend i { display:inline-block; width:18px; height:3px; margin-right:6px; vertical-align:middle; }
-#posture-map { height:680px; border-radius:10px; background:var(--bg); }
+#posture-map { display:flex; flex-direction:column; gap:12px; }
+.lane { border:1px dashed #2c4560; border-radius:10px; padding:10px 12px; background:rgba(90,167,240,.04); }
+.lane.stale { border-color:var(--red); }
+.lane h3 { margin:0 0 8px; font-size:12px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+.lane .cols { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.lane .col { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.lane .col.list { flex:1 1 220px; }
+.lane .arrow { color:var(--muted); font-size:18px; }
+.lane.inbound .arrow { color:#5aa7f0; } .lane.vpn .arrow { color:#43c08f; }
+#posture-map .box { position:relative; display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 8px; text-align:left; font:inherit;
+       font-size:14px; padding:7px 10px; margin:0; background:#1b2430; border:1px solid #2f3b4c; border-radius:8px;
+       color:var(--text); cursor:pointer; overflow:hidden; }   /* #id beats chat.css's global .ok/.bad colours */
+.box .sub { color:var(--muted); font-size:12px; }
+.box .bar { position:absolute; left:0; bottom:0; height:3px; background:#8b98a6; }
+.box.review { border-color:#f0a23a; background:#2b2213; } .box.review .bar { background:#f0a23a; }
+.box.warn { border-color:#f47a5c; background:#2a1d1a; } .box.unknown { border-style:dashed; color:var(--muted); }
+.box.selected { outline:2px solid var(--blue); }
+.box .badge { margin-left:auto; font-size:11px; color:#ffd08a; text-transform:uppercase; letter-spacing:.05em; }
 #exposure li { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
 .prot-authelia { color:#7fdcb5; } .prot-public { color:#ffd08a; }
-@media (max-width: 900px) { #strip { grid-template-columns:repeat(2,minmax(0,1fr)); } #posture-map { height:420px; } }
+@media (max-width: 900px) { #strip { grid-template-columns:repeat(2,minmax(0,1fr)); }  }
 #posture-panel dl { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:13px; }
 #posture-panel dt { color:var(--muted); }
 #posture-panel .big { font-size:18px; margin:4px 0 12px; }
@@ -74,8 +91,7 @@ const off = document.getElementById("posture-off");
 const DEFAULT_MSG = msg.textContent;
 const OFF_TEXT = "Posture collection is off - set posture.enabled: true in atlas.yaml and run `atlas posture watch` (atlas-scan does this).";
 off.textContent = OFF_TEXT;
-const COLORS = {inbound: "#5aa7f0", direct: "#8b98a6", vpn: "#43c08f"};
-let windowName = "24h", cy = null, timer = null;
+let windowName = "24h", timer = null;
 
 function el(tag, text, cls) { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; }
 function fmt(n) { const u = ["B","KB","MB","GB","TB"]; let i = 0; while (n >= 1000 && i < 4) { n /= 1000; i++; } return (i ? n.toFixed(1) : n.toFixed(0)) + " " + u[i]; }
@@ -124,47 +140,49 @@ function renderReview(items) {
   }));
 }
 
-function elements(data) {
-  const out = [];
-  data.bands.forEach((b) => out.push({group: "nodes", data: {id: "band:" + b.id, label: b.label + (b.stale ? " · no recent data" : "")},
-    classes: "band" + (b.stale ? " stale" : ""), position: {x: 560, y: b.y + b.h / 2}, locked: true, grabbable: false, selectable: false,
-    style: {width: 1180, height: b.h}}));
-  data.nodes.forEach((n) => out.push({group: "nodes", data: {id: n.id, label: n.label + "\\n" + n.sub, band: n.band},
-    classes: "box " + n.state + " " + n.band, position: {x: n.x + n.w / 2, y: n.y}, style: {width: n.w}}));
-  const max = Math.max(1, ...data.edges.map((e) => e.bytes));
-  data.edges.forEach((e) => out.push({group: "edges", data: {id: e.id, source: e.source, target: e.target,
-    w: 1.5 + 6 * Math.sqrt(e.bytes / max)}, classes: e.state}));
-  return out;
+// Lanes: each band is a row of columns (nodes grouped by their x), arrows between columns. Plain HTML
+// at normal text size - no canvas, so nothing is ever scaled down to fit.
+function lanes(data) {
+  const bytes = {};
+  data.edges.forEach((e) => { bytes[e.target] = (bytes[e.target] || 0) + e.bytes;
+                              if (e.source.startsWith("src:")) bytes[e.source] = (bytes[e.source] || 0) + e.bytes; });
+  return data.bands.map((band) => {
+    const lane = el("section", undefined, "lane " + band.id + (band.stale ? " stale" : ""));
+    lane.append(el("h3", band.label + (band.stale ? " · no recent data" : "")));
+    const row = el("div", undefined, "cols");
+    const byX = {};
+    data.nodes.filter((n) => n.band === band.id).forEach((n) => (byX[n.x] = byX[n.x] || []).push(n));
+    Object.keys(byX).map(Number).sort((a, b) => a - b).forEach((x, i) => {
+      if (i) row.append(el("span", "\u2192", "arrow"));
+      const nodes = byX[x].sort((a, b) => a.y - b.y);
+      const col = el("div", undefined, "col" + (nodes.length > 1 ? " list" : ""));
+      const max = Math.max(1, ...nodes.map((n) => bytes[n.id] || 0));
+      nodes.forEach((n) => {
+        const box = el("button", undefined, "box " + n.state);
+        box.dataset.id = n.id;
+        box.append(el("span", n.label, "name"), el("span", n.sub, "sub"));
+        if (bytes[n.id] && nodes.length > 1) {
+          const bar = el("span", undefined, "bar");
+          bar.style.width = Math.max(4, 100 * bytes[n.id] / max) + "%";
+          box.append(bar);
+        }
+        if (n.state === "review" && n.id.startsWith("dst:")) box.append(el("span", "review", "badge"));
+        box.addEventListener("click", () => {
+          document.querySelectorAll("#posture-map .box.selected").forEach((o) => o.classList.remove("selected"));
+          box.classList.add("selected");
+          select(n.id);
+        });
+        col.append(box);
+      });
+      row.append(col);
+    });
+    lane.append(row);
+    return lane;
+  });
 }
 
-const STYLE = [
-  {selector: "node.band", style: {"shape": "round-rectangle", "background-opacity": 0.06, "background-color": "#5aa7f0",
-    "border-width": 1, "border-style": "dashed", "border-color": "#2c4560", "label": "data(label)", "color": "#a3b0bd",
-    "font-size": 11, "text-valign": "top", "text-halign": "center", "text-margin-y": 16, "events": "no"}},
-  {selector: "node.band.stale", style: {"background-color": "#8b98a6", "color": "#ffb4a2"}},
-  {selector: "node.box", style: {"shape": "round-rectangle", "height": 52, "background-color": "#1b2430",
-    "border-width": 1, "border-color": "#2f3b4c", "label": "data(label)", "color": "#e7edf3", "font-size": 15,
-    "text-wrap": "wrap", "text-valign": "center", "text-halign": "center"}},
-  {selector: "node.box.review", style: {"border-color": "#f0a23a", "background-color": "#2b2213", "color": "#ffd08a"}},
-  {selector: "node.box.warn", style: {"border-color": "#f47a5c", "background-color": "#2a1d1a", "color": "#ffb4a2"}},
-  {selector: "node.box.unknown", style: {"color": "#a3b0bd", "border-style": "dashed"}},
-  {selector: "node.box:selected", style: {"border-color": "#5aa7f0", "border-width": 3}},
-  {selector: "edge", style: {"width": "data(w)", "line-color": "#8b98a6", "target-arrow-color": "#8b98a6",
-    "target-arrow-shape": "triangle", "curve-style": "taxi", "taxi-direction": "horizontal", "opacity": 0.8}},
-  {selector: "edge.review", style: {"line-color": "#f0a23a", "target-arrow-color": "#f0a23a", "line-style": "dashed"}},
-  {selector: "edge.warn", style: {"line-color": "#f47a5c", "target-arrow-color": "#f47a5c"}},
-];
-
 function draw(data) {
-  const els = elements(data);
-  els.forEach((e) => { if (e.group === "edges") {
-    const src = data.nodes.find((n) => n.id === e.data.source);
-    if (src && e.classes === "ok") e.classes = src.band; } });
-  if (cy) cy.destroy();
-  cy = cytoscape({container: document.getElementById("posture-map"), elements: els, style: STYLE.concat(
-    Object.entries(COLORS).map(([band, color]) => ({selector: "edge." + band, style: {"line-color": color, "target-arrow-color": color}}))),
-    layout: {name: "preset", fit: true, padding: 24}, userZoomingEnabled: true, wheelSensitivity: 0.2, autoungrabify: true});
-  cy.on("tap", "node.box", (event) => select(event.target.id()));
+  document.getElementById("posture-map").replaceChildren(...lanes(data));
 }
 
 async function select(id) {
@@ -249,8 +267,8 @@ def render_posture_page():
         + '<span><i style="background:#8b98a6"></i>Outbound</span>'
         + '<span><i style="background:#43c08f"></i>Via VPN</span>'
         + '<span><i style="background:#f0a23a"></i>New / unreviewed</span></div></div>'
-        + '<div id="posture-map" role="img" aria-label="Zone map of inbound, outbound and VPN traffic"></div>'
-        + '<p class="muted" id="posture-msg">Click a box for details. Line width = traffic; dashed orange = '
+        + '<div id="posture-map" aria-label="Inbound, outbound and VPN traffic"></div>'
+        + '<p class="muted" id="posture-msg">Click a destination for details. Bars = share of traffic; orange = '
           'a network this container never used before.</p></section>'
         + '<aside><div class="pcard"><div class="ptabs" role="tablist" aria-label="Posture details">'
         + '<button role="tab" data-tab="posture-panel" aria-selected="true">Details</button>'
@@ -262,7 +280,6 @@ def render_posture_page():
           'style="list-style:none;margin:0;padding:0"></ul></section>'
         + '<section id="review-tab" role="tabpanel" hidden><ul id="review"></ul></section>'
         + '</div></aside></div>'
-        + '<script src="/static/cytoscape.min.js?v=3.34.3"></script>'
         + POSTURE_SCRIPT
     )
 

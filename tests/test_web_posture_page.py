@@ -18,14 +18,15 @@ def test_tabs_render_with_current_marked():
 def test_posture_page_shell():
     html = render_posture_page()
     for marker in ('id="strip"', 'id="posture-map"', 'data-window="live"', 'data-window="1h"',
-                   'data-window="24h"', 'id="posture-panel"', 'id="exposure"', "/static/cytoscape.min.js"):
+                   'data-window="24h"', 'id="posture-panel"', 'id="exposure"'):
         assert marker in html
+    assert "cytoscape" not in html   # plain HTML lanes: nothing is scaled down to fit a canvas
 
 
 def test_posture_script_contract():
     html = render_posture_page()
     for marker in ('fetch("/api/posture?window="', "/api/posture/node?id=", "/api/posture/known",
-                   "preset", "textContent", "atlasAsk", "setInterval"):
+                   "function lanes(data)", ".lane .cols", "textContent", "atlasAsk", "setInterval"):
         assert marker in html
     assert "innerHTML" not in POSTURE_SCRIPT
 

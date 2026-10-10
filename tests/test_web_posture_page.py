@@ -36,7 +36,7 @@ def test_posture_side_lists_are_tabs_and_map_click_shows_details():
         assert f'data-tab="{tab}"' in html and f'id="{tab}"' in html
     assert 'id="exposure-tab" role="tabpanel" hidden' in html and 'id="review-count"' in html
     select = POSTURE_SCRIPT.split("async function select")[1]
-    assert select.lstrip("(id) {\n").startswith('showTab("posture-panel")')
+    assert 'if (id === "dst:review-more") { showTab("review-tab"); return; }\n  showTab("posture-panel")' in select
     assert 'class="tabs"' not in html
 
 

@@ -150,6 +150,7 @@ Markdown is searched section by section; scripts whole (they document themselves
 | Field | Default | Description |
 |---|---|---|
 | `status_urls` | `{}` | `name: url` of JSON status feeds that `get_host_health` includes (e.g. a RAID-card watchdog). |
+| `storage_paths` | `{}` | `label: path` whose disk usage the web home page's Storage & RAID card shows - e.g. `media array: /media` with the array bind-mounted read-only into the container. Software-RAID (`/proc/mdstat`) and Proxmox ZFS pools are shown automatically. |
 
 ## `map`
 

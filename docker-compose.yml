@@ -67,6 +67,11 @@ services:
           atlas discover >/dev/null 2>&1
           atlas proxmox scan >/dev/null 2>&1
           atlas map >/dev/null 2>&1 && echo "$$(date -u +%FT%TZ) map refreshed"
+          # Daily AI check-up for the home page (skipped quietly while the model is unreachable).
+          day=$$(date -u +%F)
+          if [ "$$(cat /data/logs/.analyzed 2>/dev/null)" != "$$day" ] && atlas analyze --json >/dev/null 2>&1; then
+            echo "$$day" > /data/logs/.analyzed; echo "$$(date -u +%FT%TZ) AI check-up saved"
+          fi
           sleep "$${ATLAS_SCAN_MINUTES:-15}m"
         done
 

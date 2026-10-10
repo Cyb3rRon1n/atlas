@@ -194,6 +194,35 @@ def build_posture(store, now, window="24h"):
             "review": [{**r, "first_seen": r["first_seen"].isoformat()} for r in review]}
 
 
+def build_trends(store, now):
+    """
+    Home page security chart data: outbound bytes per hour for the last 24 h
+    (direct vs VPN), and new destinations first seen per day for the last 7
+    days (the first-day learning baseline is not counted as new).
+    """
+
+    start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=23)
+    hours = [start + timedelta(hours=i) for i in range(24)]
+    traffic = {h: {"direct": 0, "vpn": 0} for h in hours}
+
+    for f in store.flows(start):
+        if f["hour"] in traffic and f["band"] in ("direct", "vpn"):
+            traffic[f["hour"]][f["band"]] += f["bytes_out"] + f["bytes_in"]
+
+    seen = store.seen()
+    baseline = _baseline_end(seen)
+    days = [(now - timedelta(days=6 - i)).date() for i in range(7)]
+    new = dict.fromkeys(days, 0)
+
+    for s in seen:
+        day = s["first_seen"].date()
+        if day in new and baseline and s["first_seen"] >= baseline:
+            new[day] += 1
+
+    return {"hours": [{"hour": h.isoformat(), **traffic[h]} for h in hours],
+            "new_per_day": [{"day": d.isoformat(), "count": new[d]} for d in days]}
+
+
 _RDNS = ThreadPoolExecutor(max_workers=4, thread_name_prefix="rdns")   # never shut down per call - see below
 
 

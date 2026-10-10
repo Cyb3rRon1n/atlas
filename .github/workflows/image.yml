@@ -12,6 +12,12 @@ permissions:
   contents: read
   packages: write
 
+# Two quick merges start two builds; without this the older one can finish last
+# and leave `latest` on the older commit (happened with #13/#14).
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     runs-on: ubuntu-latest

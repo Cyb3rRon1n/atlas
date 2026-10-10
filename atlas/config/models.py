@@ -73,6 +73,8 @@ class JellyfinConfig(BaseModel):
 class HealthConfig(BaseModel):
     # name -> URL of a JSON status feed get_host_health also reads (e.g. a RAID watchdog)
     status_urls: dict[str, str] = {}
+    # label -> path inside the container whose usage the home page's storage card shows (e.g. a ro media mount)
+    storage_paths: dict[str, str] = {}
 
 
 class MapHost(BaseModel):

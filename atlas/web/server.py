@@ -15,16 +15,19 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
+import psutil
+
+from atlas.config.loader import load_config
 from atlas.devices.store import InventoryStore
 from atlas.discovery.host_health import get_host_health
 from atlas.knowledge.queries import KnowledgeQueries
-from atlas.posture.model import build_posture
+from atlas.posture.model import build_posture, build_trends
 from atlas.posture.store import PostureStore
 from atlas.reporting.trends import build_trends_payload
 from atlas.web import api
 from atlas.web.chat_page import render_chat_page
 from atlas.web.devices_pages import render_coverage_page, render_device_page, render_devices_page, render_triage_page
-from atlas.web.home_page import build_hosts, interesting_events, render_home_page
+from atlas.web.home_page import build_hosts, build_storage, interesting_events, parse_mdstat, render_home_page
 from atlas.web.posture_page import render_posture_page
 from atlas.web.render import _posture_block, build_summary, render_history_page, render_map_page, render_overview_page, render_trends_page
 
@@ -70,11 +73,26 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 self.log_error("home: %s failed: %r", label, error)
                 return None
 
-        posture = safe("posture", lambda: _posture_block(build_posture(PostureStore(), datetime.utcnow(), "24h")))
-        hosts = build_hosts(safe("topology", query.latest_topology), safe("host health", get_host_health),
-                            safe("proxmox scan", lambda: query.latest_event_payload("atlas.proxmox.scan.completed")))
+        now = datetime.utcnow()
+        settings = safe("config", load_config)
+        health_settings = settings.health if settings else None
+        topology = safe("topology", query.latest_topology)
+        pve_scan = safe("proxmox scan", lambda: query.latest_event_payload("atlas.proxmox.scan.completed"))
+        local = safe("host health", lambda: get_host_health(health_settings.status_urls if health_settings else None))
 
-        return posture, hosts, interesting_events(safe("events", lambda: query.recent_events(200)) or [])
+        def usage():
+            return {label: psutil.disk_usage(path) for label, path in (health_settings.storage_paths or {}).items()}
+
+        posture = safe("posture", lambda: _posture_block(build_posture(PostureStore(), now, "24h")))
+        storage = build_storage(safe("mdstat", lambda: parse_mdstat(Path("/proc/mdstat").read_text())) or [],
+                                (safe("storage paths", usage) if health_settings else None) or {},
+                                (local or {}).get("status_feeds"), pve_scan, topology)
+
+        return dict(
+            posture=posture, hosts=build_hosts(topology, local, pve_scan),
+            events=interesting_events(safe("events", lambda: query.recent_events(200)) or []),
+            storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now)),
+            analysis=safe("analysis", query.latest_analysis), now=now)
 
     def do_GET(self):
 
@@ -82,7 +100,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         query = KnowledgeQueries()
 
         if path == "/":
-            body = render_home_page(*self._home_data(query))
+            body = render_home_page(**self._home_data(query))
         elif path == "/posture":
             body = render_posture_page()
         elif path == "/overview":

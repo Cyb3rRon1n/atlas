@@ -71,3 +71,31 @@ def discover_resources(client):
 
 
     return guests
+
+
+def discover_node_storage(client, node_name):
+    """
+    One node's storage usage and ZFS pool health, for the home page's storage
+    card. Each lookup degrades to [] on its own (e.g. a token without
+    Sys.Audit can still list nodes and guests).
+    """
+
+    result = {"storage": [], "zfs": []}
+
+    try:
+        result["storage"] = [
+            {key: item.get(key) for key in ("storage", "type", "used", "total", "active")}
+            for item in client.nodes(node_name).storage.get()
+        ]
+    except Exception:
+        pass
+
+    try:
+        result["zfs"] = [
+            {key: pool.get(key) for key in ("name", "health", "size", "alloc")}
+            for pool in client.nodes(node_name).disks.zfs.get()
+        ]
+    except Exception:
+        pass
+
+    return result

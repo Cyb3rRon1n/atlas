@@ -23,6 +23,7 @@ from atlas.libvirt import (
 from atlas.fleet import run_remote_doctor, run_remote_report, run_remote_trends
 from atlas.proxmox import (
     connect,
+    discover_node_storage,
     discover_nodes,
     discover_resources,
     diff_virtualization,
@@ -134,6 +135,9 @@ def scan():
 
 
     nodes = discover_nodes(client)
+
+    for node in nodes:
+        node.update(discover_node_storage(client, node["name"]))
     guests = discover_resources(client)
 
 

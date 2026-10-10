@@ -144,3 +144,25 @@ def test_node_details_known_only_considers_sources_listed(temp_db):
     store.mark_known("sonarr", "AS64500")
     details = node_details(store, "dst:AS64500", NOW, resolve=lambda ip: "")
     assert [s["source"] for s in details["sources"]] == ["sonarr"] and details["known"] is True
+
+
+def test_many_new_destinations_fold_into_one_review_box(temp_db):
+    store = PostureStore(temp_db)
+    seed(store)
+    store.record_flows([{"source": "slskd", "band": "direct", "dest_ip": f"203.0.113.{i}", "dest_port": 2234,
+                         "proto": "tcp", "asn": 65000 + i, "org": f"PEER-{i}", "cc": "LT", "bytes_out": 100 + i,
+                         "bytes_in": 0, "new_conn": True} for i in range(30)], NOW - timedelta(minutes=5))
+    result = build_posture(store, NOW)
+    dests = [n for n in result["nodes"] if n["id"].startswith("dst:")]
+    named = [n for n in dests if n["id"] not in ("dst:others", "dst:review-more")]
+    assert len(named) == model_module.MAX_DESTS
+    more = next(n for n in dests if n["id"] == "dst:review-more")
+    hidden = 31 - sum(n["state"] == "review" for n in named)   # 30 peers + sonarr's new destination
+    assert more["state"] == "review" and more["label"] == f"{hidden} more to review"
+    assert node_details(store, "dst:review-more", NOW) is None
+    assert len(result["review"]) == 32   # uncapped: the 31 above + gluetun's VPN-band one
+
+
+def test_long_labels_are_shortened():
+    assert model_module._node("dst:x", "IONOS-AS This is the joint network by IONOS", "", "direct", 0, 0)["label"] \
+        == "IONOS-AS This is the join\u2026"

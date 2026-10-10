@@ -22,7 +22,7 @@ def client():
 def fake_get(url, headers=None, timeout=None):
     if url.endswith("/v1/publicip/ip"):
         return Response(data={"public_ip": "198.51.100.9", "country": "NL"})
-    if url.endswith("/v1/decisions"):
+    if "/v1/decisions?" in url:
         return Response(data=[{"value": "203.0.113.5"}])
     return Response(text="192.0.2.10")
 

@@ -125,6 +125,10 @@ async function markExpected(button, source, asnKey) {
 }
 
 let reviewShown = false;
+if (location.hash === "#review") {   // home page's "Review ->" link
+  reviewShown = true; showTab("review-tab");
+  document.querySelector(".pcard").scrollIntoView({block: "start"});
+}
 function renderReview(items) {
   document.getElementById("review-count").textContent = items.length ? "(" + items.length + ")" : "";
   if (items.length && !reviewShown) { reviewShown = true; showTab("review-tab"); }

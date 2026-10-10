@@ -14,8 +14,24 @@ from atlas.web.render import _esc, render_page
 HOME_STYLE = """
 <style>
 .verdict { font-size:20px; font-weight:600; margin:0 0 16px; }
-.verdict.ok { color:#7fdcb5; } .verdict.warn { color:#ffb4a2; }
-.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+.verdict.ok { color:#7fdcb5; }
+.attention { margin:0 0 16px; padding:12px 16px; border:1px solid var(--orange); border-radius:12px; background:#1d1810; }
+.attention h2 { margin:0 0 6px; font-size:15px; border:0; padding:0; color:#ffd08a; }
+.attention ul { list-style:none; margin:0; padding:0; }
+.attention li { display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px solid #3a2f1c; font-size:14px; }
+.attention li:first-child { border-top:0; }
+.attention li .what { flex:1; } .attention li .what b { font-weight:600; }
+.attention li a { white-space:nowrap; }
+.cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; align-items:start; }
+.cards a.hcard.wide { grid-column:span 2; grid-row:span 2; align-self:stretch; display:flex; flex-direction:column; }
+.cards a.hcard.wide .chart:last-child { flex:1; display:flex; flex-direction:column; }
+.cards a.hcard.wide .chart:last-child svg { flex:1; min-height:100px; max-height:170px; height:auto !important; }
+.hcard .summary { font-size:14px; line-height:1.45; margin:6px 0 10px; }
+@media (max-width: 1100px) { .cards { grid-template-columns:repeat(2,minmax(0,1fr)); } .cards a.hcard.wide { grid-row:auto; } }
+@media (max-width: 700px) { .cards { grid-template-columns:1fr; } .cards a.hcard.wide { grid-column:auto; } }
+.cards a.hcard.flagged { box-shadow:0 0 0 2px var(--orange); }
+.cards a.hcard.flagged.warn { box-shadow:0 0 0 2px var(--red); }
+.hcard .tag { margin-left:auto; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.05em; color:#ffd08a; }
 .cards a.hcard { display:block; color:var(--text); text-decoration:none; background:#111821;
                  border:1px solid #222c38; border-radius:14px; padding:16px; }
 .cards a.hcard:hover { border-color:var(--blue); }
@@ -31,8 +47,6 @@ HOME_STYLE = """
 .hcard ul { list-style:none; margin:0; padding:0; font-size:13px; }
 .hcard li { padding:4px 0; border-top:1px solid var(--line); }
 .hcard li:first-child { border-top:0; }
-.cards a.hcard.wide { grid-column:span 2; }
-@media (max-width: 1100px) { .cards a.hcard.wide { grid-column:auto; } }
 .hcard .row { display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-top:1px solid var(--line); font-size:14px; }
 .hcard .row:first-of-type { border-top:0; }
 .hcard .row.warn span:last-child { color:#ffb4a2; }
@@ -242,10 +256,10 @@ def _trends_card(trends):
     traffic = "".join(
         f'<div class="lbl">{label} <span class="muted">peak {_size(max(h[key] for h in hours))}/h</span></div>'
         + _bars_svg([{key: h[key]} for h in hours], {key: color},
-                    [f"{h['hour'][11:16]} UTC · {label} {_size(h[key])}" for h in hours], height=34)
+                    [f"{h['hour'][11:16]} UTC · {label} {_size(h[key])}" for h in hours], height=56)
         for key, label, color in (("direct", "Direct", "#8b98a6"), ("vpn", "Via VPN", "#43c08f")))
     new = _bars_svg([{"n": d["count"]} for d in days], {"n": "#f0a23a"},
-                    [f"{d['day']}: {d['count']} new" for d in days])
+                    [f"{d['day']}: {d['count']} new" for d in days], height=110)
     total_new = sum(d["count"] for d in days)
     inner = (
         '<div class="chart"><h3>Outbound traffic per hour, last 24 h</h3>' + traffic + "</div>"
@@ -273,16 +287,16 @@ def _analysis_card(analysis, now):
 
     recs = [r if isinstance(r, dict) else {"title": str(r), "severity": ""} for r in analysis.get("recommendations") or []]
     worst = "warn" if any(r.get("severity") in ("high", "critical") for r in recs) else "ok"
-    summary = (analysis.get("summary") or "")[:280]
+    summary = (analysis.get("summary") or "")[:220].rsplit(" ", 1)[0] + "\u2026" if len(analysis.get("summary") or "") > 220 else (analysis.get("summary") or "")
     inner = (f'<p class="muted">{_esc(_age(analysis.get("created_at"), now))} · {_esc(analysis.get("model"))}</p>'
-             f"<p>{_esc(summary)}</p><ul>"
+             f'<p class="summary">{_esc(summary)}</p><ul>'
              + "".join(f'<li><span class="sev-{_esc(r.get("severity"))}">{_esc(r.get("severity") or "")}</span> '
                        f'{_esc(r.get("title"))}</li>' for r in recs[:3]) + "</ul>")
 
     return _card("/overview", "Latest AI check-up", worst, inner)
 
 
-def _storage_card(storage):
+def _storage_card(storage, flagged=False):
 
     if not storage["rows"]:
         return _card("/overview", "Storage & RAID", "unknown", '<p class="muted">No storage data yet.</p>')
@@ -290,7 +304,7 @@ def _storage_card(storage):
     inner = "".join(f'<div class="row{" warn" if r["warn"] else ""}"><span>{_esc(r["name"])}</span>'
                     f'<span class="muted">{_esc(r["detail"])}</span></div>' for r in storage["rows"])
 
-    return _card("/overview", "Storage & RAID", storage["state"], inner)
+    return _card("/overview", "Storage & RAID", storage["state"], inner, flagged=flagged)
 
 
 def _chips():
@@ -302,13 +316,42 @@ def _chips():
         " encodeURIComponent(q); }));</script>")
 
 
-def _card(href, title, state, inner, wide=False):
+def _card(href, title, state, inner, wide=False, flagged=False):
 
-    return (f'<a class="hcard {state}{" wide" if wide else ""}" href="{href}"><h2><span class="dot {state}"></span>{_esc(title)}</h2>'
+    classes = f"hcard {state}" + (" wide" if wide else "") + (" flagged" if flagged else "")
+    tag = '<span class="tag">needs attention</span>' if flagged else ""
+
+    return (f'<a class="{classes}" href="{href}"><h2><span class="dot {state}"></span>{_esc(title)}{tag}</h2>'
             f"{inner}</a>")
 
 
-def _posture_card(posture):
+def attention_items(posture, hosts, storage):
+    """
+    One plain-words line per problem behind the verdict: (card, what, why, href, action).
+    """
+
+    items = []
+
+    if posture and posture["state"] == "warn":
+        items.append(("posture", "Security posture", posture["message"], "/posture", "Open"))
+
+    if posture and posture.get("review_count"):
+        n = posture["review_count"]
+        items.append(("posture", "Security posture", f"{n} new outbound destination{'s' if n != 1 else ''} need review",
+                      "/posture#review", "Review"))
+
+    for row in hosts["rows"]:
+        if row["problems"]:
+            items.append(("hosts", "Hosts", f"{row['name']}: {', '.join(row['problems'][:3])}", "/overview", "Details"))
+
+    for row in storage["rows"]:
+        if row["warn"]:
+            items.append(("storage", "Storage", f"{row['name']}: {row['detail']}", "/overview", "Details"))
+
+    return items
+
+
+def _posture_card(posture, flagged=False):
 
     if not posture:
         return _card("/posture", "Security posture", "unknown", '<p class="muted">Posture data unavailable.</p>')
@@ -317,7 +360,7 @@ def _posture_card(posture):
             ("CrowdSec bans", posture["blocked"]), ("Needs review", posture["review_count"]))
     inner = "<dl>" + "".join(f"<dt>{_esc(k)}</dt><dd>{_esc(v)}</dd>" for k, v in rows) + "</dl>"
 
-    return _card("/posture", "Security posture", posture["state"], inner)
+    return _card("/posture", "Security posture", posture["state"], inner, flagged=flagged)
 
 
 def _usage(row):
@@ -328,7 +371,7 @@ def _usage(row):
     return " · ".join(parts)
 
 
-def _hosts_card(hosts):
+def _hosts_card(hosts, flagged=False):
 
     if not hosts["rows"]:
         return _card("/overview", "Hosts health", "unknown", '<p class="muted">No host data yet.</p>')
@@ -344,7 +387,7 @@ def _hosts_card(hosts):
     if hosts["down"]:
         inner += f'<p class="muted">Unreachable: {_esc(", ".join(hosts["down"]))}</p>'
 
-    return _card("/overview", "Hosts health", hosts["state"], inner)
+    return _card("/overview", "Hosts health", hosts["state"], inner, flagged=flagged)
 
 
 def _activity_card(events):
@@ -371,14 +414,17 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
     """
 
     storage = storage or {"rows": [], "state": "unknown"}
-    states = ((posture or {}).get("state"), hosts["state"], storage["state"])
-    attention = sum(state in ("warn", "review") for state in states)
-    verdict = ('<p class="verdict ok">All good</p>' if not attention else
-               f'<p class="verdict warn">{attention} thing{"s" if attention > 1 else ""} need'
-               f'{"" if attention > 1 else "s"} attention</p>')
+    items = attention_items(posture, hosts, storage)
+    flagged = {card for card, *_ in items}
+    verdict = ('<p class="verdict ok">\u2713 All good</p>' if not items else
+               '<section class="attention" aria-label="Needs attention"><h2>Needs attention</h2><ul>' + "".join(
+                   f'<li><span class="dot review"></span><span class="what"><b>{_esc(what)}</b> \u2014 {_esc(why)}'
+                   f'</span><a href="{href}">{_esc(action)} \u2192</a></li>'
+                   for _, what, why, href, action in items) + "</ul></section>")
 
     body = (HOME_STYLE + verdict + _chips() + '<div class="cards">'
-            + _posture_card(posture) + _hosts_card(hosts) + _storage_card(storage)
+            + _posture_card(posture, "posture" in flagged) + _hosts_card(hosts, "hosts" in flagged)
+            + _storage_card(storage, "storage" in flagged)
             + _trends_card(trends) + _analysis_card(analysis, now or datetime.utcnow())
             + _activity_card(events) + "</div>")
 

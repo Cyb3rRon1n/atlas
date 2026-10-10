@@ -35,7 +35,7 @@ POSTURE_STYLE = """
 .mapbar .windows button[aria-pressed="true"] { background:var(--surface2); color:var(--text); }
 .legend { margin-left:auto; display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); }
 .legend i { display:inline-block; width:18px; height:3px; margin-right:6px; vertical-align:middle; }
-#posture-map { height:560px; border-radius:10px; background:var(--bg); }
+#posture-map { height:680px; border-radius:10px; background:var(--bg); }
 #exposure li { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
 .prot-authelia { color:#7fdcb5; } .prot-public { color:#ffd08a; }
 @media (max-width: 900px) { #strip { grid-template-columns:repeat(2,minmax(0,1fr)); } #posture-map { height:420px; } }
@@ -142,8 +142,8 @@ const STYLE = [
     "border-width": 1, "border-style": "dashed", "border-color": "#2c4560", "label": "data(label)", "color": "#a3b0bd",
     "font-size": 11, "text-valign": "top", "text-halign": "center", "text-margin-y": 16, "events": "no"}},
   {selector: "node.band.stale", style: {"background-color": "#8b98a6", "color": "#ffb4a2"}},
-  {selector: "node.box", style: {"shape": "round-rectangle", "height": 44, "background-color": "#1b2430",
-    "border-width": 1, "border-color": "#2f3b4c", "label": "data(label)", "color": "#e7edf3", "font-size": 11,
+  {selector: "node.box", style: {"shape": "round-rectangle", "height": 52, "background-color": "#1b2430",
+    "border-width": 1, "border-color": "#2f3b4c", "label": "data(label)", "color": "#e7edf3", "font-size": 15,
     "text-wrap": "wrap", "text-valign": "center", "text-halign": "center"}},
   {selector: "node.box.review", style: {"border-color": "#f0a23a", "background-color": "#2b2213", "color": "#ffd08a"}},
   {selector: "node.box.warn", style: {"border-color": "#f47a5c", "background-color": "#2a1d1a", "color": "#ffb4a2"}},
@@ -168,6 +168,7 @@ function draw(data) {
 }
 
 async function select(id) {
+  if (id === "dst:review-more") { showTab("review-tab"); return; }
   showTab("posture-panel");
   panel.replaceChildren(el("h2", "Details"));
   panel.firstChild.style.cssText = "margin:0 0 8px;font-size:15px";

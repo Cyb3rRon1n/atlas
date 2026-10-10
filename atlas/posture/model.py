@@ -16,7 +16,7 @@ WINDOWS = {"live": timedelta(0), "1h": timedelta(hours=1), "24h": timedelta(hour
 NEW_FOR = timedelta(days=7)
 BASELINE = timedelta(hours=24)   # posture_seen's first day is learning, not "new"
 STALE_AFTER = timedelta(minutes=5)
-MAX_SOURCES, MAX_DESTS = 8, 10
+MAX_SOURCES, MAX_DESTS, MAX_BUSIEST = 8, 10, 6   # dest boxes: 6 busiest, then unreviewed ones
 COL, ROW = 200, 64
 BANDS = {"inbound": 40, "direct": 220, "vpn": 0}   # vpn y is computed after direct's height
 
@@ -77,8 +77,16 @@ def _baseline_end(seen):
     return min(s["first_seen"] for s in seen) + BASELINE if seen else None
 
 
+LABEL_MAX = 26   # longer org names (e.g. a whole network description) spill across the map
+
+
+def _short(text):
+    text = str(text)
+    return text if len(text) <= LABEL_MAX else text[:LABEL_MAX - 1] + "\u2026"
+
+
 def _node(node_id, label, sub, band, x, y, state="ok", w=170):
-    return {"id": node_id, "label": label, "sub": sub, "band": band, "state": state, "x": x, "y": y, "w": w}
+    return {"id": node_id, "label": _short(label), "sub": sub, "band": band, "state": state, "x": x, "y": y, "w": w}
 
 
 def _edge(source, target, bytes_=0, state="ok"):
@@ -129,15 +137,22 @@ def build_posture(store, now, window="24h"):
             pair_state[key] = "review"
 
     top_sources = sorted(by_source, key=by_source.get, reverse=True)[:MAX_SOURCES]
-    shown = sorted(by_dest, key=by_dest.get, reverse=True)[:MAX_DESTS]
-    shown += [k for k in pair_state if k not in shown]
-    others = sum(v for k, v in by_dest.items() if k not in shown)
+    ranked = sorted(by_dest, key=by_dest.get, reverse=True)
+    shown = ranked[:MAX_BUSIEST]
+    for key in [k for k in ranked if k in pair_state] + ranked:   # fill with unreviewed first, then busiest
+        if len(shown) >= MAX_DESTS:
+            break
+        if key not in shown:
+            shown.append(key)
+    # The rest fold into two boxes; the full unreviewed list stays in the "Needs review" tab.
+    hidden_review = [k for k in pair_state if k not in shown]
+    others = sum(v for k, v in by_dest.items() if k not in shown and k not in pair_state)
 
     y0 = BANDS["direct"]
     for i, name in enumerate(top_sources):
         nodes.append(_node(f"src:{name}", name, _fmt_bytes(by_source[name]), "direct", 0, y0 + i * ROW))
         edges.append(_edge(f"src:{name}", "out:router", by_source[name]))
-    rows = max(len(top_sources), len(shown) + (1 if others else 0), 1)
+    rows = max(len(top_sources), len(shown) + bool(others) + bool(hidden_review), 1)
     nodes.append(_node("out:router", "Home router", "WAN", "direct", COL + 40, y0 + (rows - 1) * ROW // 2))
     for i, key in enumerate(shown):
         org, cc = dest_meta[key]
@@ -148,6 +163,11 @@ def build_posture(store, now, window="24h"):
         nodes.append(_node("dst:others", "Other destinations", _fmt_bytes(others), "direct", 2 * COL + 120,
                            y0 + len(shown) * ROW, w=260))
         edges.append(_edge("out:router", "dst:others", others))
+    if hidden_review:
+        hidden_bytes = sum(by_dest[k] for k in hidden_review)
+        nodes.append(_node("dst:review-more", f"{len(hidden_review)} more to review", _fmt_bytes(hidden_bytes),
+                           "direct", 2 * COL + 120, y0 + (len(shown) + bool(others)) * ROW, state="review", w=260))
+        edges.append(_edge("out:router", "dst:review-more", hidden_bytes, "review"))
 
     # VPN band.
     vpn_y = y0 + rows * ROW + 60
@@ -191,7 +211,7 @@ def _reverse_dns(ip):
 
 def node_details(store, node_id, now, resolve=_reverse_dns):
 
-    if not node_id.startswith("dst:") or node_id == "dst:others":
+    if not node_id.startswith("dst:") or node_id in ("dst:others", "dst:review-more"):
         return None
 
     key = node_id[4:]

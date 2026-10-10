@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from atlas.web.home_page import build_hosts, build_storage, interesting_events, parse_mdstat, render_home_page
+from atlas.web.home_page import attention_items, build_hosts, build_storage, interesting_events, parse_mdstat, render_home_page
 
 
 TOPOLOGY = {
@@ -55,7 +55,7 @@ def test_build_hosts_tolerates_missing_sources():
 
 def test_home_all_good_verdict_cards_and_links():
     html = render_home_page(POSTURE_OK, build_hosts({"host": "cyberpac"}, LOCAL, None), EVENTS)
-    assert ">All good<" in html
+    assert "\u2713 All good" in html and "Needs attention" not in html
     for href in ('href="/posture"', 'href="/overview"', 'href="/history"'):
         assert href in html
     assert "Security posture" in html and "Hosts health" in html and "Recent activity" in html
@@ -67,7 +67,9 @@ def test_home_all_good_verdict_cards_and_links():
 def test_home_counts_attention_and_handles_unavailable():
     html = render_home_page({**POSTURE_OK, "state": "warn", "message": "VPN: down"},
                             build_hosts(TOPOLOGY, LOCAL, PVE), [])
-    assert "2 things need attention" in html and "VPN: down" in html and "printer" in html
+    assert "Needs attention" in html and "VPN: down" in html and "printer" in html
+    assert "cyberbox: vm stopped" in html and "cyberpac: sonarr unhealthy, old stopped" in html
+    assert html.count("needs attention</span>") == 2   # posture + hosts cards flagged
     empty = render_home_page(None, build_hosts(None, None, None), [])
     assert "Posture data unavailable" in empty and "No host data yet" in empty and "No events yet" in empty
 
@@ -118,3 +120,14 @@ def test_home_new_cards_chips_and_chart():
     assert "6 h ago" in html and "All &lt;fine&gt;" in html and ">Fan<" not in html and " Fan</li>" in html
     assert html.count("<li>") == 3   # top 3 recommendations only
     assert "No check-up yet" in render_home_page(None, build_hosts(None, None, None), [])
+
+
+def test_attention_items_name_the_problem_and_link_to_the_fix():
+    posture = {**POSTURE_OK, "state": "review", "review_count": 40}
+    storage = {"rows": [{"name": "md0", "detail": "RAID1 · DEGRADED (1 failed)", "warn": True},
+                        {"name": "media array", "detail": "58%", "warn": False}], "state": "warn"}
+    items = attention_items(posture, build_hosts(None, LOCAL, None), storage)
+    assert items == [("posture", "Security posture", "40 new outbound destinations need review", "/posture#review", "Review"),
+                     ("storage", "Storage", "md0: RAID1 · DEGRADED (1 failed)", "/overview", "Details")]
+    html = render_home_page(posture, build_hosts(None, LOCAL, None), [], storage=storage)
+    assert 'href="/posture#review">Review' in html and "hcard review flagged" in html

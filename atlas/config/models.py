@@ -30,6 +30,10 @@ class IntelligenceConfig(BaseModel):
     # Cloudflare's 100s limit. None omits the field for an Ollama/model
     # combination that rejects it outright.
     think: bool | None = False
+    # Optional separate model for `atlas analyze` (the daily check-up), e.g. Claude while chat stays on a
+    # local model. Falls back to provider/model above if it fails (missing key, outage).
+    analyze_provider: str | None = None
+    analyze_model: str | None = None
 
 
 class MonitoringConfig(BaseModel):

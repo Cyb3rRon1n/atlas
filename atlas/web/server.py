@@ -16,6 +16,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from atlas.devices.store import InventoryStore
+from atlas.discovery.host_health import get_host_health
 from atlas.knowledge.queries import KnowledgeQueries
 from atlas.posture.model import build_posture
 from atlas.posture.store import PostureStore
@@ -23,8 +24,9 @@ from atlas.reporting.trends import build_trends_payload
 from atlas.web import api
 from atlas.web.chat_page import render_chat_page
 from atlas.web.devices_pages import render_coverage_page, render_device_page, render_devices_page, render_triage_page
+from atlas.web.home_page import build_hosts, interesting_events, render_home_page
 from atlas.web.posture_page import render_posture_page
-from atlas.web.render import build_summary, render_history_page, render_map_page, render_overview_page, render_trends_page
+from atlas.web.render import _posture_block, build_summary, render_history_page, render_map_page, render_overview_page, render_trends_page
 
 
 MAX_BODY = 65536
@@ -54,12 +56,34 @@ def same_origin(headers):
 
 class AtlasWebHandler(BaseHTTPRequestHandler):
 
+    def _home_data(self, query):
+        """
+        (posture, hosts, events) for the home page. Each source is fetched on
+        its own so one failing (no posture DB, no Proxmox scan yet) only
+        blanks its own card.
+        """
+
+        def safe(label, fetch):
+            try:
+                return fetch()
+            except Exception as error:
+                self.log_error("home: %s failed: %r", label, error)
+                return None
+
+        posture = safe("posture", lambda: _posture_block(build_posture(PostureStore(), datetime.utcnow(), "24h")))
+        hosts = build_hosts(safe("topology", query.latest_topology), safe("host health", get_host_health),
+                            safe("proxmox scan", lambda: query.latest_event_payload("atlas.proxmox.scan.completed")))
+
+        return posture, hosts, interesting_events(safe("events", lambda: query.recent_events(200)) or [])
+
     def do_GET(self):
 
         path = self.path.split("?", 1)[0]
         query = KnowledgeQueries()
 
         if path == "/":
+            body = render_home_page(*self._home_data(query))
+        elif path == "/posture":
             body = render_posture_page()
         elif path == "/overview":
             body = render_overview_page(query.latest_environment(), query.latest_analysis())

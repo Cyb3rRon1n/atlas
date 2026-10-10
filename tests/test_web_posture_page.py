@@ -30,9 +30,29 @@ def test_posture_script_contract():
     assert "innerHTML" not in POSTURE_SCRIPT
 
 
-def test_posture_page_links_host_overview_tab():
+def test_posture_side_lists_are_tabs_and_map_click_shows_details():
     html = render_posture_page()
-    assert 'class="tabs"' in html and 'href="/overview"' in html and ">Host overview<" in html
+    for tab in ("posture-panel", "exposure-tab", "review-tab"):
+        assert f'data-tab="{tab}"' in html and f'id="{tab}"' in html
+    assert 'id="exposure-tab" role="tabpanel" hidden' in html and 'id="review-count"' in html
+    select = POSTURE_SCRIPT.split("async function select")[1]
+    assert select.lstrip("(id) {\n").startswith('showTab("posture-panel")')
+    assert 'class="tabs"' not in html
+
+
+def test_nav_order_and_hosts_tabs():
+    from atlas.web.render import render_trends_page
+    assert [label for _, label, _ in NAV] == ["Home", "Posture", "Hosts", "Devices", "LAN map", "History"]
+    html = render_trends_page({"host": {}, "containers": {}, "guests": {}})
+    assert 'href="/overview"' in html and ">Trends<" in html
+
+
+def test_docked_chat_shell_and_collapse_state():
+    html = render_page("Devices", "", active="devices")
+    assert '<div class="shell docked">' in html and 'id="chat-fab"' in html
+    assert 'id="chat-drawer" hidden' not in html and "atlasChatCollapsed" in html
+    assert 'dispatchEvent(new Event("resize"))' in html
+    assert '<div class="shell">' in render_page("Chat", "", drawer=False)
 
 
 def test_tabs_wrap_on_narrow_screens():

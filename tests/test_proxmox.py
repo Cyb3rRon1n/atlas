@@ -150,3 +150,16 @@ def test_discover_resources_maps_vm_and_container_fields():
     assert guests[1]["cpu"] is None
 
     fake_client.cluster.resources.get.assert_called_once_with(type="vm")
+
+
+def test_discover_node_storage_maps_fields_and_degrades_per_lookup():
+
+    from atlas.proxmox.discovery import discover_node_storage
+
+    client = MagicMock()
+    client.nodes.return_value.storage.get.return_value = [
+        {"storage": "bulk", "type": "zfspool", "used": 7, "total": 10, "active": 1, "shared": 0}]
+    client.nodes.return_value.disks.zfs.get.side_effect = RuntimeError("403 Permission check failed")
+
+    assert discover_node_storage(client, "pve") == {
+        "storage": [{"storage": "bulk", "type": "zfspool", "used": 7, "total": 10, "active": 1}], "zfs": []}

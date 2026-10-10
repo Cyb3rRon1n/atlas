@@ -166,3 +166,14 @@ def test_many_new_destinations_fold_into_one_review_box(temp_db):
 def test_long_labels_are_shortened():
     assert model_module._node("dst:x", "IONOS-AS This is the joint network by IONOS", "", "direct", 0, 0)["label"] \
         == "IONOS-AS This is the join\u2026"
+
+
+def test_build_trends_hours_and_new_per_day(temp_db):
+    store = PostureStore(temp_db)
+    seed(store)
+    trends = model_module.build_trends(store, NOW)
+    assert len(trends["hours"]) == 24 and len(trends["new_per_day"]) == 7
+    last = trends["hours"][-1]
+    assert last["direct"] == 125000 + 900010 and last["vpn"] == 9800000
+    assert trends["new_per_day"][-1] == {"day": "2026-10-08", "count": 3}   # sonarr, jellyfin, gluetun today
+    assert sum(d["count"] for d in trends["new_per_day"]) == 3              # prowlarr's first day is baseline

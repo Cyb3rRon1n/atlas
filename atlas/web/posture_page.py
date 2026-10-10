@@ -1,5 +1,5 @@
 """
-/ - the posture page: status strip, zone map (inbound / outbound direct /
+/posture - the posture page: status strip, zone map (inbound / outbound direct /
 outbound via VPN), details panel and public exposure. Markup only here; data
 comes from /api/posture via POSTURE_SCRIPT (Task 10).
 """
@@ -21,7 +21,13 @@ POSTURE_STYLE = """
 .posture { display:flex; flex-wrap:wrap; gap:20px; }
 .posture .mapcard { flex:999 1 720px; min-width:0; background:#111821; border:1px solid #222c38; border-radius:14px; padding:16px; }
 .posture aside { flex:1 1 320px; min-width:0; display:flex; flex-direction:column; gap:16px; }
-.posture aside section { background:#111821; border:1px solid #222c38; border-radius:14px; padding:16px; }
+.posture aside .pcard { background:#111821; border:1px solid #222c38; border-radius:14px; padding:16px; }
+.ptabs { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--line); }
+.ptabs button { font:inherit; font-size:13px; padding:8px 10px; border:0; margin:0; border-radius:0; background:transparent;
+                color:var(--muted); border-bottom:2px solid transparent; cursor:pointer; }
+.ptabs button[aria-selected="true"] { color:var(--text); border-bottom-color:var(--blue); }
+#posture-panel > h2:first-child { display:none; }
+.pcard [role=tabpanel] { max-height:600px; overflow-y:auto; }
 .mapbar { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:12px; }
 .mapbar .windows { display:flex; gap:4px; padding:3px; border:1px solid var(--line); border-radius:8px; }
 .mapbar .windows button { font:inherit; font-size:13px; padding:8px 12px; border:0; border-radius:6px;
@@ -53,6 +59,14 @@ POSTURE_SCRIPT = """
 (() => {
 const strip = document.getElementById("strip");
 const panel = document.getElementById("posture-panel");
+function showTab(id) {
+  document.querySelectorAll("[data-tab]").forEach((b) => {
+    const on = b.dataset.tab === id;
+    b.setAttribute("aria-selected", String(on));
+    document.getElementById(b.dataset.tab).hidden = !on;
+  });
+}
+document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
 const exposure = document.getElementById("exposure");
 const msg = document.getElementById("posture-msg");
 const reviewList = document.getElementById("review");
@@ -94,7 +108,10 @@ async function markExpected(button, source, asnKey) {
   button.disabled = false;
 }
 
+let reviewShown = false;
 function renderReview(items) {
+  document.getElementById("review-count").textContent = items.length ? "(" + items.length + ")" : "";
+  if (items.length && !reviewShown) { reviewShown = true; showTab("review-tab"); }
   if (!items.length) { reviewList.replaceChildren(el("li", "Nothing new to review.", "muted")); return; }
   reviewList.replaceChildren(...items.map((r) => {
     const li = el("li");
@@ -151,6 +168,7 @@ function draw(data) {
 }
 
 async function select(id) {
+  showTab("posture-panel");
   panel.replaceChildren(el("h2", "Details"));
   panel.firstChild.style.cssText = "margin:0 0 8px;font-size:15px";
   if (!id.startsWith("dst:") || id === "dst:others") { panel.append(el("p", "Pick a destination box to see who talks to it.", "muted")); return; }
@@ -233,15 +251,18 @@ def render_posture_page():
         + '<div id="posture-map" role="img" aria-label="Zone map of inbound, outbound and VPN traffic"></div>'
         + '<p class="muted" id="posture-msg">Click a box for details. Line width = traffic; dashed orange = '
           'a network this container never used before.</p></section>'
-        + '<aside><section id="posture-panel"><h2 style="margin:0 0 8px;font-size:15px">Details</h2>'
-        + '<p class="muted">Select a destination on the map.</p></section>'
-        + '<section><h2 style="margin:0 0 8px;font-size:15px">Public exposure</h2><ul id="exposure" '
+        + '<aside><div class="pcard"><div class="ptabs" role="tablist" aria-label="Posture details">'
+        + '<button role="tab" data-tab="posture-panel" aria-selected="true">Details</button>'
+        + '<button role="tab" data-tab="exposure-tab" aria-selected="false">Public exposure</button>'
+        + '<button role="tab" data-tab="review-tab" aria-selected="false">Needs review '
+          '<span id="review-count"></span></button></div>'
+        + '<section id="posture-panel" role="tabpanel"><p class="muted">Select a destination on the map.</p></section>'
+        + '<section id="exposure-tab" role="tabpanel" hidden><ul id="exposure" '
           'style="list-style:none;margin:0;padding:0"></ul></section>'
-        + '<section><h2 style="margin:0 0 8px;font-size:15px">Needs review</h2><ul id="review"></ul></section>'
-        + '</aside></div>'
+        + '<section id="review-tab" role="tabpanel" hidden><ul id="review"></ul></section>'
+        + '</div></aside></div>'
         + '<script src="/static/cytoscape.min.js?v=3.34.3"></script>'
         + POSTURE_SCRIPT
     )
 
-    return render_page("Posture", body, active="posture",
-                       tabs=[("/", "Posture", True), ("/overview", "Host overview", False)])
+    return render_page("Posture", body, active="posture")

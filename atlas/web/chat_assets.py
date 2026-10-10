@@ -20,26 +20,48 @@ CHAT_STYLE = """
 """
 
 DRAWER_HTML = (
-    '<aside id="chat-drawer" hidden aria-label="Chat with Atlas">'
+    # Applies the remembered collapsed state before first paint (no flash of a full-screen panel on phones).
+    '<script>try { const v = localStorage.getItem("atlasChatCollapsed");'
+    ' if (v === "1" || (v === null && innerWidth < 900)) document.body.classList.add("chat-collapsed"); }'
+    ' catch (error) { if (innerWidth < 900) document.body.classList.add("chat-collapsed"); }</script>'
+    '<aside id="chat-drawer" aria-label="Chat with Atlas">'
     '<div class="drawer-head"><h2>Chat with Atlas</h2>'
-    '<button id="chat-close" aria-label="Close chat">Close</button></div>'
+    '<button id="chat-close" aria-label="Collapse chat" aria-controls="chat-drawer">&rsaquo;</button></div>'
     '<div id="log"></div>'
     '<label for="ask" class="sr-only">Message Atlas</label>'
     '<textarea id="ask" placeholder="Ask, troubleshoot, diagnose..."></textarea>'
     '<p><button class="primary" id="send">Send</button> <button id="new-chat">New conversation</button> '
     '<span class="muted" id="chat-status"></span></p></aside>'
+    '<button id="chat-fab" class="primary" aria-controls="chat-drawer">Chat</button>'
 )
 
 DRAWER_STYLE = """
 <style>
-#chat-drawer { position:fixed; top:0; right:0; bottom:0; width:min(420px,100vw); box-sizing:border-box;
-  background:#111821; border-left:1px solid #222c38; padding:16px; display:flex; flex-direction:column; gap:12px; z-index:10; }
-#chat-drawer[hidden] { display:none; }
-#chat-drawer .drawer-head { display:flex; justify-content:space-between; align-items:center; }
-#chat-drawer .drawer-head h2 { margin:0; font-size:15px; }
+.shell.docked { display:grid; grid-template-columns:minmax(0,1fr) 380px; }
+@media (min-width: 901px) {
+  /* Desktop: the page scrolls inside <main>, so the chat column is always exactly the space under the topbar. */
+  body:has(.shell.docked) { height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  .shell.docked { flex:1; min-height:0; }
+  .shell.docked > main { overflow-y:auto; min-height:0; }
+  .shell.docked #chat-drawer { position:static; height:auto; min-height:0; }
+}
+body.chat-collapsed .shell.docked { grid-template-columns:minmax(0,1fr) 44px; }
+#chat-drawer { position:sticky; top:0; height:100vh; box-sizing:border-box; background:#111821;
+  border-left:1px solid #222c38; padding:16px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+#chat-drawer .drawer-head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+#chat-drawer .drawer-head h2 { margin:0; font-size:15px; border:0; }
 #chat-drawer #log { flex:1; overflow-y:auto; }
+#chat-drawer .bubble { max-width:100%; }
+body.chat-collapsed #chat-drawer { padding:12px 4px; }
+body.chat-collapsed #chat-drawer > :not(.drawer-head), body.chat-collapsed #chat-drawer h2 { display:none; }
+#chat-fab { display:none; }
 .sr-only { position:absolute; left:-9999px; }
-@media (min-width: 1400px) { body.drawer-open .page { margin-right:420px; } }
+@media (max-width: 900px) {
+  .shell.docked, body.chat-collapsed .shell.docked { display:block; }
+  #chat-drawer { position:fixed; inset:0; height:auto; z-index:10; border-left:0; }
+  body.chat-collapsed #chat-drawer { display:none; }
+  body.chat-collapsed #chat-fab { display:block; position:fixed; right:16px; bottom:16px; z-index:9; }
+}
 </style>
 """
 
@@ -53,10 +75,19 @@ const status = document.getElementById("chat-status");
 const drawer = document.getElementById("chat-drawer");
 const LOG_KEY = "atlasChatLog";
 
+function syncCollapseButton(open) {
+  const close = document.getElementById("chat-close");
+  close.textContent = open ? "\u203a" : "\u2039";
+  close.setAttribute("aria-label", open ? "Collapse chat" : "Expand chat");
+}
+
 function setDrawerOpen(open) {
   if (!drawer) return;
-  drawer.hidden = !open;
-  document.body.classList.toggle("drawer-open", open);
+  document.body.classList.toggle("chat-collapsed", !open);
+  syncCollapseButton(open);
+  try { localStorage.setItem("atlasChatCollapsed", open ? "0" : "1"); } catch (error) {}
+  window.dispatchEvent(new Event("resize"));   // Cytoscape maps refit to the new width
+  if (open) ask.focus();
 }
 
 function saveLog(who, text) {
@@ -180,10 +211,12 @@ newChat.addEventListener("click", () => {
 
 restoreLog();
 if (drawer) {
-  const chatToggle = document.getElementById("chat-toggle");
-  const chatClose = document.getElementById("chat-close");
-  if (chatToggle) chatToggle.addEventListener("click", () => setDrawerOpen(drawer.hidden));
-  if (chatClose) chatClose.addEventListener("click", () => setDrawerOpen(false));
+  const collapsed = () => document.body.classList.contains("chat-collapsed");
+  ["chat-toggle", "chat-close", "chat-fab"].forEach((id) => {
+    const button = document.getElementById(id);
+    if (button) button.addEventListener("click", () => setDrawerOpen(collapsed()));
+  });
+  syncCollapseButton(!collapsed());   // the pre-paint script may have collapsed it
 }
 </script>
 """

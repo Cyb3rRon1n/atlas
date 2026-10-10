@@ -35,6 +35,25 @@ class KnowledgeQueries:
             )
 
 
+    def latest_event_payload(self, event_type: str):
+        """
+        Parsed payload of the newest event of one type, or None.
+        """
+
+        initialize_database(engine)
+
+        with Session(engine) as session:
+
+            record = (
+                session.query(EventRecord)
+                .filter(EventRecord.event_type == event_type)
+                .order_by(EventRecord.created_at.desc(), EventRecord.id.desc())
+                .first()
+            )
+
+            return json.loads(record.payload) if record and record.payload else None
+
+
     def environment_history(
         self,
         limit: int = 20

@@ -80,14 +80,16 @@ def test_discover_nodes_maps_node_fields():
 
     fake_client = MagicMock()
     fake_client.nodes.get.return_value = [
-        {"node": "pve1", "status": "online"},
+        {"node": "pve1", "status": "online", "cpu": 0.12, "maxcpu": 8, "mem": 4, "maxmem": 16,
+         "disk": 10, "maxdisk": 100, "uptime": 99, "level": ""},
         {"node": "pve2", "status": "offline"},
     ]
 
     nodes = discover_nodes(fake_client)
 
     assert nodes == [
-        {"name": "pve1", "status": "online"},
+        {"name": "pve1", "status": "online", "cpu": 0.12, "maxcpu": 8, "mem": 4, "maxmem": 16,
+         "disk": 10, "maxdisk": 100, "uptime": 99},
         {"name": "pve2", "status": "offline"},
     ]
 

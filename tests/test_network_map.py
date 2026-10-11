@@ -123,7 +123,7 @@ def test_network_page_lanes_tree_chips_and_escaping():
 
     page = render_network_page(topo, ROUTES, graph)
 
-    for text in ("From the internet", "Home network only", "Background (2)", "Machines", "Devices by connection",
+    for text in ("From the internet", "Behind Authelia (0)", "Own login only (1)", "Home network only", "Background (2)", "Machines", "Devices by connection",
                  'href="/devices/2"', "3 wireless devices hidden", "own login", "via VPN", 'data-ask="What is reachable'):
         assert text in page, text
     assert page.index('href="/devices/1"') < page.index('href="/devices/2"') < page.index(">vm<")

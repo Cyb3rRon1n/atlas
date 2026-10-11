@@ -43,7 +43,7 @@ def test_posture_side_lists_are_tabs_and_map_click_shows_details():
 
 def test_nav_order_and_hosts_tabs():
     from atlas.web.render import render_trends_page
-    assert [label for _, label, _ in NAV] == ["Home", "Posture", "Hosts", "Devices", "LAN map", "History"]
+    assert [label for _, label, _ in NAV] == ["Home", "Posture", "Hosts", "Devices", "Network", "History"]
     html = render_trends_page({"host": {}, "containers": {}, "guests": {}})
     assert 'href="/overview"' in html and ">Trends<" in html
 
@@ -78,3 +78,28 @@ def test_posture_page_network_errors_are_caught():
     mark = script.split("async function markExpected")[1].split("function renderReview")[0]
     assert "try {" in select and "catch (error)" in select
     assert "try {" in mark and "button.disabled = false" in mark and "markExpected(mark" in select
+
+
+def test_review_items_have_investigate_buttons_and_chips():
+    html = render_posture_page()
+    review = POSTURE_SCRIPT.split("function renderReview")[1].split("async function investigate")[0]
+    assert '"Investigate"' in review and '"Investigate all "' in review and "markExpected(mark" in review
+    inv = POSTURE_SCRIPT.split("async function investigate")[1]
+    assert "/api/posture/node?id=" in inv and "Should I mark this as expected?" in inv and "catch (error)" in inv
+    assert 'data-ask="Which new destinations look suspicious?"' in html
+    assert "innerHTML" not in POSTURE_SCRIPT
+
+
+def test_posture_and_network_scripts_are_valid_javascript(tmp_path):
+    import re, shutil, subprocess
+    import pytest
+    if not shutil.which("node"):
+        pytest.skip("node not installed")
+    from atlas.web.home_page import render_home_page, build_hosts
+    pages = {"posture": render_posture_page(), "home": render_home_page(None, build_hosts(None, None, None), [])}
+    for name, html in pages.items():
+        for i, script in enumerate(re.findall(r"<script>(.*?)</script>", html, re.S)):
+            f = tmp_path / f"{name}{i}.js"
+            f.write_text(script)
+            result = subprocess.run([shutil.which("node"), "--check", str(f)], capture_output=True, text=True)
+            assert result.returncode == 0, f"{name} script {i}: {result.stderr[:300]}"

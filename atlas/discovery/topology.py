@@ -38,6 +38,13 @@ def _docker_topology(client):
             "name": container.name,
             "status": state.get("Status", container.status),
             "health": (state.get("Health") or {}).get("Status", ""),
+            # host ports published on all interfaces (127.0.0.1-only binds are not reachable from the LAN)
+            "ports": sorted({
+                int(bind["HostPort"])
+                for binds in (attrs.get("NetworkSettings", {}).get("Ports") or {}).values()
+                for bind in binds or []
+                if bind.get("HostPort") and bind.get("HostIp", "") not in ("127.0.0.1", "::1")
+            }),
             "public": sorted({
                 host
                 for key, rule in labels.items()

@@ -314,7 +314,7 @@ def _card(href, title, state, inner, wide=False, flagged=False):
             f"{inner}</a>")
 
 
-def attention_items(posture, hosts, storage):
+def attention_items(posture, hosts, storage, access_reviews=()):
     """
     One plain-words line per problem behind the verdict: (card, what, why, href, action).
     """
@@ -336,6 +336,9 @@ def attention_items(posture, hosts, storage):
     for row in storage["rows"]:
         if row["warn"]:
             items.append(("storage", "Storage", f"{row['name']}: {row['detail']}", "/overview", "Details"))
+
+    for place in access_reviews:
+        items.append(("access", "Sign-in", f"{place['user']} signed in from a new place: {place['label']}", "/access", "Review"))
 
     return items
 
@@ -394,7 +397,7 @@ def _activity_card(events):
     return _card("/history", "Recent activity", "ok", inner)
 
 
-def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None):
+def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=()):
     """
     posture: render._posture_block() output or None; hosts: build_hosts()
     output; events: interesting_events() pairs; storage: build_storage()
@@ -403,7 +406,7 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
     """
 
     storage = storage or {"rows": [], "state": "unknown"}
-    items = attention_items(posture, hosts, storage)
+    items = attention_items(posture, hosts, storage, access_reviews)
     flagged = {card for card, *_ in items}
     verdict = ('<p class="verdict ok">\u2713 All good</p>' if not items else
                '<section class="attention" aria-label="Needs attention"><h2>Needs attention</h2><ul>' + "".join(

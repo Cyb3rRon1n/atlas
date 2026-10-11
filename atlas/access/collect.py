@@ -84,6 +84,28 @@ def proxied_logins(entries, events_by_app):
     return out
 
 
+AUTHELIA_LINE = re.compile(r'msg="(?P<kind>Successful|Unsuccessful) (?P<factor>1FA|2FA)[^"]*?by user \'(?P<user>[^\']*)\'".*?'
+                           r'remote_ip=(?P<ip>[0-9a-fA-F:.]+)')
+
+
+def authelia_logins(log_text):
+    """`docker logs --timestamps authelia` (log level debug - successes are only logged at debug) -> login dicts."""
+
+    out = []
+    for line in log_text.splitlines():
+        stamp, _, rest = line.partition(" ")
+        m = AUTHELIA_LINE.search(rest)
+        if not m:
+            continue
+        try:
+            when = datetime.fromisoformat(stamp[:19])
+        except ValueError:
+            continue
+        out.append({"app": "authelia", "external_id": f"{stamp}|{m['ip']}|{m['factor']}", "time": when,
+                    "user": m["user"] or "?", "ip": m["ip"], "ok": m["kind"] == "Successful", "client": m["factor"]})
+    return out
+
+
 class AccessCollector:
 
     def __init__(self, settings, posture_settings, store, get=requests.get, signal=None, send=None, docker=None):
@@ -155,6 +177,16 @@ class AccessCollector:
             result["log_lines"], result["requests"] = len(lines), len(entries)
         else:
             result["log_error"] = f"{path} not found"
+
+        if self.docker is not None:
+            try:
+                since = self.store.get_state("authelia_since") or (now - timedelta(days=1)).isoformat()
+                text = self.docker.containers.get("authelia").logs(since=datetime.fromisoformat(since),
+                                                                   timestamps=True).decode("utf-8", "replace")
+                result["authelia_logins_added"] = self.store.record_logins(authelia_logins(text))
+                self.store.set_state("authelia_since", now.isoformat())
+            except Exception as error:
+                result["authelia_error"] = str(error)[:200]
 
         if s.jellyfin_url and s.jellyfin_api_key:
             try:

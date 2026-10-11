@@ -35,6 +35,23 @@ class KnowledgeQueries:
             )
 
 
+    def events_since(self, event_types, since):
+        """[(created_at, parsed payload)] of the given types since `since`, oldest first - Trends charts."""
+
+        initialize_database(engine)
+
+        with Session(engine) as session:
+
+            rows = (
+                session.query(EventRecord.created_at, EventRecord.payload)
+                .filter(EventRecord.event_type.in_(list(event_types)), EventRecord.created_at >= since)
+                .order_by(EventRecord.created_at)
+                .all()
+            )
+
+            return [(created_at, json.loads(payload) if payload else {}) for created_at, payload in rows]
+
+
     def latest_event_payload(self, event_type: str):
         """
         Parsed payload of the newest event of one type, or None.

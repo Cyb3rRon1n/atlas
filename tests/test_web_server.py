@@ -97,7 +97,7 @@ def test_trends_route_with_no_data(running_server):
     status, body = _get(running_server + "/trends")
 
     assert status == 200
-    assert "No monitoring history found" in body
+    assert "No history yet" in body
 
 
 def test_unknown_route_returns_404(running_server):

@@ -8,7 +8,7 @@ failed, which renders as a muted "unavailable" line instead of a 500.
 import re
 from datetime import datetime
 
-from atlas.web.render import _esc, render_page
+from atlas.web.render import _esc, ask_chips, render_page
 
 
 HOME_STYLE = """
@@ -50,8 +50,6 @@ HOME_STYLE = """
 .hcard .row { display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-top:1px solid var(--line); font-size:14px; }
 .hcard .row:first-of-type { border-top:0; }
 .hcard .row.warn span:last-child { color:#ffb4a2; }
-.chips { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px; }
-.chips button { font:inherit; font-size:13px; padding:6px 12px; border-radius:999px; margin:0; }
 .chart { margin:4px 0 12px; } .chart h3 { margin:0 0 4px; font-size:12px; font-weight:500; color:var(--muted); }
 .chart svg { width:100%; height:70px; display:block; }
 .chart .lbl { font-size:12px; margin-top:4px; }
@@ -307,15 +305,6 @@ def _storage_card(storage, flagged=False):
     return _card("/overview", "Storage & RAID", storage["state"], inner, flagged=flagged)
 
 
-def _chips():
-
-    return '<div class="chips" aria-label="Ask Atlas">' + "".join(
-        f'<button data-ask="{_esc(q)}">{_esc(q)}</button>' for q in ASK_SHORTCUTS) + "</div>" + (
-        "<script>document.querySelectorAll('[data-ask]').forEach((b) => b.addEventListener('click', () => {"
-        " const q = b.dataset.ask; if (window.atlasAsk) window.atlasAsk(q); else location.href = '/chat?q=' +"
-        " encodeURIComponent(q); }));</script>")
-
-
 def _card(href, title, state, inner, wide=False, flagged=False):
 
     classes = f"hcard {state}" + (" wide" if wide else "") + (" flagged" if flagged else "")
@@ -422,7 +411,7 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
                    f'</span><a href="{href}">{_esc(action)} \u2192</a></li>'
                    for _, what, why, href, action in items) + "</ul></section>")
 
-    body = (HOME_STYLE + verdict + _chips() + '<div class="cards">'
+    body = (HOME_STYLE + verdict + ask_chips(ASK_SHORTCUTS) + '<div class="cards">'
             + _posture_card(posture, "posture" in flagged) + _hosts_card(hosts, "hosts" in flagged)
             + _storage_card(storage, "storage" in flagged)
             + _trends_card(trends) + _analysis_card(analysis, now or datetime.utcnow())

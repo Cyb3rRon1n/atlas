@@ -3329,6 +3329,45 @@ app.add_typer(
     posture_app
 )
 
+access_app = typer.Typer(
+    name="access",
+    help="Who reaches the public services and from where (web /access)."
+)
+
+
+@access_app.command("collect")
+def access_collect(
+    json_output: bool = typer.Option(False, "--json", help="Print the pass result as JSON")
+):
+    """
+    Read new Traefik access-log lines and app sign-ins, geolocate new IPs
+    locally (DB-IP City Lite + the posture ASN table). atlas-scan runs this
+    every scan cycle; first run starts at the end of the log.
+    """
+
+    from datetime import datetime
+
+    from atlas.access.collect import AccessCollector
+    from atlas.access.store import AccessStore
+
+    settings = load_config()
+
+    if not settings.access.enabled:
+        console.print("[yellow]access.enabled is false in atlas.yaml - nothing to do.[/yellow]")
+        return
+
+    result = AccessCollector(settings.access, settings.posture, AccessStore()).run(datetime.utcnow())
+
+    if json_output:
+        print(json.dumps(result, default=str))
+    else:
+        console.print(", ".join(f"{k}={v}" for k, v in result.items()))
+
+
+app.add_typer(
+    access_app
+)
+
 
 if __name__ == "__main__":
     app()

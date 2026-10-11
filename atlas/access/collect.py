@@ -44,11 +44,63 @@ def _jf_time(text):
     return datetime.fromisoformat(text[:19])   # "2026-10-10T23:29:51.1234567Z" -> UTC, seconds precision
 
 
+# Apps whose phone/TV clients sign in through Traefik: the access log has the real IP + HTTP status of the login
+# POST; the app's own log (docker timestamps, UTC) names the user. Matched by time.
+LOGIN_ROUTES = {"audiobookshelf": ("/login",), "kavita": ("/api/Account/login",)}
+APP_USER_LINES = {
+    "audiobookshelf": re.compile(r'\[LocalAuth\][^"]*"(?P<user>[^"]+)"'),
+    "kavita": re.compile(r"AccountController (?P<user>\S+) (?:attempting to login|logged in)"),
+}
+MATCH_SECONDS = 5
+
+
+def app_user_events(app, log_text):
+    """`docker logs --timestamps` text -> [(utc time, user)] for that app's sign-in lines."""
+
+    pattern, out = APP_USER_LINES[app], []
+    for line in log_text.splitlines():
+        stamp, _, rest = line.partition(" ")
+        m = pattern.search(rest)
+        if m:
+            try:
+                out.append((datetime.fromisoformat(stamp[:19]), m["user"]))
+            except ValueError:
+                continue
+    return out
+
+
+def proxied_logins(entries, events_by_app):
+    """Login POSTs from the Traefik log -> login dicts, user taken from the nearest app log line (else "?")."""
+
+    out = []
+    for e in entries:
+        app = e["service"]
+        if app not in LOGIN_ROUTES or e["method"] != "POST" or e["path"].split("?")[0] not in LOGIN_ROUTES[app]:
+            continue
+        near = [(abs((t - e["time"]).total_seconds()), u) for t, u in events_by_app.get(app, [])]
+        near = [x for x in near if x[0] <= MATCH_SECONDS]
+        out.append({"app": app, "external_id": f"{e['time'].isoformat()}|{e['ip']}", "time": e["time"],
+                    "user": min(near)[1] if near else "?", "ip": e["ip"], "ok": 200 <= e["status"] < 300, "client": ""})
+    return out
+
+
 class AccessCollector:
 
-    def __init__(self, settings, posture_settings, store, get=requests.get, signal=None, send=None):
+    def __init__(self, settings, posture_settings, store, get=requests.get, signal=None, send=None, docker=None):
         self.settings, self.posture, self.store, self.get = settings, posture_settings, store, get
-        self.signal, self.send = signal, send
+        self.signal, self.send, self.docker = signal, send, docker
+
+    def _app_events(self, since):
+        """Sign-in lines from each app container's log since `since` (needs the docker socket; skipped without it)."""
+
+        events = {}
+        for app in LOGIN_ROUTES:
+            try:
+                text = self.docker.containers.get(app).logs(since=since, timestamps=True).decode("utf-8", "replace")
+                events[app] = app_user_events(app, text)
+            except Exception:
+                events[app] = []
+        return events
         self._geo, self._asn = None, None
 
     def _locate(self, ip):
@@ -94,6 +146,11 @@ class AccessCollector:
             lines, offset = read_new(path, offset)
             entries = [e for e in map(parse_line, lines) if e and e["ip"] not in s.ignore_ips]
             self.store.touch_ips(self.store.record_hits(entries), self._locate)
+            logins = [e for e in entries if e["service"] in LOGIN_ROUTES and e["method"] == "POST"]
+            if logins and self.docker is not None:
+                since = min(e["time"] for e in logins) - timedelta(seconds=MATCH_SECONDS)
+                found = proxied_logins(logins, self._app_events(since))
+                result["app_logins_added"] = self.store.record_logins(found)
             self.store.set_state("traefik_offset", offset)
             result["log_lines"], result["requests"] = len(lines), len(entries)
         else:

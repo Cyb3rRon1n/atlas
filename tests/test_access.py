@@ -119,3 +119,16 @@ def test_proxied_logins_match_app_log_users_by_time():
         ("kavita", "adriel", True, "85.240.1.9"), ("audiobookshelf", "Celeste", False, "85.240.1.9"),
         ("audiobookshelf", "?", False, "85.240.1.9")]
     assert len({l["external_id"] for l in out}) == 3
+
+
+def test_authelia_logins_from_debug_log():
+    from atlas.access.collect import authelia_logins
+    text = ('2026-10-11T13:45:16.441Z time="x" level=debug msg="Mark 1FA authentication attempt made by user \'\'" remote_ip=1.1.1.1\n'
+            '2026-10-11T13:45:16.447Z time="x" level=error msg="Unsuccessful 1FA authentication attempt by user \'bob\'" '
+            'error="user not found" method=POST path=/api/firstfactor remote_ip=85.240.1.9 stack="..."\n'
+            '2026-10-11T14:00:00.000Z time="x" level=debug msg="Successful 2FA authentication attempt made by user \'adriel\'" '
+            'method=POST path=/api/secondfactor/totp remote_ip=2601:201::1\n')
+    out = authelia_logins(text)
+    assert [(l["user"], l["ok"], l["ip"], l["client"]) for l in out] == [("bob", False, "85.240.1.9", "1FA"),
+                                                                          ("adriel", True, "2601:201::1", "2FA")]
+    assert out[1]["time"] == datetime(2026, 10, 11, 14, 0) and out[0]["app"] == "authelia"

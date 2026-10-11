@@ -47,7 +47,8 @@ dependencies = [
     "anthropic",
     "requests",
     "sqlalchemy",
-    "paramiko"
+    "paramiko",
+    "maxminddb"
 ]
 
 [project.optional-dependencies]

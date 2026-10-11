@@ -109,6 +109,18 @@ class NotifyConfig(BaseModel):
     signal: SignalNotifyConfig = SignalNotifyConfig()
 
 
+class AccessConfig(BaseModel):
+    """Who reaches the public services, from where (atlas access collect -> web /access). Off unless enabled."""
+    enabled: bool = False
+    traefik_log: str = "/traefik-logs/access.log"
+    geo_path: str = "inventory/dbip-city-lite.mmdb"
+    jellyfin_url: str = ""
+    jellyfin_api_key: str = ""
+    ignore_ips: list[str] = []          # e.g. this host's own WAN IP hitting its public URLs (health checks)
+    home_ips: list[str] = []            # shown as "home" on the map instead of a foreign dot
+    retention_days: int = 30
+
+
 class PostureConfig(BaseModel):
     """Egress/posture collector (atlas posture watch). Off unless enabled."""
     enabled: bool = False
@@ -145,3 +157,4 @@ class AtlasConfig(BaseModel):
     scan: ScanConfig = ScanConfig()
     notify: NotifyConfig = NotifyConfig()
     posture: PostureConfig = PostureConfig()
+    access: AccessConfig = AccessConfig()

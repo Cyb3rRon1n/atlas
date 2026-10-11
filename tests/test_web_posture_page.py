@@ -43,7 +43,7 @@ def test_posture_side_lists_are_tabs_and_map_click_shows_details():
 
 def test_nav_order_and_hosts_tabs():
     from atlas.web.render import render_trends_page
-    assert [label for _, label, _ in NAV] == ["Home", "Posture", "Hosts", "Devices", "Network", "History"]
+    assert [label for _, label, _ in NAV] == ["Home", "Posture", "Hosts", "Devices", "Network", "Access", "History"]
     html = render_trends_page({"host": {}, "containers": {}, "guests": {}})
     assert 'href="/overview"' in html and ">Trends<" in html
 

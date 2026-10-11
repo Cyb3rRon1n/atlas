@@ -70,7 +70,8 @@ def _esc(value):
 
 
 NAV = [("/", "Home", "home"), ("/posture", "Posture", "posture"), ("/overview", "Hosts", "hosts"),
-       ("/devices", "Devices", "devices"), ("/map", "Network", "lan"), ("/history", "History", "history")]
+       ("/devices", "Devices", "devices"), ("/map", "Network", "lan"), ("/access", "Access", "access"),
+       ("/history", "History", "history")]
 
 HOSTS_TABS = (("/overview", "Overview"), ("/trends", "Trends"))
 

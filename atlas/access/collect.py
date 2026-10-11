@@ -46,8 +46,9 @@ def _jf_time(text):
 
 class AccessCollector:
 
-    def __init__(self, settings, posture_settings, store, get=requests.get):
+    def __init__(self, settings, posture_settings, store, get=requests.get, signal=None, send=None):
         self.settings, self.posture, self.store, self.get = settings, posture_settings, store, get
+        self.signal, self.send = signal, send
         self._geo, self._asn = None, None
 
     def _locate(self, ip):
@@ -58,6 +59,21 @@ class AccessCollector:
         if a:
             info.update(asn=a.asn, org=a.org, cc=info.get("cc") or a.cc)
         return info
+
+    def _alert(self):
+        """One Signal message (Note to Self via notify.signal) listing sign-ins from places not seen before."""
+
+        pending = self.store.unalerted_reviews()
+        if not pending or not self.signal or not self.signal.url:
+            return 0
+        lines = "\n".join(f"\u2022 **{p['user']}** \u2192 {p['app']} from {p['label']} ({p['ip']})" for p in pending[:10])
+        text = (f"\U0001F30D **New sign-in place{'s' if len(pending) > 1 else ''}**\n\n{lines}\n\n"
+                "\u2705 Expected? Confirm it on Atlas \u2192 Access.")
+        from atlas.devices.notify import send_signal
+        ok, _ = (self.send or send_signal)(self.signal, text)
+        if ok:
+            self.store.mark_alerted([p["id"] for p in pending])
+        return len(pending) if ok else 0
 
     def run(self, now):
         result = {}
@@ -94,5 +110,7 @@ class AccessCollector:
             except Exception as error:
                 result["jellyfin_error"] = str(error)[:200]
 
+        result["new_places"] = len(self.store.classify_logins(now, s.home_ips))
+        result["alerted"] = self._alert()
         result["pruned"] = self.store.prune(now - timedelta(days=s.retention_days))
         return result

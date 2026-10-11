@@ -11,9 +11,21 @@ from sqlalchemy.orm import Session
 
 from atlas.database import initialize_database
 from atlas.database.engine import engine
-from atlas.database.models import AccessHitRecord, AccessIpRecord, AccessLoginRecord, AccessStateRecord
+from atlas.database.models import AccessHitRecord, AccessIpRecord, AccessLoginRecord, AccessPlaceRecord, AccessStateRecord
 
 DENIED = (401, 403, 429)
+LEARN_DAYS = 14
+
+
+def place_of(ip_row):
+    """(key, label) for a geolocated IP: country + provider is stable per person; city is too noisy on mobile."""
+
+    # ponytail: IPv6 has no ASN here (the iptoasn table is IPv4-only) - a provider's /32 is stable enough;
+    # load ip2asn-v6 if names are wanted
+    v6 = ":" in ip_row.ip and "IPv6 " + ":".join(ip_row.ip.split(":")[:2]) + "::/32"
+    provider = ip_row.org or (f"AS{ip_row.asn}" if ip_row.asn else "") or v6 or ip_row.city or "unknown provider"
+    place = ", ".join(p for p in (ip_row.city, ip_row.region, ip_row.cc or ip_row.country) if p) or "unknown place"
+    return f"{ip_row.cc or ip_row.country or '?'}/{provider}", f"{place} \u00b7 {provider}"
 
 
 def _hour(moment):
@@ -118,6 +130,71 @@ class AccessStore:
             return {"visitors": sorted(visitors.values(), key=lambda v: -v["requests"]),
                     "logins": [{"app": l.app, "time": l.time, "user": l.user, "ip": l.ip, "ok": l.ok, "client": l.client,
                                 **where(l.ip)} for l in logins]}
+
+    def classify_logins(self, now, home_ips=()):
+        """
+        Give every successful sign-in a place. A user's first LEARN_DAYS (from their first stored sign-in)
+        learn places automatically; after that a new place becomes a review item. Returns new review rows.
+        """
+
+        from datetime import timedelta
+        new = []
+        with Session(self.engine) as session:
+            ips = {r.ip: r for r in session.scalars(select(AccessIpRecord))}
+            firsts = {r.key[11:]: r.value for r in session.scalars(
+                select(AccessStateRecord).where(AccessStateRecord.key.like("user_first:%")))}
+            for login in session.scalars(select(AccessLoginRecord).where(AccessLoginRecord.ok.is_(True))
+                                         .order_by(AccessLoginRecord.time)):
+                row = ips.get(login.ip)
+                if row is None or login.ip in home_ips or row.country == "Home network":
+                    continue
+                first = firsts.get(login.user)
+                if not first:   # same session - a second one would lock SQLite mid-write
+                    first = firsts[login.user] = login.time.isoformat()
+                    session.merge(AccessStateRecord(key=f"user_first:{login.user}", value=first))
+                key, label = place_of(row)
+                place = session.scalars(select(AccessPlaceRecord).where(AccessPlaceRecord.user == login.user,
+                                                                          AccessPlaceRecord.place_key == key)).first()
+                if place is None:
+                    learning = login.time < datetime.fromisoformat(first) + timedelta(days=LEARN_DAYS)
+                    place = AccessPlaceRecord(user=login.user, place_key=key, label=label, first_seen=login.time,
+                                              last_seen=login.time, ip=login.ip, app=login.app,
+                                              status="learned" if learning else "review", alerted=False)
+                    session.add(place)
+                    session.flush()
+                    if place.status == "review":
+                        new.append({"user": place.user, "label": label, "app": login.app, "ip": login.ip, "time": login.time})
+                elif login.time > place.last_seen:
+                    place.last_seen, place.ip = login.time, login.ip
+            session.commit()
+        return new
+
+    def places(self, status=None):
+        with Session(self.engine) as session:
+            q = select(AccessPlaceRecord).order_by(AccessPlaceRecord.last_seen.desc())
+            if status:
+                q = q.where(AccessPlaceRecord.status == status)
+            return [{c: getattr(r, c) for c in ("id", "user", "place_key", "label", "status", "first_seen", "last_seen",
+                                                 "ip", "app", "alerted")} for r in session.scalars(q)]
+
+    def confirm_place(self, user, place_key):
+        with Session(self.engine) as session:
+            row = session.scalars(select(AccessPlaceRecord).where(AccessPlaceRecord.user == user,
+                                                                    AccessPlaceRecord.place_key == place_key)).first()
+            if row is None:
+                return {"ok": False, "error": "no such sign-in place"}
+            row.status = "confirmed"
+            session.commit()
+            return {"ok": True}
+
+    def unalerted_reviews(self):
+        return [p for p in self.places("review") if not p["alerted"]]
+
+    def mark_alerted(self, ids):
+        with Session(self.engine) as session:
+            for r in session.scalars(select(AccessPlaceRecord).where(AccessPlaceRecord.id.in_(ids))):
+                r.alerted = True
+            session.commit()
 
     def prune(self, before):
         with Session(self.engine) as session:

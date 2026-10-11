@@ -42,19 +42,6 @@ PAGE_STYLE = """
   #msg { color: #f85149; min-height: 1.2rem; }
 """
 
-MAP_STYLE = """
-  .map-wrap { display: flex; gap: 1rem; align-items: flex-start; }
-  #graph { flex: 1; min-width: 0; height: 70vh; min-height: 420px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; }
-  #panel { flex: 0 0 320px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem; }
-  #panel h2 { margin-top: 0; }
-  #panel input, #panel select, #panel textarea { width: 100%; box-sizing: border-box; }
-  #panel input[type=checkbox] { width: auto; }
-  .map-legend span { margin-right: 1rem; }
-  @media (max-width: 900px) { .map-wrap { flex-direction: column; } #panel { width: 100%; box-sizing: border-box; } }
-"""
-
-PAGE_STYLE += MAP_STYLE
-
 SHELL_STYLE = """
 :root { --bg:#0e131a; --surface:#151c25; --surface2:#1b2430; --line:#263140; --text:#e7edf3; --muted:#a3b0bd;
         --blue:#5aa7f0; --green:#43c08f; --orange:#f0a23a; --red:#f47a5c; }
@@ -71,6 +58,8 @@ body { margin:0; padding:0; background:var(--bg); color:var(--text);
 .tabs { display:flex; flex-wrap:wrap; gap:4px; margin:0 0 16px; border-bottom:1px solid var(--line); }
 .tabs a { padding:10px 14px; color:var(--muted); text-decoration:none; border-bottom:2px solid transparent; }
 .tabs a[aria-current="page"] { color:var(--text); border-bottom-color:var(--blue); }
+.chips { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px; }
+.chips button { font:inherit; font-size:13px; padding:6px 12px; border-radius:999px; margin:0; }
 """
 
 PAGE_STYLE += SHELL_STYLE
@@ -81,7 +70,7 @@ def _esc(value):
 
 
 NAV = [("/", "Home", "home"), ("/posture", "Posture", "posture"), ("/overview", "Hosts", "hosts"),
-       ("/devices", "Devices", "devices"), ("/map", "LAN map", "lan"), ("/history", "History", "history")]
+       ("/devices", "Devices", "devices"), ("/map", "Network", "lan"), ("/history", "History", "history")]
 
 HOSTS_TABS = (("/overview", "Overview"), ("/trends", "Trends"))
 
@@ -127,274 +116,16 @@ def render_page(title, body_html, active="", tabs=None, drawer=True):
     )
 
 
-MAP_SCRIPT = """
-<script>
-const panel = document.getElementById("panel");
-const message = document.getElementById("panel-msg");
-const graphMsg = document.getElementById("graph-msg");
-let current = null;
-let cy = null;
-let graph = null;
+def ask_chips(questions):
+    """
+    One-click questions that fill the docked chat (window.atlasAsk), or open /chat when there is no panel.
+    """
 
-const STYLE = [
-  {selector: "node", style: {"label": "data(label)", "color": "#e6edf3", "font-size": 11, "text-wrap": "wrap",
-    "text-valign": "bottom", "text-margin-y": 4, "background-color": "#8b949e", "width": 22, "height": 22,
-    "border-width": 2, "border-color": "#30363d"}},
-  {selector: ".fixed", style: {"shape": "round-rectangle", "background-color": "#1f6feb", "width": 60, "height": 24,
-    "text-valign": "center", "text-margin-y": 0}},
-  {selector: ".host", style: {"shape": "round-rectangle", "background-opacity": 0.08, "text-valign": "top",
-    "padding": 12, "border-width": 2}},
-  {selector: ".network", style: {"shape": "round-rectangle", "width": 16, "height": 16}},
-  {selector: ".status-seen", style: {"background-color": "#3fb950", "border-color": "#3fb950"}},
-  {selector: ".status-quiet", style: {"background-color": "#d29922", "border-color": "#d29922"}},
-  {selector: ".status-invisible", style: {"background-color": "#8b949e", "border-color": "#8b949e"}},
-  {selector: ".alert", style: {"background-color": "#f85149", "border-color": "#f85149"}},
-  {selector: ".important", style: {"border-width": 4}},
-  {selector: ".router, .infra", style: {"shape": "diamond"}},
-  {selector: ".conn-unknown", style: {"border-style": "dotted"}},
-  {selector: ".conn-wireless", style: {"opacity": 0.6}},
-  {selector: ".state-new", style: {"border-style": "dashed", "border-color": "#58a6ff"}},
-  {selector: ".state-ignored", style: {"opacity": 0.4}},
-  {selector: "edge", style: {"width": 1.5, "line-color": "#30363d", "curve-style": "bezier", "opacity": 0.12}},
-  {selector: ":selected", style: {"border-color": "#58a6ff", "border-width": 4}},
-];
-
-function arrange(cy) {
-  // Layered tree from the Internet node: every device under whatever it hangs off (BFS over edges, so
-  // uplink cycles can't loop), leaves wrapped in a grid under their parent (columns scale with leaf
-  // count via gridCols, capped to fit the canvas width), branches side by side. Compound hosts are laid
-  // out inside first, then treated as one wide node.
-  const CW = 150, CH = 70, GAP = 50;
-  const rank = (n) => n.hasClass("alert") ? 0 : n.hasClass("important") ? 1 : n.hasClass("state-known") ? 2 : 3;
-  const order = (a, b) => rank(a) - rank(b) || String(a.data("label")).localeCompare(String(b.data("label")), undefined, {numeric: true});
-  const top = cy.nodes().filter((n) => !n.isChild()).sort(order);
-  const byId = {}, out = {}, kids = {}, own = {}, block = {};
-  top.forEach((n) => { byId[n.id()] = n; out[n.id()] = []; });
-  cy.edges().forEach((e) => { if (out[e.data("source")] && byId[e.data("target")]) out[e.data("source")].push(byId[e.data("target")]); });
-  top.forEach((n) => {
-    if (!n.isParent()) { own[n.id()] = {w: CW, h: CH}; return; }
-    const inner = n.children().sort(order), cols = Math.min(inner.length, 4) || 1;
-    inner.forEach((kid, i) => kid.position({x: (i % cols) * CW, y: Math.floor(i / cols) * CH}));
-    const box = n.boundingBox({includeLabels: true});
-    own[n.id()] = {w: box.w + GAP, h: box.h + GAP, box};
-  });
-  const visited = new Set();
-  const grow = (root) => {
-    visited.add(root.id());
-    const queue = [root];
-    while (queue.length) {
-      const n = queue.shift();
-      kids[n.id()] = [];
-      out[n.id()].sort(order).forEach((m) => {
-        if (!visited.has(m.id())) { visited.add(m.id()); kids[n.id()].push(m); queue.push(m); }
-      });
-    }
-  };
-  const isLeaf = (n) => !n.isParent() && !kids[n.id()].length;
-  // Leaf grids scale with their count (about 30 leaves -> ~9 columns) so a flat LAN stays wide, not tall,
-  // but never wider than the canvas; a few leaves just sit in one row.
-  const maxCols = Math.max(4, Math.floor((cy.width() - 40) / CW));
-  const gridCols = (count) => Math.min(count, Math.max(4, Math.min(Math.ceil(Math.sqrt(count * 2.5)), maxCols)));
-  const measure = (n) => {
-    const leaves = kids[n.id()].filter(isLeaf), branches = kids[n.id()].filter((m) => !isLeaf(m));
-    const cols = gridCols(leaves.length);
-    let rowW = cols * CW, rowH = cols ? Math.ceil(leaves.length / cols) * CH : 0;
-    branches.forEach((m) => { const b = measure(m); rowW += b.w; rowH = Math.max(rowH, b.h); });
-    return block[n.id()] = {w: Math.max(own[n.id()].w, rowW), h: own[n.id()].h + rowH, leaves, branches, cols, rowW};
-  };
-  const place = (n, x, y) => {
-    const b = block[n.id()], o = own[n.id()];
-    if (o.box) {
-      const dx = x + b.w / 2 - (o.box.x1 + o.box.x2) / 2, dy = y + GAP / 2 - o.box.y1;
-      n.descendants().filter((d) => !d.isParent())
-        .forEach((d) => { const p = d.position(); d.position({x: p.x + dx, y: p.y + dy}); });
-    } else if (o.w) n.position({x: x + b.w / 2, y: y + CH / 2});
-    let left = x + (b.w - b.rowW) / 2;
-    const below = y + o.h;
-    b.leaves.forEach((m, i) => m.position({x: left + (i % b.cols) * CW + CW / 2, y: below + Math.floor(i / b.cols) * CH + CH / 2}));
-    left += b.cols * CW;
-    b.branches.forEach((m) => { place(m, left, below); left += block[m.id()].w; });
-  };
-  let bottom = 0;
-  if (byId.internet) {
-    grow(byId.internet);
-    measure(byId.internet);
-    place(byId.internet, 0, 0);
-    bottom = block.internet.h + GAP;
-  }
-  // Unreachable from the Internet (an uplink loop, a stale edge): one final row, each loop rooted at its
-  // first member, under an invisible root.
-  const rest = {id: () => "_rest", isParent: () => false};
-  kids._rest = [];
-  top.forEach((n) => { if (!visited.has(n.id())) { grow(n); kids._rest.push(n); } });
-  own._rest = {w: 0, h: 0};  // zero-size stand-in node: measure/place lay out its children and draw nothing for it
-  measure(rest);
-  place(rest, 0, bottom);
-  cy.fit(undefined, 20);
-}
-
-async function load() {
-  const params = [];
-  if (document.getElementById("show-ignored").checked) params.push("ignored=1");
-  if (document.getElementById("show-wireless").checked) params.push("wireless=1");
-  try {
-    const response = await fetch("/api/graph" + (params.length ? "?" + params.join("&") : ""), {credentials: "same-origin"});
-    if (!response.ok || response.redirected) {
-      graphMsg.textContent = "Couldn't load the map (status " + response.status + ") - session expired? reload the page";
-      return;
-    }
-    graph = await response.json();
-    graphMsg.textContent = "";
-    document.getElementById("hidden-wireless").textContent = graph.hidden_wireless + " wireless hidden";
-    if (cy) cy.destroy();
-    cy = cytoscape({container: document.getElementById("graph"), elements: {nodes: graph.nodes, edges: graph.edges}, style: STYLE,
-      layout: {name: "preset"}});
-    arrange(cy);
-    cy.on("tap", "node.device", (event) => openPanel(event.target.data("device_id")));
-    cy.on("dbltap", "node.host", (event) => {
-      const children = event.target.children();
-      children.style("display", children.first().style("display") === "none" ? "element" : "none");
-    });
-  } catch (error) {
-    graphMsg.textContent = "Couldn't load the map (network error) - session expired? reload the page";
-  }
-}
-
-function field(name) { return document.getElementById("panel-" + name); }
-
-function storedConnection(device) { return device.connection_guessed ? "unknown" : device.connection; }
-
-function option(value, label) {
-  const element = document.createElement("option");
-  element.value = value;
-  element.textContent = label;
-  return element;
-}
-
-function fillUplinks(device) {
-  // Anything a device can plug into: router / network gear on the map, plus servers.
-  const choices = graph.nodes.filter((node) => node.data.device_id !== undefined && node.data.device_id !== device.id &&
-      (node.classes.split(" ").some((c) => c === "router" || c === "infra") || node.data.kind === "server"))
-    .sort((a, b) => a.data.label.localeCompare(b.data.label));
-  const options = [option("", "router / not set"), ...choices.map((node) => option(String(node.data.device_id), node.data.label))];
-  // Keep a current uplink that isn't on the map (hidden, ignored) selectable, so saving doesn't clear it.
-  // The fallback is "device #N", not a name: the map only has nodes for what it shows, and fetching the
-  // name would cost another request for a rare case.
-  if (device.uplink_id !== null && !choices.some((node) => node.data.device_id === device.uplink_id))
-    options.push(option(String(device.uplink_id), "device #" + device.uplink_id));
-  field("uplink").replaceChildren(...options);
-  field("uplink").value = device.uplink_id === null ? "" : String(device.uplink_id);
-}
-
-async function openPanel(deviceId, keepMessage) {
-  try {
-    const response = await fetch("/api/devices/" + deviceId, {credentials: "same-origin"});
-    if (!response.ok || response.redirected) {
-      graphMsg.textContent = "Couldn't load the map (status " + response.status + ") - session expired? reload the page";
-      return;
-    }
-    current = await response.json();
-  } catch (error) {
-    graphMsg.textContent = "Couldn't load the map (network error) - session expired? reload the page";
-    return;
-  }
-  graphMsg.textContent = "";
-  panel.hidden = false;
-  if (!keepMessage) message.textContent = "";
-  document.getElementById("panel-title").textContent = current.name;
-  document.getElementById("panel-meta").textContent =
-    current.status + " - " + (current.ip || "no ip") + " - seen by " +
-    [...new Set(current.sightings.map((s) => s.source))].join(", ");
-  field("name").value = current.name;
-  field("kind").value = current.kind;
-  field("state").value = current.state;
-  field("tags").value = current.tags.join(", ");
-  field("notes").value = current.notes;
-  field("important").checked = current.important;
-  field("connection").value = storedConnection(current);
-  field("guess").textContent = current.connection_guessed ? "guessed wireless" : "";
-  fillUplinks(current);
-  document.getElementById("panel-link").href = "/devices/" + current.id;
-  document.getElementById("panel-ask").href = "/chat?device=" + current.id;
-  cy.resize();
-  cy.fit(undefined, 20);
-}
-
-document.getElementById("panel-save").addEventListener("click", async () => {
-  if (!current) return;
-  const id = current.id;
-  const body = {name: field("name").value, kind: field("kind").value, state: field("state").value,
-    notes: field("notes").value, important: field("important").checked,
-    tags: field("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean),
-    connection: field("connection").value,
-    uplink_id: field("uplink").value === "" ? null : parseInt(field("uplink").value, 10)};
-  for (const key of Object.keys(body)) {
-    const value = key === "tags" ? body[key].join(",") : body[key];
-    const currentValue = key === "tags" ? current[key].join(",") : key === "connection" ? storedConnection(current) : current[key];
-    if (value === currentValue) delete body[key];
-  }
-  if (Object.keys(body).length === 0) {
-    message.textContent = "Nothing changed.";
-    return;
-  }
-  try {
-    const response = await fetch("/api/devices/" + id, {method: "POST", credentials: "same-origin",
-      headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      message.textContent = data.error || ("Failed: " + response.status +
-        ((response.status === 401 || response.status === 403 || response.redirected) ? " (session expired? reload the page)" : ""));
-      return;
-    }
-    message.textContent = "Saved.";
-    await load();
-    openPanel(id, true);
-  } catch (error) { message.textContent = "Request failed: " + error; }
-});
-document.getElementById("panel-close").addEventListener("click", () => {
-  panel.hidden = true;
-  current = null;
-  cy.resize();
-  cy.fit(undefined, 20);
-});
-document.getElementById("show-ignored").addEventListener("change", load);
-document.getElementById("show-wireless").addEventListener("change", load);
-load();
-</script>
-"""
-
-
-def _map_block():
-
-    options = lambda values: "".join(f"<option>{_esc(value)}</option>" for value in values)
-
-    return (
-        "<p class=\"map-legend muted\"><span style=\"color:#3fb950\">● seen</span>"
-        "<span style=\"color:#d29922\">● quiet</span><span style=\"color:#f85149\">● important &amp; quiet</span>"
-        "<span style=\"color:#8b949e\">● never seen</span><span>◆ router / network gear</span>"
-        "<span>dashed = new, needs triage</span><span>dotted = connection unknown</span>"
-        "<span>click a device to edit - double-click a host to fold it</span><span id=\"hidden-wireless\"></span>"
-        "<label style=\"display:inline\"><input type=\"checkbox\" id=\"show-ignored\"> show ignored</label> "
-        "<label style=\"display:inline\"><input type=\"checkbox\" id=\"show-wireless\"> show wireless</label></p>"
-        "<p id=\"graph-msg\" class=\"muted\"></p>"
-        "<div class=\"map-wrap\"><div id=\"graph\"></div>"
-        "<aside id=\"panel\" hidden><h2 id=\"panel-title\"></h2><p class=\"muted\" id=\"panel-meta\"></p>"
-        "<label>Name</label><input id=\"panel-name\">"
-        f"<label>Kind</label><select id=\"panel-kind\">{options(KINDS)}</select>"
-        f"<label>State</label><select id=\"panel-state\">{options(STATES)}</select>"
-        f"<label>Connection</label><select id=\"panel-connection\">{options(CONNECTIONS)}</select>"
-        "<span class=\"muted\" id=\"panel-guess\"></span>"
-        "<label>Connected to</label><select id=\"panel-uplink\"></select>"
-        "<label>Tags (comma separated)</label><input id=\"panel-tags\">"
-        "<label>Notes</label><textarea id=\"panel-notes\"></textarea>"
-        "<label><input type=\"checkbox\" id=\"panel-important\"> Important - alert when it goes quiet</label>"
-        "<p><button class=\"primary\" id=\"panel-save\">Save</button><button id=\"panel-close\">Close</button></p>"
-        "<p id=\"panel-msg\" class=\"muted\"></p>"
-        "<p><a id=\"panel-ask\" href=\"#\">Ask atlas about this device</a></p>"
-        "<p><a id=\"panel-link\" href=\"#\">Full page - merge, split, every sighting</a></p></aside></div>"
-        "<script src=\"/static/cytoscape.min.js?v=3.34.3\"></script>"
-        + MAP_SCRIPT
-    )
+    return '<div class="chips" aria-label="Ask Atlas">' + "".join(
+        f'<button data-ask="{_esc(q)}">{_esc(q)}</button>' for q in questions) + "</div>" + (
+        "<script>document.querySelectorAll('[data-ask]').forEach((b) => b.addEventListener('click', () => {"
+        " const q = b.dataset.ask; if (window.atlasAsk) window.atlasAsk(q); else location.href = '/chat?q=' +"
+        " encodeURIComponent(q); }));</script>")
 
 
 def _kv_table(data):
@@ -660,147 +391,6 @@ def _svg_box(x, y, width, height, title, subtitle, color, detail=""):
         + (f'<text x="{x + width / 2}" y="{y + 56}" text-anchor="middle" fill="{color}" '
            f'font-size="11">{_esc(detail)[:30]}</text>' if detail else "")
     )
-
-
-def render_map_svg(topology):
-    """
-    Layered overview: Internet -> LAN -> one column per machine, with that
-    machine's container networks / Proxmox guests hanging underneath.
-    """
-
-    docker = topology.get("docker") or {}
-    proxmox = topology.get("proxmox") or {}
-    brain = topology.get("brain") or {}
-
-    public_count = sum(len(c["public"]) for members in docker.get("networks", {}).values() for c in members)
-
-    def guest_state(guest):
-        # A stopped template is normal (grey), a stopped VM/LXC is down (red).
-        return None if guest.get("template") else guest["status"] == "running"
-
-    guests = proxmox.get("guests", []) if proxmox.get("enabled") else []
-    guest_children = [(g["name"], f"{g['type']} {g['vmid']}" + (" template" if g.get("template") else ""),
-                       guest_state(g)) for g in guests[:6]]
-    guest_detail = (f"Proxmox: {sum(g['status'] == 'running' for g in guests)}/"
-                    f"{sum(not g.get('template') for g in guests)} guests up")
-
-    columns = [{
-        "title": topology.get("host", "this host"),
-        "subtitle": "atlas runs here",
-        "ok": docker.get("available"),
-        "detail": _count(sum(len(m) for m in docker.get('networks', {}).values()), "container"),
-        "children": [
-            (name, _count(len(members), "container"),
-             all(m["status"] == "running" and m["health"] != "unhealthy" for m in members))
-            for name, members in list(docker.get("networks", {}).items())[:6]
-        ]
-    }]
-
-    placed_proxmox = placed_brain = False
-
-    for host in topology.get("lan", []):
-
-        column = {
-            "title": host["name"], "subtitle": host["address"], "ok": host["reachable"],
-            "detail": "ports " + ",".join(map(str, host["open_ports"])) if host["open_ports"] else "unreachable",
-            "children": []
-        }
-
-        # The same machine is one box: Proxmox guests hang under their host,
-        # the AI endpoint is a label on the machine that serves it.
-        if guests and host["address"] == proxmox.get("host"):
-            column["detail"], column["children"], placed_proxmox = guest_detail, guest_children, True
-
-        if brain and host["address"] == brain.get("address"):
-            column["subtitle"], placed_brain = f"{host['address']} - AI: {brain.get('model', '')}", True
-
-        columns.append(column)
-
-    if guests and not placed_proxmox:
-        columns.insert(1, {"title": "Proxmox", "subtitle": proxmox.get("host", ""), "ok": True,
-                           "detail": guest_detail, "children": guest_children})
-
-    if brain and not placed_brain:
-        columns.append({"title": "AI brain", "subtitle": brain.get("address", ""), "ok": brain.get("reachable"),
-                        "detail": brain.get("model", ""), "children": []})
-
-    box_w, gap, host_y, child_h = 190, 20, 150, 46
-    width = max(len(columns) * (box_w + gap) + gap, 600)
-    depth = max((len(c["children"]) for c in columns), default=0)
-    height = host_y + 70 + depth * (child_h + 10) + 30
-    lan_y = 110
-
-    parts = [
-        _svg_box(width / 2 - 110, 10, 220, 46, "Internet",
-                 f"{_count(public_count, 'public route')} via Traefik" if public_count else "no public routes", "#58a6ff"),
-        f'<line x1="{width / 2}" y1="56" x2="{width / 2}" y2="{lan_y}" stroke="#30363d" stroke-width="2"/>',
-        f'<rect x="{gap}" y="{lan_y}" width="{width - 2 * gap}" height="8" rx="4" fill="#30363d"/>',
-        f'<text x="{gap + 6}" y="{lan_y - 6}" fill="#8b949e" font-size="11">LAN</text>',
-    ]
-
-    for index, column in enumerate(columns):
-
-        x = gap + index * (box_w + gap)
-        color = _status_color(column["ok"])
-        parts.append(f'<line x1="{x + box_w / 2}" y1="{lan_y + 8}" x2="{x + box_w / 2}" y2="{host_y}" '
-                     f'stroke="#30363d" stroke-width="2"/>')
-        parts.append(_svg_box(x, host_y, box_w, 64, column["title"], column["subtitle"], color, column["detail"]))
-
-        for row, (name, subtitle, ok) in enumerate(column["children"]):
-            y = host_y + 80 + row * (child_h + 10)
-            parts.append(f'<line x1="{x + 14}" y1="{y - 16 if row else host_y + 64}" x2="{x + 14}" '
-                         f'y2="{y + child_h / 2}" stroke="#30363d"/>')
-            parts.append(_svg_box(x + 24, y, box_w - 24, child_h, name, subtitle, _status_color(ok)))
-
-    return (f'<svg viewBox="0 0 {width} {height}" width="100%" style="max-width:{width}px" '
-            f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Network map">{"".join(parts)}</svg>')
-
-
-def render_map_page(topology):
-
-    if not topology:
-        return render_page("Network Map", "<p class=\"muted\">No map yet for this host's containers - run "
-                            "<code>atlas map</code>. Devices below come from the inventory.</p>" + _map_block(),
-                            active="lan")
-
-    docker = topology.get("docker") or {}
-    responsibility = topology.get("responsibility") or {}
-
-    network_sections = "".join(
-        f"<h3>{_esc(name)} <span class=\"muted\">({len(members)})</span></h3>"
-        + _list_of_dicts_table([
-            {"container": m["name"], "status": m["status"], "health": m["health"] or "-",
-             "public hostnames": ", ".join(m["public"]) or "-"}
-            for m in members
-        ])
-        for name, members in docker.get("networks", {}).items()
-    )
-
-    body = (
-        f"<p class=\"muted\">Snapshot {_esc(topology.get('generated_at', ''))} - refreshed by "
-        "<code>atlas map</code>. Green = up/reachable, red = down, grey = unknown.</p>"
-        + _map_block()
-        + f"<noscript><div class=\"card\">{render_map_svg(topology)}</div></noscript>"
-        "<div class=\"card\"><h2>What atlas is responsible for</h2>"
-        + _kv_table({
-            "Containers on this host": responsibility.get("containers", "") + " - proposed as a plan, you confirm each step",
-            "Proxmox guests": (responsibility.get("proxmox_guests") or "not connected")
-            + (" - proposed as a plan, you confirm each step" if responsibility.get("proxmox_guests") else ""),
-            "Other LAN machines": responsibility.get("lan_hosts", ""),
-        })
-        + "</div>"
-        f"<div class=\"card\"><h2>This host: {_esc(topology.get('host', ''))}</h2>{network_sections or '<p class=muted>Docker unavailable.</p>'}</div>"
-        "<div class=\"card\"><h2>Proxmox guests</h2>"
-        + _list_of_dicts_table((topology.get("proxmox") or {}).get("guests", []))
-        + "</div><div class=\"card\"><h2>LAN machines</h2>"
-        + _list_of_dicts_table([
-            {**host, "open_ports": ", ".join(map(str, host["open_ports"])) or "-"}
-            for host in topology.get("lan", [])
-        ])
-        + "</div>"
-    )
-
-    return render_page("Network Map", body, active="lan")
 
 
 def _posture_block(posture):

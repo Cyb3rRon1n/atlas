@@ -62,3 +62,40 @@ def test_store_summary_page_map_people_and_anonymous(temp_db):
     assert 'href="/access?window=24h"' in html and "DB-IP" in html and 'data-ask="Who signed in' in html
     assert store.prune(datetime(2026, 10, 12)) > 0 and store.summary(datetime(2026, 1, 1))["visitors"] == []
     assert "access.enabled" in render_access_page({"visitors": [], "logins": []}, "7d", enabled=False)
+
+
+def test_places_learn_then_review_confirm_and_alert(temp_db):
+    from atlas.access.collect import AccessCollector
+    from atlas.config.models import AccessConfig, PostureConfig, SignalNotifyConfig
+    store = AccessStore(temp_db)
+    t0 = datetime(2026, 10, 1)
+    geo = {"97.102.129.35": {"cc": "US", "country": "United States", "city": "Tampa", "region": "Florida", "org": "Spectrum"},
+           "85.240.1.9": {"cc": "PT", "country": "Portugal", "city": "Lisbon", "region": "", "org": "MEO"},
+           "192.168.10.66": {"country": "Home network"}}
+    store.touch_ips({ip: t0 for ip in geo}, geo.get)
+    login = lambda i, ip, when, ok=True: {"app": "jellyfin", "external_id": str(i), "time": when, "user": "corn", "ip": ip,
+                                          "ok": ok, "client": ""}
+    store.record_logins([login(1, "97.102.129.35", t0), login(2, "192.168.10.66", t0)])
+    assert store.classify_logins(t0) == []                                   # learning window
+    store.record_logins([login(3, "85.240.1.9", t0 + timedelta(days=20)), login(4, "85.240.1.9", t0 + timedelta(days=21), False)])
+    new = store.classify_logins(t0 + timedelta(days=21))
+    assert [n["label"] for n in new] == ["Lisbon, PT · MEO"]                 # new place after learning -> review
+    places = {p["place_key"]: p["status"] for p in store.places()}
+    assert places == {"US/Spectrum": "learned", "PT/MEO": "review"}            # home network never becomes a place
+
+    sent = []
+    c = AccessCollector(AccessConfig(), PostureConfig(), store, signal=SignalNotifyConfig(url="http://signal"),
+                        send=lambda cfg, text: (sent.append(text) or True, ""))
+    assert c._alert() == 1 and "corn" in sent[0] and "Lisbon" in sent[0] and c._alert() == 0   # alerted once
+
+    html = render_access_page({"visitors": [], "logins": []}, "7d", user_places=store.places())
+    assert "New sign-in places (1)" in html and 'data-confirm-key="PT/MEO"' in html and "Normal places (1)" in html
+    assert store.confirm_place("corn", "PT/MEO")["ok"] and not store.confirm_place("x", "y")["ok"]
+    assert "New sign-in places" not in render_access_page({"visitors": [], "logins": []}, "7d", user_places=store.places())
+
+
+def test_ipv6_place_uses_the_providers_prefix_not_the_city():
+    from types import SimpleNamespace
+    from atlas.access.store import place_of
+    row = lambda city: SimpleNamespace(ip="2601:201:8f01:f52b::1", org="", asn=None, city=city, region="CA", cc="US", country="US")
+    assert place_of(row("Fresno"))[0] == place_of(row("Clovis"))[0] == "US/IPv6 2601:201::/32"

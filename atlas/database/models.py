@@ -292,3 +292,21 @@ class AccessStateRecord(Base):
 
     key: Mapped[str] = mapped_column(primary_key=True)
     value: Mapped[str]
+
+
+class AccessPlaceRecord(Base):
+    """A (user, place) pair - place = country + provider. learned (first 14 days), confirmed by you, or review."""
+
+    __tablename__ = "access_places"
+    __table_args__ = (UniqueConstraint("user", "place_key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user: Mapped[str] = mapped_column(index=True)
+    place_key: Mapped[str]
+    label: Mapped[str]
+    status: Mapped[str]                                 # learned | confirmed | review
+    first_seen: Mapped[datetime]
+    last_seen: Mapped[datetime]
+    ip: Mapped[str] = mapped_column(default="")
+    app: Mapped[str] = mapped_column(default="")
+    alerted: Mapped[bool] = mapped_column(default=False)

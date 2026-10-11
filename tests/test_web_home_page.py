@@ -139,3 +139,9 @@ def test_hosts_summary_meters_storage_and_container_chips():
     assert "cyberpac" in html and "cyberbox" in html and 'style="width:25%"' in html
     assert "Storage &amp; RAID" in html and "media (3)" in html and "Proxmox guests (2)" in html
     assert 'class="dot down"' in html and 'data-ask="What is using the most CPU' in html
+
+
+def test_home_attention_lists_new_sign_in_places():
+    html = render_home_page(POSTURE_OK, build_hosts(None, LOCAL, None), [],
+                            access_reviews=[{"user": "corn", "label": "Lisbon, PT \u00b7 MEO"}])
+    assert "corn signed in from a new place: Lisbon, PT" in html and 'href="/access">Review' in html

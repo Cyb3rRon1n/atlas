@@ -3356,7 +3356,8 @@ def access_collect(
         console.print("[yellow]access.enabled is false in atlas.yaml - nothing to do.[/yellow]")
         return
 
-    result = AccessCollector(settings.access, settings.posture, AccessStore()).run(datetime.utcnow())
+    result = AccessCollector(settings.access, settings.posture, AccessStore(),
+                             signal=settings.notify.signal).run(datetime.utcnow())
 
     if json_output:
         print(json.dumps(result, default=str))

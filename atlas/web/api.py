@@ -139,6 +139,25 @@ def _post(path, body):
 
         return 200, result
 
+    if path == "/api/access/known":
+
+        if not isinstance(body, dict) or not body.get("user") or not body.get("place_key"):
+            return 400, {"error": "expected {user, place_key}"}
+
+        from atlas.access.store import AccessStore
+        result = AccessStore().confirm_place(str(body["user"]), str(body["place_key"]))
+
+        if not result["ok"]:
+            return 400, {"error": result["error"]}
+
+        try:
+            application.runtime.events.publish(AtlasEvent(event_type="atlas.access.place_confirmed", source="AtlasWeb",
+                                                           payload={"user": body["user"], "place_key": body["place_key"]}))
+        except Exception as error:
+            print(f"atlas.web.api: event publish failed for atlas.access.place_confirmed: {error!r}", file=sys.stderr)
+
+        return 200, result
+
     if path in ("/api/chat", "/api/actions/execute"):
 
         if not isinstance(body, dict):

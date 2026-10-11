@@ -3329,6 +3329,47 @@ app.add_typer(
     posture_app
 )
 
+@app.command("sample")
+def sample():
+    """
+    Record one host sample (CPU load %, RAM %, root disk %, hottest sensor,
+    configured storage_paths usage, container counts) as an atlas.host.sample
+    event for the Trends charts. atlas-scan runs it every cycle.
+    """
+
+    import psutil
+
+    from atlas.discovery.host_health import get_host_health
+    from atlas.docker.manager import get_client
+
+    settings = load_config()
+    health = get_host_health()
+    payload = {
+        "cpu": round(min(100.0, health["load_average"][0] / max(1, health["cpu_count"]) * 100), 1),
+        "mem": health["memory_percent"], "disk": health["root_disk_percent"],
+        "temp": max(health["max_temperature_c_by_sensor"].values(), default=None),
+        "storage": {},
+    }
+
+    for label, path in settings.health.storage_paths.items():
+        try:
+            payload["storage"][label] = psutil.disk_usage(path).percent
+        except OSError:
+            pass
+
+    client = get_client()
+    if client is not None:
+        containers = client.containers.list(all=True)
+        payload["containers"] = {
+            "total": len(containers),
+            "running": sum(c.status == "running" for c in containers),
+            "unhealthy": sum((c.attrs.get("State", {}).get("Health") or {}).get("Status") == "unhealthy" for c in containers),
+        }
+
+    application.runtime.events.publish(AtlasEvent(event_type="atlas.host.sample", source="HostSample", payload=payload))
+    console.print(json.dumps(payload))
+
+
 access_app = typer.Typer(
     name="access",
     help="Who reaches the public services and from where (web /access)."

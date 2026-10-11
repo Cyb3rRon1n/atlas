@@ -144,3 +144,15 @@ def test_coverage_page_shows_source_failures():
     })
 
     assert "could not connect to Proxmox" in html and "garage-tv" in html
+
+
+def test_devices_page_attention_groups_and_ignored():
+    devices = [device(1, "mediabox", state="known"), device(2, "192.168.1.9", state="new"),
+               device(3, "old-tv", state="ignored"), device(4, "laptop", state="known")]
+    devices[0]["kind"], devices[3]["kind"] = "server", "workstation"
+    devices[3]["status"] = "quiet"
+    html = render_devices_page(devices)
+    assert "Needs attention (2)" in html and 'id="name-2"' in html and "gone quiet" in html
+    assert "Servers (1)" in html and "Computers (1)" in html and "Ignored (1)" in html
+    assert html.count("data-row") >= 4 and 'id="filter"' in html
+    assert 'data-ask="Which devices are new' in html

@@ -185,12 +185,20 @@ def test_render_history_page_no_events_shows_hint():
 
 def test_render_history_page_shows_events():
 
-    events = [FakeEvent("2026-01-01 00:00:00", "atlas.discovery.completed", "Discovery", "{}")]
+    from datetime import date
+    events = [FakeEvent("2026-01-02 09:30:00", "atlas.proxmox.changes_detected", "ProxmoxScan", '{"x": "<b>"}'),
+              FakeEvent("2026-01-02 09:15:00", "atlas.proxmox.changes_detected", "ProxmoxScan", "{}"),
+              FakeEvent("2026-01-01 08:00:00", "atlas.discovery.completed", "Discovery", "{}"),
+              FakeEvent("2026-01-01 07:00:00", "atlas.action.container_restarted", "PlanStep", "{}")]
 
-    html = render_history_page(events)
+    html = render_history_page(events, today=date(2026, 1, 2))
 
-    assert "atlas.discovery.completed" in html
-    assert "Discovery" in html
+    assert ">Today<" in html and ">Yesterday<" in html
+    assert "proxmox changes detected" in html and "\u00d72 today, latest" in html   # one row per type per day
+    assert ".ev[hidden]" in html and 'data-cat="scan" hidden' in html and 'data-filter="important" aria-pressed="true"' in html
+    assert 'data-cat="change"' in html and 'data-cat="scan"' in html and 'data-cat="action"' in html
+    assert "&lt;b&gt;" in html and "Discovery" in html
+    assert 'data-filter="alert"' in html and 'data-ask="Summarize what happened' in html
 
 
 def test_render_trends_page_no_data_shows_hint():

@@ -27,6 +27,7 @@ from atlas.reporting.trends import build_trends_payload
 from atlas.web import api
 from atlas.web.chat_page import render_chat_page
 from atlas.web.devices_pages import render_coverage_page, render_device_page, render_devices_page, render_triage_page
+from atlas.web.hosts_page import render_hosts_summary
 from atlas.web.home_page import build_hosts, build_storage, interesting_events, parse_mdstat, render_home_page
 from atlas.web.posture_page import render_posture_page
 from atlas.web.graph import build_graph
@@ -106,9 +107,11 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         elif path == "/posture":
             body = render_posture_page()
         elif path == "/overview":
-            body = render_overview_page(query.latest_environment(), query.latest_analysis())
+            home = self._home_data(query)
+            body = render_overview_page(query.latest_environment(), query.latest_analysis(),
+                                        render_hosts_summary(home["hosts"], home["storage"], query.latest_topology()))
         elif path == "/history":
-            body = render_history_page(query.recent_events(50))
+            body = render_history_page(query.recent_events(300))
         elif path == "/trends":
             body = render_trends_page(build_trends_payload())
         elif path == "/map":

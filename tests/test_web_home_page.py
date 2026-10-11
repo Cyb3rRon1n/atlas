@@ -131,3 +131,11 @@ def test_attention_items_name_the_problem_and_link_to_the_fix():
                      ("storage", "Storage", "md0: RAID1 · DEGRADED (1 failed)", "/overview", "Details")]
     html = render_home_page(posture, build_hosts(None, LOCAL, None), [], storage=storage)
     assert 'href="/posture#review">Review' in html and "hcard review flagged" in html
+
+
+def test_hosts_summary_meters_storage_and_container_chips():
+    from atlas.web.hosts_page import render_hosts_summary
+    html = render_hosts_summary(build_hosts(TOPOLOGY, LOCAL, PVE), {"rows": [{"name": "md0", "detail": "ok", "warn": False}]}, TOPOLOGY)
+    assert "cyberpac" in html and "cyberbox" in html and 'style="width:25%"' in html
+    assert "Storage &amp; RAID" in html and "media (3)" in html and "Proxmox guests (2)" in html
+    assert 'class="dot down"' in html and 'data-ask="What is using the most CPU' in html

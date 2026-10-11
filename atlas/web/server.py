@@ -23,7 +23,6 @@ from atlas.discovery.host_health import get_host_health
 from atlas.knowledge.queries import KnowledgeQueries
 from atlas.posture.model import build_posture, build_trends
 from atlas.posture.store import PostureStore
-from atlas.reporting.trends import build_trends_payload
 from atlas.web import api
 from atlas.web.chat_page import render_chat_page
 from atlas.web.devices_pages import render_coverage_page, render_device_page, render_devices_page, render_triage_page
@@ -34,7 +33,8 @@ from atlas.web.home_page import build_hosts, build_storage, interesting_events, 
 from atlas.web.posture_page import render_posture_page
 from atlas.web.graph import build_graph
 from atlas.web.network_page import render_network_page
-from atlas.web.render import _posture_block, build_summary, render_history_page, render_overview_page, render_trends_page
+from atlas.web.render import _posture_block, build_summary, render_history_page, render_overview_page
+from atlas.web.trends_page import WINDOWS as TREND_WINDOWS, render_trends_page
 
 
 MAX_BODY = 65536
@@ -124,7 +124,20 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         elif path == "/history":
             body = render_history_page(query.recent_events(300))
         elif path == "/trends":
-            body = render_trends_page(build_trends_payload())
+            from datetime import timedelta
+            window = (parse_qs(self.path.partition("?")[2]).get("window") or ["24h"])[0]
+            window = window if window in TREND_WINDOWS else "24h"
+            now = datetime.utcnow()
+            since = now - timedelta(days=TREND_WINDOWS[window])
+            topology = query.latest_topology() or {}
+            pve = (topology.get("proxmox") or {}).get("host")
+            lan = {h.get("address"): h["name"] for h in topology.get("lan", [])}
+            scans = query.events_since(["atlas.proxmox.scan.completed"], since)
+            node_set = {n["name"] for _, p in scans for n in p.get("nodes", [])}
+            # a single-node install is the LAN host at the Proxmox address - show the name people use (as on Home)
+            names = {next(iter(node_set)): lan[pve]} if len(node_set) == 1 and pve in lan else {}
+            body = render_trends_page(query.events_since(["atlas.host.sample"], since), scans, window, now,
+                                      topology.get("host") or "this host", names)
         elif path == "/map":
             topology = query.latest_topology()
             body = render_network_page(topology, PostureStore().latest_routes(),

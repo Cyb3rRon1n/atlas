@@ -96,7 +96,12 @@ def test_posture_and_network_scripts_are_valid_javascript(tmp_path):
     if not shutil.which("node"):
         pytest.skip("node not installed")
     from atlas.web.home_page import render_home_page, build_hosts
-    pages = {"posture": render_posture_page(), "home": render_home_page(None, build_hosts(None, None, None), [])}
+    from types import SimpleNamespace
+    from atlas.web.render import render_history_page
+    from atlas.web.devices_pages import render_devices_page
+    ev = SimpleNamespace(created_at="2026-01-01 00:00:00", event_type="atlas.scan.completed", source="x", payload="{}")
+    pages = {"posture": render_posture_page(), "home": render_home_page(None, build_hosts(None, None, None), []),
+             "history": render_history_page([ev]), "devices": render_devices_page([])}
     for name, html in pages.items():
         for i, script in enumerate(re.findall(r"<script>(.*?)</script>", html, re.S)):
             f = tmp_path / f"{name}{i}.js"

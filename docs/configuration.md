@@ -152,6 +152,22 @@ Markdown is searched section by section; scripts whole (they document themselves
 | `status_urls` | `{}` | `name: url` of JSON status feeds that `get_host_health` includes (e.g. a RAID-card watchdog). |
 | `storage_paths` | `{}` | `label: path` whose disk usage the web home page's Storage & RAID card shows - e.g. `media array: /media` with the array bind-mounted read-only into the container. Software-RAID (`/proc/mdstat`) and Proxmox ZFS pools are shown automatically. |
 
+## `access`
+
+Who reaches the public services and from where (web `/access`). `atlas access collect` (run by atlas-scan each cycle) reads new
+Traefik access-log lines and app sign-ins, and geolocates IPs locally with DB-IP's free City Lite database (CC BY 4.0,
+downloaded monthly) plus the posture ASN table - no visitor IP leaves the host.
+
+| Field | Default | Description |
+|---|---|---|
+| `enabled` | `false` | Turn collection on |
+| `traefik_log` | `/traefik-logs/access.log` | Traefik access log (mount it read-only into atlas-scan) |
+| `geo_path` | `inventory/dbip-city-lite.mmdb` | Where the monthly geo database is kept |
+| `jellyfin_url` / `jellyfin_api_key` | `""` | Read sign-ins and failed attempts from Jellyfin's activity log |
+| `home_ips` | `[]` | Your WAN IPs - shown as "home", not drawn on the map |
+| `ignore_ips` | `[]` | IPs to skip entirely (e.g. an uptime checker) |
+| `retention_days` | `30` | Older hits, sign-ins and IPs are deleted |
+
 ## `map`
 
 `hosts` lists other machines to draw on the network map (`atlas map`, web `/map`). Atlas only checks their TCP reachability - it never acts on them.

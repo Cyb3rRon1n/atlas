@@ -234,3 +234,61 @@ class PostureStatusRecord(Base):
     ok: Mapped[bool]
     detail: Mapped[str] = mapped_column(default="{}")
     updated_at: Mapped[datetime]
+
+
+class AccessHitRecord(Base):
+    """Requests per hour per (visitor IP, public service) from the Traefik access log."""
+
+    __tablename__ = "access_hits"
+    __table_args__ = (UniqueConstraint("hour", "ip", "service"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    hour: Mapped[datetime] = mapped_column(index=True)
+    ip: Mapped[str] = mapped_column(index=True)
+    service: Mapped[str]
+    requests: Mapped[int] = mapped_column(default=0)
+    denied: Mapped[int] = mapped_column(default=0)     # 401/403/429 - login wall, CrowdSec, rate limit
+    errors: Mapped[int] = mapped_column(default=0)     # 5xx
+
+
+class AccessIpRecord(Base):
+    """One row per visitor IP: where it is (DB-IP, ASN table) and when it was first/last seen."""
+
+    __tablename__ = "access_ips"
+
+    ip: Mapped[str] = mapped_column(primary_key=True)
+    first_seen: Mapped[datetime]
+    last_seen: Mapped[datetime]
+    cc: Mapped[str] = mapped_column(default="")
+    country: Mapped[str] = mapped_column(default="")
+    region: Mapped[str] = mapped_column(default="")
+    city: Mapped[str] = mapped_column(default="")
+    lat: Mapped[float | None] = mapped_column(default=None)
+    lon: Mapped[float | None] = mapped_column(default=None)
+    asn: Mapped[int | None] = mapped_column(default=None)
+    org: Mapped[str] = mapped_column(default="")
+
+
+class AccessLoginRecord(Base):
+    """A sign-in (or failed attempt) to an app with its own accounts, e.g. Jellyfin's activity log."""
+
+    __tablename__ = "access_logins"
+    __table_args__ = (UniqueConstraint("app", "external_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    app: Mapped[str]
+    external_id: Mapped[str]                           # the app's own event id - makes re-reads idempotent
+    time: Mapped[datetime] = mapped_column(index=True)
+    user: Mapped[str]
+    ip: Mapped[str]
+    ok: Mapped[bool]
+    client: Mapped[str] = mapped_column(default="")
+
+
+class AccessStateRecord(Base):
+    """Collector bookmarks (log byte offset, last app event id)."""
+
+    __tablename__ = "access_state"
+
+    key: Mapped[str] = mapped_column(primary_key=True)
+    value: Mapped[str]

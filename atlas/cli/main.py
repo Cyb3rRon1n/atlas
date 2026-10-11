@@ -3413,5 +3413,40 @@ app.add_typer(
 )
 
 
+vpn_app = typer.Typer(
+    name="vpn",
+    help="Check that the torrent clients behind gluetun are connected."
+)
+
+
+@vpn_app.command("check")
+def vpn_check():
+    """
+    Probe each vpn.clients qBittorrent; Signal alert (notify.signal) after two
+    bad checks in a row, and again when it recovers. atlas-scan runs it every cycle.
+    """
+
+    from atlas.access.store import AccessStore
+    from atlas.devices.notify import send_signal
+    from atlas.monitoring.vpn import check
+
+    settings = load_config()
+
+    if not settings.vpn.clients:
+        console.print("[yellow]vpn.clients is empty in atlas.yaml - nothing to do.[/yellow]")
+        return
+
+    signal = settings.notify.signal
+    send = (lambda text: send_signal(signal, text)) if signal.url else None
+
+    for name, problem in check(settings.vpn.clients, AccessStore(), send).items():
+        console.print(f"{name}: {problem or 'ok'}")
+
+
+app.add_typer(
+    vpn_app
+)
+
+
 if __name__ == "__main__":
     app()

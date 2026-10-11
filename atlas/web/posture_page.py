@@ -4,7 +4,11 @@ outbound via VPN), details panel and public exposure. Markup only here; data
 comes from /api/posture via POSTURE_SCRIPT (Task 10).
 """
 
-from atlas.web.render import render_page
+from atlas.web.render import ask_chips, render_page
+
+
+POSTURE_CHIPS = ("Which new destinations look suspicious?", "Is the VPN actually protecting qBittorrent and slskd?",
+                 "Which public routes have no Authelia in front?", "What talked to the internet the most today?")
 
 
 POSTURE_STYLE = """
@@ -66,6 +70,7 @@ POSTURE_STYLE = """
 #review { list-style:none; margin:0; padding:0; }
 #review li { padding:8px 0; border-top:1px solid var(--line); font-size:13px; }
 #review li:first-child { border-top:0; }
+#review li.all { padding:0 0 8px; }
 #review button { margin-top:6px; }
 </style>
 """
@@ -137,11 +142,39 @@ function renderReview(items) {
     const li = el("li");
     li.append(el("div", r.source + " -> " + (r.org || r.asn_key) + " (" + r.asn_key + ", " + (r.cc || "?") + ")"),
       el("div", "first seen " + new Date(r.first_seen + "Z").toLocaleString(), "muted"));
+    const look = el("button", "Investigate", "primary");
+    look.addEventListener("click", () => investigate(look, r));
     const mark = el("button", "Mark expected");
     mark.addEventListener("click", () => markExpected(mark, r.source, r.asn_key));
-    li.append(mark);
+    li.append(look, mark);
     return li;
   }));
+  const all = el("button", "Investigate all " + items.length);
+  all.addEventListener("click", () => ask("These containers reached networks they never used before. For each, say whether it is " +
+    "normal for that app (updates, metadata, CDN, P2P peers, VPN) and give a verdict - mark expected / look closer / block - " +
+    "most suspicious first:\\n" + items.slice(0, 40).map((r) => "- " + r.source + " -> " + (r.org || r.asn_key) + " (" +
+    r.asn_key + ", " + (r.cc || "?") + ")").join("\\n")));
+  reviewList.prepend(el("li", undefined, "all"));
+  reviewList.firstChild.append(all);
+}
+
+function ask(text) { if (window.atlasAsk) window.atlasAsk(text); else location.href = "/chat?q=" + encodeURIComponent(text); }
+
+// Builds the review question from what posture already knows (ports, traffic, addresses), so the chat has the facts.
+async function investigate(button, r) {
+  button.disabled = true;
+  let d = null;
+  try {
+    const response = await fetch("/api/posture/node?id=" + encodeURIComponent("dst:" + r.asn_key), {credentials: "same-origin"});
+    d = response.ok ? await response.json() : null;
+  } catch (error) { d = null; }
+  button.disabled = false;
+  const mine = d ? (d.sources.find((s) => s.source === r.source) || {}) : {};
+  ask("Should I mark this as expected? Container " + r.source + " started talking to " + (r.org || r.asn_key) +
+      " (" + r.asn_key + ", country " + (r.cc || "?") + "), first seen " + new Date(r.first_seen + "Z").toLocaleString() + "." +
+      (d ? " Ports: " + d.ports.join(", ") + ". Traffic from " + r.source + ": " + fmt(mine.bytes || 0) + ". Addresses: " +
+           d.ips.slice(0, 3).map((i) => i.ip + (i.rdns ? " (" + i.rdns + ")" : "")).join(", ") + "." : "") +
+      " Is this normal for what " + r.source + " does? Answer with a verdict (mark expected / look closer / block) and why.");
 }
 
 // Lanes: each band is a row of columns (nodes grouped by their x), arrows between columns. Plain HTML
@@ -259,6 +292,7 @@ def render_posture_page():
 
     body = (
         POSTURE_STYLE
+        + ask_chips(POSTURE_CHIPS)
         + '<p id="posture-off" role="status" hidden></p>'
         + '<section id="strip" aria-label="Posture summary"><p class="muted">Loading...</p></section>'
         + '<div class="posture"><section class="mapcard">'

@@ -157,7 +157,7 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
           '<span><i style="background:#f47a5c"></i>mostly denied (login wall, CrowdSec, rate limit)</span>'
           f'<span>{len(visitors) - len(outside)} home/LAN IPs not drawn</span></div></div>'
         + '<section class="acard"><h2>Signed-in people</h2><p class="why">Sign-ins and failed attempts from the apps\' own '
-          'logs (Jellyfin so far), with where they came from.</p>'
+          'logs (Jellyfin, Audiobookshelf, Kavita), with where they came from.</p>'
         + (f'<table><thead><tr><th>User</th><th>App</th><th>From</th><th>Provider</th><th>Sign-ins</th><th>Latest</th></tr>'
            f'</thead><tbody>{people_rows}</tbody></table>' if people_rows else '<p class="muted">No sign-ins in this window.</p>')
         + "</section>"

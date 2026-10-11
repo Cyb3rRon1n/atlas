@@ -142,6 +142,18 @@ class PostureConfig(BaseModel):
     asn_path: str = "inventory/ip2asn-v4.tsv.gz"
 
 
+class TorrentClientConfig(BaseModel):
+    name: str                           # shown in alerts, e.g. "cyberbox"
+    url: str                            # qBittorrent Web UI as published by its gluetun container
+    username: str = ""                  # empty when local auth is bypassed
+    password: str = ""
+
+
+class VpnWatchConfig(BaseModel):
+    """qBittorrent instances that must stay behind gluetun (atlas vpn check). Empty = off."""
+    clients: list[TorrentClientConfig] = []
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -158,3 +170,4 @@ class AtlasConfig(BaseModel):
     notify: NotifyConfig = NotifyConfig()
     posture: PostureConfig = PostureConfig()
     access: AccessConfig = AccessConfig()
+    vpn: VpnWatchConfig = VpnWatchConfig()

@@ -97,7 +97,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             posture=posture, hosts=build_hosts(topology, local, pve_scan),
             events=interesting_events(safe("events", lambda: query.recent_events(200)) or []),
             storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now)),
-            analysis=safe("analysis", query.latest_analysis), now=now)
+            analysis=safe("analysis", query.latest_analysis), now=now,
+            access_reviews=safe("access reviews", lambda: AccessStore().places("review")) or [])
 
     def do_GET(self):
 
@@ -118,7 +119,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             window = (parse_qs(self.path.partition("?")[2]).get("window") or ["7d"])[0]
             window = window if window in ACCESS_WINDOWS else "7d"
             summary = AccessStore().summary(datetime.utcnow() - timedelta(days=ACCESS_WINDOWS[window]))
-            body = render_access_page(summary, window, settings.access.home_ips, settings.access.enabled)
+            body = render_access_page(summary, window, settings.access.home_ips, settings.access.enabled,
+                                      AccessStore().places())
         elif path == "/history":
             body = render_history_page(query.recent_events(300))
         elif path == "/trends":

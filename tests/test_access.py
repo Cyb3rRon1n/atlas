@@ -99,3 +99,23 @@ def test_ipv6_place_uses_the_providers_prefix_not_the_city():
     from atlas.access.store import place_of
     row = lambda city: SimpleNamespace(ip="2601:201:8f01:f52b::1", org="", asn=None, city=city, region="CA", cc="US", country="US")
     assert place_of(row("Fresno"))[0] == place_of(row("Clovis"))[0] == "US/IPv6 2601:201::/32"
+
+
+def test_proxied_logins_match_app_log_users_by_time():
+    from atlas.access.collect import app_user_events, proxied_logins
+    kav = ("2026-10-11T01:37:07.044632849Z [Kavita] [Information] Kavita.Server.Controllers.AccountController adriel attempting to login\n"
+           "2026-10-11T01:37:07.182Z [Kavita] [Information] Kavita.Server.Controllers.AccountController adriel logged in\n"
+           "garbage line\n")
+    abs_ = '2026-10-11T00:54:05.860957863Z [2026-10-11 00:54:05.860] INFO: [LocalAuth] User "Celeste" logged in from ip ::ffff:172.18.0.1\n'
+    events = {"kavita": app_user_events("kavita", kav), "audiobookshelf": app_user_events("audiobookshelf", abs_)}
+    assert events["kavita"][0] == (datetime(2026, 10, 11, 1, 37, 7), "adriel") and events["audiobookshelf"][0][1] == "Celeste"
+    line = '85.240.1.9 - - [11/Oct/2026:{t} +0000] "POST {p} HTTP/1.1" {s} 7 "-" "-" 1 "{svc}@docker" "h" 9ms'
+    entries = [parse_line(line.format(t="01:37:08", p="/api/Account/login", s=200, svc="kavita")),
+               parse_line(line.format(t="00:54:06", p="/login", s=401, svc="audiobookshelf")),
+               parse_line(line.format(t="03:00:00", p="/login", s=401, svc="audiobookshelf")),     # no app line nearby
+               parse_line(line.format(t="03:00:00", p="/api/items", s=200, svc="audiobookshelf"))]  # not a login
+    out = proxied_logins(entries, events)
+    assert [(l["app"], l["user"], l["ok"], l["ip"]) for l in out] == [
+        ("kavita", "adriel", True, "85.240.1.9"), ("audiobookshelf", "Celeste", False, "85.240.1.9"),
+        ("audiobookshelf", "?", False, "85.240.1.9")]
+    assert len({l["external_id"] for l in out}) == 3

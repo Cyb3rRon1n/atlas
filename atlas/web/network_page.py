@@ -24,6 +24,7 @@ NETWORK_STYLE = """
                                 color:var(--muted); border:0; padding:0; cursor:default; }
 .nlane > summary { cursor:pointer; }
 .nlane .why { margin:0 0 10px; font-size:13px; color:var(--muted); }
+.nlane h3.sub { margin:14px 0 2px; font-size:14px; }
 .svc { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:8px; }
 .svc details { background:#1b2430; border:1px solid #2f3b4c; border-radius:8px; padding:8px 10px; font-size:14px; }
 .svc details[open] { border-color:var(--blue); }
@@ -161,7 +162,9 @@ def render_network_page(topology, routes, graph):
         return render_page("Network", body, active="lan")
 
     lanes = classify(topology, routes)
-    grid = lambda lane: '<div class="svc">' + "".join(_service(i, lane) for i in lanes[lane]) + "</div>"
+    grid = lambda lane, items=None: '<div class="svc">' + "".join(_service(i, lane) for i in (lanes[lane] if items is None else items)) + "</div>"
+    guarded = [i for i in lanes["internet"] if i["protection"] == "authelia"]
+    own = [i for i in lanes["internet"] if i["protection"] != "authelia"]
     down = sum(i["state"] != "ok" for items in lanes.values() for i in items)
 
     guests = [g for g in (topology.get("proxmox") or {}).get("guests", []) if not g.get("template")]
@@ -184,7 +187,12 @@ def render_network_page(topology, routes, graph):
         + f'<p class="muted">Snapshot {_esc(topology.get("generated_at", ""))}. Click a service for details.'
         + (f' <strong>{down} not healthy</strong> (listed first in each lane).' if down else "") + "</p>"
         + '<section class="nlane"><h2>\U0001F310 From the internet</h2><p class="why">Reachable by anyone through the '
-          'Cloudflare tunnel. Each has Authelia or its own login in front.</p>' + grid("internet") + "</section>"
+          'Cloudflare tunnel. Every request passes CrowdSec (bans bad IPs) and is logged; Atlas watches it.</p>'
+        + f'<h3 class="sub">\U0001F512 Behind Authelia ({len(guarded)})</h3><p class="why">Authelia\'s login comes first - '
+          'nobody reaches the app without your account.</p>' + grid("internet", guarded)
+        + f'<h3 class="sub">\U0001F6E1\ufe0f Own login only ({len(own)})</h3><p class="why">Not behind Authelia (their '
+          'phone/TV apps can\'t pass it) - the app\'s own login is the gate, CrowdSec and Atlas still watch.</p>'
+        + grid("internet", own) + "</section>"
         + '<section class="nlane"><h2>\U0001F3E0 Home network only</h2><p class="why">A web page or port, but no '
           'route from the internet.</p>' + grid("home") + "</section>"
         + '<details class="nlane"><summary>⚙️ Background (' + str(len(lanes["background"]))

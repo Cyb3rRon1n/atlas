@@ -1,4 +1,4 @@
-from atlas.web.render import render_history_page, render_overview_page, render_trends_page
+from atlas.web.render import render_history_page, render_overview_page
 
 
 class FakeEvent:
@@ -199,51 +199,6 @@ def test_render_history_page_shows_events():
     assert 'data-cat="change"' in html and 'data-cat="scan"' in html and 'data-cat="action"' in html
     assert "&lt;b&gt;" in html and "Discovery" in html
     assert 'data-filter="alert"' in html and 'data-ask="Summarize what happened' in html
-
-
-def test_render_trends_page_no_data_shows_hint():
-
-    html = render_trends_page({"host": {}, "containers": {}, "guests": {}})
-
-    assert "No monitoring history found" in html
-
-
-def test_render_trends_page_shows_host_and_container_summaries():
-
-    payload = {
-        "host": {
-            "cpu_percent": {"latest": 30.0, "min": 10.0, "max": 30.0, "avg": 20.0, "samples": 3}
-        },
-        "containers": {
-            "plex": {
-                "cpu_percent": {"latest": 15.0, "min": 5.0, "max": 15.0, "avg": 10.0, "samples": 3}
-            }
-        },
-        "guests": {}
-    }
-
-    html = render_trends_page(payload)
-
-    assert "30.0%" in html
-    assert "plex" in html
-    assert "15.0%" in html
-
-
-def test_render_trends_page_shows_guest_summaries():
-
-    payload = {
-        "host": {}, "containers": {},
-        "guests": {
-            "100": {
-                "name": "plex",
-                "cpu_percent": {"latest": 30.0, "min": 10.0, "max": 30.0, "avg": 20.0, "samples": 3}
-            }
-        }
-    }
-
-    html = render_trends_page(payload)
-
-    assert "plex (100)" in html
 
 
 def test_every_page_gets_the_chat_drawer_except_chat():

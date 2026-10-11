@@ -68,6 +68,7 @@ services:
           atlas proxmox scan >/dev/null 2>&1
           atlas map >/dev/null 2>&1 && echo "$$(date -u +%FT%TZ) map refreshed"
           atlas access collect >/dev/null 2>&1   # no-op unless access.enabled
+          atlas sample >/dev/null 2>&1           # host history for the Trends charts
           # Daily AI check-up for the home page (skipped quietly while the model is unreachable).
           day=$$(date -u +%F)
           if [ "$$(cat /data/logs/.analyzed 2>/dev/null)" != "$$day" ] && atlas analyze --json >/dev/null 2>&1; then

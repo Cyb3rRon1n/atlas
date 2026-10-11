@@ -1,7 +1,7 @@
 """
 Pure HTML-rendering functions for the web view (`atlas web`).
 Every function here takes already-fetched data (from KnowledgeQueries/
-build_trends_payload) and returns a plain HTML string - no I/O, no
+data) and returns a plain HTML string - no I/O, no
 database access, so these are unit-testable the same way format_change()/
 _trend_summary() already are elsewhere in this codebase. These pages are
 pure renderers; the write path (device edit/merge/split) lives in api.py
@@ -361,74 +361,6 @@ def render_history_page(events, today=None):
               " d.hidden = !d.querySelector('.ev:not([hidden])'); });</script>")
 
     return render_page("History", body, active="history")
-
-def _trend_summary_row(metric_name, summary):
-
-    return (
-        "<tr>"
-        f"<td>{_esc(metric_name)}</td>"
-        f"<td>{summary['latest']:.1f}%</td>"
-        f"<td>{summary['min']:.1f}%</td>"
-        f"<td>{summary['max']:.1f}%</td>"
-        f"<td>{summary['avg']:.1f}%</td>"
-        f"<td>{summary['samples']}</td>"
-        "</tr>"
-    )
-
-
-def _trend_table(summaries):
-
-    if not summaries:
-        return "<p class=\"muted\">No data.</p>"
-
-    rows = "".join(
-        _trend_summary_row(metric_name, summary) for metric_name, summary in summaries.items()
-    )
-
-    return (
-        "<table><thead><tr><th>Metric</th><th>Latest</th><th>Min</th>"
-        f"<th>Max</th><th>Avg</th><th>Samples</th></tr></thead><tbody>{rows}</tbody></table>"
-    )
-
-
-def render_trends_page(payload):
-    """
-    payload is build_trends_payload()'s return value - the exact same
-    {"host", "containers", "guests"} shape `atlas trends --json`
-    prints, so this page and the CLI can never disagree.
-    """
-
-    trends_tabs = _hosts_tabs("/trends")
-
-    if not payload["host"] and not payload["containers"] and not payload["guests"]:
-
-        return render_page(
-            "Trends",
-            "<p class=\"muted\">No monitoring history found. Run "
-            "<code>atlas monitor</code> and/or <code>atlas proxmox scan</code> "
-            "a few times to build history.</p>",
-            active="hosts", tabs=trends_tabs
-        )
-
-    sections = [f"<div class=\"card\"><h2>Host</h2>{_trend_table(payload['host'])}</div>"]
-
-    for container_name, summaries in payload["containers"].items():
-
-        sections.append(
-            f"<div class=\"card\"><h2>{_esc(container_name)}</h2>{_trend_table(summaries)}</div>"
-        )
-
-    for vmid, guest_payload in payload["guests"].items():
-
-        name = guest_payload.get("name", "")
-        metrics = {k: v for k, v in guest_payload.items() if k != "name"}
-
-        sections.append(
-            f"<div class=\"card\"><h2>{_esc(name)} ({_esc(vmid)})</h2>{_trend_table(metrics)}</div>"
-        )
-
-    return render_page("Trends", "".join(sections), active="hosts", tabs=trends_tabs)
-
 
 def _count(number, word):
 

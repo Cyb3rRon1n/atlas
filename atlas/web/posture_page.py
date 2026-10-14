@@ -150,12 +150,23 @@ function renderReview(items) {
     return li;
   }));
   const all = el("button", "Investigate all " + items.length);
-  all.addEventListener("click", () => ask("These containers reached networks they never used before. For each, say whether it is " +
-    "normal for that app (updates, metadata, CDN, P2P peers, VPN) and give a verdict - mark expected / look closer / block - " +
-    "most suspicious first:\\n" + items.slice(0, 40).map((r) => "- " + r.source + " -> " + (r.org || r.asn_key) + " (" +
-    r.asn_key + ", " + (r.cc || "?") + ")").join("\\n")));
+  all.addEventListener("click", () => {
+    const lines = items.slice(0, 40).map((r) => "- " + r.source + " -> " + (r.org || r.asn_key) + " (" +
+      r.asn_key + ", " + (r.cc || "?") + ")");
+    const batches = [];
+    for (let i = 0; i < lines.length; i += 6) batches.push(reviewQuestion(lines.slice(i, i + 6)));
+    if (window.atlasAskAll) window.atlasAskAll(batches); else ask(batches.join("\\n\\n"));
+  });
   reviewList.prepend(el("li", undefined, "all"));
   reviewList.firstChild.append(all);
+}
+
+// One review question per batch of destinations - small enough for a local model to answer in a
+// single turn, so "Investigate all" asks in several batches instead of one message that drags or times out.
+function reviewQuestion(lines) {
+  return "These containers reached networks they never used before. For each, say whether it is " +
+    "normal for that app (updates, metadata, CDN, P2P peers, VPN) and give a verdict - mark expected / look closer / block - " +
+    "most suspicious first:\\n" + lines.join("\\n");
 }
 
 function ask(text) { if (window.atlasAsk) window.atlasAsk(text); else location.href = "/chat?q=" + encodeURIComponent(text); }

@@ -56,7 +56,7 @@ class AnthropicProvider(AIProvider):
 
     def converse(self, messages: list, tools: dict | None = None) -> ChatReply:
 
-        data = self._run_loop(messages, tools, CHAT_SCHEMA, CHAT_SYSTEM_PROMPT)
+        data = self._run_loop(messages, tools, CHAT_SCHEMA, CHAT_SYSTEM_PROMPT, fallback=True)
 
         messages.append({
             "role": "assistant",
@@ -65,7 +65,7 @@ class AnthropicProvider(AIProvider):
 
         return chat_reply_from_dict(data)
 
-    def _run_loop(self, messages, tools, schema, system_prompt):
+    def _run_loop(self, messages, tools, schema, system_prompt, fallback=False):
         """
         Sends messages, and if the model asks to call a tool
         (stop_reason == "tool_use"), executes it and loops - same
@@ -73,6 +73,11 @@ class AnthropicProvider(AIProvider):
         format both present), so the model can either call another
         tool or produce the final answer. Capped so a confused model
         can't loop forever burning API cost.
+
+        fallback (set for interactive chat) means that when the cap is
+        reached, one final no-tools request forces the answer out
+        instead of raising: a chat turn should never dead-end. analyze
+        keeps the strict raise, where a clear failure beats a guess.
         """
 
         anthropic_tools = (
@@ -117,6 +122,12 @@ class AnthropicProvider(AIProvider):
                 "role": "user",
                 "content": tool_results
             })
+
+        if fallback:
+
+            return self._parse(
+                self._request(messages, schema, system_prompt, None)
+            )
 
         raise AIProviderError(
             "Atlas gave up after too many tool calls without a final answer."

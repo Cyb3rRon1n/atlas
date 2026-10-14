@@ -82,7 +82,7 @@ class OllamaProvider(AIProvider):
             *messages
         ]
 
-        data = self._run_loop(full_messages, tools, CHAT_SCHEMA)
+        data = self._run_loop(full_messages, tools, CHAT_SCHEMA, fallback=True)
 
         messages.append({
             "role": "assistant",
@@ -91,7 +91,7 @@ class OllamaProvider(AIProvider):
 
         return chat_reply_from_dict(data)
 
-    def _run_loop(self, messages, tools, schema):
+    def _run_loop(self, messages, tools, schema, fallback=False):
         """
         Unlike AnthropicProvider, tools and the schema-constrained
         format are never sent in the same request - verified against
@@ -104,6 +104,11 @@ class OllamaProvider(AIProvider):
         answer from whatever the conversation now contains. When no
         tools are offered at all, that reduces to the original single
         request - unchanged from before tool support existed.
+
+        fallback (set for interactive chat) means the same final answer
+        is still produced when the tool budget runs out, instead of
+        raising: a chat turn should never dead-end. analyze keeps the
+        strict raise, where a clear failure beats a guess.
         """
 
         if not tools:
@@ -149,9 +154,11 @@ class OllamaProvider(AIProvider):
 
         else:
 
-            raise AIProviderError(
-                "Atlas gave up after too many tool calls without a final answer."
-            )
+            if not fallback:
+
+                raise AIProviderError(
+                    "Atlas gave up after too many tool calls without a final answer."
+                )
 
         return self._parse(self._request(messages, schema, None))
 

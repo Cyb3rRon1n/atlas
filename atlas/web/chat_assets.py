@@ -175,17 +175,13 @@ function renderSteps(container, steps) {
   });
 }
 
-async function send() {
-  if (sendButton.disabled) return;  // in-flight guard - also blocks Enter firing a second send mid-request
-  const message = ask.value.trim();
-  if (!message) return;
+async function sendText(message, useTools = true) {
   bubble(message, "you");
-  ask.value = "";
   sendButton.disabled = true;
   newChat.disabled = true;  // a reset mid-flight must not let this reply's setSession() overwrite the new session
   status.textContent = "atlas is thinking... (a local model can take up to a minute)";
   try {
-    const {response, data} = await post("/api/chat", {message, session: getSession()});
+    const {response, data} = await post("/api/chat", {message, session: getSession(), tools: useTools});
     if (!response.ok || !data) { bubble(failureText(response, data), "atlas"); return; }
     setSession(data.session);
     const reply = bubble(data.text, "atlas");
@@ -200,6 +196,22 @@ async function send() {
   } catch (error) { bubble("Request failed: " + error, "atlas"); }
   finally { sendButton.disabled = false; newChat.disabled = false; status.textContent = ""; }
 }
+
+async function send() {
+  if (sendButton.disabled) return;  // in-flight guard - also blocks Enter firing a second send mid-request
+  const message = ask.value.trim();
+  if (!message) return;
+  ask.value = "";
+  await sendText(message);
+}
+
+// Send several messages one after another, each awaiting its own reply. A question covering a
+// long list is answered in small batches the local model can actually finish, instead of one
+// turn it runs out of room on. Used by the posture page's "Investigate all".
+globalThis.atlasAskAll = async (texts) => {
+  setDrawerOpen(true);
+  for (const text of texts) { if (text) await sendText(text, false); }
+};
 
 sendButton.addEventListener("click", send);
 ask.addEventListener("keydown", (event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); send(); } });

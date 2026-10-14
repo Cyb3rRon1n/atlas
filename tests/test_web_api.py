@@ -111,7 +111,7 @@ def test_graph_route(temp_db):
 
 class StubAgent:
 
-    def converse(self, messages):
+    def converse(self, messages, tools=True):
         return ChatReply(text=f"you said {messages[-1]['content']}", action=SuggestedAction("restart_container", "sonarr"))
 
 
@@ -124,6 +124,25 @@ def test_chat_route(temp_db, monkeypatch):
 
     again = api.handle("POST", "/api/chat", {"message": "again", "session": payload["session"]})[1]
     assert again["session"] == payload["session"]
+
+
+def test_chat_route_passes_the_tools_flag_through(temp_db, monkeypatch):
+
+    seen = {}
+
+    class ToolAgent:
+
+        def converse(self, messages, tools=True):
+            seen["tools"] = tools
+            return ChatReply(text="ok")
+
+    monkeypatch.setattr(api, "_agent", lambda: ToolAgent())
+
+    assert api.handle("POST", "/api/chat", {"message": "hi"})[0] == 200
+    assert seen["tools"] is True
+
+    assert api.handle("POST", "/api/chat", {"message": "hi", "tools": False})[0] == 200
+    assert seen["tools"] is False
 
 
 def test_chat_route_maps_provider_error_to_502(temp_db, monkeypatch):

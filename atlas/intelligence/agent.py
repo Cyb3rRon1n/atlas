@@ -18,9 +18,9 @@ class AtlasAgent:
         self.config = config
         self.tools = build_tools(config)
 
-    def converse(self, messages: list) -> ChatReply:
+    def converse(self, messages: list, tools: bool = True) -> ChatReply:
 
-        reply = self.provider.converse(self._with_notes(messages), self.tools)
+        reply = self.provider.converse(self._with_notes(messages), self.tools if tools else {})
 
         if not reply.action and not reply.plan:
             return reply

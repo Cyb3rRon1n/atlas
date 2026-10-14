@@ -6,7 +6,7 @@ import anthropic
 import pytest
 
 from atlas.config.models import IntelligenceConfig
-from atlas.intelligence.providers import get_provider
+from atlas.intelligence.providers import anthropic_provider, get_provider, ollama_provider
 from atlas.intelligence.providers.anthropic_provider import AnthropicProvider
 from atlas.intelligence.providers.base import AIProviderError
 from atlas.intelligence.providers.ollama_provider import OllamaProvider
@@ -312,6 +312,29 @@ class TestAnthropicProvider:
                 "content": "Everything looks fine right now."
             }
 
+    def test_converse_forces_a_final_answer_after_max_tool_iterations(self):
+        """A chat turn must never dead-end: hitting the cap forces an answer, not an error."""
+
+        with patch("anthropic.Anthropic") as mock_client_cls:
+
+            mock_client = MagicMock()
+            mock_client.messages.create.side_effect = (
+                [_fake_tool_use_message("get_containers", {})] * anthropic_provider.MAX_TOOL_ITERATIONS
+                + [_fake_message(SAMPLE_CHAT_RESPONSE_JSON)]
+            )
+            mock_client_cls.return_value = mock_client
+
+            provider = AnthropicProvider()
+            reply = provider.converse(
+                [{"role": "user", "content": "classify these destinations"}],
+                tools=FAKE_TOOLS
+            )
+
+            assert reply.text == "Everything looks fine right now."
+
+            _, kwargs = mock_client.messages.create.call_args
+            assert "tools" not in kwargs
+
 
 class TestOllamaProvider:
 
@@ -497,6 +520,36 @@ class TestOllamaProvider:
                 "role": "assistant",
                 "content": "Everything looks fine right now."
             }
+
+    def test_converse_forces_a_final_answer_after_max_tool_iterations(self):
+        """A chat turn must never dead-end: hitting the cap forces an answer, not an error."""
+
+        with patch("requests.post") as mock_post:
+
+            tool_call_response = MagicMock()
+            tool_call_response.json.return_value = {
+                "message": {
+                    "tool_calls": [
+                        {"function": {"name": "get_containers", "arguments": {}}}
+                    ]
+                }
+            }
+            final_response = MagicMock()
+            final_response.json.return_value = {
+                "message": {"content": SAMPLE_CHAT_RESPONSE_JSON}
+            }
+            mock_post.side_effect = (
+                [tool_call_response] * ollama_provider.MAX_TOOL_ITERATIONS
+                + [final_response]
+            )
+
+            provider = OllamaProvider(model="llama3.1")
+            reply = provider.converse(
+                [{"role": "user", "content": "classify these destinations"}],
+                tools=FAKE_TOOLS
+            )
+
+            assert reply.text == "Everything looks fine right now."
 
     def test_think_defaults_to_false_in_the_request_payload(self):
 

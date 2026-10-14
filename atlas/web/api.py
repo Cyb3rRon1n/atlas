@@ -164,7 +164,7 @@ def _post(path, body):
             return 400, {"error": "expected a JSON object"}
 
         if path == "/api/chat":
-            return chat_turn(SESSIONS, body.get("session"), body.get("message"), _agent)
+            return chat_turn(SESSIONS, body.get("session"), body.get("message"), _agent, tools=body.get("tools", True))
 
         try:
             return execute_step(body.get("action"), _safe_environment, executor=chat_module.execute_action)

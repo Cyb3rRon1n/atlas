@@ -91,6 +91,15 @@ def test_review_items_have_investigate_buttons_and_chips():
     assert "innerHTML" not in POSTURE_SCRIPT
 
 
+def test_investigate_all_asks_in_batches():
+    script = POSTURE_SCRIPT
+    review = script.split("function renderReview")[1].split("async function investigate")[0]
+    assert "window.atlasAskAll" in review and "reviewQuestion(" in review and "i += 6" in review
+    helper = script.split("function reviewQuestion")[1].split("function ask")[0]
+    assert "most suspicious first" in helper
+    assert "innerHTML" not in script
+
+
 def test_posture_and_network_scripts_are_valid_javascript(tmp_path):
     import re, shutil, subprocess
     import pytest

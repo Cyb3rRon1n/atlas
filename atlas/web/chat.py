@@ -86,7 +86,7 @@ def reply_to_dict(reply):
     }
 
 
-def chat_turn(sessions, session_id, message, agent_factory, now=None):
+def chat_turn(sessions, session_id, message, agent_factory, now=None, tools=True):
 
     if not isinstance(message, str) or not message.strip():
         return 400, {"error": "message must be non-empty text"}
@@ -111,7 +111,7 @@ def chat_turn(sessions, session_id, message, agent_factory, now=None):
     # assistant reply appended to it - messages here must never be relied on to have been
     # mutated. The assistant turn is added explicitly below instead, as a plain dict.
     try:
-        reply = agent_factory().converse(list(messages))
+        reply = agent_factory().converse(list(messages), tools=tools)
 
     except AIProviderError as error:
         return 502, {"error": str(error)}

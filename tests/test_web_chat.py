@@ -12,7 +12,7 @@ class FakeAgent:
     def __init__(self, reply=None, error=None):
         self.reply, self.error, self.seen = reply, error, []
 
-    def converse(self, messages):
+    def converse(self, messages, tools=True):
         self.seen.append([dict(message) for message in messages])
         if self.error:
             raise self.error
@@ -30,7 +30,7 @@ class CopyingFakeAgent:
     def __init__(self, reply):
         self.reply, self.seen = reply, []
 
-    def converse(self, messages):
+    def converse(self, messages, tools=True):
         self.seen.append([dict(message) for message in messages])
         copied = list(messages)
         copied.append({"role": "assistant", "content": "never stored - this is the agent's own copy"})

@@ -8,6 +8,56 @@ import pytest
 from atlas.web.chat_page import CHAT_SCRIPT, render_chat_page
 
 
+BATCH_ASSERTIONS = """
+"use strict";
+
+function check(condition, message) {
+  if (!condition) { console.error("FAIL: " + message); process.exit(1); }
+}
+
+let chatInFlight = 0;
+let maxInFlight = 0;
+const chatMessages = [];
+const chatTools = [];
+global.fetch = async (url, options) => {
+  if (url !== "/api/chat") throw new Error("unexpected fetch url " + url);
+  const body = JSON.parse(options.body);
+  chatInFlight += 1;
+  maxInFlight = Math.max(maxInFlight, chatInFlight);
+  chatMessages.push(body.message);
+  chatTools.push(body.tools);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  chatInFlight -= 1;
+  return {ok: true, status: 200, redirected: false, json: async () => ({session: "s", text: "ok"})};
+};
+
+(async () => {
+  await globalThis.atlasAskAll(["one", "two", "three"]);
+  check(chatMessages.length === 3, "expected 3 chat calls, got " + chatMessages.length);
+  check(chatMessages.join(",") === "one,two,three", "expected batches in order, got " + chatMessages.join(","));
+  check(maxInFlight === 1, "batches must be sequential - max in flight was " + maxInFlight);
+  check(chatTools.every((value) => value === false), "batches must be tool-less, got " + chatTools.join(","));
+  console.log("OK");
+  process.exit(0);
+})().catch((error) => { console.error("FAIL: " + (error.stack || error)); process.exit(1); });
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
+def test_chat_batch_send_is_sequential_under_a_real_js_engine():
+
+    script = CHAT_SCRIPT.split("<script>")[1].split("</script>")[0]
+
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "chat_batch_test.js"
+        path.write_text(NODE_SETUP + "\n\n" + script + "\n\n" + BATCH_ASSERTIONS)
+
+        result = subprocess.run([shutil.which("node"), str(path)], capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0, result.stderr[:500]
+        assert "OK" in result.stdout
+
+
 def test_chat_page_prefills_from_q_and_has_no_drawer():
 
     html = render_chat_page("hello <b>")

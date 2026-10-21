@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import requests
@@ -17,19 +18,22 @@ from atlas.health.checks import (
     check_monitoring,
     check_proxmox,
     check_python,
+    _read_host_mountinfo,
+    check_stale_mounts,
     check_storage,
+    find_deleted_mounts,
     run_checks,
 )
 
 
-def test_run_checks_returns_nine_named_checks(isolated_cwd, monkeypatch):
+def test_run_checks_returns_ten_named_checks(isolated_cwd, monkeypatch):
 
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
     checks = run_checks()
 
     assert [c["name"] for c in checks] == [
-        "Python", "Memory", "Storage", "Docker", "Environment", "Inventory",
+        "Python", "Memory", "Storage", "Docker", "Mounts", "Environment", "Inventory",
         "Proxmox", "Intelligence", "Monitoring",
     ]
 
@@ -289,3 +293,88 @@ def test_check_environment_detects_kubernetes_in_cluster(monkeypatch):
 
     assert result["status"] is True
     assert "Kubernetes" in result["details"]
+
+
+MOUNTINFO_OK = (
+    "1041 1022 0:118 / / rw,relatime - overlay overlay rw\n"
+    "1052 1041 259:3 /home/me/media/downloads /data/downloads rw,relatime - ext4 /dev/md0 rw\n"
+)
+MOUNTINFO_STALE = MOUNTINFO_OK + (
+    "1053 1041 259:3 /home/me/media/books\\040old//deleted /books rw,relatime - ext4 /dev/md0 rw\n"
+)
+
+
+def test_find_deleted_mounts_flags_only_deleted_sources():
+
+    assert find_deleted_mounts(MOUNTINFO_OK) == []
+    assert find_deleted_mounts(MOUNTINFO_STALE) == ["/books"]
+
+
+def _fake_container(name, pid, exec_output=None):
+
+    container = MagicMock()
+    container.name = name
+    container.attrs = {"State": {"Pid": pid}}
+    container.exec_run.return_value = (0, exec_output.encode()) if exec_output is not None else (1, b"")
+    return container
+
+
+def test_check_stale_mounts_flags_container_and_suggests_recreate(monkeypatch):
+
+    client = MagicMock()
+    client.containers.list.return_value = [
+        _fake_container("chaptarr", 101, MOUNTINFO_STALE),
+        _fake_container("radarr", 102, MOUNTINFO_OK),
+    ]
+    monkeypatch.setattr("atlas.health.checks.get_client", lambda: client)
+    # host /proc not readable (e.g. Atlas itself in a container) -> docker exec fallback
+    monkeypatch.setattr("atlas.health.checks._read_host_mountinfo", lambda pid, cid: None)
+
+    result = check_stale_mounts()
+
+    assert result["name"] == "Mounts"
+    assert result["status"] is False
+    assert "chaptarr: /books" in result["details"]
+    assert "radarr" not in result["details"]
+    assert "--force-recreate chaptarr" in result["details"]
+
+
+def test_check_stale_mounts_prefers_host_proc_and_is_healthy_when_clean(monkeypatch):
+
+    container = _fake_container("radarr", 102)
+    client = MagicMock()
+    client.containers.list.return_value = [container]
+    monkeypatch.setattr("atlas.health.checks.get_client", lambda: client)
+    monkeypatch.setattr("atlas.health.checks._read_host_mountinfo", lambda pid, cid: MOUNTINFO_OK)
+
+    result = check_stale_mounts()
+
+    assert result["status"] is True
+    assert "1 containers checked" in result["details"]
+    container.exec_run.assert_not_called()
+
+
+def test_check_stale_mounts_skips_when_docker_unavailable(monkeypatch):
+
+    monkeypatch.setattr("atlas.health.checks.get_client", lambda: None)
+
+    result = check_stale_mounts()
+
+    assert result["status"] is True
+    assert "skipped" in result["details"]
+
+
+def test_read_host_mountinfo_rejects_a_pid_that_is_not_the_container(tmp_path, monkeypatch):
+
+    # same PID, different process (remote daemon / own PID namespace): cgroup doesn't name the container
+    real_path = Path
+    proc = tmp_path / "proc" / "4521"
+    proc.mkdir(parents=True)
+    (proc / "cgroup").write_text("0::/user.slice/user-1000.slice/session-2.scope\n")
+    (proc / "mountinfo").write_text(MOUNTINFO_STALE)
+    monkeypatch.setattr("atlas.health.checks.Path", lambda p: real_path(str(tmp_path) + p))
+
+    assert _read_host_mountinfo(4521, "abc123") is None
+
+    (proc / "cgroup").write_text("0::/system.slice/docker-abc123def.scope\n")
+    assert _read_host_mountinfo(4521, "abc123") == MOUNTINFO_STALE

@@ -7,6 +7,7 @@ import psutil
 import requests
 
 from atlas.config import load_config
+from atlas.docker.manager import get_client
 
 
 def check_python():
@@ -56,6 +57,105 @@ def check_docker():
             f"{len(result['containers'])} containers"
             if result["available"]
             else "not available"
+        ),
+    }
+
+
+def find_deleted_mounts(mountinfo):
+    """
+    Mount points whose source was deleted after the container started.
+    When a bind-mounted host folder is removed and recreated, the running
+    container keeps the dead directory (it sees it empty) and the kernel
+    marks the mount's root field (4th column of mountinfo) "//deleted".
+    """
+
+    stale = []
+
+    for line in mountinfo.splitlines():
+
+        fields = line.split(" ")
+
+        if len(fields) > 4 and fields[3].endswith("//deleted"):
+            stale.append(fields[4].replace("\\040", " "))
+
+    return stale
+
+
+def _read_host_mountinfo(pid, container_id):
+    """
+    Only trusted when /proc/<pid> really is that container - with a remote
+    Docker daemon, or Atlas in its own PID namespace, the same PID can be an
+    unrelated local process, so its cgroup must name the container id.
+    """
+
+    try:
+        if container_id not in Path(f"/proc/{pid}/cgroup").read_text():
+            return None
+        return Path(f"/proc/{pid}/mountinfo").read_text()
+    except OSError:
+        return None
+
+
+def check_stale_mounts():
+    """
+    Flags containers still pointing at a deleted bind-mount source. Reads
+    /proc/<pid>/mountinfo from the host (world-readable, no root needed);
+    when Atlas itself runs in a container and can't see host PIDs, falls
+    back to reading the container's own /proc/1/mountinfo via docker exec.
+    """
+
+    client = get_client()
+
+    if not client:
+        return {
+            "name": "Mounts",
+            "status": True,
+            "details": "skipped - Docker not available",
+        }
+
+    stale = {}
+    checked = 0
+
+    for container in client.containers.list():
+
+        mountinfo = _read_host_mountinfo(
+            container.attrs.get("State", {}).get("Pid"),
+            container.id,
+        )
+
+        if mountinfo is None:
+
+            try:
+                exit_code, output = container.exec_run(["cat", "/proc/1/mountinfo"])
+            except Exception:
+                continue
+
+            if exit_code != 0:
+                continue
+
+            mountinfo = output.decode(errors="replace")
+
+        checked += 1
+        deleted = find_deleted_mounts(mountinfo)
+
+        if deleted:
+            stale[container.name] = deleted
+
+    if not stale:
+        return {
+            "name": "Mounts",
+            "status": True,
+            "details": f"{checked} containers checked, no stale bind mounts",
+        }
+
+    return {
+        "name": "Mounts",
+        "status": False,
+        "details": (
+            "stale bind mounts (source folder was deleted/recreated): "
+            + "; ".join(f"{name}: {', '.join(paths)}" for name, paths in stale.items())
+            + " - fix: docker compose up -d --force-recreate "
+            + " ".join(stale)
         ),
     }
 
@@ -253,6 +353,7 @@ def run_checks():
         check_memory(),
         check_storage(),
         check_docker(),
+        check_stale_mounts(),
         check_environment(),
         check_inventory(),
         check_proxmox(config),

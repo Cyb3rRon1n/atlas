@@ -2855,15 +2855,38 @@ def analyze(
 
     settings = load_config()
 
+    intelligence = settings.intelligence
+
+    # The check-up model first (if configured), the chat model as fallback.
+    candidates = [intelligence]
+
+    if intelligence.analyze_provider or intelligence.analyze_model:
+
+        candidates.insert(0, intelligence.model_copy(update={
+            "provider": intelligence.analyze_provider or intelligence.provider,
+            "model": intelligence.analyze_model or intelligence.model
+        }))
+
     try:
-
-        provider = get_provider(settings.intelligence)
-
-        analyzer = AtlasAnalyzer(provider)
 
         tools = build_tools(settings)
 
-        result = analyzer.analyze(environment, tools)
+        for attempt, used in enumerate(candidates, 1):
+
+            try:
+
+                result = AtlasAnalyzer(get_provider(used)).analyze(environment, tools)
+
+                break
+
+            except AIProviderError as error:
+
+                if attempt == len(candidates):
+                    raise
+
+                if not json_output:
+                    console.print(f"[yellow]{used.provider}/{used.model} failed ({error}) - "
+                                  f"falling back to {intelligence.provider}/{intelligence.model}[/yellow]")
 
     except AIProviderError as error:
 
@@ -2885,8 +2908,8 @@ def analyze(
             json.dumps(
                 {
                     **asdict(result),
-                    "provider": settings.intelligence.provider,
-                    "model": settings.intelligence.model
+                    "provider": used.provider,
+                    "model": used.model
                 },
                 indent=2
             )
@@ -3026,8 +3049,8 @@ def analyze(
 
     store.save_analysis(
         result,
-        provider=settings.intelligence.provider,
-        model=settings.intelligence.model
+        provider=used.provider,
+        model=used.model
     )
 
     runtime = application.runtime
@@ -3037,8 +3060,8 @@ def analyze(
             event_type="atlas.analysis.completed",
             source="AtlasAnalyzer",
             payload={
-                "provider": settings.intelligence.provider,
-                "model": settings.intelligence.model,
+                "provider": used.provider,
+                "model": used.model,
                 "recommendation_count": len(result.recommendations)
             }
         )

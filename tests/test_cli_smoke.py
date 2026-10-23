@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 import subprocess
 from unittest.mock import MagicMock, patch
 
@@ -2820,3 +2821,40 @@ def test_web_handles_keyboard_interrupt_cleanly():
 
     assert result.exit_code == 0
     assert "Stopped." in result.output
+
+
+def test_analyze_uses_checkup_provider_then_falls_back(isolated_cwd, temp_db):
+
+    from atlas.intelligence.context import AtlasEnvironmentContext
+    from atlas.intelligence.providers import AIProviderError
+    from atlas.intelligence.providers.base import AIProvider, AnalysisResult
+    from atlas.knowledge.queries import KnowledgeQueries
+    from atlas.knowledge.store import KnowledgeStore
+
+    KnowledgeStore().save_environment(AtlasEnvironmentContext())
+    Path("atlas.yaml").write_text("intelligence:\n  provider: ollama\n  model: qwen3:8b\n"
+                                  "  analyze_provider: anthropic\n  analyze_model: claude-sonnet-5\n")
+    used = []
+
+    class Fake(AIProvider):
+
+        def __init__(self, config):
+            self.config = config
+
+        def analyze(self, context, tools=None):
+            used.append(self.config.provider)
+            if self.config.provider == "anthropic" and fail:
+                raise AIProviderError("ANTHROPIC_API_KEY not set")
+            return AnalysisResult(summary="ok", recommendations=[])
+
+    for fail, expected in ((False, ("anthropic", "claude-sonnet-5")), (True, ("ollama", "qwen3:8b"))):
+
+        used.clear()
+
+        with patch("atlas.cli.main.get_provider", side_effect=Fake):
+            result = runner.invoke(app, ["analyze", "--json"])
+
+        assert result.exit_code == 0, result.output
+        assert (json.loads(result.output)["provider"], json.loads(result.output)["model"]) == expected
+        assert KnowledgeQueries().latest_analysis()["model"] == expected[1]
+        assert used == (["anthropic"] if not fail else ["anthropic", "ollama"])

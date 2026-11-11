@@ -124,9 +124,11 @@ def ask_chips(questions):
 
     return '<div class="chips" aria-label="Ask Atlas">' + "".join(
         f'<button data-ask="{_esc(q)}">{_esc(q)}</button>' for q in questions) + "</div>" + (
-        "<script>document.querySelectorAll('[data-ask]').forEach((b) => b.addEventListener('click', () => {"
+        # Delegated, so [data-ask] buttons rendered AFTER the chips (e.g. Access page "Investigate") work too.
+        "<script>if (!window.atlasAskBound) { window.atlasAskBound = true;"
+        " document.addEventListener('click', (e) => { const b = e.target.closest('[data-ask]'); if (!b) return;"
         " const q = b.dataset.ask; if (window.atlasAsk) window.atlasAsk(q); else location.href = '/chat?q=' +"
-        " encodeURIComponent(q); }));</script>")
+        " encodeURIComponent(q); }); }</script>")
 
 
 def _kv_table(data):

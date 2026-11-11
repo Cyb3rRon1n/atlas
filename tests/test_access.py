@@ -132,3 +132,13 @@ def test_authelia_logins_from_debug_log():
     assert [(l["user"], l["ok"], l["ip"], l["client"]) for l in out] == [("bob", False, "85.240.1.9", "1FA"),
                                                                           ("adriel", True, "2601:201::1", "2FA")]
     assert out[1]["time"] == datetime(2026, 10, 11, 14, 0) and out[0]["app"] == "authelia"
+
+
+def test_investigate_button_is_bound_after_chips():
+    """Review-card Investigate buttons render after the chips' script ran; binding must be delegated."""
+    place = {"user": "warrior", "app": "jellyfin", "label": "Quincy, Massachusetts, US", "status": "review",
+             "first_seen": "2026-11-10 19:19", "last_seen": "2026-11-10 19:37", "ip": "134.204.58.114", "place_key": "k"}
+    html = render_access_page({"visitors": [], "logins": []}, "7d", user_places=[place])
+    assert html.index("atlasAskBound") < html.index(">Investigate</button>")    # script precedes the button...
+    assert "document.addEventListener('click'" in html and "closest('[data-ask]')" in html   # ...so it must delegate
+    assert html.count("window.atlasAskBound = true") == 1

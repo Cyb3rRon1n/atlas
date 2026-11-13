@@ -13,12 +13,12 @@ from atlas.intelligence.tools import build_tools, execute_tool
 class _FakeJellyfin(BaseHTTPRequestHandler):
 
     ROUTES = {
-        "/Sessions": [{"UserName": "palma", "DeviceName": "Garage TV", "Client": "Jellyfin Android TV",
+        "/Sessions": [{"UserName": "carol", "DeviceName": "Garage TV", "Client": "Jellyfin Android TV",
                        "RemoteEndPoint": "192.168.10.224", "NowPlayingItem": {"Name": "The Furious"},
                        "PlayState": {"PlayMethod": "DirectStream"}}],
         "/System/ActivityLog/Entries": {"Items": [
-            {"Date": "2026-09-28T21:43", "Type": "VideoPlayback", "Name": "palma is playing The Furious on Garage TV"},
-            {"Date": "2026-09-28T21:40", "Type": "SessionStarted", "Name": "bobby is online from Chrome"}]},
+            {"Date": "2026-09-28T21:43", "Type": "VideoPlayback", "Name": "carol is playing The Furious on Garage TV"},
+            {"Date": "2026-09-28T21:40", "Type": "SessionStarted", "Name": "bob is online from Chrome"}]},
         "/Plugins": [{"Id": "tk", "Name": "Transcode Killer", "Version": "5.0.0.0", "Status": "Active"}],
         "/Plugins/tk/Configuration": {"MaxWidth": 1920, "MaxHeight": 1080},
         "/status.json": {"temp": 81, "state": "ok"},
@@ -80,7 +80,7 @@ def test_jellyfin_activity_search_and_plugins_with_config(fake_server):
     activity = execute_tool(tools, "get_jellyfin_activity", {"search": "furious"})
     plugins = execute_tool(tools, "get_jellyfin_plugins", {})
 
-    assert [e["name"] for e in activity["entries"]] == ["palma is playing The Furious on Garage TV"]
+    assert [e["name"] for e in activity["entries"]] == ["carol is playing The Furious on Garage TV"]
     assert plugins["plugins"][0]["configuration"] == {"MaxWidth": 1920, "MaxHeight": 1080}
 
 

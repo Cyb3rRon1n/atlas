@@ -2858,7 +2858,7 @@ Check each against ground truth:
 - CrowdSec: `docker exec crowdsec cscli decisions list -o raw | tail -n +2 | wc -l` equals the Blocked value.
 - Tile: `curl -s http://127.0.0.1:8420/api/summary | jq .posture` (from inside the atlas container) has `state` and `message`; then update Homepage `services.yaml` on cyberpac (backup `.bak-atlas-posture-<date>`) with the Task 12 mappings, mirror to homelab-ops, and check the tile in a browser in both states (force `review` by marking nothing expected right after first deploy - every destination starts as new).
 
-- [ ] **Step 7: Open https://atlas.totallylegitmedia.us/** and walk the Task 10/11 manual checks on real data. Record results (counts, the IPs compared, screenshots if the user wants them) in the PR description of the last PR, then update `docs/` deployment notes with the `nf_conntrack_acct`, `NET_ADMIN`, bouncer-key and gluetun-key steps.
+- [ ] **Step 7: Open https://atlas.example.com/** and walk the Task 10/11 manual checks on real data. Record results (counts, the IPs compared, screenshots if the user wants them) in the PR description of the last PR, then update `docs/` deployment notes with the `nf_conntrack_acct`, `NET_ADMIN`, bouncer-key and gluetun-key steps.
 
 - [ ] **Step 8: Commit docs + push the homelab-ops mirror (with the user's OK)**
 

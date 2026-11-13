@@ -5,15 +5,15 @@ from atlas.access.parse import parse_line, read_new
 from atlas.access.store import AccessStore
 from atlas.web.access_page import render_access_page
 
-LINE = ('97.102.129.35 - - [11/Oct/2026:02:23:12 +0000] "GET /web/index.html HTTP/1.1" {status} 7 "-" "Mozilla" '
+LINE = ('9.9.9.9 - - [11/Oct/2026:02:23:12 +0000] "GET /web/index.html HTTP/1.1" {status} 7 "-" "Mozilla" '
         '148676 "jellyfin@docker" "http://172.18.0.6:8096" 9ms')
 
 
 def test_parse_line_and_bad_lines():
     e = parse_line(LINE.format(status=200))
-    assert e == {"ip": "97.102.129.35", "time": datetime(2026, 10, 11, 2, 23, 12), "method": "GET",
+    assert e == {"ip": "9.9.9.9", "time": datetime(2026, 10, 11, 2, 23, 12), "method": "GET",
                  "path": "/web/index.html", "status": 200, "service": "jellyfin"}
-    assert parse_line("garbage") is None and parse_line(LINE.replace("97.102.129.35", "not-an-ip").format(status=200)) is None
+    assert parse_line("garbage") is None and parse_line(LINE.replace("9.9.9.9", "not-an-ip").format(status=200)) is None
 
 
 def test_read_new_tracks_offset_partial_lines_and_rotation(tmp_path):
@@ -28,36 +28,36 @@ def test_read_new_tracks_offset_partial_lines_and_rotation(tmp_path):
 
 
 def test_jellyfin_logins_parse_users_ips_and_failures():
-    items = [{"Id": 1, "Type": "AuthenticationSucceeded", "Name": "oneil successfully authenticated",
-              "ShortOverview": "IP address: 97.102.129.35", "Date": "2026-10-10T20:08:01.1234567Z"},
-             {"Id": 2, "Type": "SessionStarted", "Name": "palma is online from Garage TV", "ShortOverview": "IP address: 192.168.10.66",
+    items = [{"Id": 1, "Type": "AuthenticationSucceeded", "Name": "grace successfully authenticated",
+              "ShortOverview": "IP address: 9.9.9.9", "Date": "2026-10-10T20:08:01.1234567Z"},
+             {"Id": 2, "Type": "SessionStarted", "Name": "carol is online from Garage TV", "ShortOverview": "IP address: 192.168.10.66",
               "Date": "2026-10-10T23:29:00Z"},
-             {"Id": 3, "Type": "AuthenticationFailed", "Name": "Failed login attempt from bobby", "ShortOverview": "IP address: 1.2.3.4",
+             {"Id": 3, "Type": "AuthenticationFailed", "Name": "Failed login attempt from bob", "ShortOverview": "IP address: 1.2.3.4",
               "Date": "2026-10-10T19:00:00Z"},
              {"Id": 4, "Type": "VideoPlayback", "Name": "x", "Date": "2026-10-10T19:00:00Z"}]
     out = jellyfin_logins(items)
     assert [(l["user"], l["ip"], l["ok"], l["client"]) for l in out] == [
-        ("oneil", "97.102.129.35", True, ""), ("palma", "192.168.10.66", True, "Garage TV"), ("bobby", "1.2.3.4", False, "")]
+        ("grace", "9.9.9.9", True, ""), ("carol", "192.168.10.66", True, "Garage TV"), ("bob", "1.2.3.4", False, "")]
     assert out[0]["time"] == datetime(2026, 10, 10, 20, 8, 1)
 
 
 def test_store_summary_page_map_people_and_anonymous(temp_db):
     store = AccessStore(temp_db)
     entries = [parse_line(LINE.format(status=s)) for s in (200, 200, 403)]
-    entries.append(parse_line(LINE.replace("97.102.129.35", "85.240.1.9").format(status=200)))
-    geo = {"97.102.129.35": {"cc": "US", "country": "United States", "city": "Tampa", "region": "Florida", "lat": 27.9, "lon": -82.4,
+    entries.append(parse_line(LINE.replace("9.9.9.9", "149.112.112.112").format(status=200)))
+    geo = {"9.9.9.9": {"cc": "US", "country": "United States", "city": "Tampa", "region": "Florida", "lat": 27.9, "lon": -82.4,
                            "org": "Spectrum"},
-           "85.240.1.9": {"cc": "PT", "country": "Portugal", "city": "Lisbon", "region": "", "lat": 38.7, "lon": -9.1, "org": "<b>x"}}
+           "149.112.112.112": {"cc": "PT", "country": "Portugal", "city": "Lisbon", "region": "", "lat": 38.7, "lon": -9.1, "org": "<b>x"}}
     store.touch_ips(store.record_hits(entries), geo.get)
-    store.record_logins([{"app": "jellyfin", "external_id": "1", "time": datetime(2026, 10, 11, 2), "user": "oneil",
-                          "ip": "97.102.129.35", "ok": True, "client": ""}])
-    assert store.record_logins([{"app": "jellyfin", "external_id": "1", "time": datetime(2026, 10, 11, 2), "user": "oneil",
-                                 "ip": "97.102.129.35", "ok": True, "client": ""}]) == 0   # idempotent
+    store.record_logins([{"app": "jellyfin", "external_id": "1", "time": datetime(2026, 10, 11, 2), "user": "grace",
+                          "ip": "9.9.9.9", "ok": True, "client": ""}])
+    assert store.record_logins([{"app": "jellyfin", "external_id": "1", "time": datetime(2026, 10, 11, 2), "user": "grace",
+                                 "ip": "9.9.9.9", "ok": True, "client": ""}]) == 0   # idempotent
     s = store.summary(datetime(2026, 10, 10))
     v = {x["ip"]: x for x in s["visitors"]}
-    assert v["97.102.129.35"]["requests"] == 3 and v["97.102.129.35"]["denied"] == 1 and v["97.102.129.35"]["city"] == "Tampa"
+    assert v["9.9.9.9"]["requests"] == 3 and v["9.9.9.9"]["denied"] == 1 and v["9.9.9.9"]["city"] == "Tampa"
     html = render_access_page(s, "7d")
-    assert "oneil" in html and "Tampa, Florida, US" in html and 'class="user"' in html     # signed-in place drawn green
+    assert "grace" in html and "Tampa, Florida, US" in html and 'class="user"' in html     # signed-in place drawn green
     assert "Anonymous visitors (1 IPs)" in html and "Lisbon, PT" in html and "&lt;b&gt;x" in html and "<b>x" not in html
     assert 'href="/access?window=24h"' in html and "DB-IP" in html and 'data-ask="Who signed in' in html
     assert store.prune(datetime(2026, 10, 12)) > 0 and store.summary(datetime(2026, 1, 1))["visitors"] == []
@@ -69,15 +69,15 @@ def test_places_learn_then_review_confirm_and_alert(temp_db):
     from atlas.config.models import AccessConfig, PostureConfig, SignalNotifyConfig
     store = AccessStore(temp_db)
     t0 = datetime(2026, 10, 1)
-    geo = {"97.102.129.35": {"cc": "US", "country": "United States", "city": "Tampa", "region": "Florida", "org": "Spectrum"},
-           "85.240.1.9": {"cc": "PT", "country": "Portugal", "city": "Lisbon", "region": "", "org": "MEO"},
+    geo = {"9.9.9.9": {"cc": "US", "country": "United States", "city": "Tampa", "region": "Florida", "org": "Spectrum"},
+           "149.112.112.112": {"cc": "PT", "country": "Portugal", "city": "Lisbon", "region": "", "org": "MEO"},
            "192.168.10.66": {"country": "Home network"}}
     store.touch_ips({ip: t0 for ip in geo}, geo.get)
-    login = lambda i, ip, when, ok=True: {"app": "jellyfin", "external_id": str(i), "time": when, "user": "corn", "ip": ip,
+    login = lambda i, ip, when, ok=True: {"app": "jellyfin", "external_id": str(i), "time": when, "user": "dave", "ip": ip,
                                           "ok": ok, "client": ""}
-    store.record_logins([login(1, "97.102.129.35", t0), login(2, "192.168.10.66", t0)])
+    store.record_logins([login(1, "9.9.9.9", t0), login(2, "192.168.10.66", t0)])
     assert store.classify_logins(t0) == []                                   # learning window
-    store.record_logins([login(3, "85.240.1.9", t0 + timedelta(days=20)), login(4, "85.240.1.9", t0 + timedelta(days=21), False)])
+    store.record_logins([login(3, "149.112.112.112", t0 + timedelta(days=20)), login(4, "149.112.112.112", t0 + timedelta(days=21), False)])
     new = store.classify_logins(t0 + timedelta(days=21))
     assert [n["label"] for n in new] == ["Lisbon, PT · MEO"]                 # new place after learning -> review
     places = {p["place_key"]: p["status"] for p in store.places()}
@@ -86,11 +86,11 @@ def test_places_learn_then_review_confirm_and_alert(temp_db):
     sent = []
     c = AccessCollector(AccessConfig(), PostureConfig(), store, signal=SignalNotifyConfig(url="http://signal"),
                         send=lambda cfg, text: (sent.append(text) or True, ""))
-    assert c._alert() == 1 and "corn" in sent[0] and "Lisbon" in sent[0] and c._alert() == 0   # alerted once
+    assert c._alert() == 1 and "dave" in sent[0] and "Lisbon" in sent[0] and c._alert() == 0   # alerted once
 
     html = render_access_page({"visitors": [], "logins": []}, "7d", user_places=store.places())
     assert "New sign-in places (1)" in html and 'data-confirm-key="PT/MEO"' in html and "Normal places (1)" in html
-    assert store.confirm_place("corn", "PT/MEO")["ok"] and not store.confirm_place("x", "y")["ok"]
+    assert store.confirm_place("dave", "PT/MEO")["ok"] and not store.confirm_place("x", "y")["ok"]
     assert "New sign-in places" not in render_access_page({"visitors": [], "logins": []}, "7d", user_places=store.places())
 
 
@@ -103,21 +103,21 @@ def test_ipv6_place_uses_the_providers_prefix_not_the_city():
 
 def test_proxied_logins_match_app_log_users_by_time():
     from atlas.access.collect import app_user_events, proxied_logins
-    kav = ("2026-10-11T01:37:07.044632849Z [Kavita] [Information] Kavita.Server.Controllers.AccountController adriel attempting to login\n"
-           "2026-10-11T01:37:07.182Z [Kavita] [Information] Kavita.Server.Controllers.AccountController adriel logged in\n"
+    kav = ("2026-10-11T01:37:07.044632849Z [Kavita] [Information] Kavita.Server.Controllers.AccountController alice attempting to login\n"
+           "2026-10-11T01:37:07.182Z [Kavita] [Information] Kavita.Server.Controllers.AccountController alice logged in\n"
            "garbage line\n")
-    abs_ = '2026-10-11T00:54:05.860957863Z [2026-10-11 00:54:05.860] INFO: [LocalAuth] User "Celeste" logged in from ip ::ffff:172.18.0.1\n'
+    abs_ = '2026-10-11T00:54:05.860957863Z [2026-10-11 00:54:05.860] INFO: [LocalAuth] User "frank" logged in from ip ::ffff:172.18.0.1\n'
     events = {"kavita": app_user_events("kavita", kav), "audiobookshelf": app_user_events("audiobookshelf", abs_)}
-    assert events["kavita"][0] == (datetime(2026, 10, 11, 1, 37, 7), "adriel") and events["audiobookshelf"][0][1] == "Celeste"
-    line = '85.240.1.9 - - [11/Oct/2026:{t} +0000] "POST {p} HTTP/1.1" {s} 7 "-" "-" 1 "{svc}@docker" "h" 9ms'
+    assert events["kavita"][0] == (datetime(2026, 10, 11, 1, 37, 7), "alice") and events["audiobookshelf"][0][1] == "frank"
+    line = '149.112.112.112 - - [11/Oct/2026:{t} +0000] "POST {p} HTTP/1.1" {s} 7 "-" "-" 1 "{svc}@docker" "h" 9ms'
     entries = [parse_line(line.format(t="01:37:08", p="/api/Account/login", s=200, svc="kavita")),
                parse_line(line.format(t="00:54:06", p="/login", s=401, svc="audiobookshelf")),
                parse_line(line.format(t="03:00:00", p="/login", s=401, svc="audiobookshelf")),     # no app line nearby
                parse_line(line.format(t="03:00:00", p="/api/items", s=200, svc="audiobookshelf"))]  # not a login
     out = proxied_logins(entries, events)
     assert [(l["app"], l["user"], l["ok"], l["ip"]) for l in out] == [
-        ("kavita", "adriel", True, "85.240.1.9"), ("audiobookshelf", "Celeste", False, "85.240.1.9"),
-        ("audiobookshelf", "?", False, "85.240.1.9")]
+        ("kavita", "alice", True, "149.112.112.112"), ("audiobookshelf", "frank", False, "149.112.112.112"),
+        ("audiobookshelf", "?", False, "149.112.112.112")]
     assert len({l["external_id"] for l in out}) == 3
 
 
@@ -125,19 +125,19 @@ def test_authelia_logins_from_debug_log():
     from atlas.access.collect import authelia_logins
     text = ('2026-10-11T13:45:16.441Z time="x" level=debug msg="Mark 1FA authentication attempt made by user \'\'" remote_ip=1.1.1.1\n'
             '2026-10-11T13:45:16.447Z time="x" level=error msg="Unsuccessful 1FA authentication attempt by user \'bob\'" '
-            'error="user not found" method=POST path=/api/firstfactor remote_ip=85.240.1.9 stack="..."\n'
-            '2026-10-11T14:00:00.000Z time="x" level=debug msg="Successful 2FA authentication attempt made by user \'adriel\'" '
+            'error="user not found" method=POST path=/api/firstfactor remote_ip=149.112.112.112 stack="..."\n'
+            '2026-10-11T14:00:00.000Z time="x" level=debug msg="Successful 2FA authentication attempt made by user \'alice\'" '
             'method=POST path=/api/secondfactor/totp remote_ip=2601:201::1\n')
     out = authelia_logins(text)
-    assert [(l["user"], l["ok"], l["ip"], l["client"]) for l in out] == [("bob", False, "85.240.1.9", "1FA"),
-                                                                          ("adriel", True, "2601:201::1", "2FA")]
+    assert [(l["user"], l["ok"], l["ip"], l["client"]) for l in out] == [("bob", False, "149.112.112.112", "1FA"),
+                                                                          ("alice", True, "2601:201::1", "2FA")]
     assert out[1]["time"] == datetime(2026, 10, 11, 14, 0) and out[0]["app"] == "authelia"
 
 
 def test_investigate_button_is_bound_after_chips():
     """Review-card Investigate buttons render after the chips' script ran; binding must be delegated."""
-    place = {"user": "warrior", "app": "jellyfin", "label": "Quincy, Massachusetts, US", "status": "review",
-             "first_seen": "2026-11-10 19:19", "last_seen": "2026-11-10 19:37", "ip": "134.204.58.114", "place_key": "k"}
+    place = {"user": "erin", "app": "jellyfin", "label": "Springfield, Illinois, US", "status": "review",
+             "first_seen": "2026-11-10 19:19", "last_seen": "2026-11-10 19:37", "ip": "8.8.4.4", "place_key": "k"}
     html = render_access_page({"visitors": [], "logins": []}, "7d", user_places=[place])
     assert html.index("atlasAskBound") < html.index(">Investigate</button>")    # script precedes the button...
     assert "document.addEventListener('click'" in html and "closest('[data-ask]')" in html   # ...so it must delegate

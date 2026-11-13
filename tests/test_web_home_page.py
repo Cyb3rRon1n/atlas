@@ -143,5 +143,5 @@ def test_hosts_summary_meters_storage_and_container_chips():
 
 def test_home_attention_lists_new_sign_in_places():
     html = render_home_page(POSTURE_OK, build_hosts(None, LOCAL, None), [],
-                            access_reviews=[{"user": "corn", "label": "Lisbon, PT \u00b7 MEO"}])
-    assert "corn signed in from a new place: Lisbon, PT" in html and 'href="/access">Review' in html
+                            access_reviews=[{"user": "dave", "label": "Lisbon, PT \u00b7 MEO"}])
+    assert "dave signed in from a new place: Lisbon, PT" in html and 'href="/access">Review' in html

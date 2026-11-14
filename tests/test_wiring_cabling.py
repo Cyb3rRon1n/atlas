@@ -2,7 +2,7 @@ from atlas.wiring.cabling import load_cabling
 
 
 def test_missing_file_is_empty(tmp_path):
-    assert load_cabling(tmp_path / "nope.yaml") == {"panels": [], "ports": {}, "error": None}
+    assert load_cabling(tmp_path / "nope.yaml") == {"panels": [], "ports": {}, "faceplates": {}, "error": None}
 
 
 def test_loads_panels_and_port_labels(tmp_path):
@@ -37,3 +37,11 @@ def test_bad_entry_skipped_with_error(tmp_path):
     result = load_cabling(path)
     assert [e["port"] for e in result["panels"]] == [2]
     assert "PP1 port 1" in result["error"]
+
+def test_faceplates(tmp_path):
+    path = tmp_path / "cabling.yaml"
+    path.write_text("faceplates:\n  core-switch:\n    - [gi1, gi2, '-', gi25, sfp:gi27]\n    - [gi13, gi14, '-', gi26]\n"
+                    "  bad: [gi1]\n")
+    result = load_cabling(path)
+    assert result["faceplates"] == {"core-switch": [["gi1", "gi2", "-", "gi25", "sfp:gi27"], ["gi13", "gi14", "-", "gi26"]]}
+    assert "faceplates bad" in result["error"]

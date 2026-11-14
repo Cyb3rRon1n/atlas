@@ -14,6 +14,7 @@ import json
 from datetime import datetime
 
 from atlas.web.render import _esc, render_page
+from atlas.wiring.faceplate import physical_layout
 
 
 INFRA = ("wan", "gateway", "switch", "ap")
@@ -33,11 +34,15 @@ CABLING_STYLE = """
 #wiring-svg { display:block; min-width:100%; }
 .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); margin:6px 0; }
 .legend i { display:inline-block; width:22px; height:3px; vertical-align:middle; margin-right:5px; }
-.fp { display:grid; grid-template-columns:repeat(auto-fill,minmax(74px,1fr)); gap:6px; margin:8px 0 14px; }
-.fp span { border:1px solid #2f3b4c; border-radius:6px; padding:4px 6px; font-size:11px; background:#111821; opacity:.55; min-height:36px; }
+.fp-wrap { overflow-x:auto; padding:8px 0 14px; }
+.fp { --pw:62px; --ph:44px; position:relative; }
+.fp span { position:absolute; width:56px; height:38px; box-sizing:border-box; border:1px solid #2f3b4c; border-radius:6px;
+           padding:2px 5px; font-size:11px; background:#111821; opacity:.55; }
 .fp span.up { opacity:1; }
 .fp span b { display:block; font-size:12px; }
 .fp span small { display:block; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fp span.cage { border-style:dashed; background:transparent; }
+.lag { border:1px solid var(--line); border-radius:6px; padding:1px 6px; margin-right:6px; }
 .fp .s100 { border-color:#8b98a5; } .fp .s1g { border-color:#5aa7f0; } .fp .s25 { border-color:#3ccfb4; } .fp .s10g { border-color:#b48cf2; }
 #faceplates details { border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:8px; }
 #faceplates summary { cursor:pointer; font-weight:600; }
@@ -61,7 +66,10 @@ DIAGRAM_SCRIPT = r"""
     + ".pt{fill:#3a4a5e}.pl{fill:#c9d1d9;font:10px ui-monospace,monospace}"
     + ".edge{fill:none;stroke-width:2.5}.s100{stroke:#8b98a5}.s1g{stroke:#5aa7f0}.s25{stroke:#3ccfb4}.s10g{stroke:#b48cf2}"
     + ".down{stroke-dasharray:6 4;opacity:.6}.el{fill:#e6edf3;font:11px ui-monospace,monospace;paint-order:stroke;"
-    + "stroke:#0b1016;stroke-width:4px;stroke-linejoin:round}";
+    + "stroke:#0b1016;stroke-width:4px;stroke-linejoin:round}"
+    + ".fc{fill:#1b2430;stroke:#3a4a5e}.fc.up.s100{fill:#8b98a5}.fc.up.s1g{fill:#5aa7f0}.fc.up.s25{fill:#3ccfb4}"
+    + ".fc.up.s10g{fill:#b48cf2}.fc.used{stroke:#fff;stroke-width:1.6}.fc.cage{fill:none;stroke-dasharray:3 2}.fn{fill:#8b98a5;font:10px ui-monospace,monospace;"
+    + "text-anchor:middle}.fn.on{fill:#0b1016;font-weight:700}.stub{stroke:#e6edf3;stroke-width:1.5;opacity:.7}";
   var holder = document.getElementById("wiring-data");
   var svg = document.getElementById("wiring-svg");
   var msg = document.getElementById("msg");
@@ -79,26 +87,55 @@ DIAGRAM_SCRIPT = r"""
 
   if (holder && svg && window.ELK) {
     var data = JSON.parse(holder.textContent);
-    var nodes = {}, ends = {};
+    var nodes = {}, ends = {}, faces = data.faces || {};
     data.nodes.forEach(function (n) { nodes[n.id] = n; ends[n.id] = []; });
     var edges = data.links.map(function (l, i) {
       var pa = "p" + i + "a", pb = "p" + i + "b";
-      ends[l.a].push({id: pa, side: "SOUTH", label: l.a_port});
-      ends[l.b].push({id: pb, side: "NORTH", label: l.b_port});
+      ends[l.a].push({id: pa, side: "SOUTH", label: l.a_port, port: l.a_port});
+      ends[l.b].push({id: pb, side: "NORTH", label: l.b_port, port: l.b_port});
       return {id: "e" + i, sources: [pa], targets: [pb], link: l};
     });
-    var portLabel = {};
+    // Boxes for switches/gateways/APs draw the device's real port grid (see atlas/wiring/faceplate.py)
+    // and every cable leaves from its port's real position, so the screen reads like the front panel.
+    var PW = 23, PS = 20, PH = 16, TOP = 44;
+    var portLabel = {}, geometry = {};
+    function nodeBox(n) {
+      var face = faces[n.id];
+      if (!face || !face.ports.length) {
+        return {width: Math.max(190, ends[n.id].length * 34), height: 62, face: null};
+      }
+      var width = Math.max(190, 20 + face.width * PW), height = TOP + face.rows * (PH + 3) + 10;
+      var cells = {};
+      face.ports.forEach(function (p) {
+        p.at = {x: 10 + p.x * PW, y: TOP + p.row * (PH + 3)};
+        if (!p.cage) { cells[p.name] = {x: p.at.x, y: p.at.y, cell: p}; }   // a combo SFP cage shares the RJ45 port's cable end
+      });
+      return {width: width, height: height, face: face, cells: cells};
+    }
     var graph = {
       id: "root",
       layoutOptions: {"elk.algorithm": "layered", "elk.direction": "DOWN", "elk.edgeRouting": "ORTHOGONAL",
                       "elk.layered.spacing.nodeNodeBetweenLayers": "80", "elk.spacing.nodeNode": "28",
-                      "elk.spacing.edgeEdge": "14"},
+                      "elk.spacing.edgeEdge": "12"},
       children: data.nodes.map(function (n) {
-        return {id: n.id, width: Math.max(190, ends[n.id].length * 34), height: 62,
-                layoutOptions: {"elk.portConstraints": "FIXED_SIDE"},
+        var box = nodeBox(n);
+        geometry[n.id] = box;
+        var spare = 0;
+        return {id: n.id, width: box.width, height: box.height,
+                layoutOptions: {"elk.portConstraints": box.face ? "FIXED_POS" : "FIXED_SIDE"},
                 ports: ends[n.id].map(function (p) {
                   portLabel[p.id] = p;
-                  return {id: p.id, width: 8, height: 8, layoutOptions: {"elk.port.side": p.side}};
+                  var spec = {id: p.id, width: 8, height: 8, layoutOptions: {"elk.port.side": p.side}};
+                  if (box.face) {
+                    var cell = box.cells[p.port];
+                    // two cables from the same column (odd above even) sit side by side, not on top of each other
+                    var cx = cell ? cell.x + PS / 2 + (box.face.rows === 2 ? (cell.cell.row ? 3 : -3) : 0)
+                                  : box.width - 14 - (spare++) * 12;   // logical port (LAG): right edge
+                    spec.x = cx - 4;
+                    spec.y = p.side === "SOUTH" ? box.height : -8;
+                    p.cx = cx; p.cell = cell;
+                  }
+                  return spec;
                 })};
       }),
       edges: edges.map(function (e) { return {id: e.id, sources: e.sources, targets: e.targets}; })
@@ -126,7 +163,7 @@ DIAGRAM_SCRIPT = r"""
         el("text", {x: end.x + 6, y: end.y - 12 - stack * 14, "class": "el"}, labelLayer, text);
       });
       (res.children || []).forEach(function (c) {
-        var n = nodes[c.id];
+        var n = nodes[c.id], box = geometry[c.id];
         var g = el("g", {transform: "translate(" + c.x + "," + c.y + ")", style: "cursor:pointer"}, nodeLayer);
         var tip = [n.name, n.kind, n.ip, n.mac].filter(Boolean).join(" · ");
         if (n.behind.length) { tip += "\nbehind: " + n.behind.join(", "); }
@@ -135,13 +172,31 @@ DIAGRAM_SCRIPT = r"""
         el("text", {x: 10, y: 19, "class": "nm"}, g, short(n.name, Math.floor(c.width / 8)));
         var sub = [n.kind, n.ip].filter(Boolean).join(" · ") + (n.behind.length ? "  +" + n.behind.length + " behind" : "");
         el("text", {x: 10, y: 34, "class": "sub"}, g, sub);
-        (c.ports || []).forEach(function (p) {
-          el("rect", {x: p.x, y: p.y, width: p.width, height: p.height, "class": "pt"}, g);
-          var info = portLabel[p.id];
-          if (info && info.label && info.side === "SOUTH") {
-            el("text", {x: p.x + 4, y: p.y - 3, "text-anchor": "middle", "class": "pl"}, g, short(info.label.replace(/^Port /, "p"), 6));
-          }
-        });
+        if (box.face) {
+          var used = {};
+          ends[c.id].forEach(function (p) { if (p.cell) { used[p.port] = true; } });
+          // Downlinks get a stub from the port square to the bottom edge (drawn first, under the squares); the uplink meets the top edge
+          // straight above its (outlined) port - a stub there would run through the box's title.
+          ends[c.id].forEach(function (p) {
+            if (!p.cell || p.side !== "SOUTH") { return; }
+            el("line", {x1: p.cx, y1: p.cell.y + PH, x2: p.cx, y2: c.height, "class": "stub"}, g);
+          });
+          box.face.ports.forEach(function (p) {
+            var cell = p.at;
+            var cls = "fc" + (p.cage ? " cage" : p.up ? " up " + speedClass(p.speed) : "") + (used[p.name] && !p.cage ? " used" : "");
+            var r = el("rect", {x: cell.x, y: cell.y, width: PS, height: PH, rx: 2, "class": cls}, g);
+            el("title", {}, r, p.name + (p.up ? " · " + speedText(p.speed) : " · down"));
+            el("text", {x: cell.x + PS / 2, y: cell.y + 11.5, "class": "fn" + (p.up && !p.cage ? " on" : "")}, g, p.cage ? p.label.replace("SFP ", "S") : p.label);
+          });
+        } else {
+          (c.ports || []).forEach(function (p) {
+            el("rect", {x: p.x, y: p.y, width: p.width, height: p.height, "class": "pt"}, g);
+            var info = portLabel[p.id];
+            if (info && info.label && info.side === "SOUTH") {
+              el("text", {x: p.x + 4, y: p.y - 3, "text-anchor": "middle", "class": "pl"}, g, short(info.label.replace(/^Port /, "p"), 6));
+            }
+          });
+        }
         g.addEventListener("click", function () {
           var plate = document.getElementById("fp-" + c.id);
           if (plate) { plate.open = true; plate.scrollIntoView({behavior: "smooth"}); }
@@ -245,7 +300,24 @@ def cabling_csv(snapshot):
     return out.getvalue()
 
 
-def _faceplates(snapshot, raw):
+def _boxes(snapshot, raw):
+    """(node id, name, full port table) for every shown switch/gateway/AP - SNMP and UniFi alike."""
+
+    boxes = [(f"s:{switch['name']}", switch["name"], switch["ports"]) for switch in (raw.get("switches") or {}).values()]
+    boxes += [(f"u:{device['mac']}", device["name"], device["ports"])
+              for device in ((raw.get("unifi") or {}).get("devices") or []) if device.get("ports")]
+    shown = {node["id"] for node in snapshot["nodes"]}
+
+    return [box for box in boxes if box[0] in shown]
+
+
+def faces(snapshot, raw, panels=None):
+
+    panels = panels or {}
+    return {node_id: physical_layout(ports, panels.get(name)) for node_id, name, ports in _boxes(snapshot, raw)}
+
+
+def _faceplates(snapshot, raw, panels=None):
 
     names = {node["id"]: node["name"] for node in snapshot["nodes"]}
     attached = {}
@@ -254,35 +326,36 @@ def _faceplates(snapshot, raw):
         if link["b_port"]:
             attached[(link["b"], link["b_port"])] = (names.get(link["a"]), link)
 
-    boxes = []
-    for switch in (raw.get("switches") or {}).values():
-        boxes.append((f"s:{switch['name']}", switch["name"], switch["ports"]))
-    for device in ((raw.get("unifi") or {}).get("devices") or []):
-        if device.get("ports"):
-            boxes.append((f"u:{device['mac']}", device["name"], device["ports"]))
-
-    shown = {node["id"] for node in snapshot["nodes"]}
     html = []
-    for node_id, name, ports in boxes:
-        if node_id not in shown:
-            continue
+    for node_id, name, ports in _boxes(snapshot, raw):
+        layout = physical_layout(ports, (panels or {}).get(name))
         cells = []
-        for port, info in sorted(ports.items(), key=lambda item: (item[1].get("index") or 0, item[0])):
-            other, link = attached.get((node_id, port), (None, None))
-            tip = " · ".join(filter(None, [port, _speed_text(info["speed"]) if info["up"] else "down", other,
+        for cell in layout["ports"]:
+            other, link = attached.get((node_id, cell["name"]), (None, None))
+            tip = " · ".join(filter(None, [cell["name"], _speed_text(cell["speed"]) if cell["up"] else "down", other,
                                            f"{link['patch']} {link['label']}".strip() if link else ""]))
-            short = port.replace("Port ", "") if port.startswith("Port ") else port
-            cells.append(f'<span class="{"up " if info["up"] else ""}{_speed_class(info["speed"])}" title="{_esc(tip)}">'
-                         f'<b>{_esc(short)}</b><small>{_esc(other or "")}</small></span>')
-        up = sum(1 for info in ports.values() if info["up"])
+            # Positioned like the front panel: x in port columns, row 0 = top (odd ports on rack switches).
+            if cell["cage"]:
+                tip = f'{cell["name"]} SFP cage (combo: shares {cell["name"]} with the RJ45 port)'
+            cells.append(f'<span class="{"cage " if cell["cage"] else ""}{"up " if cell["up"] else ""}{_speed_class(cell["speed"])}" '
+                         f'style="left:calc({cell["x"]:g} * var(--pw));top:calc({cell["row"]} * var(--ph))" '
+                         f'title="{_esc(tip)}"><b>{_esc(cell["label"])}</b><small>{_esc(other or "")}</small></span>')
+        logical = "".join(
+            f'<span class="lag" title="{_esc(port)}">{_esc(port)}'
+            f'{" · " + _esc(attached[(node_id, port)][0]) if (node_id, port) in attached else ""}</span>'
+            for port in layout["logical"] if (node_id, port) in attached)
+        sockets = [cell for cell in layout["ports"] if not cell["cage"]]   # a combo cage is the same port
+        up = sum(1 for cell in sockets if cell["up"])
         html.append(f'<details id="fp-{_esc(node_id)}"><summary>{_esc(name)} '
-                    f'<span class="when">· {up}/{len(ports)} ports up</span></summary>'
-                    f'<div class="fp">{"".join(cells)}</div></details>')
+                    f'<span class="when">· {up}/{len(sockets)} ports up</span></summary>'
+                    f'<div class="fp-wrap"><div class="fp" style="width:calc({layout["width"]:g} * var(--pw));'
+                    f'height:calc({layout["rows"]} * var(--ph))">{"".join(cells)}</div></div>'
+                    + (f'<p class="when">Port-channels: {logical}</p>' if logical else "") + '</details>')
 
     return "".join(html) or '<p class="muted">No switch port data yet.</p>'
 
 
-def render_cabling_page(latest, changes, enabled, now=None):
+def render_cabling_page(latest, changes, enabled, now=None, faceplates=None):
 
     if not enabled:
         body = ('<p class="muted">The cabling map is off. Add a <code>wiring:</code> section to atlas.yaml '
@@ -307,7 +380,8 @@ def render_cabling_page(latest, changes, enabled, now=None):
                      f'{" · stale" if state == "stale" else ""}{" · " + _esc(source["note"]) if source["note"] else ""}</span>')
 
     warnings = "".join(f"<li>{_esc(warning)}</li>" for warning in snapshot["warnings"])
-    data = json.dumps({"nodes": snapshot["nodes"], "links": snapshot["links"]}).replace("</", "<\\/")
+    data = json.dumps({"nodes": snapshot["nodes"], "links": snapshot["links"],
+                       "faces": faces(snapshot, latest.get("raw") or {}, faceplates)}).replace("</", "<\\/")
 
     rows = "".join(
         f'<tr><td>{_esc(row["switch"])}</td><td>{_esc(row["port"])}</td><td>{_esc(row["device"])}</td>'
@@ -343,7 +417,7 @@ def render_cabling_page(latest, changes, enabled, now=None):
         '<button class="cab-btn ghost" id="wiring-export" type="button">Export SVG</button></div>'
         f'<div class="frame"><svg id="wiring-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>'
         f'<script type="application/json" id="wiring-data">{data}</script></section>'
-        f'<section id="faceplates"><h2>Switch ports</h2>{_faceplates(snapshot, latest.get("raw") or {})}</section>'
+        f'<section id="faceplates"><h2>Switch ports</h2>{_faceplates(snapshot, latest.get("raw") or {}, faceplates)}</section>'
         '<section id="portmap"><h2>Port map</h2><div class="cab-tools">'
         '<input id="portmap-filter" type="search" placeholder="Filter: device, port, label…" aria-label="Filter port map">'
         '<a class="cab-btn ghost" href="/cabling.csv" download>CSV</a></div>'

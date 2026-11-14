@@ -12,7 +12,7 @@ import yaml
 
 def load_cabling(path):
 
-    empty = {"panels": [], "ports": {}, "error": None}
+    empty = {"panels": [], "ports": {}, "faceplates": {}, "error": None}
     path = Path(path)
 
     if not path.exists():
@@ -42,4 +42,13 @@ def load_cabling(path):
         entry = entry or {}
         ports[str(key)] = {"label": str(entry.get("label") or ""), "color": str(entry.get("color") or "")}
 
-    return {"panels": panels, "ports": ports, "error": "; ".join(errors) or None}
+    # Front-panel layout per switch, exactly as printed: rows of port names, "-" for a gap,
+    # "sfp:<port>" for an SFP cage that shares (combo) that port's interface.
+    faceplates = {}
+    for switch, rows in (data.get("faceplates") or {}).items():
+        if not isinstance(rows, list) or not all(isinstance(row, list) for row in rows):
+            errors.append(f"faceplates {switch}: needs a list of rows, each a list of port names")
+            continue
+        faceplates[str(switch)] = [[str(item) for item in row] for row in rows]
+
+    return {"panels": panels, "ports": ports, "faceplates": faceplates, "error": "; ".join(errors) or None}

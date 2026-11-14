@@ -160,7 +160,11 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                     self.wfile.write(data)
                     return
                 changes = diff_snapshots(rows[1]["snapshot"], rows[0]["snapshot"]) if len(rows) > 1 else []
-                body = render_cabling_page(rows[0] if rows else None, changes, load_config().wiring.enabled)
+                from atlas.wiring.cabling import load_cabling
+                wiring = load_config().wiring
+                # cabling.yaml is read on every view, so a faceplate/label edit shows without a rescan
+                body = render_cabling_page(rows[0] if rows else None, changes, wiring.enabled,
+                                           faceplates=load_cabling(wiring.cabling_file)["faceplates"])
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)
                 self._send(500, "text/plain; charset=utf-8", "Internal error")

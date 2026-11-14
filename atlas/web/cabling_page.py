@@ -94,7 +94,7 @@ DIAGRAM_SCRIPT = r"""
                       "elk.layered.spacing.nodeNodeBetweenLayers": "80", "elk.spacing.nodeNode": "28",
                       "elk.spacing.edgeEdge": "14"},
       children: data.nodes.map(function (n) {
-        return {id: n.id, width: Math.max(180, ends[n.id].length * 30), height: 52,
+        return {id: n.id, width: Math.max(190, ends[n.id].length * 34), height: 62,
                 layoutOptions: {"elk.portConstraints": "FIXED_SIDE"},
                 ports: ends[n.id].map(function (p) {
                   portLabel[p.id] = p;
@@ -117,10 +117,12 @@ DIAGRAM_SCRIPT = r"""
         var pts = [s.startPoint].concat(s.bendPoints || []).concat([s.endPoint]);
         el("polyline", {points: pts.map(function (p) { return p.x + "," + p.y; }).join(" "),
                         "class": "edge " + speedClass(link.speed) + (link.up ? "" : " down")}, edgeLayer);
-        var mid = Math.floor((pts.length - 1) / 2), a = pts[mid], b = pts[mid + 1];
+        // Label each cable on its last leg (the drop into its own device): every device has its own
+        // drop, so labels never pile up on the shared horizontal runs.
+        var end = pts[pts.length - 1];
         var text = (link.a_port || "·") + " ⇄ " + (link.b_port || "·") + " · " + speedText(link.speed)
                    + (link.patch ? " · " + link.patch : "");
-        el("text", {x: (a.x + b.x) / 2 + 6, y: (a.y + b.y) / 2 + 4, "class": "el"}, labelLayer, text);
+        el("text", {x: end.x + 6, y: end.y - 12, "class": "el"}, labelLayer, text);
       });
       (res.children || []).forEach(function (c) {
         var n = nodes[c.id];
@@ -129,14 +131,14 @@ DIAGRAM_SCRIPT = r"""
         if (n.behind.length) { tip += "\nbehind: " + n.behind.join(", "); }
         el("title", {}, g, tip);
         el("rect", {width: c.width, height: c.height, rx: 8, "class": "node k-" + n.kind}, g);
-        el("text", {x: 10, y: 21, "class": "nm"}, g, short(n.name, Math.floor(c.width / 8)));
+        el("text", {x: 10, y: 19, "class": "nm"}, g, short(n.name, Math.floor(c.width / 8)));
         var sub = [n.kind, n.ip].filter(Boolean).join(" · ") + (n.behind.length ? "  +" + n.behind.length + " behind" : "");
-        el("text", {x: 10, y: 38, "class": "sub"}, g, sub);
+        el("text", {x: 10, y: 34, "class": "sub"}, g, sub);
         (c.ports || []).forEach(function (p) {
           el("rect", {x: p.x, y: p.y, width: p.width, height: p.height, "class": "pt"}, g);
           var info = portLabel[p.id];
           if (info && info.label && info.side === "SOUTH") {
-            el("text", {x: p.x + 4, y: p.y - 4, "text-anchor": "middle", "class": "pl"}, g, short(info.label, 8));
+            el("text", {x: p.x + 4, y: p.y - 3, "text-anchor": "middle", "class": "pl"}, g, short(info.label.replace(/^Port /, "p"), 6));
           }
         });
         g.addEventListener("click", function () {

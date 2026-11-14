@@ -7,12 +7,22 @@ here uses .get() with a default so a renamed field degrades, never crashes.
 """
 
 import http.cookiejar
+import ipaddress
 import json
 import ssl
 import urllib.error
 import urllib.request
 
 from atlas.wiring import WiringError, normalize_mac
+
+
+def _lan_ip(value):
+    """A gateway reports its WAN (public) address as `ip`; the map only shows LAN addresses."""
+
+    try:
+        return value if ipaddress.ip_address(value).is_private else ""
+    except ValueError:
+        return ""
 
 
 def _role(device, macs):
@@ -41,7 +51,7 @@ def parse_unifi(devices, clients):
         uplink = device.get("last_uplink") or device.get("uplink") or {}
         parsed.append({
             "mac": normalize_mac(device.get("mac")), "name": device.get("name") or device.get("mac"),
-            "model": device.get("model", ""), "ip": device.get("ip", ""), "type": device.get("type", ""),
+            "model": device.get("model", ""), "ip": _lan_ip(device.get("ip", "")), "type": device.get("type", ""),
             "role": _role(device, macs), "ports": ports, "port_macs": port_macs,
             "uplink": {"type": uplink.get("type"), "mac": normalize_mac(uplink.get("uplink_mac")),
                        "remote_port": uplink.get("uplink_remote_port"), "local_port": uplink.get("port_idx")}})

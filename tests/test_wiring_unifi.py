@@ -80,3 +80,7 @@ def test_fetch_unifi_errors():
     with pytest.raises(WiringError, match="login refused"):
         fetch_unifi(config, {"ATLAS_UNIFI_USER": "a", "ATLAS_UNIFI_PASS": "b"}, 5,
                     opener_factory=lambda: FakeOpener(401))
+
+def test_public_ip_is_not_shown():
+    devices = [dict(DEVICES[0], ip="9.9.9.9")]
+    assert parse_unifi(devices, [])["devices"][0]["ip"] == ""

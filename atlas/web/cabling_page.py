@@ -41,6 +41,7 @@ CABLING_STYLE = """
 .fp span.up { opacity:1; }
 .fp span b { display:block; font-size:12px; }
 .fp span small { display:block; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fp span.cage { border-style:dashed; background:transparent; }
 .lag { border:1px solid var(--line); border-radius:6px; padding:1px 6px; margin-right:6px; }
 .fp .s100 { border-color:#8b98a5; } .fp .s1g { border-color:#5aa7f0; } .fp .s25 { border-color:#3ccfb4; } .fp .s10g { border-color:#b48cf2; }
 #faceplates details { border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:8px; }
@@ -67,7 +68,7 @@ DIAGRAM_SCRIPT = r"""
     + ".down{stroke-dasharray:6 4;opacity:.6}.el{fill:#e6edf3;font:11px ui-monospace,monospace;paint-order:stroke;"
     + "stroke:#0b1016;stroke-width:4px;stroke-linejoin:round}"
     + ".fc{fill:#1b2430;stroke:#3a4a5e}.fc.up.s100{fill:#8b98a5}.fc.up.s1g{fill:#5aa7f0}.fc.up.s25{fill:#3ccfb4}"
-    + ".fc.up.s10g{fill:#b48cf2}.fc.used{stroke:#fff;stroke-width:1.6}.fn{fill:#8b98a5;font:10px ui-monospace,monospace;"
+    + ".fc.up.s10g{fill:#b48cf2}.fc.used{stroke:#fff;stroke-width:1.6}.fc.cage{fill:none;stroke-dasharray:3 2}.fn{fill:#8b98a5;font:10px ui-monospace,monospace;"
     + "text-anchor:middle}.fn.on{fill:#0b1016;font-weight:700}.stub{stroke:#e6edf3;stroke-width:1.5;opacity:.7}";
   var holder = document.getElementById("wiring-data");
   var svg = document.getElementById("wiring-svg");
@@ -105,7 +106,10 @@ DIAGRAM_SCRIPT = r"""
       }
       var width = Math.max(190, 20 + face.width * PW), height = TOP + face.rows * (PH + 3) + 10;
       var cells = {};
-      face.ports.forEach(function (p) { cells[p.name] = {x: 10 + p.x * PW, y: TOP + p.row * (PH + 3), cell: p}; });
+      face.ports.forEach(function (p) {
+        p.at = {x: 10 + p.x * PW, y: TOP + p.row * (PH + 3)};
+        if (!p.cage) { cells[p.name] = {x: p.at.x, y: p.at.y, cell: p}; }   // a combo SFP cage shares the RJ45 port's cable end
+      });
       return {width: width, height: height, face: face, cells: cells};
     }
     var graph = {
@@ -178,11 +182,11 @@ DIAGRAM_SCRIPT = r"""
             el("line", {x1: p.cx, y1: p.cell.y + PH, x2: p.cx, y2: c.height, "class": "stub"}, g);
           });
           box.face.ports.forEach(function (p) {
-            var cell = box.cells[p.name];
-            var cls = "fc" + (p.up ? " up " + speedClass(p.speed) : "") + (used[p.name] ? " used" : "");
+            var cell = p.at;
+            var cls = "fc" + (p.cage ? " cage" : p.up ? " up " + speedClass(p.speed) : "") + (used[p.name] && !p.cage ? " used" : "");
             var r = el("rect", {x: cell.x, y: cell.y, width: PS, height: PH, rx: 2, "class": cls}, g);
             el("title", {}, r, p.name + (p.up ? " · " + speedText(p.speed) : " · down"));
-            el("text", {x: cell.x + PS / 2, y: cell.y + 11.5, "class": "fn" + (p.up ? " on" : "")}, g, p.label);
+            el("text", {x: cell.x + PS / 2, y: cell.y + 11.5, "class": "fn" + (p.up && !p.cage ? " on" : "")}, g, p.cage ? p.label.replace("SFP ", "S") : p.label);
           });
         } else {
           (c.ports || []).forEach(function (p) {
@@ -307,12 +311,13 @@ def _boxes(snapshot, raw):
     return [box for box in boxes if box[0] in shown]
 
 
-def faces(snapshot, raw):
+def faces(snapshot, raw, panels=None):
 
-    return {node_id: physical_layout(ports) for node_id, _, ports in _boxes(snapshot, raw)}
+    panels = panels or {}
+    return {node_id: physical_layout(ports, panels.get(name)) for node_id, name, ports in _boxes(snapshot, raw)}
 
 
-def _faceplates(snapshot, raw):
+def _faceplates(snapshot, raw, panels=None):
 
     names = {node["id"]: node["name"] for node in snapshot["nodes"]}
     attached = {}
@@ -323,23 +328,26 @@ def _faceplates(snapshot, raw):
 
     html = []
     for node_id, name, ports in _boxes(snapshot, raw):
-        layout = physical_layout(ports)
+        layout = physical_layout(ports, (panels or {}).get(name))
         cells = []
         for cell in layout["ports"]:
             other, link = attached.get((node_id, cell["name"]), (None, None))
             tip = " · ".join(filter(None, [cell["name"], _speed_text(cell["speed"]) if cell["up"] else "down", other,
                                            f"{link['patch']} {link['label']}".strip() if link else ""]))
             # Positioned like the front panel: x in port columns, row 0 = top (odd ports on rack switches).
-            cells.append(f'<span class="{"up " if cell["up"] else ""}{_speed_class(cell["speed"])}" '
+            if cell["cage"]:
+                tip = f'{cell["name"]} SFP cage (combo: shares {cell["name"]} with the RJ45 port)'
+            cells.append(f'<span class="{"cage " if cell["cage"] else ""}{"up " if cell["up"] else ""}{_speed_class(cell["speed"])}" '
                          f'style="left:calc({cell["x"]:g} * var(--pw));top:calc({cell["row"]} * var(--ph))" '
                          f'title="{_esc(tip)}"><b>{_esc(cell["label"])}</b><small>{_esc(other or "")}</small></span>')
         logical = "".join(
             f'<span class="lag" title="{_esc(port)}">{_esc(port)}'
             f'{" · " + _esc(attached[(node_id, port)][0]) if (node_id, port) in attached else ""}</span>'
             for port in layout["logical"] if (node_id, port) in attached)
-        up = sum(1 for cell in layout["ports"] if cell["up"])
+        sockets = [cell for cell in layout["ports"] if not cell["cage"]]   # a combo cage is the same port
+        up = sum(1 for cell in sockets if cell["up"])
         html.append(f'<details id="fp-{_esc(node_id)}"><summary>{_esc(name)} '
-                    f'<span class="when">· {up}/{len(layout["ports"])} ports up</span></summary>'
+                    f'<span class="when">· {up}/{len(sockets)} ports up</span></summary>'
                     f'<div class="fp-wrap"><div class="fp" style="width:calc({layout["width"]:g} * var(--pw));'
                     f'height:calc({layout["rows"]} * var(--ph))">{"".join(cells)}</div></div>'
                     + (f'<p class="when">Port-channels: {logical}</p>' if logical else "") + '</details>')
@@ -347,7 +355,7 @@ def _faceplates(snapshot, raw):
     return "".join(html) or '<p class="muted">No switch port data yet.</p>'
 
 
-def render_cabling_page(latest, changes, enabled, now=None):
+def render_cabling_page(latest, changes, enabled, now=None, faceplates=None):
 
     if not enabled:
         body = ('<p class="muted">The cabling map is off. Add a <code>wiring:</code> section to atlas.yaml '
@@ -373,7 +381,7 @@ def render_cabling_page(latest, changes, enabled, now=None):
 
     warnings = "".join(f"<li>{_esc(warning)}</li>" for warning in snapshot["warnings"])
     data = json.dumps({"nodes": snapshot["nodes"], "links": snapshot["links"],
-                       "faces": faces(snapshot, latest.get("raw") or {})}).replace("</", "<\\/")
+                       "faces": faces(snapshot, latest.get("raw") or {}, faceplates)}).replace("</", "<\\/")
 
     rows = "".join(
         f'<tr><td>{_esc(row["switch"])}</td><td>{_esc(row["port"])}</td><td>{_esc(row["device"])}</td>'
@@ -409,7 +417,7 @@ def render_cabling_page(latest, changes, enabled, now=None):
         '<button class="cab-btn ghost" id="wiring-export" type="button">Export SVG</button></div>'
         f'<div class="frame"><svg id="wiring-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>'
         f'<script type="application/json" id="wiring-data">{data}</script></section>'
-        f'<section id="faceplates"><h2>Switch ports</h2>{_faceplates(snapshot, latest.get("raw") or {})}</section>'
+        f'<section id="faceplates"><h2>Switch ports</h2>{_faceplates(snapshot, latest.get("raw") or {}, faceplates)}</section>'
         '<section id="portmap"><h2>Port map</h2><div class="cab-tools">'
         '<input id="portmap-filter" type="search" placeholder="Filter: device, port, label…" aria-label="Filter port map">'
         '<a class="cab-btn ghost" href="/cabling.csv" download>CSV</a></div>'

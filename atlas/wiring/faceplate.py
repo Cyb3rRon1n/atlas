@@ -33,8 +33,41 @@ def _label(name, rank):
     return f"S{digits}" if name.upper().startswith("SFP") else digits
 
 
-def physical_layout(ports):
-    """{port: {"index", "up", "speed"}} -> {"rows", "width", "ports": [{name, label, row, x, up, speed}], "logical": [names]}"""
+def _from_rows(ports, rows):
+    """The operator's exact front panel (cabling.yaml faceplates): wins over the convention below."""
+
+    placed, seen = [], set()
+
+    for row_number, row in enumerate(rows):
+        x = 0.0
+        for item in row:
+            if item == "-":
+                x += GAP
+                continue
+            cage = item.startswith("sfp:")
+            name = item[4:] if cage else item
+            info = ports.get(name, {})
+            number = NUMBER.search(name)
+            label = (f"SFP {number.group(1)}" if number else "SFP") if cage else _label(name, 0)
+            placed.append({"name": name, "label": label, "row": row_number, "x": x, "cage": cage,
+                           "up": bool(info.get("up")), "speed": int(info.get("speed") or 0)})
+            seen.add(name)
+            x += 1
+
+    return {
+        "rows": max(len(rows), 1),
+        "width": max((cell["x"] for cell in placed), default=-1) + 1,
+        "ports": placed,
+        # ports the device reports that the panel description doesn't place (port-channels, typos)
+        "logical": sorted(name for name in ports if name not in seen),
+    }
+
+
+def physical_layout(ports, rows=None):
+    """{port: {"index", "up", "speed"}} -> {"rows", "width", "ports": [{name, label, row, x, up, speed, cage}], "logical": [names]}"""
+
+    if rows:
+        return _from_rows(ports, rows)
 
     physical, logical = [], []
 
@@ -70,7 +103,7 @@ def physical_layout(ports):
     return {
         "rows": rows,
         "width": (max(x for *_, x in placed) + 1) if placed else 0,
-        "ports": [{"name": name, "label": _label(name, rank), "row": row, "x": x,
+        "ports": [{"name": name, "label": _label(name, rank), "row": row, "x": x, "cage": False,
                    "up": bool(info.get("up")), "speed": int(info.get("speed") or 0)}
                   for name, info, rank, row, x in placed],
         "logical": sorted(name for name, _ in logical),

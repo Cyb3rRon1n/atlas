@@ -26,3 +26,15 @@ def test_rack_switch_odd_top_even_bottom_blocks_and_extra_group():
 
 def test_empty():
     assert physical_layout({}) == {"rows": 1, "width": 0, "ports": [], "logical": []}
+
+
+def test_operator_rows_win_and_place_cages():
+    ports = {name: {"index": i, "up": name == "gi13", "speed": 1000} for i, name in
+             enumerate(["gi1", "gi13", "gi27", "Po1"], 1)}
+    layout = physical_layout(ports, [["gi1", "-", "gi27", "sfp:gi27"], ["gi13"]])
+    by = {(p["name"], p["cage"]): p for p in layout["ports"]}
+    assert layout["rows"] == 2 and layout["width"] == 3.5
+    assert (by[("gi13", False)]["row"], by[("gi13", False)]["x"], by[("gi13", False)]["up"]) == (1, 0, True)
+    assert by[("gi27", False)]["x"] == 1.5 and by[("gi27", True)]["x"] == 2.5
+    assert by[("gi27", True)]["label"] == "SFP 27"
+    assert layout["logical"] == ["Po1"]

@@ -13,7 +13,7 @@ from atlas.intelligence.providers.ollama_provider import OllamaProvider
 from atlas.intelligence.tools import ToolDefinition
 
 
-SAMPLE_CONTEXT = {"system": {"hostname": "sentinel"}}
+SAMPLE_CONTEXT = {"system": {"hostname": "homelab"}}
 
 SAMPLE_CHAT_RESPONSE_JSON = json.dumps({
     "text": "Everything looks fine right now.",
@@ -34,7 +34,7 @@ SAMPLE_RESPONSE_JSON = json.dumps({
     "recommendations": [
         {
             "title": "Enable swap",
-            "detail": "No swap device was detected on sentinel.",
+            "detail": "No swap device was detected on homelab.",
             "severity": "warning",
             "action": None
         },

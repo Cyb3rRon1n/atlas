@@ -14,8 +14,8 @@ def two_devices():
     # Globally-assigned-looking MACs (first octet's locally-administered bit unset) -
     # atlas.devices.wiring guesses "wireless" from that bit, and these two devices
     # need to default to visible/non-wireless for the rest of this module's tests.
-    store.record_run("lan", [Sighting("lan", "00:01", ip="192.168.10.1", mac="00:01", hostname="router"),
-                             Sighting("lan", "00:02", ip="192.168.10.2", mac="00:02")])
+    store.record_run("lan", [Sighting("lan", "00:01", ip="192.168.50.1", mac="00:01", hostname="router"),
+                             Sighting("lan", "00:02", ip="192.168.50.2", mac="00:02")])
 
     return {d["name"]: d["id"] for d in store.devices()}
 
@@ -25,7 +25,7 @@ def test_get_routes(temp_db):
     ids = two_devices()
 
     status, devices = api.handle("GET", "/api/devices")
-    assert status == 200 and {d["name"] for d in devices} == {"router", "192.168.10.2"}
+    assert status == 200 and {d["name"] for d in devices} == {"router", "192.168.50.2"}
     assert api.handle("GET", f"/api/devices/{ids['router']}")[1]["name"] == "router"
     assert api.handle("GET", "/api/devices/999") == (404, {"error": "not found"})
     assert set(api.handle("GET", "/api/triage")[1]) == {"new", "quiet"}
@@ -67,7 +67,7 @@ def test_publish_failure_still_returns_200_and_the_change_persists(temp_db, monk
 def test_merge_and_split(temp_db):
 
     ids = two_devices()
-    router, other = ids["router"], ids["192.168.10.2"]
+    router, other = ids["router"], ids["192.168.50.2"]
 
     assert api.handle("POST", f"/api/devices/{other}/merge", {"into": True}) == (400, {"error": "into must be a device id"})
     assert api.handle("POST", f"/api/devices/{other}/merge", {"into": router}) == (200, {"ok": True, "device_id": router})
@@ -97,8 +97,8 @@ def test_graph_route(temp_db):
     status, graph = api.handle("GET", "/api/graph?ignored=1")
     assert status == 200 and router_node in {node["data"]["id"] for node in graph["nodes"]}
 
-    other_node = f"d{ids['192.168.10.2']}"
-    InventoryStore().set_fields(ids["192.168.10.2"], {"connection": "wireless"})
+    other_node = f"d{ids['192.168.50.2']}"
+    InventoryStore().set_fields(ids["192.168.50.2"], {"connection": "wireless"})
 
     status, graph = api.handle("GET", "/api/graph")
     assert status == 200 and other_node not in {node["data"]["id"] for node in graph["nodes"]}

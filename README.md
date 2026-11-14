@@ -396,7 +396,7 @@ Atlas is built around a modular, event-driven core (CLI → Runtime → Plugins 
 Atlas uses YAML configuration, loaded from `atlas.yaml` in the working directory:
 
 ```yaml
-name: sentinel
+name: homelab
 
 discovery:
   hardware: true

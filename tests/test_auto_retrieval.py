@@ -20,7 +20,7 @@ def _setup(tmp_path, **knowledge):
     (tmp_path / "incidents" / "torrents.md").write_text(
         "# Torrents stuck at downloading metadata\n\nCause: VPN server without P2P; check qBit firewalled.\n")
     (tmp_path / "vulcan-docs.md").write_text("# Torrents\n\nvulcan runs qbittorrent behind gluetun. torrents torrents.\n")
-    (tmp_path / "HOSTS.md").write_text("cyberpac = 192.168.10.157\n")
+    (tmp_path / "HOSTS.md").write_text("media-server = 192.168.50.157\n")
     config = AtlasConfig()
     for key, value in knowledge.items():
         setattr(config.knowledge, key, value)
@@ -36,7 +36,7 @@ def test_notes_and_pinned_attached_to_latest_question_on_a_copy(tmp_path):
     agent.converse(messages)
 
     sent = provider.seen[-1]["content"]
-    assert "cyberpac = 192.168.10.157" in sent
+    assert "media-server = 192.168.50.157" in sent
     assert "VPN server without P2P" in sent
     assert sent.endswith("Question: torrents stuck at downloading metadata - why?")
     assert messages[0]["content"] == "torrents stuck at downloading metadata - why?"
@@ -60,7 +60,7 @@ def test_auto_context_zero_keeps_only_pinned(tmp_path):
     agent.converse([{"role": "user", "content": "torrents metadata"}])
 
     assert "VPN server" not in provider.seen[-1]["content"]
-    assert "192.168.10.157" in provider.seen[-1]["content"]
+    assert "192.168.50.157" in provider.seen[-1]["content"]
 
 
 def test_case_files_outrank_docs_and_stopwords_are_ignored(tmp_path):

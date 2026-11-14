@@ -14,7 +14,7 @@ class _FakeJellyfin(BaseHTTPRequestHandler):
 
     ROUTES = {
         "/Sessions": [{"UserName": "carol", "DeviceName": "Garage TV", "Client": "Jellyfin Android TV",
-                       "RemoteEndPoint": "192.168.10.224", "NowPlayingItem": {"Name": "The Furious"},
+                       "RemoteEndPoint": "192.168.50.224", "NowPlayingItem": {"Name": "The Furious"},
                        "PlayState": {"PlayMethod": "DirectStream"}}],
         "/System/ActivityLog/Entries": {"Items": [
             {"Date": "2026-09-28T21:43", "Type": "VideoPlayback", "Name": "carol is playing The Furious on Garage TV"},

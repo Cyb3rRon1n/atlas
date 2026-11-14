@@ -23,7 +23,7 @@ def test_render_overview_page_shows_system_and_hardware():
 
     environment = {
         "timestamp": "2026-01-01 00:00:00",
-        "system": {"hostname": "sentinel"},
+        "system": {"hostname": "homelab"},
         "hardware": {"cpu_model": "Test CPU"},
         "storage": {},
         "network": {},
@@ -33,7 +33,7 @@ def test_render_overview_page_shows_system_and_hardware():
 
     html = render_overview_page(environment, None)
 
-    assert "sentinel" in html
+    assert "homelab" in html
     assert "Test CPU" in html
 
 

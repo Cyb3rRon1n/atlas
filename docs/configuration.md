@@ -5,7 +5,7 @@ Atlas uses YAML configuration, loaded from `atlas.yaml` in the current working d
 Run `atlas init` to generate this file interactively instead of writing it by hand — it only prompts for the fields below that actually vary per deployment (Proxmox, AI provider, Prometheus), leaves `discovery`/`inventory` at their defaults, and logs the session to `logs/` for troubleshooting. The reference below is for editing the result by hand, or understanding what each field does.
 
 ```yaml
-name: sentinel
+name: homelab
 
 discovery:
   hardware: true

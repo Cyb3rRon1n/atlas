@@ -28,7 +28,7 @@ def fake_get(url, headers=None, timeout=None):
 
 
 def make(temp_db, read=None):
-    settings = PostureConfig(enabled=True, host_ip="192.168.10.157", gluetun_api_key="g", crowdsec_api_key="c")
+    settings = PostureConfig(enabled=True, host_ip="192.168.50.157", gluetun_api_key="g", crowdsec_api_key="c")
     flows = parse_conntrack((FIX / "conntrack.txt").read_text())
     table = AsnTable(parse_ip2asn((FIX / "ip2asn-v4.tsv").read_text().splitlines()))
     return Collector(settings, PostureStore(temp_db), client(), read_flows=read or (lambda: flows),
@@ -69,7 +69,7 @@ def test_public_ip_is_fetched_at_most_every_10_minutes(temp_db):
 
 def test_missing_keys_mark_sources_unconfigured(temp_db):
     collector = make(temp_db)
-    collector.settings = PostureConfig(enabled=True, host_ip="192.168.10.157")
+    collector.settings = PostureConfig(enabled=True, host_ip="192.168.50.157")
     collector.run_once(NOW)
     assert collector.store.statuses()["gluetun"]["detail"] == {"error": "not configured (posture.gluetun_api_key)"}
 
@@ -141,7 +141,7 @@ def test_corrupt_asn_data_does_not_stop_the_collector(temp_db, tmp_path):
             return Response(text="<html>")   # .content missing/garbage
         return fake_get(url, headers, timeout)
 
-    settings = PostureConfig(enabled=True, host_ip="192.168.10.157", gluetun_api_key="g", crowdsec_api_key="c",
+    settings = PostureConfig(enabled=True, host_ip="192.168.50.157", gluetun_api_key="g", crowdsec_api_key="c",
                              asn_path=str(asn_path))
     flows = parse_conntrack((FIX / "conntrack.txt").read_text())
     collector = Collector(settings, PostureStore(temp_db), client(), read_flows=lambda: flows, get=garbage_get)

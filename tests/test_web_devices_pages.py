@@ -8,10 +8,10 @@ from atlas.web.devices_pages import (ACTIONS_SCRIPT, render_coverage_page, rende
 def device(id, name, state="new", status="seen", sightings=None, **extra):
 
     return {"id": id, "name": name, "kind": "other", "tags": [], "notes": "", "important": False,
-            "state": state, "connection": "unknown", "connection_guessed": False, "uplink_id": None, "suggested_merge_id": None, "status": status, "ip": f"192.168.10.{id}",
+            "state": state, "connection": "unknown", "connection_guessed": False, "uplink_id": None, "suggested_merge_id": None, "status": status, "ip": f"192.168.50.{id}",
             "last_seen": "2026-09-30T12:00:00",
             "sightings": sightings or [{"id": id * 10, "source": "lan", "external_id": f"aa:{id}",
-                                        "ip": f"192.168.10.{id}", "mac": f"aa:{id}", "hostname": None,
+                                        "ip": f"192.168.50.{id}", "mac": f"aa:{id}", "hostname": None,
                                         "detail": {}, "first_seen": "2026-09-30T11:00:00",
                                         "last_seen": "2026-09-30T12:00:00"}], **extra}
 
@@ -19,13 +19,13 @@ def device(id, name, state="new", status="seen", sightings=None, **extra):
 def test_triage_page_has_keep_merge_ignore_and_escapes():
 
     html = render_triage_page({
-        "new": [device(2, "<script>x</script>", suggested_merge_id=1, suggested_merge_name="mediabox")],
+        "new": [device(2, "<script>x</script>", suggested_merge_id=1, suggested_merge_name="fileserver")],
         "quiet": [device(3, "pixel", state="known", status="quiet")],
     })
 
     assert "<script>x</script>" not in html and "&lt;script&gt;" in html
     assert 'data-post="/api/devices/2"' in html and 'data-name-from="name-2"' in html
-    assert 'data-post="/api/devices/2/merge"' in html and "Merge into mediabox" in html
+    assert 'data-post="/api/devices/2/merge"' in html and "Merge into fileserver" in html
     assert "&quot;ignored&quot;" in html
     assert 'href="/devices/3"' in html
 
@@ -37,7 +37,7 @@ def test_empty_triage_says_so():
 
 def test_devices_page_lists_with_filter_box():
 
-    html = render_devices_page([device(1, "mediabox", state="known"), device(2, "pixel")])
+    html = render_devices_page([device(1, "fileserver", state="known"), device(2, "pixel")])
 
     assert 'id="filter"' in html and 'href="/devices/1"' in html and "pixel" in html
 
@@ -81,7 +81,7 @@ def test_device_page_split_only_with_several_sightings_and_merge_targets():
     assert 'id="edit"' in single and 'data-form="edit"' in single
     assert 'onsubmit="this.querySelector(\'[data-form]\').click(); return false"' in single
 
-    two = device(1, "mediabox", sightings=[device(1, "a")["sightings"][0], device(9, "b")["sightings"][0]])
+    two = device(1, "fileserver", sightings=[device(1, "a")["sightings"][0], device(9, "b")["sightings"][0]])
     assert 'data-post="/api/sightings/10/split"' in render_device_page(two, [two])
 
 
@@ -118,7 +118,7 @@ def test_device_page_shows_stored_connection_when_guessed():
 def test_device_page_uplink_choices_include_the_router_regardless_of_kind():
 
     router = device(2, "router", kind="workstation",
-                    sightings=[{"id": 20, "source": "lan", "external_id": "aa:2", "ip": "192.168.10.1",
+                    sightings=[{"id": 20, "source": "lan", "external_id": "aa:2", "ip": "192.168.50.1",
                                 "mac": "aa:2", "hostname": None, "detail": {"gateway": True},
                                 "first_seen": "2026-09-30T11:00:00", "last_seen": "2026-09-30T12:00:00"}])
     dev = device(1, "pc", kind="server")
@@ -147,7 +147,7 @@ def test_coverage_page_shows_source_failures():
 
 
 def test_devices_page_attention_groups_and_ignored():
-    devices = [device(1, "mediabox", state="known"), device(2, "192.168.1.9", state="new"),
+    devices = [device(1, "fileserver", state="known"), device(2, "192.168.1.9", state="new"),
                device(3, "old-tv", state="ignored"), device(4, "laptop", state="known")]
     devices[0]["kind"], devices[3]["kind"] = "server", "workstation"
     devices[3]["status"] = "quiet"

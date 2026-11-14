@@ -4,8 +4,8 @@ import atlas.devices.notify as notify
 from atlas.config.models import SignalNotifyConfig
 
 
-ITEMS = [{"id": 1, "device": "Pixel-7", "ip": "192.168.10.88", "last_seen": "2026-09-29T12:00:00"},
-         {"id": 2, "device": "192.168.10.90", "ip": "192.168.10.90", "last_seen": None}]
+ITEMS = [{"id": 1, "device": "Pixel-7", "ip": "192.168.50.88", "last_seen": "2026-09-29T12:00:00"},
+         {"id": 2, "device": "192.168.50.90", "ip": "192.168.50.90", "last_seen": None}]
 
 
 def test_format_new_message_is_bold_headline_and_short_lines():
@@ -13,7 +13,7 @@ def test_format_new_message_is_bold_headline_and_short_lines():
     text = notify.format_message("new", ITEMS)
 
     assert text.splitlines()[0] == "**🆕 2 new devices on the network**"
-    assert "• Pixel-7 (192.168.10.88)" in text
+    assert "• Pixel-7 (192.168.50.88)" in text
     assert text.rstrip().endswith("Triage them in atlas.")
 
 

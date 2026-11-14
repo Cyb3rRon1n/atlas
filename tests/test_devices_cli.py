@@ -24,9 +24,9 @@ PROXMOX_ATLAS_YAML = (
 def test_scan_records_devices_and_devices_lists_them(temp_db, isolated_cwd, monkeypatch):
 
     (isolated_cwd / "atlas.yaml").write_text(
-        "map:\n  hosts:\n    - name: mediabox\n      address: 192.168.10.57\n")
+        "map:\n  hosts:\n    - name: fileserver\n      address: 192.168.50.57\n")
     monkeypatch.setattr(lan, "scan", lambda subnets, timeout: (
-        ["192.168.10.0/24"], [Sighting("lan", "aa:57", ip="192.168.10.57", mac="aa:57")]))
+        ["192.168.50.0/24"], [Sighting("lan", "aa:57", ip="192.168.50.57", mac="aa:57")]))
 
     result = runner.invoke(app, ["scan", "--json"])
     assert result.exit_code == 0, result.output
@@ -34,7 +34,7 @@ def test_scan_records_devices_and_devices_lists_them(temp_db, isolated_cwd, monk
 
     listed = runner.invoke(app, ["devices", "--json"])
     devices = json.loads(listed.output)
-    assert [d["name"] for d in devices] == ["mediabox"]
+    assert [d["name"] for d in devices] == ["fileserver"]
     assert devices[0]["status"] == "seen"
 
 
@@ -61,9 +61,9 @@ def test_scan_with_nothing_new_or_offline_does_not_publish_event(temp_db, isolat
     from atlas.knowledge.queries import KnowledgeQueries
 
     (isolated_cwd / "atlas.yaml").write_text(
-        "map:\n  hosts:\n    - name: mediabox\n      address: 192.168.10.57\n")
+        "map:\n  hosts:\n    - name: fileserver\n      address: 192.168.50.57\n")
     monkeypatch.setattr(lan, "scan", lambda subnets, timeout: (
-        ["192.168.10.0/24"], [Sighting("lan", "aa:57", ip="192.168.10.57", mac="aa:57")]))
+        ["192.168.50.0/24"], [Sighting("lan", "aa:57", ip="192.168.50.57", mac="aa:57")]))
 
     result = runner.invoke(app, ["scan"])
 

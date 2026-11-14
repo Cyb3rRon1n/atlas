@@ -1,3 +1,4 @@
+from typing import Literal
 from pydantic import BaseModel
 
 
@@ -154,6 +155,32 @@ class VpnWatchConfig(BaseModel):
     clients: list[TorrentClientConfig] = []
 
 
+class WiringSwitch(BaseModel):
+    # SNMPv3 authPriv only; passphrases come from env ATLAS_SNMP_<NAME>_AUTH / _PRIV.
+    name: str
+    host: str
+    snmp_user: str = "atlas"
+    priv: Literal["aes", "des"] = "aes"   # des: older gear (e.g. Cisco Sx300) offers nothing else
+
+
+class WiringUnifi(BaseModel):
+    # Optional: a local read-only UniFi account, from env ATLAS_UNIFI_USER / ATLAS_UNIFI_PASS.
+    enabled: bool = False
+    url: str = ""
+    site: str = "default"
+    verify_ssl: bool = False   # UniFi consoles ship a self-signed cert
+
+
+class WiringConfig(BaseModel):
+    """Port-level wired map (atlas wiring scan -> web /cabling). Off unless enabled."""
+    enabled: bool = False
+    timeout: int = 10
+    keep_snapshots: int = 30
+    switches: list[WiringSwitch] = []
+    unifi: WiringUnifi = WiringUnifi()
+    cabling_file: str = "cabling.yaml"
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -171,3 +198,4 @@ class AtlasConfig(BaseModel):
     posture: PostureConfig = PostureConfig()
     access: AccessConfig = AccessConfig()
     vpn: VpnWatchConfig = VpnWatchConfig()
+    wiring: WiringConfig = WiringConfig()

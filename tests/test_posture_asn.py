@@ -13,7 +13,7 @@ def test_lookup_finds_range_and_skips_unrouted():
     assert table.lookup("203.0.113.75") == AsnInfo(asn=64500, cc="US", org="EXAMPLE-NET")
     assert table.lookup("198.51.100.44") == AsnInfo(asn=64501, cc="NL", org="EXAMPLE-VPN")
     assert table.lookup("203.0.113.200") is None
-    assert table.lookup("192.168.10.1") is None
+    assert table.lookup("192.168.50.1") is None
     assert table.lookup("not-an-ip") is None
     assert len(table) == 3
 

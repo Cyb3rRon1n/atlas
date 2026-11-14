@@ -138,6 +138,6 @@ def test_known_guests_sorted_numerically_by_vmid():
 
 def test_known_guests_empty_when_no_virtualization_data():
 
-    records = [_record(T1, {"system": {"hostname": "sentinel"}})]
+    records = [_record(T1, {"system": {"hostname": "homelab"}})]
 
     assert known_guests(records) == {}

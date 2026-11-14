@@ -10,7 +10,7 @@ def _notes(tmp_path):
 
     (tmp_path / "jellyfin.md").write_text(
         "# Jellyfin\n\nIntro.\n\n## Transcode Killer\n\nKills >1080p transcodes, disabled 2026-09-28.\n\n"
-        "## Networking\n\nLAN networks 192.168.10.0/24, known proxies traefik.\n"
+        "## Networking\n\nLAN networks 192.168.50.0/24, known proxies traefik.\n"
     )
     (tmp_path / "raid.txt").write_text("RAID card runs 82-87C; watchdog stops the stack at 100C.\n")
     hidden = tmp_path / ".git"

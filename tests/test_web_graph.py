@@ -16,8 +16,8 @@ def lan(ip, **detail):
 
 
 TOPOLOGY = {
-    "proxmox": {"host": "192.168.10.97"},
-    "brain": {"address": "192.168.10.19", "model": "qwen3:8b"},
+    "proxmox": {"host": "192.168.50.97"},
+    "brain": {"address": "192.168.50.19", "model": "qwen3:8b"},
     "docker": {"networks": {
         "stack_default": [{"name": "jellyfin", "status": "running", "health": "healthy", "public": []},
                           {"name": "sonarr", "status": "running", "health": "", "public": []}],
@@ -26,12 +26,12 @@ TOPOLOGY = {
 }
 
 DEVICES = [
-    device(1, "cyberpac", [lan("192.168.10.157", self=True)]),
-    device(2, "cyberbox", [lan("192.168.10.97"), {"source": "manual", "ip": "192.168.10.97", "detail": {}}]),
-    device(3, "mediabox", [lan("192.168.10.57"), {"source": "proxmox", "ip": None, "detail": {"type": "lxc"}}]),
-    device(4, "MSI laptop", [lan("192.168.10.19")], important=True, status="quiet"),
-    device(5, "phone", [lan("192.168.10.88")], state="new"),
-    device(6, "old tv", [lan("192.168.10.70")], state="ignored"),
+    device(1, "media-server", [lan("192.168.50.157", self=True)]),
+    device(2, "pve-host", [lan("192.168.50.97"), {"source": "manual", "ip": "192.168.50.97", "detail": {}}]),
+    device(3, "fileserver", [lan("192.168.50.57"), {"source": "proxmox", "ip": None, "detail": {"type": "lxc"}}]),
+    device(4, "MSI laptop", [lan("192.168.50.19")], important=True, status="quiet"),
+    device(5, "phone", [lan("192.168.50.88")], state="new"),
+    device(6, "old tv", [lan("192.168.50.70")], state="ignored"),
 ]
 
 
@@ -83,8 +83,8 @@ def test_ignored_can_be_included_and_no_topology_still_works():
 
 def test_router_is_root_with_no_lan_node():
 
-    devices = [device(1, "router", [lan("192.168.10.1", gateway=True)], kind="network"),
-               device(2, "pc", [lan("192.168.10.2")])]
+    devices = [device(1, "router", [lan("192.168.50.1", gateway=True)], kind="network"),
+               device(2, "pc", [lan("192.168.50.2")])]
 
     graph = build_graph(devices, None)
     by_id = nodes(graph)
@@ -98,11 +98,11 @@ def test_router_is_root_with_no_lan_node():
 
 def test_router_chosen_by_latest_gateway_sighting_when_several_flagged():
 
-    devices = [device(1, "old-router", [lan("192.168.10.1", gateway=True) | {"last_seen": "2026-01-01T00:00:00"}],
+    devices = [device(1, "old-router", [lan("192.168.50.1", gateway=True) | {"last_seen": "2026-01-01T00:00:00"}],
                       kind="network"),
-               device(2, "new-router", [lan("192.168.10.254", gateway=True) | {"last_seen": "2026-06-01T00:00:00"}],
+               device(2, "new-router", [lan("192.168.50.254", gateway=True) | {"last_seen": "2026-06-01T00:00:00"}],
                       kind="network"),
-               device(3, "pc", [lan("192.168.10.2")])]
+               device(3, "pc", [lan("192.168.50.2")])]
 
     graph = build_graph(devices, None)
     by_id = nodes(graph)
@@ -114,13 +114,13 @@ def test_router_chosen_by_latest_gateway_sighting_when_several_flagged():
 
 def test_router_is_never_nested_even_if_it_is_a_proxmox_guest():
 
-    topology = {"proxmox": {"host": "192.168.10.10"}}
+    topology = {"proxmox": {"host": "192.168.50.10"}}
 
     devices = [
-        device(1, "proxmox-host", [lan("192.168.10.10")], kind="container-host"),
-        device(2, "router-guest", [lan("192.168.10.1", gateway=True),
+        device(1, "proxmox-host", [lan("192.168.50.10")], kind="container-host"),
+        device(2, "router-guest", [lan("192.168.50.1", gateway=True),
                                    {"source": "proxmox", "ip": None, "detail": {"type": "lxc"}}], kind="network"),
-        device(3, "pc", [lan("192.168.10.2")]),
+        device(3, "pc", [lan("192.168.50.2")]),
     ]
 
     graph = build_graph(devices, topology)
@@ -134,8 +134,8 @@ def test_router_is_never_nested_even_if_it_is_a_proxmox_guest():
 
 def test_fallback_lan_hub_used_when_no_gateway_flag():
 
-    devices = [device(1, "ap", [lan("192.168.10.1")], kind="network"),
-               device(2, "pc", [lan("192.168.10.2")])]
+    devices = [device(1, "ap", [lan("192.168.50.1")], kind="network"),
+               device(2, "pc", [lan("192.168.50.2")])]
 
     graph = build_graph(devices, None)
 
@@ -145,8 +145,8 @@ def test_fallback_lan_hub_used_when_no_gateway_flag():
 
 def test_wireless_device_hidden_unless_included():
 
-    devices = [device(1, "router", [lan("192.168.10.1", gateway=True)], kind="network"),
-               device(2, "phone", [lan("192.168.10.2")], kind="phone",
+    devices = [device(1, "router", [lan("192.168.50.1", gateway=True)], kind="network"),
+               device(2, "phone", [lan("192.168.50.2")], kind="phone",
                       connection="wireless", connection_guessed=True)]
 
     hidden = build_graph(devices, None)
@@ -161,8 +161,8 @@ def test_wireless_device_hidden_unless_included():
 
 def test_operator_set_wired_phone_is_shown():
 
-    devices = [device(1, "router", [lan("192.168.10.1", gateway=True)], kind="network"),
-               device(2, "phone", [lan("192.168.10.2")], kind="phone", connection="wired")]
+    devices = [device(1, "router", [lan("192.168.50.1", gateway=True)], kind="network"),
+               device(2, "phone", [lan("192.168.50.2")], kind="phone", connection="wired")]
 
     graph = build_graph(devices, None)
 
@@ -172,9 +172,9 @@ def test_operator_set_wired_phone_is_shown():
 
 def test_uplink_edge_replaces_router_edge():
 
-    devices = [device(1, "router", [lan("192.168.10.1", gateway=True)], kind="network"),
-               device(2, "ap", [lan("192.168.10.2")], kind="network"),
-               device(3, "pc", [lan("192.168.10.3")], uplink_id=2)]
+    devices = [device(1, "router", [lan("192.168.50.1", gateway=True)], kind="network"),
+               device(2, "ap", [lan("192.168.50.2")], kind="network"),
+               device(3, "pc", [lan("192.168.50.3")], uplink_id=2)]
 
     edges = edge_pairs(build_graph(devices, None))
 
@@ -184,19 +184,19 @@ def test_uplink_edge_replaces_router_edge():
 
 def test_uplink_to_a_hidden_ignored_or_nested_device_falls_back_to_router():
 
-    topology = {"proxmox": {"host": "192.168.10.10"}}
+    topology = {"proxmox": {"host": "192.168.50.10"}}
 
     devices = [
-        device(1, "router", [lan("192.168.10.1", gateway=True)], kind="network"),
+        device(1, "router", [lan("192.168.50.1", gateway=True)], kind="network"),
         # "hidden": uplink_id points at a device id that doesn't exist at all.
-        device(2, "pc-to-nowhere", [lan("192.168.10.2")], uplink_id=999),
+        device(2, "pc-to-nowhere", [lan("192.168.50.2")], uplink_id=999),
         # "ignored": the target exists but is filtered out (not included).
-        device(3, "ignored-ap", [lan("192.168.10.3")], state="ignored", kind="network"),
-        device(4, "pc-to-ignored", [lan("192.168.10.4")], uplink_id=3),
+        device(3, "ignored-ap", [lan("192.168.50.3")], state="ignored", kind="network"),
+        device(4, "pc-to-ignored", [lan("192.168.50.4")], uplink_id=3),
         # "nested": the target exists and is shown, but nested under the proxmox host.
-        device(5, "proxmox-host", [lan("192.168.10.10")], kind="container-host"),
+        device(5, "proxmox-host", [lan("192.168.50.10")], kind="container-host"),
         device(6, "guest", [{"source": "proxmox", "ip": None, "detail": {"type": "lxc"}}], kind="lxc"),
-        device(7, "pc-to-nested", [lan("192.168.10.5")], uplink_id=6),
+        device(7, "pc-to-nested", [lan("192.168.50.5")], uplink_id=6),
     ]
 
     edges = edge_pairs(build_graph(devices, topology))
@@ -208,10 +208,10 @@ def test_uplink_to_a_hidden_ignored_or_nested_device_falls_back_to_router():
 
 def test_wireless_ap_that_is_someones_uplink_stays_shown():
 
-    devices = [device(1, "router", [lan("192.168.10.1", gateway=True)], kind="network"),
-               device(2, "wireless-ap", [lan("192.168.10.2")], kind="network",
+    devices = [device(1, "router", [lan("192.168.50.1", gateway=True)], kind="network"),
+               device(2, "wireless-ap", [lan("192.168.50.2")], kind="network",
                       connection="wireless", connection_guessed=True),
-               device(3, "pc", [lan("192.168.10.3")], uplink_id=2)]
+               device(3, "pc", [lan("192.168.50.3")], uplink_id=2)]
 
     graph = build_graph(devices, None)
     by_id = nodes(graph)

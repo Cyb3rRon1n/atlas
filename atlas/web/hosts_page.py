@@ -9,7 +9,7 @@ from atlas.web.render import _esc, ask_chips
 
 
 HOSTS_CHIPS = ("What is using the most CPU and memory right now?", "Is any disk or pool getting full?",
-               "Which containers restarted or are unhealthy?", "How is cyberbox doing?")
+               "Which containers restarted or are unhealthy?", "How is my Proxmox host doing?")
 
 HOSTS_STYLE = """
 <style>

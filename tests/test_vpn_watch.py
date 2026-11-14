@@ -26,7 +26,7 @@ class FakeSession:
         return self._resp([{}] * self.active)
 
 
-CLIENT = SimpleNamespace(name="cyberbox", url="http://qb:8080", username="admin", password="x")
+CLIENT = SimpleNamespace(name="pve-host", url="http://qb:8080", username="admin", password="x")
 
 
 def test_probe_reasons():
@@ -45,7 +45,7 @@ def test_check_alerts_after_two_failures_once_then_on_recovery(temp_db):
     check([CLIENT], store, send, FakeSession(None))
     assert sent == []                                   # one blip is not an outage
     check([CLIENT], store, send, FakeSession(None))
-    assert len(sent) == 1 and "cyberbox" in sent[0] and "🔴" in sent[0]
+    assert len(sent) == 1 and "pve-host" in sent[0] and "🔴" in sent[0]
     check([CLIENT], store, send, FakeSession(None))
     assert len(sent) == 1                               # no repeats while down
     check([CLIENT], store, send, FakeSession())

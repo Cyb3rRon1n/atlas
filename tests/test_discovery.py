@@ -47,7 +47,7 @@ def test_collect_network_uses_mocked_resolution():
 
     with patch(
         "atlas.discovery.network.socket.gethostbyname_ex",
-        return_value=("sentinel", [], ["192.168.1.10"])
+        return_value=("homelab", [], ["192.168.1.10"])
     ):
 
         network = collect_network()
@@ -60,7 +60,7 @@ def test_run_discovery_merges_all_categories():
 
     with patch(
         "atlas.discovery.network.socket.gethostbyname_ex",
-        return_value=("sentinel", [], ["192.168.1.10"])
+        return_value=("homelab", [], ["192.168.1.10"])
     ):
 
         data = run_discovery()

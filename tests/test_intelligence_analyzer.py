@@ -41,7 +41,7 @@ def test_analyzer_delegates_to_provider_and_returns_its_result():
     provider = FakeProvider(expected)
     analyzer = AtlasAnalyzer(provider)
 
-    environment = {"system": {"hostname": "sentinel"}}
+    environment = {"system": {"hostname": "homelab"}}
 
     result = analyzer.analyze(environment)
 

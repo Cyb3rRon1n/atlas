@@ -10,3 +10,10 @@ panels:
 # Runs without a panel: label a switch port directly.
 ports:
   "gateway:Port 3": {label: "ISP router (Wi-Fi only)", color: yellow}
+# Front panel, exactly as printed on the device (optional; otherwise atlas uses a common
+# convention). Rows top to bottom, ports left to right, "-" = a gap between port groups,
+# "sfp:<port>" = an SFP cage that shares (combo) that port. Example: Cisco SG300-28.
+faceplates:
+  core-switch:
+    - [gi1, gi2, gi3, gi4, gi5, gi6, "-", gi7, gi8, gi9, gi10, gi11, gi12, "-", gi25, "-", gi27, "sfp:gi27"]
+    - [gi13, gi14, gi15, gi16, gi17, gi18, "-", gi19, gi20, gi21, gi22, gi23, gi24, "-", gi26, "-", gi28, "sfp:gi28"]

@@ -51,3 +51,7 @@ fleet:
 #   unifi:
 #     enabled: true
 #     url: https://192.168.1.1
+# Sign-in for the web page: builtin = atlas's own admin password (first visit asks for the
+# setup code from `docker compose logs atlas`); proxy = Authelia/Authentik/... in front does it.
+web:
+  auth: builtin

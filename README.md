@@ -110,6 +110,21 @@ None of the above is required to get started — see [Quick Start](#quick-start)
 
 ## Quick Start
 
+### Install with Docker (one line)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Cyb3rRon1n/atlas/main/install.sh | bash
+```
+
+Rather read it before running it? `curl -fsSLO https://raw.githubusercontent.com/Cyb3rRon1n/atlas/main/install.sh`,
+read it, then `bash install.sh`. It needs Docker with the Compose plugin, asks four questions (folder,
+port, this machine or whole LAN, which AI assistant if any), writes `~/atlas` (compose file, `.env`,
+`atlas.yaml`), starts atlas and has you choose the admin password. Run it again to upgrade (your
+settings are kept); `bash install.sh --uninstall` stops atlas and asks before deleting any data.
+No telemetry: atlas talks only to what you configure.
+
+### From source
+
 Clone the repository and set up a virtual environment:
 
 ```bash
@@ -151,10 +166,13 @@ docker compose up -d               # pulls ghcr.io/cyb3rron1n/atlas (or builds i
 docker compose exec atlas atlas discover
 ```
 
-The port is bound to `127.0.0.1` by default, not published to the LAN: `atlas web`'s
-`/api/*` write routes (device triage) are only same-origin-gated, not authenticated, so
-publishing this port beyond localhost without an auth proxy (e.g. Authelia) in front of it
-exposes the device-edit API to anyone who can reach it. See below for reverse-proxy setup.
+**Sign-in.** atlas asks for its own admin password (`web.auth: builtin`, the default). On first
+visit it wants a one-time setup code from `docker compose logs atlas` (or
+`docker compose exec atlas atlas auth setup-code`) so nobody else on the LAN can claim it first.
+Reset the password with `docker compose exec -it atlas atlas auth password`. Already behind
+Authelia, Authentik or another auth proxy? Set `web.auth: proxy` and atlas leaves sign-in to it.
+The port is bound to `127.0.0.1` unless you set `ATLAS_BIND=0.0.0.0` in `.env` (the installer's
+"whole LAN" answer).
 
 The image is published to **`ghcr.io/cyb3rron1n/atlas`** (linux/amd64 + arm64): `latest` tracks
 `main`, `sha-<commit>` pins a build, and release tags publish `X.Y.Z` / `X.Y`. Set
@@ -170,10 +188,11 @@ Atlas, just on by default now.
 Values in `atlas.yaml` can reference the environment - `${NAME}` or `${NAME:-default}` - so
 secrets (a Jellyfin API key, a Proxmox token) can live in your stack's `.env` instead.
 
-`docker-compose.yml` mounts `/var/run/docker.sock` for the Docker
-plugin/actions by default — comment that out if you don't need
-container-level insight; mounting it at all is root-equivalent host access
-regardless of any read-only mount flag.
+**Docker access is read-only by default.** atlas never mounts `/var/run/docker.sock` itself: a
+small [socket proxy](https://github.com/Tecnativa/docker-socket-proxy) in the compose file lets it
+list containers, networks and logs and nothing else. The chat's approved stop/restart/resize
+actions need `ATLAS_DOCKER_WRITE=1` in `.env` - the proxy can't narrow writes further, so that is
+full container control (root-equivalent), which is why it's off unless you turn it on.
 
 <a id="posture-page"></a>
 ### Posture page
@@ -199,7 +218,7 @@ first day is a learning baseline; after that, a network a container never used b
 
 ### Add Atlas as a Homepage tile
 
-If you run [Homepage](https://gethomepage.dev) (or any dashboard), give Atlas a tile so the map and dashboard are one click away. Put Atlas behind your reverse proxy instead of publishing port 8420 — e.g. with Traefik + Authelia, a `docker-compose.override.yml` next to Atlas's own:
+If you run [Homepage](https://gethomepage.dev) (or any dashboard), give Atlas a tile so the map and dashboard are one click away. Behind a reverse proxy with its own sign-in — e.g. Traefik + Authelia — set `web.auth: proxy` in `atlas.yaml` and add a `docker-compose.override.yml` next to Atlas's own:
 
 ```yaml
 services:
@@ -232,6 +251,8 @@ Then the tile, in Homepage's `services.yaml` - with live counts from Atlas's `/a
         type: customapi
         url: http://atlas:8420/api/summary
         refreshInterval: 60000
+        headers:                       # only with web.auth: builtin - the token is `atlas auth token`
+          Authorization: Bearer {{HOMEPAGE_VAR_ATLAS_TOKEN}}
         mappings:
           - field: status
             label: Status

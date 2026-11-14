@@ -12,6 +12,9 @@ def get_provider(config) -> AIProvider:
     Build the configured AI provider from an IntelligenceConfig.
     """
 
+    if config.provider == "none":
+        raise AIProviderError("No AI assistant set up - set intelligence.provider in atlas.yaml to ollama or anthropic")
+
     if config.provider == "anthropic":
 
         from atlas.intelligence.providers.anthropic_provider import (

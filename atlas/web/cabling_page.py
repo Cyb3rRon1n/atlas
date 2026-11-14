@@ -109,7 +109,7 @@ DIAGRAM_SCRIPT = r"""
       svg.setAttribute("height", res.height + 20);
       el("style", {}, svg, SVG_CSS);
       var edgeLayer = el("g", {}, svg), nodeLayer = el("g", {}, svg), labelLayer = el("g", {}, svg);
-      var byId = {};
+      var byId = {}, dropCount = {};
       edges.forEach(function (e) { byId[e.id] = e.link; });
       (res.edges || []).forEach(function (e) {
         var link = byId[e.id], s = (e.sections || [])[0];
@@ -120,9 +120,10 @@ DIAGRAM_SCRIPT = r"""
         // Label each cable on its last leg (the drop into its own device): every device has its own
         // drop, so labels never pile up on the shared horizontal runs.
         var end = pts[pts.length - 1];
+        var stack = (dropCount[link.b] = (dropCount[link.b] || 0) + 1) - 1;   // several cables into one box: stagger
         var text = (link.a_port || "·") + " ⇄ " + (link.b_port || "·") + " · " + speedText(link.speed)
                    + (link.patch ? " · " + link.patch : "");
-        el("text", {x: end.x + 6, y: end.y - 12, "class": "el"}, labelLayer, text);
+        el("text", {x: end.x + 6, y: end.y - 12 - stack * 14, "class": "el"}, labelLayer, text);
       });
       (res.children || []).forEach(function (c) {
         var n = nodes[c.id];

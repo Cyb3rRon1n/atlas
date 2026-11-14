@@ -1,0 +1,12 @@
+# cabling.example.yaml - copy to cabling.yaml next to atlas.yaml and edit.
+# Patch panels and wall jacks are invisible to LLDP/SNMP; describe them here once.
+# switch = a switch name from atlas.yaml wiring.switches (or a UniFi device name),
+# port = the port name as the switch reports it (e.g. gi1, Port 3).
+panels:
+  - name: PP1
+    ports:
+      1: {switch: core-switch, port: gi1, label: "Office - desk A", color: blue}
+      2: {switch: core-switch, port: gi2, label: "Rack - nas"}
+# Runs without a panel: label a switch port directly.
+ports:
+  "gateway:Port 3": {label: "ISP router (Wi-Fi only)", color: yellow}

@@ -211,6 +211,36 @@ def handle(method, path, body=None):
         return _get(path, query)
 
     if method == "POST":
+        if path == "/api/wiring/refresh":
+            return _wiring_refresh()
         return _post(path, body)
 
     return None
+
+
+def _wiring_refresh():
+    """The /cabling Refresh button: one synchronous wiring scan (seconds), same code as `atlas wiring scan`."""
+
+    from atlas.wiring.scan import WiringBusy, run_scan
+    from atlas.wiring.store import WiringStore
+
+    settings = load_config()
+
+    if not settings.wiring.enabled:
+        return 400, {"error": "wiring is not enabled in atlas.yaml"}
+
+    try:
+        result = run_scan(settings, WiringStore(), InventoryStore().devices())
+    except WiringBusy:
+        return 409, {"error": "a scan is already running"}
+
+    snapshot = result["snapshot"]
+    try:
+        application.runtime.events.publish(AtlasEvent(
+            event_type="atlas.wiring.scanned", source="AtlasWeb",
+            payload={"links": len(snapshot["links"]), "warnings": len(snapshot["warnings"]),
+                     "sources": {name: source["ok"] for name, source in result["sources"].items()}}))
+    except Exception as error:
+        print(f"atlas.web.api: event publish failed for atlas.wiring.scanned: {error!r}", file=sys.stderr)
+
+    return 200, {"ok": True, "taken_at": result["taken_at"].isoformat(), "sources": result["sources"]}

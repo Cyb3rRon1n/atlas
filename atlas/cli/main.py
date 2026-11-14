@@ -3413,6 +3413,65 @@ app.add_typer(
 )
 
 
+wiring_app = typer.Typer(
+    name="wiring",
+    help="Port-level wired map: switches, patch panels, cables (web /cabling)."
+)
+
+
+@wiring_app.command("scan")
+def wiring_scan(
+    json_output: bool = typer.Option(False, "--json", help="Print the scan result as JSON")
+):
+    """
+    One read-only pass over the configured switches (SNMPv3) and, if enabled,
+    the UniFi console; saves a snapshot for /cabling. On demand, like every
+    atlas command - the web Refresh button runs the same thing.
+    """
+
+    from atlas.devices.store import InventoryStore
+    from atlas.wiring.scan import WiringBusy, run_scan
+    from atlas.wiring.store import WiringStore, diff_snapshots
+
+    settings = load_config()
+
+    if not settings.wiring.enabled:
+        console.print("[yellow]wiring.enabled is false in atlas.yaml - nothing to do.[/yellow]")
+        return
+
+    store = WiringStore()
+    previous = store.latest(1)
+
+    try:
+        result = run_scan(settings, store, InventoryStore().devices())
+    except WiringBusy:
+        console.print("[yellow]A wiring scan is already running.[/yellow]")
+        raise typer.Exit(code=1)
+
+    changes = diff_snapshots(previous[0]["snapshot"] if previous else None, result["snapshot"])
+    failed = any(not source["ok"] for source in result["sources"].values())
+
+    if json_output:
+        print(json.dumps({**result, "changes": changes}, default=str))
+    else:
+        for name, source in result["sources"].items():
+            mark = "[green]✓" if source["ok"] else ("[yellow]! stale" if source["stale"] else "[red]✗")
+            console.print(f"{mark} {name}[/] {source['error'] or source['note']}")
+        snapshot = result["snapshot"]
+        for warning in snapshot["warnings"]:
+            console.print(f"[yellow]! {warning}[/yellow]")
+        console.print(f"{len(snapshot['links'])} links, {len(snapshot['warnings'])} warnings, "
+                      f"{len(changes)} changes since last scan")
+
+    if failed:
+        raise typer.Exit(code=1)
+
+
+app.add_typer(
+    wiring_app
+)
+
+
 vpn_app = typer.Typer(
     name="vpn",
     help="Check that the torrent clients behind gluetun are connected."

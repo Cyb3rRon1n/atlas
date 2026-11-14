@@ -161,3 +161,6 @@ site/
 
 atlas.yaml
 .superpowers/
+
+# Operator cabling map (site-specific)
+cabling.yaml

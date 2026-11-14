@@ -33,6 +33,7 @@ from atlas.web.home_page import build_hosts, build_storage, interesting_events, 
 from atlas.web.posture_page import render_posture_page
 from atlas.web.graph import build_graph
 from atlas.web.network_page import render_network_page
+from atlas.web.cabling_page import cabling_csv, render_cabling_page
 from atlas.web.render import _posture_block, build_summary, render_history_page, render_overview_page
 from atlas.web.trends_page import WINDOWS as TREND_WINDOWS, render_trends_page
 
@@ -44,7 +45,7 @@ DEVICE_PAGE = re.compile(r"^/devices/(\d+)$")
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 # Explicit allow-list - never build a filesystem path from the request.
-STATIC_FILES = {"cytoscape.min.js"}
+STATIC_FILES = {"cytoscape.min.js", "elk.bundled.js"}
 
 
 def same_origin(headers):
@@ -142,6 +143,28 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             topology = query.latest_topology()
             body = render_network_page(topology, PostureStore().latest_routes(),
                                        build_graph(InventoryStore().devices(), topology))
+        elif path in ("/cabling", "/cabling.csv"):
+            from atlas.wiring.store import WiringStore, diff_snapshots
+            try:
+                rows = WiringStore().latest(2)
+                if path == "/cabling.csv":
+                    if not rows:
+                        self._send(404, "text/plain; charset=utf-8", "No wiring scan yet")
+                        return
+                    data = cabling_csv(rows[0]["snapshot"]).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/csv; charset=utf-8")
+                    self.send_header("Content-Disposition", 'attachment; filename="cabling.csv"')
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+                changes = diff_snapshots(rows[1]["snapshot"], rows[0]["snapshot"]) if len(rows) > 1 else []
+                body = render_cabling_page(rows[0] if rows else None, changes, load_config().wiring.enabled)
+            except Exception as error:
+                self.log_error("unhandled error in GET %s: %r", path, error)
+                self._send(500, "text/plain; charset=utf-8", "Internal error")
+                return
         elif path == "/chat":
             try:
                 prefill = ""

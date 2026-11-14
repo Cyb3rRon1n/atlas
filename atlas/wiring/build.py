@@ -13,7 +13,7 @@ Heuristics, each with a known ceiling:
   more than 3 non-virtual MACs (a hypervisor's guests use virtual MACs, so a
   Proxmox host with a few guests stays a host, not a "switch").
 - On an access port the primary device is the LLDP-announcing host, else the
-  first non-virtual MAC; everything else on that port is listed as `behind`.
+  first named non-virtual MAC, else the first non-virtual MAC; everything else on that port is listed as `behind`.
 - A UniFi port with more than 3 wired clients and no managed device behind it
   is an unmanaged bridge (a dumb switch or an ISP router in bridge mode).
 """
@@ -27,6 +27,8 @@ from atlas.wiring import is_virtual_mac, normalize_mac
 INFRA = ("wan", "gateway", "switch", "ap")
 
 MANY = 3
+
+UNNAMED = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")   # inventory names an unnamed device by its IP
 
 
 def _slug(name):
@@ -205,7 +207,10 @@ def build_wiring(switches, unifi, devices, cabling):
             if not macs:
                 continue
             preferred = lldp_host.get((node_id, port))
-            primary = preferred if preferred in macs else next((m for m in macs if not is_virtual_mac(m)), macs[0])
+            physical = [mac for mac in macs if not is_virtual_mac(mac)] or macs
+            # A named device beats an unnamed one (a server's BMC/IPMI NIC often sits on the same port).
+            named = [mac for mac in physical if not UNNAMED.match(name_for(mac)[0]) and name_for(mac)[0] != mac]
+            primary = preferred if preferred in macs else (named or physical)[0]
             host = host_node(primary)
             host["behind"] = [name_for(mac)[0] for mac in macs if mac != primary]
             add_link(node_id, port, host["id"], "", "fdb")

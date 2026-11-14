@@ -105,3 +105,13 @@ def test_hypervisor_with_guests_stays_a_host():
     snap = build_wiring([switch], None, INVENTORY, {"panels": [], "ports": {}, "error": None})
     host = next(n for n in snap["nodes"] if n["name"] == "nas")
     assert len(host["behind"]) == 5
+
+
+def test_named_device_beats_unnamed_bmc_on_the_same_port():
+    switch = dict(SWITCH, fdb=[{"port": "gi5", "mac": "00:00:5e:00:53:0b", "vlan": 1},
+                               {"port": "gi5", "mac": "00:00:5e:00:53:01", "vlan": 1}])
+    inventory = INVENTORY + [{"id": 9, "name": "192.0.2.98", "kind": "other",
+                              "sightings": [{"mac": "00:00:5e:00:53:0b"}]}]
+    snap = build_wiring([switch], None, inventory, {"panels": [], "ports": {}, "error": None})
+    host = next(n for n in snap["nodes"] if n["kind"] == "host")
+    assert host["name"] == "nas" and host["behind"] == ["192.0.2.98"]

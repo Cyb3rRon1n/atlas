@@ -854,7 +854,7 @@ Rules, in this order. The `a` end is always the upstream end, nearer the gateway
    If that node is infrastructure, it's a link (`via: lldp`) and the switch port counts as an *uplink port*. If it isn't, the neighbour is a host that speaks LLDP. Record its chassis MAC as the preferred MAC for that port.
 
    A UniFi wired client whose `ip` equals an SNMP switch's `host` gives that switch's UniFi-side port: the link from (that UniFi switch_mac node, `Port {switch_port}`) to the SNMP switch is used if LLDP didn't already make one.
-4. **Uplink ports:** these are the LLDP infrastructure ports from rule 3, plus any SNMP port with more than 3 learned MACs.
+4. **Uplink ports:** these are the LLDP infrastructure ports from rule 3, plus any SNMP port with more than 3 learned *non-virtual* MACs (hypervisor guests use virtual MACs).
 5. **SNMP hosts:** for each non-uplink port that is up and has learned MACs:
    - The primary MAC is the LLDP chassis MAC (rule 3), else the first non-virtual MAC, else the first MAC.
    - The primary becomes a node `h:<mac>`. Its name comes from inventory (a device with a sighting of that MAC), else the UniFi client name, else the MAC. Kind `host`, or `unknown` when there is no name.

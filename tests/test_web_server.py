@@ -341,6 +341,7 @@ from pathlib import Path
 
 PINNED = {
     "cytoscape.min.js": "5f3b5b529546d5af1fc5628590af033b74511a5b6f789f5f4682845863228b91",
+    "elk.bundled.js": "b0745abd7f23cd91690a1587e377edbe19fd7233c783300290936720546216d4",
 }
 
 

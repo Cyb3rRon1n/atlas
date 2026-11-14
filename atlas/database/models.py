@@ -310,3 +310,14 @@ class AccessPlaceRecord(Base):
     ip: Mapped[str] = mapped_column(default="")
     app: Mapped[str] = mapped_column(default="")
     alerted: Mapped[bool] = mapped_column(default=False)
+
+
+class WiringSnapshotRecord(Base):
+    """One wired-map scan (atlas wiring scan): the built snapshot + raw per-source input, as JSON text."""
+
+    __tablename__ = "wiring_snapshots"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    taken_at: Mapped[datetime] = mapped_column(index=True)
+    data: Mapped[str]      # {"snapshot": ..., "raw": ...} - raw keeps a failed source's last good input
+    errors: Mapped[str]    # per-source status {"name": {"ok", "error", "stale", "note"}}

@@ -20,7 +20,7 @@ WORKDIR /app
 # capability lets the non-root atlas user use NET_ADMIN (granted only to the
 # atlas-scan service via cap_add) without running as root.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends conntrack libcap2-bin \
+    && apt-get install -y --no-install-recommends conntrack libcap2-bin snmp \
     && setcap cap_net_admin+ep /usr/sbin/conntrack \
     && rm -rf /var/lib/apt/lists/*
 

@@ -36,3 +36,18 @@ fleet:
 #   gluetun_api_key: ''               # gluetun control-server API key (VPN exit IP check)
 #   crowdsec_api_key: ''              # cscli bouncers add atlas
 #   traefik_dynamic_dir: /traefik/dynamic   # Traefik file-provider dir, mounted read-only
+# Cabling map (`atlas wiring scan`, or Refresh on web /cabling): port-level wired topology
+# from your switches over SNMPv3 (read-only, authPriv) and, optionally, a UniFi console.
+# Secrets live in the .env file next to docker-compose.yml, never here:
+#   ATLAS_SNMP_<NAME>_AUTH / ATLAS_SNMP_<NAME>_PRIV   (<NAME> = switch name, upper-case, - -> _)
+#   ATLAS_UNIFI_USER / ATLAS_UNIFI_PASS               (a local, View Only UniFi account)
+# Patch panels and wall jacks: copy cabling.example.yaml to cabling.yaml.
+# wiring:
+#   enabled: true
+#   switches:
+#     - name: core-switch
+#       host: 192.168.1.2
+#       priv: aes                       # des for older switches that offer nothing else
+#   unifi:
+#     enabled: true
+#     url: https://192.168.1.1

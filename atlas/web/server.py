@@ -4,8 +4,8 @@ dependency, stdlib http.server only, matching this project's
 "lightweight" scoping for this feature. The server is read-only except
 for the device inventory's /api/* POST routes: those are gated by a
 same-origin check, capped at 64 KB of JSON, and write only through
-InventoryStore. The Authelia admin rule in front of the host is the
-auth boundary - this module doesn't authenticate requests itself.
+InventoryStore. Sign-in is atlas.web.auth (web.auth: builtin, the default)
+or, with web.auth: proxy, the auth proxy in front of the host.
 """
 
 import json
@@ -13,7 +13,8 @@ import re
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
+from http.cookies import SimpleCookie
+from urllib.parse import parse_qs, quote, urlsplit
 
 import psutil
 
@@ -24,7 +25,9 @@ from atlas.knowledge.queries import KnowledgeQueries
 from atlas.posture.model import build_posture, build_trends
 from atlas.posture.store import PostureStore
 from atlas.web import api
+from atlas.web.auth import COOKIE, SESSION_SECONDS
 from atlas.web.chat_page import render_chat_page
+from atlas.web.login_page import render_login_page, render_setup_page
 from atlas.web.devices_pages import render_coverage_page, render_device_page, render_devices_page, render_triage_page
 from atlas.web.hosts_page import render_hosts_summary
 from atlas.access.store import AccessStore
@@ -63,7 +66,124 @@ def same_origin(headers):
     return bool(origin and host) and urlsplit(origin).netloc == host
 
 
+def safe_next(value):
+    """Only same-site paths after sign-in - never an open redirect to //evil or a full URL."""
+
+    value = value or "/"
+
+    return value if value.startswith("/") and not value.startswith("//") and "\\" not in value else "/"
+
+
 class AtlasWebHandler(BaseHTTPRequestHandler):
+
+    auth = None     # an atlas.web.auth.Auth when web.auth is builtin; None = an auth proxy guards the host
+
+    def _session_ok(self):
+
+        cookie = SimpleCookie()
+        try:
+            cookie.load(self.headers.get("Cookie") or "")
+        except Exception:
+            return False
+        morsel = cookie.get(COOKIE)
+
+        return bool(morsel) and self.auth.valid_session(morsel.value)
+
+    def _token_ok(self):
+
+        header = self.headers.get("Authorization") or ""
+        token = header[7:].strip() if header.lower().startswith("bearer ") else self.headers.get("X-API-Key") or ""
+
+        return self.auth.valid_token(token.strip())
+
+    def _redirect(self, location, cookie=None):
+
+        self.send_response(303)
+        self.send_header("Location", location)
+        if cookie is not None:
+            secure = "; Secure" if self.headers.get("X-Forwarded-Proto") == "https" else ""
+            max_age = SESSION_SECONDS if cookie else 0
+            self.send_header("Set-Cookie", f"{COOKIE}={cookie}; Path=/; Max-Age={max_age}; HttpOnly; SameSite=Lax{secure}")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _gate(self, path):
+        """
+        True when a GET may go on to the page. Otherwise the response (sign-in,
+        setup, redirect or 401) has been sent here. The API token opens GET /api/* only.
+        """
+
+        if path.startswith("/static/"):
+            return True
+
+        if not self.auth.configured():
+            if path == "/setup":
+                self._send(200, "text/html; charset=utf-8", render_setup_page())
+            elif path.startswith("/api/"):
+                self._send(401, "application/json", json.dumps({"error": "atlas is not set up yet"}))
+            else:
+                self._redirect("/setup")
+            return False
+
+        if path in ("/login", "/setup"):
+            if self._session_ok():
+                self._redirect("/")
+            else:
+                next_path = safe_next((parse_qs(self.path.partition("?")[2]).get("next") or ["/"])[0])
+                self._send(200, "text/html; charset=utf-8", render_login_page(next_path=next_path))
+            return False
+
+        if self._session_ok() or (path.startswith("/api/") and self._token_ok()):
+            return True
+
+        if path.startswith("/api/"):
+            self._send(401, "application/json", json.dumps({"error": "sign in or send the API token"}))
+        else:
+            self._redirect("/login?next=" + quote(safe_next(self.path), safe="/"))
+        return False
+
+    def _auth_form(self, path, form):
+        """POST /login, /setup, /logout (urlencoded forms from the pages above)."""
+
+        field = lambda name: (form.get(name) or [""])[0]
+        client = self.client_address[0]
+
+        if path == "/logout":
+            self._redirect("/login", cookie="")
+            return
+
+        if path == "/setup":
+            if self.auth.configured():
+                self._redirect("/login")
+                return
+            if not self.auth.check_setup_code(field("code")):
+                # wrong codes count against the same per-client limit as wrong passwords
+                self.auth.login("", client)
+                error = "Too many attempts - wait a few minutes." if self.auth.limited(client) else "That setup code is not right."
+                self._send(403, "text/html; charset=utf-8", render_setup_page(error))
+                return
+            if field("password") != field("confirm"):
+                self._send(400, "text/html; charset=utf-8", render_setup_page("The passwords don't match."))
+                return
+            try:
+                self.auth.set_password(field("password"))
+            except ValueError as error:
+                self._send(400, "text/html; charset=utf-8", render_setup_page(str(error).capitalize() + "."))
+                return
+            self._redirect("/", cookie=self.auth.session())
+            return
+
+        # /login
+        next_path = safe_next(field("next"))
+        result = self.auth.login(field("password"), client)
+        if result == "limited":
+            self._send(429, "text/html; charset=utf-8",
+                       render_login_page("Too many attempts - wait a few minutes.", next_path))
+        elif result is None:
+            self.log_message("failed sign-in from %s", client)
+            self._send(401, "text/html; charset=utf-8", render_login_page("Wrong password.", next_path))
+        else:
+            self._redirect(next_path, cookie=result)
 
     def _home_data(self, query):
         """
@@ -104,6 +224,14 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
     def do_GET(self):
 
         path = self.path.split("?", 1)[0]
+
+        if path == "/healthz":
+            self._send(200, "text/plain; charset=utf-8", "ok")
+            return
+
+        if self.auth and not self._gate(path):
+            return
+
         query = KnowledgeQueries()
 
         if path == "/":
@@ -284,8 +412,18 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                        json.dumps({"error": "body must be JSON, at most 64 KB"}))
             return
 
+        raw = self.rfile.read(length)
+
+        if self.auth:
+            if path in ("/login", "/setup", "/logout"):
+                self._auth_form(path, parse_qs(raw.decode("utf-8", "replace")))
+                return
+            if not self._session_ok():
+                self._send(401, "application/json", json.dumps({"error": "sign in first"}))
+                return
+
         try:
-            body = json.loads(self.rfile.read(length) or b"null")
+            body = json.loads(raw or b"null")
         except (ValueError, RecursionError):
             # RecursionError: json's decoder recurses per nesting level, so deeply
             # nested input (still under MAX_BODY in byte size) can blow the stack
@@ -316,14 +454,19 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
 
-def run_server(host="127.0.0.1", port=8420):
+def run_server(host="127.0.0.1", port=8420, auth=None):
     """
     Blocks until interrupted (Ctrl+C) - on-demand like every other
     Atlas command, not a background/daemon process; the user starts
     it explicitly in a foreground terminal and stops it the same way.
+    auth: an atlas.web.auth.Auth to require sign-in, None when a proxy does it.
     """
 
-    httpd = ThreadingHTTPServer((host, port), AtlasWebHandler)
+    from atlas.web import render
+
+    render.SIGN_OUT = auth is not None
+    handler = type("AtlasWebHandler", (AtlasWebHandler,), {"auth": auth}) if auth else AtlasWebHandler
+    httpd = ThreadingHTTPServer((host, port), handler)
 
     try:
         httpd.serve_forever()

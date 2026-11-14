@@ -16,7 +16,7 @@ def test_version():
     result = runner.invoke(app, ["version"])
 
     assert result.exit_code == 0
-    assert "0.4.1" in result.output
+    assert "0.5.0" in result.output
 
 
 def test_status():
@@ -2790,7 +2790,7 @@ def test_resize_confirmed_shows_unlimited_when_no_configured_limits(
     assert "Current memory limit: unlimited" in result.output
 
 
-def test_web_starts_server_with_default_host_and_port():
+def test_web_starts_server_with_default_host_and_port(isolated_cwd):
 
     with patch("atlas.web.server.run_server") as mock_run_server:
 
@@ -2798,10 +2798,37 @@ def test_web_starts_server_with_default_host_and_port():
 
     assert result.exit_code == 0
     assert "http://127.0.0.1:8420" in result.output
-    mock_run_server.assert_called_once_with("127.0.0.1", 8420)
+    assert "Setup code:" in result.output
+    host, port, auth = mock_run_server.call_args.args
+    assert (host, port) == ("127.0.0.1", 8420) and auth is not None
 
 
-def test_web_respects_host_and_port_options():
+def test_web_proxy_auth_passes_no_auth(isolated_cwd):
+
+    (isolated_cwd / "atlas.yaml").write_text("web:\n  auth: proxy\n")
+    with patch("atlas.web.server.run_server") as mock_run_server:
+
+        result = runner.invoke(app, ["web"])
+
+    assert result.exit_code == 0 and "Setup code" not in result.output
+    assert mock_run_server.call_args.args[2] is None
+
+
+def test_auth_commands(isolated_cwd):
+
+    code = runner.invoke(app, ["auth", "setup-code"]).output.strip()
+    assert len(code) == 8
+
+    assert runner.invoke(app, ["auth", "password"], input="short\n").exit_code == 1
+    result = runner.invoke(app, ["auth", "password"], input="a long password\n")
+    assert result.exit_code == 0 and "saved" in result.output
+
+    token = runner.invoke(app, ["auth", "token"]).output.strip()
+    assert runner.invoke(app, ["auth", "token"]).output.strip() == token
+    assert runner.invoke(app, ["auth", "token", "--new"]).output.strip() != token
+
+
+def test_web_respects_host_and_port_options(isolated_cwd):
 
     with patch("atlas.web.server.run_server") as mock_run_server:
 
@@ -2809,10 +2836,10 @@ def test_web_respects_host_and_port_options():
 
     assert result.exit_code == 0
     assert "http://0.0.0.0:9000" in result.output
-    mock_run_server.assert_called_once_with("0.0.0.0", 9000)
+    assert mock_run_server.call_args.args[:2] == ("0.0.0.0", 9000)
 
 
-def test_web_handles_keyboard_interrupt_cleanly():
+def test_web_handles_keyboard_interrupt_cleanly(isolated_cwd):
 
     with patch("atlas.web.server.run_server", side_effect=KeyboardInterrupt):
 

@@ -1,11 +1,11 @@
 name: atlas
 
-# Atlas is not a daemon (see CLAUDE.md) - `atlas` runs the `atlas web`
-# dashboard with device inventory triage/edit; nothing inside it refreshes data on its own.
-#
+# Easiest: the installer writes this folder for you (see README):
+#   curl -fsSL https://raw.githubusercontent.com/Cyb3rRon1n/atlas/main/install.sh | bash
+# By hand:
 #   cp atlas.yaml.example atlas.yaml   # edit: Proxmox/Prometheus/AI config
 #   docker compose up -d               # pulls ghcr.io/cyb3rron1n/atlas (or builds it)
-#   docker compose exec atlas atlas discover
+#   docker compose logs atlas          # first run: the setup code for the admin password
 #
 # atlas-scan (below) keeps the device inventory and network map fresh - the
 # explicit, visible equivalent of a host cron line, for stacks without one.
@@ -21,31 +21,43 @@ x-atlas: &atlas
   env_file:
     - path: .env
       required: false
-  environment:
-    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   volumes:
     - ./atlas.yaml:/data/atlas.yaml:ro
     - data:/data/inventory
     - reports:/data/reports
     - logs:/data/logs
-    # Needed only for `atlas discover`'s Docker plugin / the network map /
-    # restart|stop|resize commands. Comment out if you don't need
-    # container-level insight - mounting this socket at all is
-    # root-equivalent host access; a `:ro` mount flag does not restrict
-    # what can be done over the socket itself.
-    - /var/run/docker.sock:/var/run/docker.sock
 
 services:
+  # Docker access goes through this proxy instead of mounting docker.sock into
+  # atlas (root-equivalent host access). Read-only by default: atlas can list
+  # containers, networks and logs, nothing else. ATLAS_DOCKER_WRITE=1 in .env
+  # lets the chat's approved stop/restart/resize actions through - the proxy
+  # can't narrow writes further, so that is full container control again.
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      NETWORKS: 1
+      INFO: 1
+      POST: ${ATLAS_DOCKER_WRITE:-0}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      # loopback only, for atlas-scan (host networking can't use the service name)
+      - "127.0.0.1:${ATLAS_DOCKER_PROXY_PORT:-23750}:2375"
+
   atlas:
     <<: *atlas
+    depends_on: [docker-proxy]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DOCKER_HOST: tcp://docker-proxy:2375
     ports:
-      # Bound to localhost by default: atlas web's /api/* now has a write path
-      # (device triage), guarded only by a same-origin check, not auth - fine
-      # against same-machine requests, not fine on an open LAN port, where any
-      # LAN client or a DNS-rebinding page could reach it. Reach it through a
-      # reverse proxy with auth (see docs/deployment) or change this bind
-      # deliberately, not by widening it to satisfy a "can't connect" issue.
-      - "127.0.0.1:${ATLAS_PORT:-8420}:8420"
+      # This machine only by default. ATLAS_BIND=0.0.0.0 in .env opens it to the
+      # LAN - atlas asks for its admin password (web.auth: builtin), so that is
+      # safe; behind an auth proxy, set web.auth: proxy and keep this on loopback.
+      - "${ATLAS_BIND:-127.0.0.1}:${ATLAS_PORT:-8420}:8420"
 
   # Finds every device on the LAN and refreshes discover / Proxmox / map every
   # ATLAS_SCAN_MINUTES (default 15). Host networking is what lets it see the
@@ -57,9 +69,11 @@ services:
     network_mode: host
     cap_add:
       - NET_ADMIN   # conntrack -L only (posture page); atlas never writes netfilter state
+    depends_on: [docker-proxy]
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ATLAS_SCAN_MINUTES: ${ATLAS_SCAN_MINUTES:-15}
+      DOCKER_HOST: tcp://127.0.0.1:${ATLAS_DOCKER_PROXY_PORT:-23750}
     healthcheck:
       disable: true
     command:

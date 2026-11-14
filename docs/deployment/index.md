@@ -59,5 +59,5 @@ Atlas's web view (overview, history, trends, network map, device triage, posture
           label: Public routes
 ```
 
-**Publishing atlas web beyond localhost without an auth proxy (e.g. Authelia) in front of it exposes its device-edit API unauthenticated** - the same-origin check on its `/api/*` write routes stops cross-site requests, not a direct request from another LAN client. `docker-compose.yml`'s default port mapping binds `127.0.0.1` for exactly this reason; widen it only behind a reverse proxy that authenticates first.
+**Sign-in:** atlas asks for its own admin password by default (`web.auth: builtin`; first visit needs the setup code from `docker compose logs atlas`). Behind a reverse proxy that already authenticates (Authelia, Authentik), set `web.auth: proxy`. Dashboards reach `/api/*` with the read-only token from `atlas auth token` (`Authorization: Bearer <token>`). Docker access goes through a read-only socket proxy; `ATLAS_DOCKER_WRITE=1` in `.env` opens container control for the chat's stop/restart/resize actions.
 

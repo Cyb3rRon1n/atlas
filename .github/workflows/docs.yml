@@ -2,6 +2,9 @@ name: Docs
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["docs/**", "mkdocs.yml"]
 
 permissions:
   contents: write

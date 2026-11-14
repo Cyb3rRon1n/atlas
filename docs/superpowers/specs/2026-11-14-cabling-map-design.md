@@ -40,8 +40,9 @@ Recorded SNMP/UniFi fixtures are rewritten to example data before they enter `te
 | UniFi (optional adapter) | local read-only account; `POST /api/auth/login`, `GET /proxy/network/api/s/<site>/stat/device` | per UniFi device: `port_table` (speed, up, `is_uplink`, nested `lldp_table`), `last_uplink` |
 | atlas inventory | existing `InventoryStore.devices()` sightings | MAC -> device name/kind/IP |
 
-SNMP is v3 authPriv only (SHA + AES). v2c is refused - read communities travel in clear
-text. UniFi field names vary by firmware: the adapter reads them defensively and logs
+SNMP is v3 authPriv only. v2c is refused - read communities travel in clear text.
+Auth SHA; privacy AES by default, `priv: des` allowed per switch because older gear (Cisco
+Sx300) only offers DES - atlas shows a "weak privacy" note for those, it doesn't refuse them. UniFi field names vary by firmware: the adapter reads them defensively and logs
 missing fields once, never crashes.
 
 First implementation step (spike): `snmpbulkwalk` the real switch to confirm which LLDP
@@ -60,6 +61,7 @@ wiring:
     - name: core-switch
       host: 192.0.2.2
       snmp_user: atlas
+      priv: aes             # aes | des (older switches)
       # auth/priv passwords come from env: ATLAS_SNMP_<NAME>_AUTH / _PRIV
   unifi:
     enabled: false

@@ -16,6 +16,11 @@ x-atlas: &atlas
     context: .
     dockerfile: Dockerfile
   restart: unless-stopped
+  # Optional secrets file next to this compose file (cabling map: SNMP/UniFi passwords).
+  # Keep it chmod 600; atlas never logs or stores these values.
+  env_file:
+    - path: .env
+      required: false
   environment:
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   volumes:

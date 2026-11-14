@@ -46,13 +46,13 @@ def test_topology_groups_by_network_and_vpn_sharing_and_checks_lan():
     port = listener.getsockname()[1]
 
     config = AtlasConfig()
-    config.name = "cyberpac"
+    config.name = "media-server"
     config.map.hosts = [MapHost(name="laptop", address="127.0.0.1", role="GPU", ports=[port])]
     config.proxmox.enabled = True
 
     try:
         topo = collect_topology(config, docker_client=_docker(),
-                                proxmox_resources=[{"vmid": 200, "name": "mediabox", "type": "lxc", "status": "running", "cpu": 1}])
+                                proxmox_resources=[{"vmid": 200, "name": "fileserver", "type": "lxc", "status": "running", "cpu": 1}])
     finally:
         listener.close()
 
@@ -61,7 +61,7 @@ def test_topology_groups_by_network_and_vpn_sharing_and_checks_lan():
     assert networks["via gluetun"][0]["health"] == "unhealthy"
     assert networks["stack_default"][2]["public"] == ["jellyfin.example.com"]
     assert networks["stack_default"][1]["ports"] == [8080]   # 127.0.0.1-only binds are not LAN-reachable
-    assert topo["proxmox"]["guests"] == [{"vmid": 200, "name": "mediabox", "type": "lxc", "status": "running", "template": None}]
+    assert topo["proxmox"]["guests"] == [{"vmid": 200, "name": "fileserver", "type": "lxc", "status": "running", "template": None}]
     assert topo["lan"][0]["reachable"] is True and topo["lan"][0]["open_ports"] == [port]
     assert topo["responsibility"]["proxmox_guests"]
 
@@ -81,14 +81,14 @@ def test_latest_topology_skips_rows_other_commands_saved(temp_db):
     from atlas.knowledge.store import KnowledgeStore
 
     with_map = AtlasEnvironmentContext()
-    with_map.update("topology", {"host": "cyberpac"})
+    with_map.update("topology", {"host": "media-server"})
     KnowledgeStore().save_environment(with_map)
 
     later = AtlasEnvironmentContext()
     later.update("virtualization", {"guests": []})
     KnowledgeStore().save_environment(later)
 
-    assert KnowledgeQueries().latest_topology() == {"host": "cyberpac"}
+    assert KnowledgeQueries().latest_topology() == {"host": "media-server"}
 
 
 ROUTES = [{"name": "jf", "hosts": ["jellyfin.example.com"], "entrypoints": ["websecure", "tunnel"], "protection": "public"},

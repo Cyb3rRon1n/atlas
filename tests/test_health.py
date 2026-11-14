@@ -65,7 +65,7 @@ def test_check_inventory_true_when_file_present(isolated_cwd):
 
     from atlas.inventory import save_inventory
 
-    save_inventory({"system": {"hostname": "sentinel"}})
+    save_inventory({"system": {"hostname": "homelab"}})
 
     result = check_inventory()
 

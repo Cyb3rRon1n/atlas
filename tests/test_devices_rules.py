@@ -17,46 +17,46 @@ def test_same_mac_from_another_source_links():
 
 def test_lan_ip_matching_a_configured_host_links():
 
-    assert match(Sighting("lan", "aa:57", ip="192.168.10.57"),
-                 [known(3, "mediabox", "manual", ip="192.168.10.57")]) == ("link", 3)
+    assert match(Sighting("lan", "aa:57", ip="192.168.50.57"),
+                 [known(3, "fileserver", "manual", ip="192.168.50.57")]) == ("link", 3)
 
 
 def test_proxmox_ip_matching_lan_links():
 
-    assert match(Sighting("proxmox", "pve:110", ip="192.168.10.134"),
-                 [known(4, "media-tools", "lan", ip="192.168.10.134")]) == ("link", 4)
+    assert match(Sighting("proxmox", "pve:110", ip="192.168.50.134"),
+                 [known(4, "media-tools", "lan", ip="192.168.50.134")]) == ("link", 4)
 
 
 def test_two_lan_sightings_on_one_ip_do_not_link():
 
     # DHCP reuse: a different MAC on a known lan IP is a different device.
-    assert match(Sighting("lan", "aa:02", ip="192.168.10.50"),
-                 [known(5, "old", "lan", ip="192.168.10.50", mac="aa:01")]) == ("new", None)
+    assert match(Sighting("lan", "aa:02", ip="192.168.50.50"),
+                 [known(5, "old", "lan", ip="192.168.50.50", mac="aa:01")]) == ("new", None)
 
 
 def test_name_match_is_only_a_suggestion():
 
-    assert match(Sighting("proxmox", "pve:200", hostname="mediabox"),
-                 [known(3, "mediabox", "manual", ip="192.168.10.57")]) == ("suggest", 3)
+    assert match(Sighting("proxmox", "pve:200", hostname="fileserver"),
+                 [known(3, "fileserver", "manual", ip="192.168.50.57")]) == ("suggest", 3)
 
 
 def test_hostname_domain_is_ignored_for_suggestions():
 
-    assert match(Sighting("lan", "aa:09", hostname="MediaBox.lan"),
-                 [known(3, "x", "proxmox", hostname="mediabox")]) == ("suggest", 3)
+    assert match(Sighting("lan", "aa:09", hostname="FileServer.lan"),
+                 [known(3, "x", "proxmox", hostname="fileserver")]) == ("suggest", 3)
 
 
 def test_unknown_is_new():
 
-    assert match(Sighting("lan", "aa:77", ip="192.168.10.77"), []) == ("new", None)
+    assert match(Sighting("lan", "aa:77", ip="192.168.50.77"), []) == ("new", None)
 
 
 def test_ip_named_device_does_not_suggest_match_on_split_octet():
     """Two different IP-named devices in the same /8 (e.g. 192.x and 192.y) used
     to both split down to "192" and wrongly suggest a merge with each other."""
 
-    assert match(Sighting("lan", "aa:88", hostname="192.168.10.88"),
-                 [known(6, "192.168.10.200", "lan", hostname="192.168.10.200")]) == ("new", None)
+    assert match(Sighting("lan", "aa:88", hostname="192.168.50.88"),
+                 [known(6, "192.168.50.200", "lan", hostname="192.168.50.200")]) == ("new", None)
 
 
 NOW = datetime(2026, 9, 29, 12, 0)

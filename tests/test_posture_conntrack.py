@@ -12,7 +12,7 @@ SAMPLE = (Path(__file__).parent / "fixtures" / "posture" / "conntrack.txt").read
 def test_parses_tcp_tuple_bytes_and_id():
     flows = parse_conntrack(SAMPLE)
     first = flows[0]
-    assert first == Flow(id=1001, proto="tcp", state="ESTABLISHED", src="100.64.0.10", dst="192.168.10.157",
+    assert first == Flow(id=1001, proto="tcp", state="ESTABLISHED", src="100.64.0.10", dst="192.168.50.157",
                          sport=62456, dport=443, reply_src="172.18.0.9", reply_dst="100.64.0.10",
                          bytes_out=2048, bytes_in=8192)
 

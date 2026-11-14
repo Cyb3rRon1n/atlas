@@ -59,14 +59,14 @@ def test_save_and_query_environment(temp_db):
     environment = AtlasEnvironmentContext()
 
     environment.ingest_discovery(
-        {"system": {"hostname": "sentinel"}}
+        {"system": {"hostname": "homelab"}}
     )
 
     KnowledgeStore().save_environment(environment)
 
     latest = KnowledgeQueries().latest_environment()
 
-    assert latest["system"] == {"hostname": "sentinel"}
+    assert latest["system"] == {"hostname": "homelab"}
 
 
 def test_environment_history_empty_when_nothing_stored(temp_db):

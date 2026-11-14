@@ -2,7 +2,7 @@ from atlas.inventory import load_inventory, save_inventory
 
 
 SAMPLE_DATA = {
-    "system": {"hostname": "sentinel"},
+    "system": {"hostname": "homelab"},
     "hardware": {"cpu": {"physical_cores": 4}},
 }
 

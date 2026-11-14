@@ -4,18 +4,18 @@ from atlas.web.home_page import attention_items, build_hosts, build_storage, int
 
 
 TOPOLOGY = {
-    "host": "cyberpac",
+    "host": "media-server",
     "docker": {"networks": {"media": [
         {"name": "jellyfin", "status": "running", "health": "healthy"},
         {"name": "sonarr", "status": "running", "health": "unhealthy"},
         {"name": "old", "status": "exited", "health": ""},
     ]}},
-    "proxmox": {"host": "192.168.10.97", "guests": [
-        {"name": "mediabox", "status": "running", "template": False},
+    "proxmox": {"host": "192.168.50.97", "guests": [
+        {"name": "fileserver", "status": "running", "template": False},
         {"name": "vm", "status": "stopped", "template": False},
         {"name": "tpl", "status": "stopped", "template": True},
     ]},
-    "lan": [{"name": "cyberbox", "address": "192.168.10.97", "reachable": True}, {"name": "printer", "reachable": False}],
+    "lan": [{"name": "pve-host", "address": "192.168.50.97", "reachable": True}, {"name": "printer", "reachable": False}],
 }
 LOCAL = {"load_average": [3.0, 2.0, 1.0], "cpu_count": 12, "memory_percent": 40.0, "root_disk_percent": 43.0}
 PVE = {"nodes": [{"name": "proxmox", "status": "online", "cpu": 0.051, "mem": 4, "maxmem": 16,
@@ -29,9 +29,9 @@ EVENTS = [(SimpleNamespace(created_at="2026-10-10 12:00", event_type="atlas.prox
 def test_build_hosts_local_and_proxmox_rows():
     hosts = build_hosts(TOPOLOGY, LOCAL, PVE)
     local, node = hosts["rows"]
-    assert local["name"] == "cyberpac" and local["cpu"] == 25 and local["mem"] == 40 and local["disk"] == 43
+    assert local["name"] == "media-server" and local["cpu"] == 25 and local["mem"] == 40 and local["disk"] == 43
     assert local["detail"] == "2/3 containers running" and local["problems"] == ["sonarr unhealthy", "old stopped"]
-    assert node["name"] == "cyberbox" and node["cpu"] == 5 and node["mem"] == 25 and node["disk"] == 30
+    assert node["name"] == "pve-host" and node["cpu"] == 5 and node["mem"] == 25 and node["disk"] == 30
     assert node["detail"] == "1/2 guests running" and node["problems"] == ["vm stopped"]
     assert hosts["down"] == ["printer"] and hosts["state"] == "warn"
     quiet = build_hosts({"lan": [{"name": "tv", "reachable": False}]}, LOCAL, None)
@@ -54,7 +54,7 @@ def test_build_hosts_tolerates_missing_sources():
 
 
 def test_home_all_good_verdict_cards_and_links():
-    html = render_home_page(POSTURE_OK, build_hosts({"host": "cyberpac"}, LOCAL, None), EVENTS)
+    html = render_home_page(POSTURE_OK, build_hosts({"host": "media-server"}, LOCAL, None), EVENTS)
     assert "\u2713 All good" in html and "Needs attention" not in html
     for href in ('href="/posture"', 'href="/overview"', 'href="/history"'):
         assert href in html
@@ -68,7 +68,7 @@ def test_home_counts_attention_and_handles_unavailable():
     html = render_home_page({**POSTURE_OK, "state": "warn", "message": "VPN: down"},
                             build_hosts(TOPOLOGY, LOCAL, PVE), [])
     assert "Needs attention" in html and "VPN: down" in html and "printer" in html
-    assert "cyberbox: vm stopped" in html and "cyberpac: sonarr unhealthy, old stopped" in html
+    assert "pve-host: vm stopped" in html and "media-server: sonarr unhealthy, old stopped" in html
     assert html.count("needs attention</span>") == 2   # posture + hosts cards flagged
     empty = render_home_page(None, build_hosts(None, None, None), [])
     assert "Posture data unavailable" in empty and "No host data yet" in empty and "No events yet" in empty
@@ -102,7 +102,7 @@ def test_build_storage_rows_and_warnings():
     assert rows["md0"]["detail"] == "RAID0 · 8 disks · active · no redundancy" and not rows["md0"]["warn"]
     assert rows["media array"]["detail"] == "58% of 25.0 TB" and not rows["media array"]["warn"]
     assert rows["raid card watchdog"]["detail"] == "42°C · ok" and rows["other"]["warn"]
-    assert not rows["cyberbox bulk"]["warn"] and rows["cyberbox fast"]["warn"]
+    assert not rows["pve-host bulk"]["warn"] and rows["pve-host fast"]["warn"]
     assert storage["state"] == "warn"
     assert build_storage([], {}, None, None)["state"] == "unknown"
 
@@ -136,7 +136,7 @@ def test_attention_items_name_the_problem_and_link_to_the_fix():
 def test_hosts_summary_meters_storage_and_container_chips():
     from atlas.web.hosts_page import render_hosts_summary
     html = render_hosts_summary(build_hosts(TOPOLOGY, LOCAL, PVE), {"rows": [{"name": "md0", "detail": "ok", "warn": False}]}, TOPOLOGY)
-    assert "cyberpac" in html and "cyberbox" in html and 'style="width:25%"' in html
+    assert "media-server" in html and "pve-host" in html and 'style="width:25%"' in html
     assert "Storage &amp; RAID" in html and "media (3)" in html and "Proxmox guests (2)" in html
     assert 'class="dot down"' in html and 'data-ask="What is using the most CPU' in html
 

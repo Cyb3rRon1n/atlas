@@ -18,15 +18,15 @@ def at(minutes):
 
 
 def seeded(temp_db):
-    """mediabox (known: manual + lan) and a proxmox guest suggested into it, plus a new phone."""
+    """fileserver (known: manual + lan) and a proxmox guest suggested into it, plus a new phone."""
 
     store = InventoryStore(temp_db)
-    store.import_manual_hosts([MapHost(name="mediabox", address="192.168.10.57")], now=T0)
-    store.record_run("lan", [Sighting("lan", "aa:57", ip="192.168.10.57", mac="aa:57"),
-                             Sighting("lan", "aa:88", ip="192.168.10.88", mac="aa:88", hostname="pixel.lan")], now=at(0))
-    store.record_run("proxmox", [Sighting("proxmox", "pve:200", hostname="mediabox", detail={"type": "lxc"})], now=at(0))
+    store.import_manual_hosts([MapHost(name="fileserver", address="192.168.50.57")], now=T0)
+    store.record_run("lan", [Sighting("lan", "aa:57", ip="192.168.50.57", mac="aa:57"),
+                             Sighting("lan", "aa:88", ip="192.168.50.88", mac="aa:88", hostname="pixel.lan")], now=at(0))
+    store.record_run("proxmox", [Sighting("proxmox", "pve:200", hostname="fileserver", detail={"type": "lxc"})], now=at(0))
 
-    devices = store.devices()  # a list: the guest and the known device are both named "mediabox"
+    devices = store.devices()  # a list: the guest and the known device are both named "fileserver"
     known = next(d for d in devices if d["state"] == "known")
     guest = next(d for d in devices if d["suggested_merge_id"] == known["id"])
     phone = next(d for d in devices if d["name"] == "pixel")
@@ -129,7 +129,7 @@ def test_merge_repoints_uplinks_and_clears_a_resulting_self_reference(temp_db):
 def test_devices_exposes_connection_fields(temp_db):
 
     store = InventoryStore(temp_db)
-    store.record_run("lan", [Sighting("lan", "00:11:32:aa:bb:cc", ip="192.168.10.5", mac="00:11:32:aa:bb:cc")])
+    store.record_run("lan", [Sighting("lan", "00:11:32:aa:bb:cc", ip="192.168.50.5", mac="00:11:32:aa:bb:cc")])
 
     device = store.devices()[0]
     assert device["connection"] == "unknown"
@@ -147,7 +147,7 @@ def test_devices_guesses_wireless_from_a_locally_administered_mac(temp_db):
     stays "unknown" - recoverable, not silently overwritten by the guess."""
 
     store = InventoryStore(temp_db)
-    store.record_run("lan", [Sighting("lan", "da:a1:19:00:00:01", ip="192.168.10.6", mac="da:a1:19:00:00:01")])
+    store.record_run("lan", [Sighting("lan", "da:a1:19:00:00:01", ip="192.168.50.6", mac="da:a1:19:00:00:01")])
 
     device = store.devices()[0]
     assert device["connection"] == "wireless"
@@ -160,8 +160,8 @@ def test_devices_guesses_wireless_from_a_locally_administered_mac(temp_db):
 def test_merge_moves_sightings_and_notifications_and_deletes_source(temp_db):
 
     store, known, guest, phone = seeded(temp_db)
-    store.record_run("lan", [Sighting("lan", "aa:99", ip="192.168.10.99", mac="aa:99")], now=at(15))
-    newcomer = next(d for d in store.devices() if d["ip"] == "192.168.10.99")
+    store.record_run("lan", [Sighting("lan", "aa:99", ip="192.168.50.99", mac="aa:99")], now=at(15))
+    newcomer = next(d for d in store.devices() if d["ip"] == "192.168.50.99")
 
     assert store.merge(guest["id"], known["id"]) == {"found": True, "device_id": known["id"]}
     assert store.device(guest["id"]) is None
@@ -181,13 +181,13 @@ def test_merge_dedupes_queued_new_alerts(temp_db):
     one due item for the target, not two (which would double-alert on one device)."""
 
     store = InventoryStore(temp_db)
-    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.10.1", mac="aa:01")], now=at(0))
-    store.record_run("lan", [Sighting("lan", "aa:02", ip="192.168.10.2", mac="aa:02")], now=at(15))
-    store.record_run("lan", [Sighting("lan", "aa:03", ip="192.168.10.3", mac="aa:03")], now=at(30))
+    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.50.1", mac="aa:01")], now=at(0))
+    store.record_run("lan", [Sighting("lan", "aa:02", ip="192.168.50.2", mac="aa:02")], now=at(15))
+    store.record_run("lan", [Sighting("lan", "aa:03", ip="192.168.50.3", mac="aa:03")], now=at(30))
 
     devices = store.devices(now=at(30))
-    target = next(d for d in devices if d["ip"] == "192.168.10.2")
-    source = next(d for d in devices if d["ip"] == "192.168.10.3")
+    target = next(d for d in devices if d["ip"] == "192.168.50.2")
+    source = next(d for d in devices if d["ip"] == "192.168.50.3")
 
     assert store.merge(source["id"], target["id"]) == {"found": True, "device_id": target["id"]}
 
@@ -215,8 +215,8 @@ def test_split_sets_kind_from_the_sighting_type(temp_db):
     """A proxmox lxc sighting split off its device becomes its own device with kind "lxc"."""
 
     store = InventoryStore(temp_db)
-    store.import_manual_hosts([MapHost(name="mediabox", address="192.168.10.57")], now=T0)
-    store.record_run("proxmox", [Sighting("proxmox", "pve:200", ip="192.168.10.57", detail={"type": "lxc"})], now=at(0))
+    store.import_manual_hosts([MapHost(name="fileserver", address="192.168.50.57")], now=T0)
+    store.record_run("proxmox", [Sighting("proxmox", "pve:200", ip="192.168.50.57", detail={"type": "lxc"})], now=at(0))
 
     known = store.devices(now=at(0))[0]
     assert {s["source"] for s in known["sightings"]} == {"manual", "proxmox"}
@@ -232,19 +232,19 @@ def test_triage_lists_new_with_suggestion_names_and_quiet_known(temp_db):
 
     store, known, guest, phone = seeded(temp_db)
     store.set_fields(phone["id"], {"state": "known"})
-    store.record_run("lan", [Sighting("lan", "aa:57", ip="192.168.10.57", mac="aa:57")], now=at(15))
-    store.record_run("lan", [Sighting("lan", "aa:57", ip="192.168.10.57", mac="aa:57")], now=at(30))
+    store.record_run("lan", [Sighting("lan", "aa:57", ip="192.168.50.57", mac="aa:57")], now=at(15))
+    store.record_run("lan", [Sighting("lan", "aa:57", ip="192.168.50.57", mac="aa:57")], now=at(30))
 
     triage = store.triage()
 
-    assert [(d["name"], d["suggested_merge_name"]) for d in triage["new"]] == [("mediabox", "mediabox")]
+    assert [(d["name"], d["suggested_merge_name"]) for d in triage["new"]] == [("fileserver", "fileserver")]
     assert [d["name"] for d in triage["quiet"]] == ["pixel"]
 
 
 def test_coverage_reports_each_source_and_quiet_invisible(temp_db):
 
     store, known, guest, phone = seeded(temp_db)
-    store.import_manual_hosts([MapHost(name="garage-tv", address="192.168.10.224")], now=at(1))
+    store.import_manual_hosts([MapHost(name="garage-tv", address="192.168.50.224")], now=at(1))
     store.record_run("proxmox", [], ok=False, error="could not connect to Proxmox", now=at(15))
 
     coverage = store.coverage()

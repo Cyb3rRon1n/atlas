@@ -34,7 +34,7 @@ def test_host_metric_trend_skips_rows_with_no_monitoring_data():
 
     records = [
         _record(T2, {"monitoring": {"metrics": {"cpu_percent": 20.0}}}),
-        _record(T1, {"system": {"hostname": "sentinel"}}),
+        _record(T1, {"system": {"hostname": "homelab"}}),
     ]
 
     assert host_metric_trend(records, "cpu_percent") == [(T2, 20.0)]
@@ -106,6 +106,6 @@ def test_known_container_names_unions_across_rows_without_duplicates():
 
 def test_known_container_names_empty_when_no_monitoring_data():
 
-    records = [_record(T1, {"system": {"hostname": "sentinel"}})]
+    records = [_record(T1, {"system": {"hostname": "homelab"}})]
 
     assert known_container_names(records) == []

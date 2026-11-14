@@ -40,7 +40,7 @@ def test_init_declining_every_integration_writes_minimal_config(isolated_cwd):
     result = runner.invoke(
         app,
         ["init"],
-        input="sentinel\nn\nanthropic\nclaude-opus-5\nn\ny\n"
+        input="homelab\nn\nanthropic\nclaude-opus-5\nn\ny\n"
     )
 
     assert result.exit_code == 0
@@ -48,13 +48,13 @@ def test_init_declining_every_integration_writes_minimal_config(isolated_cwd):
 
     written = (isolated_cwd / "atlas.yaml").read_text()
 
-    assert "name: sentinel" in written
+    assert "name: homelab" in written
     assert "enabled: false" in written
 
     log_files = list((isolated_cwd / "logs").glob("atlas-init-*.log"))
 
     assert len(log_files) == 1
-    assert "name: sentinel" in log_files[0].read_text()
+    assert "name: homelab" in log_files[0].read_text()
     assert "proxmox: disabled" in log_files[0].read_text()
 
 
@@ -64,7 +64,7 @@ def test_init_with_proxmox_token_auth_redacts_secret_from_log(isolated_cwd):
         app,
         ["init"],
         input=(
-            "sentinel\n"
+            "homelab\n"
             "y\n192.168.1.10\natlas@pve\ny\natlas-token\nsupersecret\nn\n"
             "anthropic\nclaude-opus-5\n"
             "n\ny\n"
@@ -96,7 +96,7 @@ def test_init_with_proxmox_password_auth(isolated_cwd):
         app,
         ["init"],
         input=(
-            "sentinel\n"
+            "homelab\n"
             "y\n192.168.1.10\natlas@pve\nn\nhunter2\nn\n"
             "anthropic\nclaude-opus-5\n"
             "n\ny\n"
@@ -117,7 +117,7 @@ def test_init_with_ollama_provider(isolated_cwd):
         app,
         ["init"],
         input=(
-            "sentinel\nn\n"
+            "homelab\nn\n"
             "ollama\nhttp://localhost:11434\nllama3.1\n"
             "n\ny\n"
         )
@@ -136,7 +136,7 @@ def test_init_reprompts_on_invalid_provider(isolated_cwd):
     result = runner.invoke(
         app,
         ["init"],
-        input="sentinel\nn\nbogus\nanthropic\nclaude-opus-5\nn\ny\n"
+        input="homelab\nn\nbogus\nanthropic\nclaude-opus-5\nn\ny\n"
     )
 
     assert result.exit_code == 0
@@ -187,7 +187,7 @@ def test_init_declining_review_writes_nothing(isolated_cwd):
     result = runner.invoke(
         app,
         ["init"],
-        input="sentinel\nn\nanthropic\nclaude-opus-5\nn\nn\n"
+        input="homelab\nn\nanthropic\nclaude-opus-5\nn\nn\n"
     )
 
     assert result.exit_code == 0
@@ -1223,7 +1223,7 @@ def test_trends_prints_host_and_container_summaries(isolated_cwd, temp_db):
         store.save_environment(environment)
 
     discover_only = AtlasEnvironmentContext()
-    discover_only.ingest_discovery({"system": {"hostname": "sentinel"}})
+    discover_only.ingest_discovery({"system": {"hostname": "homelab"}})
     store.save_environment(discover_only)
 
     result = runner.invoke(app, ["trends"])
@@ -2102,7 +2102,7 @@ def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
     with (
         patch(
             "atlas.discovery.network.socket.gethostbyname_ex",
-            return_value=("sentinel", [], ["192.168.1.10"])
+            return_value=("homelab", [], ["192.168.1.10"])
         ),
         patch("atlas.docker.manager.docker.from_env") as mock_from_env,
         patch("atlas.libvirt.manager.shutil.which", return_value=None)
@@ -2418,7 +2418,7 @@ def test_report_json_prints_inventory_without_writing_markdown(isolated_cwd):
 
     from atlas.inventory import save_inventory
 
-    save_inventory({"system": {"hostname": "sentinel"}, "hardware": {}, "storage": [], "network": {}})
+    save_inventory({"system": {"hostname": "homelab"}, "hardware": {}, "storage": [], "network": {}})
 
     result = runner.invoke(app, ["report", "--json"])
 
@@ -2426,7 +2426,7 @@ def test_report_json_prints_inventory_without_writing_markdown(isolated_cwd):
 
     payload = json.loads(result.output)
 
-    assert payload["system"]["hostname"] == "sentinel"
+    assert payload["system"]["hostname"] == "homelab"
     assert not (isolated_cwd / "reports" / "atlas-report.md").exists()
 
 

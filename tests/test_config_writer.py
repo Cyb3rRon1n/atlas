@@ -6,7 +6,7 @@ from atlas.config.writer import write_config, write_setup_log
 def test_write_config_round_trips_through_load_config(isolated_cwd):
 
     config = AtlasConfig(
-        name="sentinel",
+        name="homelab",
         proxmox=ProxmoxConfig(
             enabled=True,
             host="192.168.1.10",
@@ -20,7 +20,7 @@ def test_write_config_round_trips_through_load_config(isolated_cwd):
 
     loaded = load_config()
 
-    assert loaded.name == "sentinel"
+    assert loaded.name == "homelab"
     assert loaded.proxmox.enabled is True
     assert loaded.proxmox.host == "192.168.1.10"
     assert loaded.proxmox.token_value == "secret-value"

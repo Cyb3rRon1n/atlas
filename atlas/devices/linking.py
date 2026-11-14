@@ -10,7 +10,7 @@ import ipaddress
 
 def short_name(name):
     """An IP-named device (no reverse DNS) isn't a dotted hostname - splitting
-    it on "." would turn e.g. "192.168.10.57" into the meaningless "192"."""
+    it on "." would turn e.g. "192.168.50.57" into the meaningless "192"."""
 
     name = (name or "").strip().lower()
 

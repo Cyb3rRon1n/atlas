@@ -12,11 +12,11 @@ def test_trends_charts_from_samples_and_proxmox_scans():
     node = lambda h: {"name": "proxmox", "cpu": 0.05, "mem": 40, "maxmem": 100, "disk": 25, "maxdisk": 100,
                       "zfs": [{"name": "bulk", "alloc": 70 + (10 - h) * 0.2, "size": 100}]}
     scans = [(NOW - timedelta(hours=h), {"nodes": [node(h)], "guests": [
-        {"name": "mediabox", "status": "running", "cpu": 0.1, "mem": 2, "maxmem": 8, "template": False},
+        {"name": "fileserver", "status": "running", "cpu": 0.1, "mem": 2, "maxmem": 8, "template": False},
         {"name": "tpl", "status": "stopped", "template": True}]}) for h in range(10, -1, -1)]
-    html = render_trends_page(samples, scans, "24h", NOW, "cyberpac", {"proxmox": "cyberbox"})
-    for text in ("cyberpac", "cyberbox (Proxmox)", "Storage growth", "media array", "cyberbox bulk", "<ellipse", "Containers",
-                 "mediabox", 'href="/trends?window=7d"', "full in", 'data-ask="Will any disk', "<polyline"):
+    html = render_trends_page(samples, scans, "24h", NOW, "media-server", {"proxmox": "pve-host"})
+    for text in ("media-server", "pve-host (Proxmox)", "Storage growth", "media array", "pve-host bulk", "<ellipse", "Containers",
+                 "fileserver", 'href="/trends?window=7d"', "full in", 'data-ask="Will any disk', "<polyline"):
         assert text in html, text
     assert ">tpl<" not in html and "Hottest sensor" in html and "°C" in html
 

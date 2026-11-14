@@ -9,13 +9,13 @@ FIX = Path(__file__).parent / "fixtures" / "posture"
 FLOWS = parse_conntrack((FIX / "conntrack.txt").read_text())
 ASN = AsnTable(parse_ip2asn((FIX / "ip2asn-v4.tsv").read_text().splitlines()))
 SOURCES = {"172.18.0.13": "sonarr", "172.18.0.3": "gluetun", "172.18.0.38": "cloudflared", "172.18.0.9": "traefik"}
-HOST = "192.168.10.157"
+HOST = "192.168.50.157"
 
 
 def test_is_public():
     assert is_public("203.0.113.1") is False   # documentation range is not global
     assert is_public("8.8.8.8") is True
-    assert is_public("100.64.0.10") is False and is_public("192.168.10.1") is False
+    assert is_public("100.64.0.10") is False and is_public("192.168.50.1") is False
 
 
 def test_first_pass_counts_outbound_flows_with_owner_and_band(monkeypatch):

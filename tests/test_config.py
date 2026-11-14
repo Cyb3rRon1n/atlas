@@ -15,7 +15,7 @@ def test_load_config_defaults_when_no_file(isolated_cwd):
 def test_load_config_reads_atlas_yaml(isolated_cwd):
 
     (isolated_cwd / "atlas.yaml").write_text(
-        "name: sentinel\n"
+        "name: homelab\n"
         "discovery:\n"
         "  hardware: false\n"
         "intelligence:\n"
@@ -25,7 +25,7 @@ def test_load_config_reads_atlas_yaml(isolated_cwd):
 
     config = load_config()
 
-    assert config.name == "sentinel"
+    assert config.name == "homelab"
     assert config.discovery.hardware is False
     assert config.discovery.storage is True
     assert config.intelligence.provider == "ollama"

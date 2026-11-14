@@ -75,13 +75,13 @@ def test_overview_route_with_real_saved_environment(running_server):
 
     store = KnowledgeStore()
     environment = AtlasEnvironmentContext()
-    environment.ingest_discovery({"system": {"hostname": "sentinel"}})
+    environment.ingest_discovery({"system": {"hostname": "homelab"}})
     store.save_environment(environment)
 
     status, body = _get(running_server + "/overview")
 
     assert status == 200
-    assert "sentinel" in body
+    assert "homelab" in body
 
 
 def test_history_route_with_no_data(running_server):
@@ -135,7 +135,7 @@ def _seed_device():
     store = InventoryStore()
     # A globally-assigned-looking MAC (locally-administered bit unset) - atlas.devices.wiring
     # guesses "wireless" from that bit, and this device needs to default to visible/wired.
-    store.record_run("lan", [Sighting("lan", "00:01", ip="192.168.10.1", mac="00:01", hostname="router")])
+    store.record_run("lan", [Sighting("lan", "00:01", ip="192.168.50.1", mac="00:01", hostname="router")])
 
     return store, store.devices()[0]["id"]
 

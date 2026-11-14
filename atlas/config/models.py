@@ -144,7 +144,7 @@ class PostureConfig(BaseModel):
 
 
 class TorrentClientConfig(BaseModel):
-    name: str                           # shown in alerts, e.g. "cyberbox"
+    name: str                           # shown in alerts, e.g. "pve-host"
     url: str                            # qBittorrent Web UI as published by its gluetun container
     username: str = ""                  # empty when local auth is bypassed
     password: str = ""

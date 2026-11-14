@@ -30,14 +30,14 @@ def test_read_new_tracks_offset_partial_lines_and_rotation(tmp_path):
 def test_jellyfin_logins_parse_users_ips_and_failures():
     items = [{"Id": 1, "Type": "AuthenticationSucceeded", "Name": "grace successfully authenticated",
               "ShortOverview": "IP address: 9.9.9.9", "Date": "2026-10-10T20:08:01.1234567Z"},
-             {"Id": 2, "Type": "SessionStarted", "Name": "carol is online from Garage TV", "ShortOverview": "IP address: 192.168.10.66",
+             {"Id": 2, "Type": "SessionStarted", "Name": "carol is online from Garage TV", "ShortOverview": "IP address: 192.168.50.66",
               "Date": "2026-10-10T23:29:00Z"},
              {"Id": 3, "Type": "AuthenticationFailed", "Name": "Failed login attempt from bob", "ShortOverview": "IP address: 1.2.3.4",
               "Date": "2026-10-10T19:00:00Z"},
              {"Id": 4, "Type": "VideoPlayback", "Name": "x", "Date": "2026-10-10T19:00:00Z"}]
     out = jellyfin_logins(items)
     assert [(l["user"], l["ip"], l["ok"], l["client"]) for l in out] == [
-        ("grace", "9.9.9.9", True, ""), ("carol", "192.168.10.66", True, "Garage TV"), ("bob", "1.2.3.4", False, "")]
+        ("grace", "9.9.9.9", True, ""), ("carol", "192.168.50.66", True, "Garage TV"), ("bob", "1.2.3.4", False, "")]
     assert out[0]["time"] == datetime(2026, 10, 10, 20, 8, 1)
 
 
@@ -71,11 +71,11 @@ def test_places_learn_then_review_confirm_and_alert(temp_db):
     t0 = datetime(2026, 10, 1)
     geo = {"9.9.9.9": {"cc": "US", "country": "United States", "city": "Tampa", "region": "Florida", "org": "Spectrum"},
            "149.112.112.112": {"cc": "PT", "country": "Portugal", "city": "Lisbon", "region": "", "org": "MEO"},
-           "192.168.10.66": {"country": "Home network"}}
+           "192.168.50.66": {"country": "Home network"}}
     store.touch_ips({ip: t0 for ip in geo}, geo.get)
     login = lambda i, ip, when, ok=True: {"app": "jellyfin", "external_id": str(i), "time": when, "user": "dave", "ip": ip,
                                           "ok": ok, "client": ""}
-    store.record_logins([login(1, "9.9.9.9", t0), login(2, "192.168.10.66", t0)])
+    store.record_logins([login(1, "9.9.9.9", t0), login(2, "192.168.50.66", t0)])
     assert store.classify_logins(t0) == []                                   # learning window
     store.record_logins([login(3, "149.112.112.112", t0 + timedelta(days=20)), login(4, "149.112.112.112", t0 + timedelta(days=21), False)])
     new = store.classify_logins(t0 + timedelta(days=21))

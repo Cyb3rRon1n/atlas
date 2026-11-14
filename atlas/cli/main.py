@@ -2762,25 +2762,80 @@ def web(
     Serve a local web view over Atlas's existing data (overview, triage,
     devices, map, coverage, history, trends) — read-only except the
     device inventory's edit/merge/split, which are same-origin-gated JSON
-    POSTs. Put an auth proxy in front if it's reachable beyond localhost.
+    POSTs. Sign-in is atlas's own (web.auth: builtin) unless web.auth: proxy.
     """
 
+    from atlas.web.auth import Auth
     from atlas.web.server import run_server
 
     console.print(
         "[bold blue]Atlas Web[/bold blue]\n"
     )
 
+    auth = Auth() if load_config().web.auth == "builtin" else None
+    if auth and not auth.configured():
+        console.print(f"First run: open the page and set the admin password. Setup code: [bold]{auth.setup_code()}[/bold]")
+
     console.print(
         f"Serving at http://{host}:{port} (Ctrl+C to stop)"
     )
 
     try:
-        run_server(host, port)
+        run_server(host, port, auth)
     except KeyboardInterrupt:
         console.print(
             "\n[yellow]Stopped.[/yellow]"
         )
+
+auth_app = typer.Typer(help="Sign-in for atlas web (web.auth: builtin).")
+app.add_typer(auth_app, name="auth")
+
+
+@auth_app.command("password")
+def auth_password():
+    """Set or reset the admin password (signs everyone out). Reads stdin when it isn't a terminal."""
+
+    import getpass
+    import sys
+
+    from atlas.web.auth import Auth
+
+    if sys.stdin.isatty():
+        password = getpass.getpass("New atlas password: ")
+        if getpass.getpass("Again: ") != password:
+            console.print("[red]The passwords don't match.[/red]")
+            raise typer.Exit(1)
+    else:
+        password = sys.stdin.readline().rstrip("\n")
+    try:
+        Auth().set_password(password)
+    except ValueError as error:
+        console.print(f"[red]{error}[/red]")
+        raise typer.Exit(1)
+    console.print("[green]Password saved.[/green]")
+
+
+@auth_app.command("setup-code")
+def auth_setup_code():
+    """The one-time code the first-run web page asks for."""
+
+    from atlas.web.auth import Auth
+
+    auth = Auth()
+    if auth.configured():
+        console.print("A password is already set - use `atlas auth password` to change it.")
+        return
+    print(auth.setup_code())
+
+
+@auth_app.command("token")
+def auth_token(new: bool = typer.Option(False, "--new", help="Replace the token (the old one stops working).")):
+    """The read-only API token for dashboards (header: Authorization: Bearer <token>)."""
+
+    from atlas.web.auth import Auth
+
+    print(Auth().token(new=new))
+
 
 @app.command()
 def intelligence():

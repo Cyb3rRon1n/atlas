@@ -181,6 +181,12 @@ class WiringConfig(BaseModel):
     cabling_file: str = "cabling.yaml"
 
 
+class WebConfig(BaseModel):
+    # builtin: atlas asks for its own admin password (atlas.web.auth).
+    # proxy: an auth proxy (Authelia, Authentik, ...) in front of atlas does it - atlas checks nothing.
+    auth: Literal["builtin", "proxy"] = "builtin"
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -198,4 +204,5 @@ class AtlasConfig(BaseModel):
     posture: PostureConfig = PostureConfig()
     access: AccessConfig = AccessConfig()
     vpn: VpnWatchConfig = VpnWatchConfig()
+    web: WebConfig = WebConfig()
     wiring: WiringConfig = WiringConfig()

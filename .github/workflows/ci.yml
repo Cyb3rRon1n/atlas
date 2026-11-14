@@ -26,3 +26,6 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -v --cov=atlas --cov-report=term-missing
+
+      - name: Shellcheck the installer
+        run: shellcheck -S warning install.sh

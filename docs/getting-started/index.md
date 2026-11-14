@@ -17,6 +17,19 @@ Verified against real infrastructure on two distros: Ubuntu (CI runs the full te
 
 ## Install
 
+### With Docker (recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Cyb3rRon1n/atlas/main/install.sh | bash
+```
+
+Needs Docker with the Compose plugin. The installer asks for a folder, port, who can open the page
+(this machine or your whole LAN) and which AI assistant to use, then starts atlas and has you set
+the admin password. Re-run it to upgrade; `bash install.sh --uninstall` removes it (and asks before
+deleting data). Prefer to read it first: download it with `curl -fsSLO`, read it, then `bash install.sh`.
+
+### From source
+
 ```bash
 git clone https://github.com/Cyb3rRon1n/atlas.git
 cd atlas

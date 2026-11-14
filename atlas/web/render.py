@@ -51,6 +51,8 @@ body { margin:0; padding:0; background:var(--bg); color:var(--text);
           background:#111821; border-bottom:1px solid #222c38; }
 .topbar .brand { font-weight:600; letter-spacing:.14em; }
 .topbar nav.main { display:flex; flex-wrap:wrap; gap:4px; }
+.topbar .signout { margin:0; }
+.topbar .signout button { background:none; border:0; font:inherit; cursor:pointer; }
 .topbar nav.main a, .topbar .chat-link { padding:10px 14px; border-radius:8px; color:var(--muted); text-decoration:none; }
 .topbar nav.main a[aria-current="page"] { background:var(--surface2); color:var(--text); }
 .topbar .spacer { flex:1; }
@@ -72,6 +74,8 @@ def _esc(value):
 NAV = [("/", "Home", "home"), ("/posture", "Posture", "posture"), ("/overview", "Hosts", "hosts"),
        ("/devices", "Devices", "devices"), ("/map", "Network", "lan"), ("/cabling", "Cabling", "cabling"), ("/access", "Access", "access"),
        ("/history", "History", "history")]
+
+SIGN_OUT = False    # set by run_server when atlas does its own sign-in (web.auth: builtin)
 
 HOSTS_TABS = (("/overview", "Overview"), ("/trends", "Trends"))
 
@@ -109,7 +113,10 @@ def render_page(title, body_html, active="", tabs=None, drawer=True):
         "<header class=\"topbar\"><span class=\"brand\">ATLAS</span>"
         f"<nav class=\"main\" aria-label=\"Main\">{links}</nav>"
         "<span class=\"spacer\"></span>"
-        f"{chat_link}</header>"
+        f"{chat_link}"
+        + ('<form method="post" action="/logout" class="signout"><button class="chat-link">Sign out</button></form>'
+           if SIGN_OUT else "") +
+        "</header>"
         f"<div class=\"shell{' docked' if drawer else ''}\">"
         f"<main class=\"page\"><h1>{_esc(title)}</h1>{tab_html}{body_html}</main>"
         f"{drawer_html}</div>"

@@ -5,6 +5,7 @@ import atlas.devices.store as devices_store_module
 import atlas.knowledge.queries as queries_module
 import atlas.knowledge.store as store_module
 import atlas.posture.store as posture_store_module
+import atlas.wiring.store as wiring_store_module
 from atlas.database.models import Base
 
 
@@ -43,6 +44,7 @@ def temp_db(tmp_path, monkeypatch):
     monkeypatch.setattr(queries_module, "engine", engine)
     monkeypatch.setattr(devices_store_module, "engine", engine)
     monkeypatch.setattr(posture_store_module, "engine", engine)
+    monkeypatch.setattr(wiring_store_module, "engine", engine)
 
     yield engine
 

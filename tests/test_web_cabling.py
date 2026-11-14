@@ -72,3 +72,11 @@ def test_routes(running_server):  # noqa: F811
         assert False, "expected 403"
     except urllib.error.HTTPError as error:
         assert error.code == 403
+
+
+def test_diagram_gets_physical_faces():
+    page = render_cabling_page(_latest(), [], True, now=datetime(2026, 1, 1, 13))
+    data = json.loads(page.split('id="wiring-data">', 1)[1].split("</script>", 1)[0])
+    face = data["faces"]["s:core-switch"]
+    assert face["rows"] == 1 and [p["name"] for p in face["ports"]] == ["gi1", "gi2", "gi5", "gi6"]
+    assert 'style="left:calc(0 * var(--pw));top:calc(0 * var(--ph))"' in page

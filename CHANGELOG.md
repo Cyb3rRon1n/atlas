@@ -6,6 +6,10 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 ## Unreleased
 
 ### Added
+- **Certificate watch** (`atlas certs check`, run daily by atlas-scan): alerts 14 and 3 days before a public
+  hostname's TLS certificate expires, when a browser would refuse it, and when it's renewed. Days left show next
+  to each route on the Posture page's Public exposure tab. Hostnames come from the Traefik routes plus
+  `security.cert_hosts`.
 - **Cable health** on the cabling map: CRC/alignment errors growing between scans, duplex mismatches, ports
   linking slower than before and flapping links, from SNMP and UniFi port counters. Problems turn the port red
   and send an alert (plus one when it clears).

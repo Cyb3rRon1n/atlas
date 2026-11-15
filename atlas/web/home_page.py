@@ -8,6 +8,7 @@ failed, which renders as a muted "unavailable" line instead of a 500.
 import re
 from datetime import datetime
 
+from atlas.health.alerts import container_problem, container_state
 from atlas.web.render import _esc, ask_chips, render_page
 
 
@@ -63,7 +64,7 @@ def _pct(used, total):
     return round(used / total * 100) if used is not None and total else None
 
 
-def build_hosts(topology, local_health, pve_scan):
+def build_hosts(topology, local_health, pve_scan, host_issues=None):
     """
     Rows for the hosts card: the host Atlas runs on (live psutil numbers from
     get_host_health() + containers from the latest topology) and each Proxmox
@@ -85,8 +86,10 @@ def build_hosts(topology, local_health, pve_scan):
             "disk": round(health["root_disk_percent"]) if "root_disk_percent" in health else None,
             "detail": (f"{sum(c['status'] == 'running' for c in containers)}/{len(containers)} containers running"
                        if containers else ""),
-            "problems": [f"{c['name']} unhealthy" for c in containers if c.get("health") == "unhealthy"]
-                        + [f"{c['name']} stopped" for c in containers if c["status"] != "running"],
+            # stopped cleanly (a game room the idle timer put to sleep) is normal: listed apart, never a problem
+            "asleep": [c["name"] for c in containers if container_state(c) == "asleep"],
+            "problems": [p for p in map(container_problem, containers) if p]
+                        + [i["detail"] for i in host_issues or [] if i["kind"] != "container"],
         })
 
     guests = [g for g in (topology.get("proxmox") or {}).get("guests", []) if not g.get("template")]
@@ -372,6 +375,7 @@ def _hosts_card(hosts, flagged=False):
         f'<div class="host"><strong>{_esc(row["name"])}</strong> <span class="muted">{_esc(_usage(row))}</span>'
         + (f'<br><span class="muted">{_esc(row["detail"])}</span>' if row["detail"] else "")
         + (f'<br><span class="bad">{_esc(", ".join(row["problems"][:4]))}</span>' if row["problems"] else "")
+        + (f'<br><span class="muted">Asleep: {_esc(", ".join(row["asleep"]))}</span>' if row.get("asleep") else "")
         + "</div>"
         for row in hosts["rows"]
     )

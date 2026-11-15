@@ -3398,7 +3398,7 @@ def sample():
     from atlas.docker.manager import get_client
 
     settings = load_config()
-    health = get_host_health()
+    health = get_host_health(settings.health.status_urls)
     payload = {
         "cpu": round(min(100.0, health["load_average"][0] / max(1, health["cpu_count"]) * 100), 1),
         "mem": health["memory_percent"], "disk": health["root_disk_percent"],
@@ -3412,17 +3412,37 @@ def sample():
         except OSError:
             pass
 
+    from datetime import datetime
+
+    from atlas.health.alerts import container_state, run as health_run
+    from atlas.posture.store import PostureStore
+
+    containers = []
     client = get_client()
     if client is not None:
-        containers = client.containers.list(all=True)
+        for c in client.containers.list(all=True):
+            state = c.attrs.get("State", {})
+            labels = c.attrs.get("Config", {}).get("Labels") or {}
+            containers.append({"name": c.name, "status": state.get("Status", c.status),
+                               "health": (state.get("Health") or {}).get("Status", ""),
+                               "exit_code": state.get("ExitCode"),
+                               "on_demand": str(labels.get("atlas.on-demand", "")).lower() in ("1", "true", "yes")})
+        states = [container_state(c) for c in containers]
         payload["containers"] = {
             "total": len(containers),
-            "running": sum(c.status == "running" for c in containers),
-            "unhealthy": sum((c.attrs.get("State", {}).get("Health") or {}).get("Status") == "unhealthy" for c in containers),
+            "running": sum(c["status"] == "running" for c in containers),
+            "asleep": states.count("asleep"),
+            "unhealthy": sum(c["health"] == "unhealthy" for c in containers),
         }
 
     application.runtime.events.publish(AtlasEvent(event_type="atlas.host.sample", source="HostSample", payload=payload))
     console.print(json.dumps(payload))
+
+    # host health alerts: temperatures near their limit, memory/disks nearly full, crashed containers
+    health["disks"] = {"root disk": payload["disk"], **payload["storage"]}
+    for issue in health_run(settings, PostureStore(), health, containers if client is not None else [],
+                            datetime.utcnow()):
+        console.print(f"[yellow]! {issue['reason']}: {issue['detail']}[/yellow]")
 
 
 access_app = typer.Typer(

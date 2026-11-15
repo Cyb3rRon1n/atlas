@@ -18,13 +18,17 @@ def get_host_health(status_urls=None):
     memory = psutil.virtual_memory()
     disk = psutil.disk_usage("/")
 
-    temperatures = {}
+    temperatures, limits = {}, {}
 
     try:
         for sensor, readings in (psutil.sensors_temperatures() or {}).items():
-            values = [reading.current for reading in readings if reading.current]
+            values = [reading for reading in readings if reading.current]
             if values:
-                temperatures[sensor] = max(values)
+                hottest = max(values, key=lambda reading: reading.current)
+                temperatures[sensor] = hottest.current
+                # the chip's own "high" limit; drivers report nonsense like 65261 for unset ones
+                if hottest.high and 0 < hottest.high < 150:
+                    limits[sensor] = hottest.high
 
     except (AttributeError, OSError):
         pass
@@ -49,5 +53,6 @@ def get_host_health(status_urls=None):
         "swap_percent": psutil.swap_memory().percent,
         "root_disk_percent": disk.percent,
         "max_temperature_c_by_sensor": temperatures,
+        "temperature_high_c_by_sensor": limits,
         "status_feeds": feeds
     }

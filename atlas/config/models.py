@@ -76,6 +76,11 @@ class HealthConfig(BaseModel):
     status_urls: dict[str, str] = {}
     # label -> path inside the container whose usage the home page's storage card shows (e.g. a ro media mount)
     storage_paths: dict[str, str] = {}
+    # Host health alerts (atlas sample, every atlas-scan pass): once per new problem and once when it clears.
+    alerts: bool = True
+    temp_margin_c: float = 5.0      # alert this close to a sensor's own "high" limit (two samples in a row)
+    memory_percent: float = 90.0
+    disk_percent: float = 90.0      # root disk and every storage_paths entry
 
 
 class MapHost(BaseModel):

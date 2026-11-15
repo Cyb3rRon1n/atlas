@@ -14,6 +14,17 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   Shown as the LAN tile on the Posture page. The Docker image adds `atlas-dhcp-python`, an interpreter copy
   with only the permission to listen on UDP port 68.
 
+### Changed
+- **Asleep containers:** a container that stopped cleanly (exit code 0, e.g. a game room put to sleep by an idle
+  timer) or has the label `atlas.on-demand=true` is listed as *Asleep* on the home page, not as a problem;
+  `/api/summary` adds `containers_asleep`.
+- Posture forgets a container's destinations and "expected" marks after `posture.retention_days` without traffic.
+
+### Added
+- **Host health alerts** (`atlas sample`): a sensor near its own temperature limit, memory or disks above 90%,
+  crashed or restart-looping containers, and status feeds (e.g. a RAID watchdog) reporting a problem - one alert
+  when it starts, one when it clears. Limits under `health:`.
+
 ## 0.6.0 - 2026-11-15
 
 ### Added

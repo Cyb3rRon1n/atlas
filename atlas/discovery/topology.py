@@ -38,6 +38,8 @@ def _docker_topology(client):
             "name": container.name,
             "status": state.get("Status", container.status),
             "health": (state.get("Health") or {}).get("Status", ""),
+            "exit_code": state.get("ExitCode"),
+            "on_demand": str(labels.get("atlas.on-demand", "")).lower() in ("1", "true", "yes"),
             # host ports published on all interfaces (127.0.0.1-only binds are not reachable from the LAN)
             "ports": sorted({
                 int(bind["HostPort"])

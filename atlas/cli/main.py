@@ -3601,6 +3601,56 @@ app.add_typer(
 )
 
 
+certs_app = typer.Typer(
+    name="certs",
+    help="Certificate expiry of your public hostnames"
+)
+
+
+@certs_app.command("check")
+def certs_check(
+    json_output: bool = typer.Option(False, "--json", help="Print the saved state as JSON"),
+    force: bool = typer.Option(False, "--force", help="Check now even if checked in the last 24 hours")
+):
+    """
+    Opens a TLS connection to every hostname in the Traefik routes (plus
+    security.cert_hosts) and reads each certificate's expiry date. Alerts at
+    14 and 3 days left, on an untrusted certificate, and when it's renewed.
+    atlas-scan runs it every pass; it only checks once a day.
+    """
+
+    from datetime import datetime
+
+    from atlas.posture.certs import run
+    from atlas.posture.store import PostureStore
+
+    settings = load_config()
+
+    if not settings.security.cert_watch:
+        console.print("[yellow]security.cert_watch is false in atlas.yaml - nothing to do.[/yellow]")
+        return
+
+    texts, detail = run(settings, PostureStore(), datetime.utcnow(), force=force)
+
+    if json_output:
+        print(json.dumps(detail, default=str))
+        return
+
+    hosts = detail.get("hosts") or {}
+    if not hosts:
+        console.print("No hostnames to check yet (no Traefik routes seen, security.cert_hosts empty).")
+    for host, entry in sorted(hosts.items()):
+        colour = {"ok": "green", "unreachable": "dim"}.get(entry["level"], "yellow")
+        days = "" if entry["days"] is None else f"{entry['days']} days"
+        console.print(f"[{colour}]{host}: {entry['level']} {days} {entry['error']}[/{colour}]".replace("  ", " "))
+    console.print(f"[green]Checked {detail.get('checked_at', 'never')}, {len(texts)} alert(s)[/green]")
+
+
+app.add_typer(
+    certs_app
+)
+
+
 lan_app = typer.Typer(
     name="lan",
     help="LAN watch: rogue DHCP servers and gateway ARP spoofing (web /posture)."

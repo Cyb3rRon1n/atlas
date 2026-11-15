@@ -294,6 +294,21 @@ Problems send one alert to every `notify:` channel and another when they clear. 
 
 The first run learns what is normal and sends nothing. After that every newly open port sends one alert (risky ones such as telnet, SMB, remote desktop or databases say so), a new port forward or UPnP mapping alerts as "opened to the internet", and UPnP being switched on alerts. A port that closes and opens again later doesn't alert twice. Each device's page lists its open ports; the Posture page's **Public exposure** tab shows the router's forwards, UPnP and the latest new ports.
 
+### Certificate watch
+
+`atlas certs check` (run by atlas-scan, but only once a day) opens a TLS connection to every hostname in your Traefik routes, plus any you list, the same way a browser would, and reads each certificate's expiry date. Nothing is changed and no login is needed. Behind Cloudflare (or any proxy) that is the certificate visitors actually get.
+
+```yaml
+security:
+  cert_watch: true          # false turns it off
+  cert_hosts: []            # more hostnames to check, e.g. a router or NAS with its own certificate
+  cert_warn_days: 14        # first alert
+  cert_urgent_days: 3       # second, red alert (also sent once it has expired)
+  cert_timeout: 5.0
+```
+
+One alert per hostname each time things get worse (14 days left, then 3 days or expired), one when a browser would refuse the certificate (wrong name, untrusted issuer), and a "Resolved" once it is renewed. A hostname that can't be reached is only shown, not alerted: outages are the health checks' job. The Posture page's **Public exposure** tab shows days left next to each route, yellow inside the warning window and red when urgent or untrusted. `atlas certs check --force` checks right away.
+
 ## `notify`
 
 Where alerts go: new devices, important devices gone offline, VPN/torrent clients disconnected, and sign-ins from new places. Set any number of channels — every one that is set gets each alert, and one failing never stops the others. Check your setup with `atlas notify test`.

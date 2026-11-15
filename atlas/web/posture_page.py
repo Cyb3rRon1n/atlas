@@ -58,7 +58,7 @@ POSTURE_STYLE = """
 .box.selected { outline:2px solid var(--blue); }
 .box .badge { margin-left:auto; font-size:11px; color:#ffd08a; text-transform:uppercase; letter-spacing:.05em; }
 #exposure li { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
-.prot-authelia { color:#7fdcb5; } .prot-public { color:#ffd08a; }
+.prot-authelia { color:#7fdcb5; } .prot-public { color:#ffd08a; } .cert-soon { color:#d9b44a; } .cert-bad { color:#ff8f8f; font-weight:600; }
 @media (max-width: 900px) { #strip { grid-template-columns:repeat(2,minmax(0,1fr)); }  }
 #posture-panel dl { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:13px; }
 #posture-panel dt { color:var(--muted); }
@@ -109,10 +109,22 @@ function renderStrip(items) {
   }));
 }
 
-function renderExposure(routes, router) {
+function certNote(cert) {
+  if (!cert) return null;
+  if (cert.level === "unreachable") return el("span", "cert: not reachable", "muted");
+  if (cert.level === "invalid") return el("span", "cert: not trusted", "cert-bad");
+  const text = cert.days < 0 ? "cert: expired" : "cert: " + cert.days + " day" + (cert.days === 1 ? "" : "s");
+  return el("span", text, cert.level === "urgent" ? "cert-bad" : cert.level === "soon" ? "cert-soon" : "muted");
+}
+
+function renderExposure(routes, router, certs) {
+  certs = certs || {};
   exposure.replaceChildren(...routes.map((r) => {
     const li = el("li");
-    li.append(el("span", (r.hosts[0] || r.name)), el("span", r.protection === "authelia" ? "Authelia" : "public · own login", "prot-" + r.protection));
+    const host = r.hosts[0] || r.name;
+    li.append(el("span", host), el("span", r.protection === "authelia" ? "Authelia" : "public · own login", "prot-" + r.protection));
+    const note = certNote(certs[(r.hosts[0] || "").toLowerCase()]);
+    if (note) li.append(note);
     return li;
   }));
   if (!routes.length) exposure.replaceChildren(el("li", "No routes seen yet.", "muted"));
@@ -296,7 +308,7 @@ async function load() {
     const data = await response.json();
     msg.textContent = DEFAULT_MSG;
     off.hidden = data.enabled !== false;
-    renderStrip(data.strip); renderExposure(data.exposure, data.router); renderReview(data.review); draw(data);
+    renderStrip(data.strip); renderExposure(data.exposure, data.router, data.certs); renderReview(data.review); draw(data);
   } catch (error) { msg.textContent = "Could not load posture data: " + error; }
 }
 

@@ -106,8 +106,30 @@ class SignalNotifyConfig(BaseModel):
     recipients: list[str] = []
 
 
+class NtfyNotifyConfig(BaseModel):
+    # e.g. https://ntfy.sh or your own server; the phone app subscribes to topic.
+    url: str = ""
+    topic: str = ""
+    token: str = ""        # or ATLAS_NTFY_TOKEN in the environment
+
+
+class EmailNotifyConfig(BaseModel):
+    host: str = ""
+    port: int = 587        # 465 = implicit TLS, otherwise STARTTLS when starttls is on
+    starttls: bool = True
+    user: str = ""
+    password: str = ""     # or ATLAS_SMTP_PASSWORD in the environment
+    sender: str = ""       # From: address, defaults to user
+    to: list[str] = []
+
+
 class NotifyConfig(BaseModel):
+    # Every channel that is set gets each alert; see docs: Configuration > Alerts.
     signal: SignalNotifyConfig = SignalNotifyConfig()
+    ntfy: NtfyNotifyConfig = NtfyNotifyConfig()
+    webhooks: list[str] = []   # Discord / Slack webhook URLs, or any URL that takes JSON
+    email: EmailNotifyConfig = EmailNotifyConfig()
+    apprise: list[str] = []    # Apprise URLs (tgram://, pover://, matrix://, ...) - needs the apprise package
 
 
 class AccessConfig(BaseModel):

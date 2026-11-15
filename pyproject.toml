@@ -52,8 +52,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov"]
+dev = ["pytest", "pytest-cov", "apprise>=1.9"]   # apprise: so CI runs the real Apprise test
 docs = ["mkdocs-material"]
+alerts = ["apprise>=1.9"]   # notify.apprise URLs; the Docker image installs it
 
 [project.urls]
 Homepage = "https://github.com/Cyb3rRon1n/atlas"

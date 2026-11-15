@@ -108,9 +108,9 @@ def authelia_logins(log_text):
 
 class AccessCollector:
 
-    def __init__(self, settings, posture_settings, store, get=requests.get, signal=None, send=None, docker=None):
+    def __init__(self, settings, posture_settings, store, get=requests.get, notify=None, send=None, docker=None):
         self.settings, self.posture, self.store, self.get = settings, posture_settings, store, get
-        self.signal, self.send, self.docker = signal, send, docker
+        self.notify, self.send, self.docker = notify, send, docker
 
     def _app_events(self, since):
         """Sign-in lines from each app container's log since `since` (needs the docker socket; skipped without it)."""
@@ -135,16 +135,16 @@ class AccessCollector:
         return info
 
     def _alert(self):
-        """One Signal message (Note to Self via notify.signal) listing sign-ins from places not seen before."""
+        """One alert (every notify: channel) listing sign-ins from places not seen before."""
 
+        from atlas import notify
         pending = self.store.unalerted_reviews()
-        if not pending or not self.signal or not self.signal.url:
+        if not pending or not notify.configured(self.notify):
             return 0
         lines = "\n".join(f"\u2022 **{p['user']}** \u2192 {p['app']} from {p['label']} ({p['ip']})" for p in pending[:10])
         text = (f"\U0001F30D **New sign-in place{'s' if len(pending) > 1 else ''}**\n\n{lines}\n\n"
                 "\u2705 Expected? Confirm it on Atlas \u2192 Access.")
-        from atlas.devices.notify import send_signal
-        ok, _ = (self.send or send_signal)(self.signal, text)
+        ok, _ = (self.send or notify.send)(self.notify, text)
         if ok:
             self.store.mark_alerted([p["id"] for p in pending])
         return len(pending) if ok else 0

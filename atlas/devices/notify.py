@@ -1,6 +1,7 @@
 """
-Signal alerts through signal-cli-rest-api (POST /v2/send, styled text so
-**bold** renders). A failed send leaves the items queued for the next run.
+Device alerts (new / important-offline) and the Signal sender. deliver()
+sends through atlas.notify, so every configured channel gets them; a failed
+send leaves the items queued for the next run.
 """
 
 import json
@@ -45,15 +46,18 @@ def send_signal(config, text):
 
 
 def deliver(store, config, now=None):
+    """config is the whole notify: section (NotifyConfig)."""
 
-    if not config.url:
+    from atlas import notify
+
+    if not notify.configured(config):
         return []
 
     errors = []
 
     for kind, items in store.due_notifications(now).items():
 
-        ok, error = send_signal(config, format_message(kind, items))
+        ok, error = notify.send(config, format_message(kind, items))
 
         if ok:
             store.mark_sent([item["id"] for item in items], now)

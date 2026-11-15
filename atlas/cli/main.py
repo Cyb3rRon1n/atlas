@@ -1599,7 +1599,7 @@ def lan_scan(
     """
     Find every device on the LAN and update the device inventory: links
     each sighting to a known device when certain, queues new devices for
-    triage, and sends Signal alerts (notify.signal) for new devices and
+    triage, and sends alerts (every notify: channel) for new devices and
     for important devices gone quiet. Run by the atlas-scan container.
     """
 
@@ -1627,7 +1627,7 @@ def lan_scan(
     result = store.record_run("lan", sightings)
     result["subnets"] = subnets
     result["offline"] = store.queue_offline()
-    result["notify_errors"] = deliver(store, settings.notify.signal)
+    result["notify_errors"] = deliver(store, settings.notify)
 
     if result["new"] or result["offline"] or result["notify_errors"]:
         application.runtime.events.publish(
@@ -3455,7 +3455,7 @@ def access_collect(
     from atlas.docker.manager import get_client
 
     result = AccessCollector(settings.access, settings.posture, AccessStore(),
-                             signal=settings.notify.signal, docker=get_client()).run(datetime.utcnow())
+                             notify=settings.notify, docker=get_client()).run(datetime.utcnow())
 
     if json_output:
         print(json.dumps(result, default=str))
@@ -3536,12 +3536,12 @@ vpn_app = typer.Typer(
 @vpn_app.command("check")
 def vpn_check():
     """
-    Probe each vpn.clients qBittorrent; Signal alert (notify.signal) after two
+    Probe each vpn.clients qBittorrent; alert (every notify: channel) after two
     bad checks in a row, and again when it recovers. atlas-scan runs it every cycle.
     """
 
     from atlas.access.store import AccessStore
-    from atlas.devices.notify import send_signal
+    from atlas import notify
     from atlas.monitoring.vpn import check
 
     settings = load_config()
@@ -3550,8 +3550,7 @@ def vpn_check():
         console.print("[yellow]vpn.clients is empty in atlas.yaml - nothing to do.[/yellow]")
         return
 
-    signal = settings.notify.signal
-    send = (lambda text: send_signal(signal, text)) if signal.url else None
+    send = (lambda text: notify.send(settings.notify, text)) if notify.configured(settings.notify) else None
 
     for name, problem in check(settings.vpn.clients, AccessStore(), send).items():
         console.print(f"{name}: {problem or 'ok'}")
@@ -3559,6 +3558,41 @@ def vpn_check():
 
 app.add_typer(
     vpn_app
+)
+
+
+notify_app = typer.Typer(
+    name="notify",
+    help="Alert channels (notify: in atlas.yaml)."
+)
+
+
+@notify_app.command("test")
+def notify_test():
+    """
+    Send a test alert to every channel set under notify: and show which
+    ones got it. Exits 1 if any channel failed or none is set.
+    """
+
+    from atlas import notify
+
+    results = notify.send_each(load_config().notify,
+                               "**✅ Atlas test alert**\nIf you can read this, atlas alerts reach you here.")
+
+    if not results:
+        console.print("[yellow]No alert channels set - add one under notify: in atlas.yaml "
+                      "(signal, ntfy, webhooks, email or apprise).[/yellow]")
+        raise typer.Exit(1)
+
+    for name, ok, error in results:
+        console.print(f"[green]✓ {name}[/green]" if ok else f"[red]✗ {name}:[/red] {error}")
+
+    if not all(ok for _, ok, _ in results):
+        raise typer.Exit(1)
+
+
+app.add_typer(
+    notify_app
 )
 
 

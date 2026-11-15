@@ -26,7 +26,7 @@ RUN apt-get update \
 
 COPY pyproject.toml README.md LICENSE ./
 COPY atlas/ atlas/
-RUN pip install .
+RUN pip install ".[alerts]"   # alerts = Apprise (100+ notification services)
 
 RUN useradd --create-home --uid 10001 atlas \
     && mkdir -p /data/inventory \

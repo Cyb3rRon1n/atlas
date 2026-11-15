@@ -197,21 +197,38 @@ How often the `atlas-scan` container loops `atlas scan; atlas discover; atlas pr
 
 ## `notify`
 
-Controls Signal alerts for new and offline devices, sent through [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api).
+Where alerts go: new devices, important devices gone offline, VPN/torrent clients disconnected, and sign-ins from new places. Set any number of channels — every one that is set gets each alert, and one failing never stops the others. Check your setup with `atlas notify test`.
 
 ```yaml
 notify:
-  signal:
+  ntfy:                              # free phone app (ntfy.sh, or your own server)
+    url: https://ntfy.sh
+    topic: my-homelab-a8f3k2         # pick something hard to guess on the public server
+  webhooks:                          # Discord / Slack webhook URLs, or any URL that takes JSON
+    - https://discord.com/api/webhooks/123/abc
+    - http://homeassistant.local:8123/api/webhook/atlas
+  email:
+    host: smtp.example.com
+    port: 587
+    user: atlas@example.com
+    to: [me@example.com]
+  apprise:                           # 100+ more services, see the Apprise wiki
+    - tgram://bottoken/ChatID
+  signal:                            # signal-cli-rest-api
     url: http://signal-cli:8080
     number: "+15551234567"
     recipients: ["+15559876543"]
 ```
 
-| Field | Default | Description |
+| Channel | Fields | Notes |
 |---|---|---|
-| `url` | `""` | Base URL of a running signal-cli-rest-api instance. Empty = alerts off |
-| `number` | `""` | The registered Signal number to send from |
-| `recipients` | `[]` | Numbers (or group IDs) to send to |
+| `ntfy` | `url`, `topic`, `token` | Markdown messages with a title. `token` (or `ATLAS_NTFY_TOKEN` in `.env`) for a protected server |
+| `webhooks` | list of URLs | `discord.com/api/webhooks/...` and `hooks.slack.com/...` get their own format; any other URL gets `{"title", "text", "source": "atlas"}` as JSON |
+| `email` | `host`, `port` (587), `starttls` (true), `user`, `password`, `sender`, `to` | Port 465 uses implicit TLS. Put the password in `.env` as `ATLAS_SMTP_PASSWORD` rather than here |
+| `apprise` | list of [Apprise URLs](https://github.com/caronc/apprise/wiki) | Telegram, Pushover, Gotify, Matrix, Teams and more. Needs the `apprise` package — the Docker image has it; with pip, `pip install "atlas[alerts]"` |
+| `signal` | `url`, `number`, `recipients` | Through [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api). `recipients` can be numbers or group IDs |
 
-The first successful run of each source (`lan`, `proxmox`, ...) is a baseline — it never generates new-device alerts by itself. After that, new-device alerts roll up: if one was already sent in the last 24 hours, further new devices are held and folded into the next message instead of each firing its own alert. An important device going quiet (missed the last 2 successful runs of every source) alerts once per episode, not on every scan it stays quiet. A failed Signal send leaves the notification queued and retries on the next run.
+An alert counts as delivered when at least one channel took it; if every channel fails it stays queued and is retried on the next run.
+
+The first successful run of each source (`lan`, `proxmox`, ...) is a baseline — it never generates new-device alerts by itself. After that, new-device alerts roll up: if one was already sent in the last 24 hours, further new devices are held and folded into the next message instead of each firing its own alert. An important device going quiet (missed the last 2 successful runs of every source) alerts once per episode, not on every scan it stays quiet. 
 

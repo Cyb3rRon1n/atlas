@@ -1,7 +1,8 @@
 import json
 
 import atlas.devices.notify as notify
-from atlas.config.models import SignalNotifyConfig
+import atlas.notify as channels
+from atlas.config.models import NotifyConfig, SignalNotifyConfig
 
 
 ITEMS = [{"id": 1, "device": "Pixel-7", "ip": "192.168.50.88", "last_seen": "2026-09-29T12:00:00"},
@@ -65,12 +66,13 @@ class FakeStore:
 def test_deliver_marks_sent_only_on_success(monkeypatch):
 
     store = FakeStore()
-    monkeypatch.setattr(notify, "send_signal", lambda config, text: (False, "down"))
-    assert notify.deliver(store, SignalNotifyConfig(url="http://x")) == ["down"]
+    config = NotifyConfig(signal=SignalNotifyConfig(url="http://x"))
+    monkeypatch.setattr(channels, "send_signal", lambda config, text: (False, "down"))
+    assert notify.deliver(store, config) == ["signal: down"]
     assert store.sent == []
 
-    monkeypatch.setattr(notify, "send_signal", lambda config, text: (True, ""))
-    assert notify.deliver(store, SignalNotifyConfig(url="http://x")) == []
+    monkeypatch.setattr(channels, "send_signal", lambda config, text: (True, ""))
+    assert notify.deliver(store, config) == []
     assert store.sent == [1, 2]
 
 
@@ -78,5 +80,5 @@ def test_deliver_without_url_does_nothing():
 
     store = FakeStore()
 
-    assert notify.deliver(store, SignalNotifyConfig()) == []
+    assert notify.deliver(store, NotifyConfig()) == []
     assert store.sent == []

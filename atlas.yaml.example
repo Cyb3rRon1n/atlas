@@ -51,6 +51,13 @@ fleet:
 #   unifi:
 #     enabled: true
 #     url: https://192.168.1.1
+# Alerts (new / offline devices, VPN clients, new sign-in places) go to every channel set here.
+# Test with: atlas notify test. Secrets can live in .env: ATLAS_NTFY_TOKEN, ATLAS_SMTP_PASSWORD.
+# notify:
+#   ntfy: {url: https://ntfy.sh, topic: my-homelab-a8f3k2}
+#   webhooks: [https://discord.com/api/webhooks/123/abc]
+#   email: {host: smtp.example.com, port: 587, user: atlas@example.com, to: [me@example.com]}
+#   apprise: [tgram://bottoken/ChatID]
 # Sign-in for the web page: builtin = atlas's own admin password (first visit asks for the
 # setup code from `docker compose logs atlas`); proxy = Authelia/Authentik/... in front does it.
 web:

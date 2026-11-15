@@ -163,7 +163,12 @@ class PostureStore:
             return json.loads(last.routes) if last else []
 
     def prune(self, before):
+        """Drop flow buckets older than before, plus destinations not used since then - so a removed
+        container's traffic and review entries fade out instead of lingering forever."""
         with Session(self.engine) as session:
             result = session.execute(delete(PostureFlowRecord).where(PostureFlowRecord.hour < _hour(before)))
+            session.execute(delete(PostureSeenRecord).where(PostureSeenRecord.last_seen < before))
+            active = select(PostureSeenRecord.source).distinct()
+            session.execute(delete(PostureKnownRecord).where(PostureKnownRecord.source.not_in(active)))
             session.commit()
             return result.rowcount

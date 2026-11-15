@@ -358,7 +358,9 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 if device is None:
                     self._send(404, "text/plain; charset=utf-8", "Not found")
                     return
-                body = render_device_page(device, devices)
+                ports = (((PostureStore().statuses().get("ports") or {}).get("detail") or {})
+                         .get("devices") or {}).get(str(device_id))
+                body = render_device_page(device, devices, ports)
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)
                 self._send(500, "text/plain; charset=utf-8", "Internal error")

@@ -21,6 +21,10 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 - Posture forgets a container's destinations and "expected" marks after `posture.retention_days` without traffic.
 
 ### Added
+- **Open-port watch** (`atlas ports check`, run by atlas-scan): alerts once when a LAN device, this host or the
+  router opens a new port - common service ports by TCP connect, listening sockets, UniFi port forwards / UPnP
+  switch, and UPnP IGD mappings on other routers. The first run only learns. Device pages list open ports; the
+  Posture page shows the router's exposure.
 - **PoE on the cabling map:** ⚡ on ports powering a device, capable ports outlined, per-device use and budget,
   PoE faults alert, a nearly used budget is shown, and ports starting/stopping PoE appear as changes. Read from
   SNMP (POWER-ETHERNET-MIB) and the UniFi console.

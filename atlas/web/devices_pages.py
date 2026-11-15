@@ -217,7 +217,21 @@ def _options(values, selected):
     return "".join(f"<option{' selected' if value == selected else ''}>{_esc(value)}</option>" for value in values)
 
 
-def render_device_page(device, devices):
+def _open_ports(ports):
+
+    from atlas.devices.ports import port_label
+
+    if not ports:
+        return ('<div class="card"><h2>Open ports</h2><p class="muted">Not checked yet: atlas ports check '
+                'runs on devices that are online during a scan.</p></div>')
+    items = "".join(f"<li>{_esc(port_label(port))}</li>" for port in ports["open"])
+
+    return ('<div class="card"><h2>Open ports</h2>'
+            + (f"<ul>{items}</ul>" if items else '<p class="muted">None of the common service ports answer.</p>')
+            + f'<p class="muted">Last seen at {_esc(ports["ip"])}. A newly opened port sends an alert.</p></div>')
+
+
+def render_device_page(device, devices, ports=None):
 
     # The form edits the stored value, which is "unknown" whenever the shown one is a guess.
     connection = "unknown" if device["connection_guessed"] else device["connection"]
@@ -277,6 +291,7 @@ def render_device_page(device, devices):
         f"<p>{_status(device)} <span class=\"muted\">- {_esc(device['ip'] or 'no ip')} - last seen "
         f"{_esc(device['last_seen'] or 'never')}</span></p>"
         f"<div class=\"card\"><h2>Details</h2>{form}</div>"
+        + _open_ports(ports) +
         "<div class=\"card\"><h2>Where atlas saw it</h2><table><thead><tr><th>source</th><th>id</th><th>ip</th>"
         f"<th>mac</th><th>hostname</th><th>last seen</th><th></th></tr></thead><tbody>{sighting_rows}</tbody></table>"
         f"{merge}</div>"

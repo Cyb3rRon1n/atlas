@@ -13,7 +13,7 @@ POSTURE_CHIPS = ("Which new destinations look suspicious?", "Is the VPN actually
 
 POSTURE_STYLE = """
 <style>
-#strip { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+#strip { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
 #strip .chip { padding:14px 16px; background:var(--surface); border:1px solid var(--line); border-radius:12px;
                color:var(--text); text-align:left; font:inherit; }
 #strip .chip .k { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }

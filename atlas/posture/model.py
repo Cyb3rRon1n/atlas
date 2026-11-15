@@ -16,6 +16,7 @@ WINDOWS = {"live": timedelta(0), "1h": timedelta(hours=1), "24h": timedelta(hour
 NEW_FOR = timedelta(days=7)
 BASELINE = timedelta(hours=24)   # posture_seen's first day is learning, not "new"
 STALE_AFTER = timedelta(minutes=5)
+LAN_STALE_AFTER = timedelta(hours=2)   # atlas lan check runs with each atlas-scan pass (15 min default)
 MAX_SOURCES, MAX_DESTS, MAX_BUSIEST = 8, 10, 6   # dest boxes: 6 busiest, then unreviewed ones
 COL, ROW = 200, 64
 BANDS = {"inbound": 40, "direct": 220, "vpn": 0}   # vpn y is computed after direct's height
@@ -59,6 +60,21 @@ def _strip(statuses, routes, review, now):
     blocked = (("ok", str(crowdsec["detail"].get("active", 0)), "active CrowdSec bans")
                if crowdsec and crowdsec["ok"] else ("unknown", "-", "CrowdSec unavailable"))
 
+    lan = statuses.get("lan")
+    if not lan or now - lan["updated_at"] > LAN_STALE_AFTER:
+        lan_state = ("unknown", "No data", "atlas lan check has not run")
+    else:
+        issues = lan["detail"].get("issues") or []
+        bad = [i for i in issues if i["level"] == "bad"]
+        top = (bad or issues)[:1]
+        more = f" (+{len(issues) - 1} more)" if len(issues) > 1 else ""
+        servers = ", ".join(o["server"] for o in lan["detail"].get("offers") or []) or "probe off"
+        if lan["detail"].get("probe_error"):
+            servers = "probe failed"
+        lan_state = (("warn", f"{len(bad)} problem{'s' * (len(bad) > 1)}", top[0]["detail"] + more) if bad else
+                     ("review", "Check", top[0]["detail"] + more) if issues else
+                     ("ok", "OK", f"DHCP: {servers} · gateway MAC unchanged"))
+
     item = lambda key, label, state_value_detail: {"key": key, "label": label, "state": state_value_detail[0],
                                                     "value": state_value_detail[1], "detail": state_value_detail[2]}
 
@@ -70,6 +86,7 @@ def _strip(statuses, routes, review, now):
         item("blocked", "Blocked", blocked),
         item("new", "New destinations", ("review" if review else "ok", str(len(review)),
                                          "need review" if review else "nothing new")),
+        item("lan", "LAN", lan_state),
     ]
 
 

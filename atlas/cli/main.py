@@ -3527,6 +3527,63 @@ app.add_typer(
 )
 
 
+lan_app = typer.Typer(
+    name="lan",
+    help="LAN watch: rogue DHCP servers and gateway ARP spoofing (web /posture)."
+)
+
+
+@lan_app.command("check")
+def lan_check(
+    json_output: bool = typer.Option(False, "--json", help="Print the result as JSON"),
+    trust_gateway: bool = typer.Option(False, "--trust-gateway",
+                                       help="Accept the gateway's current MAC (after replacing the router)")
+):
+    """
+    One DHCP discover (no address is taken) plus a look at the ARP table for
+    the gateway's MAC. Alerts once per new problem. Needs host networking -
+    atlas-scan runs it every pass.
+    """
+
+    from datetime import datetime
+
+    from atlas.devices.lanwatch import run
+    from atlas.posture.store import PostureStore
+    from atlas.wiring.store import WiringStore
+
+    settings = load_config()
+    clients = []
+
+    if settings.wiring.enabled:
+        latest = WiringStore().latest(1)
+        clients = ((latest[0]["raw"].get("unifi") or {}).get("clients") or []) if latest else []
+
+    result = run(settings, PostureStore(), datetime.utcnow(), unifi_clients=clients, trust_gateway=trust_gateway)
+
+    if json_output:
+        print(json.dumps(result, default=str))
+    else:
+        if result["probe_error"]:
+            console.print(f"[yellow]! DHCP probe failed: {result['probe_error']}[/yellow]")
+        elif result["offers"] is not None:
+            for offer in result["offers"]:
+                console.print(f"DHCP server {offer['server']} offered {offer['offered']} (gateway {offer['router']})")
+        console.print(f"Gateway {result['gateway_ip']} at {result['gateway_seen'] or 'unknown MAC'}")
+        for issue in result["issues"]:
+            color = "red" if issue["level"] == "bad" else "yellow"
+            console.print(f"[{color}]! {issue['reason']}: {issue['detail']}[/{color}]")
+        if not result["issues"]:
+            console.print("[green]✓ No rogue DHCP server, gateway MAC unchanged[/green]")
+
+    if any(issue["level"] == "bad" for issue in result["issues"]):
+        raise typer.Exit(code=1)
+
+
+app.add_typer(
+    lan_app
+)
+
+
 vpn_app = typer.Typer(
     name="vpn",
     help="Check that the torrent clients behind gluetun are connected."

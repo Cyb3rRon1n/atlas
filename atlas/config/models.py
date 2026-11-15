@@ -216,6 +216,11 @@ class SecurityConfig(BaseModel):
     port_watch: bool = True          # atlas ports check: new open ports on LAN devices, this host, the router
     port_timeout: float = 0.5
     extra_ports: list[int] = []      # watched besides the ~25 common service ports
+    cert_watch: bool = True          # atlas certs check: daily TLS expiry check of public hostnames
+    cert_hosts: list[str] = []       # checked besides the hostnames in the Traefik routes
+    cert_warn_days: int = 14
+    cert_urgent_days: int = 3
+    cert_timeout: float = 5.0
 
 
 class WebConfig(BaseModel):

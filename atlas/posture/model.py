@@ -208,6 +208,7 @@ def build_posture(store, now, window="24h"):
 
     return {"generated_at": now.isoformat(), "window": window, "enabled": bool(statuses), "strip": strip_items,
             "nodes": nodes, "edges": edges, "bands": bands, "exposure": routes, "router": _router(statuses),
+            "certs": ((statuses.get("certs") or {}).get("detail") or {}).get("hosts") or {},
             "review": [{**r, "first_seen": r["first_seen"].isoformat()} for r in review]}
 
 

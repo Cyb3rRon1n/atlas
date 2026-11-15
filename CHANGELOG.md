@@ -3,13 +3,14 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
-## Unreleased
+## 0.6.0 - 2026-11-15
 
 ### Added
 - Alerts beyond Signal: `notify.ntfy`, `notify.webhooks` (Discord, Slack or plain JSON), `notify.email`
   (SMTP) and `notify.apprise` (100+ services; the Docker image includes Apprise). Every set channel gets
   each alert; one failing never blocks the others. `ATLAS_NTFY_TOKEN` / `ATLAS_SMTP_PASSWORD` can stay in `.env`.
 - `atlas notify test` sends a test alert and shows which channels got it.
+- New README: install, first steps, privacy (no telemetry), FAQ and troubleshooting on one short page.
 
 ## 0.5.1 - 2026-11-14
 

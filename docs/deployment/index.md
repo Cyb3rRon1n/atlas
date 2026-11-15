@@ -36,28 +36,95 @@ Atlas's role is to assist — observe, understand, recommend — not to require 
 
 Every discovery path (`atlas discover`, `atlas proxmox scan`) feeds into the same local knowledge store and environment context, which `atlas analyze` reads from. Nothing about the deployment model changes the trust boundary of the intelligence layer: recommendations come from Anthropic or a local Ollama model reasoning over what Atlas observed, not from Atlas taking action on its own.
 
-## As a dashboard tile
+## As a dashboard tile (Homepage)
 
-Atlas's web view (overview, history, trends, network map, device triage, posture) makes a good dashboard tile - run it as the Docker stack, route it through your reverse proxy with authentication instead of publishing port 8420, and link the tile to `/map`. The README's [Add Atlas as a Homepage tile](https://github.com/Cyb3rRon1n/atlas#add-atlas-as-a-homepage-tile) has a Traefik + Authelia override, the Homepage `services.yaml` entry, and the host cron line (`discover`, `proxmox scan`, `map`) that keeps the tile current.
-
-`/api/summary`'s Homepage widget also carries a `posture` object once the posture collectors have run - `state` (`ok`/`review`/`warn`/`unknown`), a one-line `message`, `tunnel`, `vpn`, `routes` and `blocked` counts, and `link`. Example `services.yaml` mappings (host shown as a placeholder):
+If you run [Homepage](https://gethomepage.dev) (or any dashboard), give Atlas a tile so the map and dashboard are one click away. Behind a reverse proxy with its own sign-in — e.g. Traefik + Authelia — set `web.auth: proxy` in `atlas.yaml` and add a `docker-compose.override.yml` next to Atlas's own:
 
 ```yaml
-- Atlas:
-    href: https://atlas.example.test/
-    widget:
-      type: customapi
-      url: http://atlas:8420/api/summary
-      mappings:
-        - field: { posture: message }
-          label: Posture
-        - field: { posture: tunnel }
-          label: Tunnel
-        - field: { posture: vpn }
-          label: VPN
-        - field: { posture: routes }
-          label: Public routes
+services:
+  atlas:
+    ports: !reset []                 # no host port; Traefik reaches it on the shared network
+    networks: [proxy]                # your Traefik network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.atlas.rule=Host(`atlas.example.com`)
+      - traefik.http.routers.atlas.entrypoints=websecure
+      - traefik.http.routers.atlas.tls=true
+      - traefik.http.routers.atlas.middlewares=authelia@docker   # admins only
+      - traefik.http.services.atlas.loadbalancer.server.port=8420
+networks:
+  proxy:
+    external: true
 ```
 
-**Sign-in:** atlas asks for its own admin password by default (`web.auth: builtin`; first visit needs the setup code from `docker compose logs atlas`). Behind a reverse proxy that already authenticates (Authelia, Authentik), set `web.auth: proxy`. Dashboards reach `/api/*` with the read-only token from `atlas auth token` (`Authorization: Bearer <token>`). Docker access goes through a read-only socket proxy; `ATLAS_DOCKER_WRITE=1` in `.env` opens container control for the chat's stop/restart/resize actions.
+Then the tile, in Homepage's `services.yaml` - with live counts from Atlas's `/api/summary`
+(a small read-only JSON view of the latest network map):
 
+```yaml
+- Infrastructure:
+  - Atlas:
+      href: https://atlas.example.com/map
+      icon: mdi-radar
+      description: Network map, inventory, history - chat via `atlas chat`
+      siteMonitor: http://atlas:8420
+      widget:
+        type: customapi
+        url: http://atlas:8420/api/summary
+        refreshInterval: 60000
+        headers:                       # only with web.auth: builtin - the token is `atlas auth token`
+          Authorization: Bearer {{HOMEPAGE_VAR_ATLAS_TOKEN}}
+        mappings:
+          - field: status
+            label: Status
+          - field: containers_running
+            label: Containers up
+          - field: hosts_up
+            label: Hosts up
+          - field: guests_running
+            label: Guests up
+          - field: { posture: message }
+            label: Posture
+          - field: { posture: tunnel }
+            label: Tunnel
+          - field: { posture: vpn }
+            label: VPN
+          - field: { posture: routes }
+            label: Public routes
+```
+
+`/api/summary` returns `status` (`ok` / `degraded` when a map host is down or a container is
+unhealthy), `containers_running`/`_total`/`_unhealthy`, `guests_running`/`_total`,
+`hosts_up`/`_total`/`_down`, `ai_reachable` and `generated_at`. It also returns a `posture` object
+(always present when the posture data can be read; `unknown` values until the collector has run) — `state` (`ok`/`review`/`warn`/`unknown`),
+`tunnel`, `vpn`, `routes`, `blocked`, `review_count`, `message` and `link`, backing the four extra
+mappings above.
+
+Keep what the tile shows current with the `atlas-scan` container (started by default alongside
+`atlas` — nothing extra to do), or one host cron line if you're not running the compose stack:
+
+```cron
+*/30 * * * * docker exec atlas atlas discover >/dev/null 2>&1; docker exec atlas atlas proxmox scan >/dev/null 2>&1; docker exec atlas atlas map >/dev/null 2>&1
+```
+
+Chat lives in the terminal: `docker exec -it atlas atlas chat` (a one-line `atlas-chat` wrapper script on the host makes it easy to reach from an SSH/Guacamole session). If you use Authelia, make sure admin-only rules end with a `deny` rule for the same domains — a rule whose `subject` doesn't match falls through to the default policy.
+
+## Posture page
+
+The home page (`/`) is a posture map of what reaches the internet and what the internet can reach.
+It stays empty (with a banner saying so) until `atlas posture watch` runs - the atlas-scan container
+starts it once `posture.enabled: true` is set (see the `posture:` block in `atlas.yaml.example`).
+On the Docker host:
+
+- Byte counts need conntrack accounting: `sysctl -w net.netfilter.nf_conntrack_acct=1` (persist it in
+  `/etc/sysctl.d/`). atlas-scan already has `NET_ADMIN`, used only for the read-only `conntrack -L`.
+- `posture.crowdsec_api_key`: a bouncer key from `docker exec crowdsec cscli bouncers add atlas`.
+- `posture.gluetun_api_key`: an API key for gluetun's control server (an `apikey` role in its
+  `config.toml`), so the VPN exit IP can be compared with the home IP.
+- `posture.traefik_dynamic_dir`: Traefik's file-provider directory, mounted read-only into atlas-scan,
+  so file-defined routes count toward public exposure (docker-label routes are read from the socket).
+- `posture.host_ip`: the host's LAN address, so traffic from the host itself is attributed to "host".
+
+Destinations are named by a local copy of the free iptoasn.com table (refreshed weekly); no destination
+IP leaves the host except the one reverse-DNS lookup made when you open a destination's details. The
+first day is a learning baseline; after that, a network a container never used before shows up under
+"Needs review" until marked expected.

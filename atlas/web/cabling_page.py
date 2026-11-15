@@ -41,6 +41,8 @@ CABLING_STYLE = """
 .fp span.up { opacity:1; }
 .fp span.h-bad { border:2px solid var(--red); box-shadow:0 0 0 2px color-mix(in srgb, var(--red) 30%, transparent); }
 .fp span.h-watch { border:2px solid var(--orange); }
+.fp span.poe-cap { border-style:dashed; }
+.fp span.poe::after { content:"⚡"; position:absolute; right:3px; top:1px; font-size:11px; }
 #health ul { list-style:none; padding:0; margin:0; } #health li { padding:6px 0; border-top:1px solid var(--line); }
 #health li:first-child { border-top:0; } #health .lvl { font-weight:600; margin-right:6px; }
 #health .bad .lvl { color:var(--red); } #health .watch .lvl { color:var(--orange); }
@@ -322,6 +324,26 @@ def faces(snapshot, raw, panels=None):
     return {node_id: physical_layout(ports, panels.get(name)) for node_id, name, ports in _boxes(snapshot, raw)}
 
 
+def _poe_text(poe):
+
+    if poe.get("fault"):
+        return "PoE fault"
+    if poe.get("delivering"):
+        watts = f' {poe["watts"]:g} W' if poe.get("watts") is not None else ""
+        return f'PoE{watts} {poe.get("class") or ""}'.strip()
+
+    return f'PoE capable, not powering ({poe.get("mode") or "off"})'
+
+
+def _budget(device):
+
+    budget, used = device.get("poe_budget_w"), device.get("poe_used_w")
+    if budget:
+        return f" · PoE {used or 0:g} W of {budget:g} W"
+
+    return f" · PoE {used:g} W" if used else ""
+
+
 def _faceplates(snapshot, raw, panels=None):
 
     health = {}
@@ -334,6 +356,8 @@ def _faceplates(snapshot, raw, panels=None):
         if link["b_port"]:
             attached[(link["b"], link["b_port"])] = (names.get(link["a"]), link)
 
+    devices = {d.get("name"): d for d in list((raw.get("switches") or {}).values())
+               + list((raw.get("unifi") or {}).get("devices") or [])}
     html = []
     for node_id, name, ports in _boxes(snapshot, raw):
         layout = physical_layout(ports, (panels or {}).get(name))
@@ -345,11 +369,15 @@ def _faceplates(snapshot, raw, panels=None):
             # Positioned like the front panel: x in port columns, row 0 = top (odd ports on rack switches).
             if cell["cage"]:
                 tip = f'{cell["name"]} SFP cage (combo: shares {cell["name"]} with the RJ45 port)'
+            poe = None if cell["cage"] else (ports.get(cell["name"]) or {}).get("poe")
+            if poe:
+                tip += " · " + _poe_text(poe)
             issues = [] if cell["cage"] else health.get((name, cell["name"]), [])
             state = ("h-bad " if any(i["level"] == "bad" for i in issues) else "h-watch ") if issues else ""
             if issues:
                 tip += " · " + " · ".join(f'{i["reason"]}: {i["detail"]}' for i in issues)
-            cells.append(f'<span class="{state}{"cage " if cell["cage"] else ""}{"up " if cell["up"] else ""}{_speed_class(cell["speed"])}" '
+            poe_class = ("poe " if poe["delivering"] else "poe-cap ") if poe else ""
+            cells.append(f'<span class="{state}{poe_class}{"cage " if cell["cage"] else ""}{"up " if cell["up"] else ""}{_speed_class(cell["speed"])}" '
                          f'style="left:calc({cell["x"]:g} * var(--pw));top:calc({cell["row"]} * var(--ph))" '
                          f'title="{_esc(tip)}"><b>{_esc(cell["label"])}</b><small>{_esc(other or "")}</small></span>')
         logical = "".join(
@@ -359,7 +387,7 @@ def _faceplates(snapshot, raw, panels=None):
         sockets = [cell for cell in layout["ports"] if not cell["cage"]]   # a combo cage is the same port
         up = sum(1 for cell in sockets if cell["up"])
         html.append(f'<details id="fp-{_esc(node_id)}"><summary>{_esc(name)} '
-                    f'<span class="when">· {up}/{len(sockets)} ports up</span></summary>'
+                    f'<span class="when">· {up}/{len(sockets)} ports up{_esc(_budget(devices.get(name) or {}))}</span></summary>'
                     f'<div class="fp-wrap"><div class="fp" style="width:calc({layout["width"]:g} * var(--pw));'
                     f'height:calc({layout["rows"]} * var(--ph))">{"".join(cells)}</div></div>'
                     + (f'<p class="when">Port-channels: {logical}</p>' if logical else "") + '</details>')
@@ -382,8 +410,9 @@ def _health(snapshot):
             for i in issues) + "</ul>"
 
     return ('<section id="health"><h2>Cable health</h2>' + body +
-            '<p class="when">Checked on every scan. Growing CRC errors and duplex mismatches send an alert; '
-            'a slower link or a link that dropped is only shown here.</p></section>')
+            '<p class="when">Checked on every scan. Growing CRC errors, duplex mismatches and PoE faults send an '
+            'alert; a slower link, a link that dropped or a nearly used PoE budget is only shown here. '
+            '⚡ = port powering a device, dashed outline = port that can supply PoE.</p></section>')
 
 
 def render_cabling_page(latest, changes, enabled, now=None, faceplates=None):

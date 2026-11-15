@@ -22,12 +22,30 @@ REASONS = {
     "speed": "Speed dropped",
     "flap": "Link went down and up",
     "out_errors": "Output errors",
+    "poe_fault": "PoE fault",
+    "poe_budget": "PoE budget nearly used",
 }
+
+POE_BUDGET_WATCH = 0.9
 
 
 def _speed(mbit):
 
     return f"{mbit // 1000} Gbit/s" if mbit >= 1000 and mbit % 1000 == 0 else f"{mbit} Mbit/s"
+
+
+def _devices(raw):
+    """Every switch and UniFi device in one scan's raw data (name, ports, poe_budget_w, poe_used_w)."""
+
+    return list((raw.get("switches") or {}).values()) + list((raw.get("unifi") or {}).get("devices") or [])
+
+
+def poe_ports(raw):
+    """[{device, port, delivering, watts}] for every PoE-capable port - saved on the snapshot for change detection."""
+
+    return [{"device": device.get("name"), "port": name, "delivering": port["poe"]["delivering"],
+             "watts": port["poe"].get("watts")}
+            for device in _devices(raw) for name, port in sorted((device.get("ports") or {}).items()) if port.get("poe")]
 
 
 def _ports(raw):
@@ -117,6 +135,20 @@ def assess(current, history, stale=()):
         if now.get("last_change") is not None and before.get("last_change") is not None \
                 and now["last_change"] != before["last_change"] and (previous.get(key) or {}).get("up"):
             add(key, "flap", "watch", "the link dropped and came back since the last scan")
+
+    # PoE: a port that detected a device but can't power it, and devices close to their power budget.
+    # Checked on down ports too - a powered device that never comes up is exactly what a fault looks like.
+    for device in _devices(current):
+        name = device.get("name")
+        if name in stale:
+            continue
+        for port, info in sorted((device.get("ports") or {}).items()):
+            if (info.get("poe") or {}).get("fault"):
+                add((name, port), "poe_fault", "bad", "the switch detected a powered device but can't power it - "
+                                                     "check the cable, or whether it needs more power than the port gives")
+        budget, used = device.get("poe_budget_w"), device.get("poe_used_w")
+        if budget and used is not None and used >= budget * POE_BUDGET_WATCH:
+            add((name, ""), "poe_budget", "watch", f"using {used:g} W of {budget:g} W - another powered device may not start")
 
     return issues
 

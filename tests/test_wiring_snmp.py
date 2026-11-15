@@ -4,9 +4,9 @@ import pytest
 
 from atlas.config.models import WiringSwitch
 from atlas.wiring import WiringError
-from atlas.wiring.snmp import COUNTERS, OIDS, collect_switch, parse_switch, parse_walk, walk_switch
+from atlas.wiring.snmp import OIDS, OPTIONAL, collect_switch, parse_switch, parse_walk, walk_switch
 
-ALL = {**OIDS, **COUNTERS}
+ALL = {**OIDS, **OPTIONAL}
 
 WALKS = {
     "sysName": ".1.3.6.1.2.1.1.5.0 = STRING: core-switch\n",

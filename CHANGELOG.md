@@ -21,6 +21,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 - Posture forgets a container's destinations and "expected" marks after `posture.retention_days` without traffic.
 
 ### Added
+- **PoE on the cabling map:** ⚡ on ports powering a device, capable ports outlined, per-device use and budget,
+  PoE faults alert, a nearly used budget is shown, and ports starting/stopping PoE appear as changes. Read from
+  SNMP (POWER-ETHERNET-MIB) and the UniFi console.
 - **Host health alerts** (`atlas sample`): a sensor near its own temperature limit, memory or disks above 90%,
   crashed or restart-looping containers, and status feeds (e.g. a RAID watchdog) reporting a problem - one alert
   when it starts, one when it clears. Limits under `health:`.

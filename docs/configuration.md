@@ -247,6 +247,10 @@ Each scan compares every connected port's counters with the scan before it, so o
 | Link slower than the port ran before (e.g. 100 Mbit/s instead of 1 Gbit/s) | watch | A damaged wire pair or bad jack, or simply a computer asleep |
 | Link went down and up since the last scan | watch | Unplugged, rebooted, or a loose connector |
 | Output errors growing | watch | Congestion or a failing port |
+| PoE fault: a powered device detected but not powered | problem | A bad cable, or the device needs more power than the port gives |
+| PoE budget 90% or more used | watch | Another powered device (camera, access point) may not start |
+
+**PoE:** ports powering a device show ⚡ on the faceplate, ports that can supply PoE but aren't have a dashed outline, and each device's line shows its PoE use and budget ("PoE 6.5 W of 30 W"). Hover a port for the PoE class, mode and watts. Switches report this over SNMP (the standard POWER-ETHERNET-MIB; per-port watts only come from UniFi), UniFi devices through the console. "Started/stopped delivering PoE" appears with the other changes since the last scan.
 
 Problems turn the port red on the faceplate, appear in **Cable health** and send one alert to every `notify:` channel, plus another alert when they clear. "Watch" findings are shown on the page only, because they have harmless causes too often to send alerts about. Switches without the EtherLike counters fall back to plain input errors, and UniFi ports use the console's own error counts.
 

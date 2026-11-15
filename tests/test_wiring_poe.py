@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime
 
 from atlas.web.cabling_page import render_cabling_page
@@ -78,13 +79,17 @@ def test_poe_start_and_stop_show_as_changes():
 
 def test_faceplate_marks_powered_and_capable_ports():
     latest = _latest()
-    switch = latest["raw"]["switches"]["core-switch"]
+    switch = latest["raw"]["switches"]["core-switch"] = copy.deepcopy(latest["raw"]["switches"]["core-switch"])
     port = next(iter(switch["ports"]))
     switch["ports"][port]["poe"] = {"delivering": True, "fault": False, "enabled": True, "watts": 6.5,
                                     "mode": "auto", "class": "Class 4"}
     switch["poe_budget_w"], switch["poe_used_w"] = 30, 6.5
     page = render_cabling_page(latest, [], True, now=datetime(2026, 1, 1, 13))
-    assert 'class="poe ' in page and "PoE 6.5 W Class 4" in page and "PoE 6.5 W of 30 W" in page
+    assert 'class="poe ' in page and "PoE 6.5 W Class 4" in page
+    assert f"· PoE: {port} (1 powering, 6.5 W of 30 W)" in page
     switch["ports"][port]["poe"].update(delivering=False, watts=0.0)
+    switch["poe_used_w"] = 0.0
     page = render_cabling_page(latest, [], True, now=datetime(2026, 1, 1, 13))
     assert 'class="poe-cap ' in page and "PoE capable, not powering (auto)" in page
+    assert f"· PoE: {port} (none powering, 0 W of 30 W)" in page
+    assert "· PoE:" not in render_cabling_page(_latest(), [], True, now=datetime(2026, 1, 1, 13))

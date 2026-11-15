@@ -203,6 +203,13 @@ class WiringConfig(BaseModel):
     cabling_file: str = "cabling.yaml"
 
 
+class SecurityConfig(BaseModel):
+    """LAN watch (atlas lan check -> Posture page): rogue DHCP servers and gateway ARP spoofing."""
+    dhcp_probe: bool = True          # one DHCP discover per run; never takes an address
+    dhcp_timeout: float = 3.0
+    dhcp_servers: list[str] = []     # DHCP servers besides the default gateway (Pi-hole, a second router)
+
+
 class WebConfig(BaseModel):
     # builtin: atlas asks for its own admin password (atlas.web.auth).
     # proxy: an auth proxy (Authelia, Authentik, ...) in front of atlas does it - atlas checks nothing.
@@ -227,4 +234,5 @@ class AtlasConfig(BaseModel):
     access: AccessConfig = AccessConfig()
     vpn: VpnWatchConfig = VpnWatchConfig()
     web: WebConfig = WebConfig()
+    security: SecurityConfig = SecurityConfig()
     wiring: WiringConfig = WiringConfig()

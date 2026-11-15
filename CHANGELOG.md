@@ -3,6 +3,17 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
+## Unreleased
+
+### Added
+- **Cable health** on the cabling map: CRC/alignment errors growing between scans, duplex mismatches, ports
+  linking slower than before and flapping links, from SNMP and UniFi port counters. Problems turn the port red
+  and send an alert (plus one when it clears).
+- **LAN watch** (`atlas lan check`, run by atlas-scan): alerts on a DHCP server other than your router or
+  `security.dhcp_servers`, on DHCP going silent, and on the gateway's IP answering from a new MAC (ARP spoofing).
+  Shown as the LAN tile on the Posture page. The Docker image adds `atlas-dhcp-python`, an interpreter copy
+  with only the permission to listen on UDP port 68.
+
 ## 0.6.0 - 2026-11-15
 
 ### Added

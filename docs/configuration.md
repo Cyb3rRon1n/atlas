@@ -233,6 +233,33 @@ Each scan compares every connected port's counters with the scan before it, so o
 
 Problems turn the port red on the faceplate, appear in **Cable health** and send one alert to every `notify:` channel, plus another alert when they clear. "Watch" findings are shown on the page only, because they have harmless causes too often to send alerts about. Switches without the EtherLike counters fall back to plain input errors, and UniFi ports use the console's own error counts.
 
+## `security`
+
+LAN watch: `atlas lan check` looks for a second DHCP server and for something impersonating your router. atlas-scan runs it after every device scan, and the result shows as the **LAN** tile on the Posture page.
+
+```yaml
+security:
+  dhcp_servers: [192.168.1.5]   # only if something besides the router hands out addresses (Pi-hole, a second router)
+```
+
+| Field | Default | Description |
+|---|---|---|
+| `dhcp_probe` | `true` | Send one DHCP discover per run and list every server that answers. It never asks for or takes an address |
+| `dhcp_timeout` | `3.0` | Seconds to wait for answers |
+| `dhcp_servers` | `[]` | DHCP servers you expect besides the default gateway |
+
+| Finding | Level | What it usually means |
+|---|---|---|
+| A DHCP server that is neither the gateway nor listed | problem | A router plugged in backwards, a VM or container running DHCP by mistake, or an attacker handing out their own gateway |
+| No DHCP server answered two runs in a row (after answering before) | problem | DHCP is down: new devices and renewing ones can't get an address |
+| No DHCP server has ever answered | watch | Usually this host's firewall dropping the answers: allow incoming UDP port 68 (on firewalld: `firewall-cmd --add-port=68/udp --permanent`, then `--reload`) |
+| The gateway's IP answers from a different MAC than the one learned on the first run | problem | ARP spoofing (a man in the middle), or you replaced the router: run `atlas lan check --trust-gateway` to accept the new MAC |
+| A wired UniFi client using the gateway's IP | problem | Something claiming to be the router (needs `wiring.unifi`) |
+| The gateway's MAC also answers for another address | watch | Usually harmless (proxy ARP, a router with two addresses) |
+| One IP on two wired UniFi clients | watch | An address conflict, or a recent DHCP reassignment |
+
+Problems send one alert to every `notify:` channel and another when they clear. The ARP checks see what the atlas host sees; UniFi's client list (when `wiring.unifi` is set) widens that to the rest of the wired network. Hearing DHCP answers needs UDP port 68: the Docker image ships `atlas-dhcp-python`, an interpreter copy holding only that one permission. Run outside Docker as a normal user, the probe reports that it can't listen and the ARP checks still run.
+
 ## `notify`
 
 Where alerts go: new devices, important devices gone offline, VPN/torrent clients disconnected, and sign-ins from new places. Set any number of channels — every one that is set gets each alert, and one failing never stops the others. Check your setup with `atlas notify test`.

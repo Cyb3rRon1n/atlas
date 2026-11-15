@@ -84,6 +84,7 @@ services:
         while :; do atlas posture watch; sleep 30; done &
         while :; do
           atlas scan
+          atlas lan check >/dev/null 2>&1        # rogue DHCP / gateway ARP spoofing (Posture page)
           atlas discover >/dev/null 2>&1
           atlas proxmox scan >/dev/null 2>&1
           atlas map >/dev/null 2>&1 && echo "$$(date -u +%FT%TZ) map refreshed"

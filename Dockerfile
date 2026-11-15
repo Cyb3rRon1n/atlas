@@ -18,10 +18,14 @@ WORKDIR /app
 
 # conntrack lists the kernel connection table for the posture page. The file
 # capability lets the non-root atlas user use NET_ADMIN (granted only to the
-# atlas-scan service via cap_add) without running as root.
+# atlas-scan service via cap_add) without running as root. atlas-dhcp-python is
+# a copy of the interpreter holding only cap_net_bind_service, used solely by
+# `atlas lan check` to hear DHCP offers on UDP port 68.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends conntrack libcap2-bin snmp \
     && setcap cap_net_admin+ep /usr/sbin/conntrack \
+    && cp "$(readlink -f /usr/local/bin/python3)" /usr/local/bin/atlas-dhcp-python \
+    && setcap cap_net_bind_service+ep /usr/local/bin/atlas-dhcp-python \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml README.md LICENSE ./

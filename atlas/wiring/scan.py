@@ -79,6 +79,12 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
         if previous:
             for text in alerts(previous[0]["snapshot"].get("health"), snapshot["health"]):
                 _send(settings, text, send)
+            before = set(previous[0]["snapshot"].get("loops") or [])
+            for pair in sorted(set(snapshot["loops"]) - before):
+                _send(settings, f"**🔁 Possible network loop: {pair}**\n• more than one cable between them "
+                                "carries traffic\n\nSee Atlas → Cabling.", send)
+            for pair in sorted(before - set(snapshot["loops"])):
+                _send(settings, f"**✅ Resolved: loop between {pair}**\n• only one cable carries traffic now", send)
         taken_at = now or datetime.utcnow()
         store.save(snapshot, raw, sources, taken_at, keep=config.keep_snapshots)
 

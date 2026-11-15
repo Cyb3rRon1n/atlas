@@ -78,6 +78,17 @@ def test_prune_drops_old_flow_buckets(temp_db):
     assert len(store.flows(NOW - timedelta(days=100))) == 1
 
 
+def test_prune_forgets_sources_that_went_quiet(temp_db):
+    store = PostureStore(temp_db)
+    store.record_flows([delta(source="removed-app")], NOW - timedelta(days=40))
+    store.mark_known("removed-app", "AS64500")
+    store.record_flows([delta(source="jellyfin")], NOW)
+    store.mark_known("jellyfin", "AS64500")
+    store.prune(NOW - timedelta(days=30))
+    assert {s["source"] for s in store.seen()} == {"jellyfin"}
+    assert [s["known"] for s in store.seen()] == [True]
+
+
 def test_record_flows_without_seen_tracking_keeps_flows_only(temp_db):
     store = PostureStore(temp_db)
     assert store.record_flows([delta(asn=0, org="", cc="")], NOW, track_seen=False) == []

@@ -11,6 +11,7 @@ and server.py.
 from html import escape
 
 from atlas.devices.store import CONNECTIONS, KINDS, STATES
+from atlas.health.alerts import container_state
 from atlas.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE, DRAWER_HTML, DRAWER_STYLE
 
 
@@ -440,6 +441,7 @@ def build_summary(topology, devices=(), posture=None):
 
     down_hosts = [h["name"] for h in hosts if not h["reachable"]]
     stopped = [c["name"] for c in containers if c["status"] != "running"]
+    asleep = [c["name"] for c in containers if container_state(c) == "asleep"]
     unhealthy = [c["name"] for c in containers if c["health"] == "unhealthy"]
     brain = topology.get("brain") or {}
 
@@ -448,6 +450,7 @@ def build_summary(topology, devices=(), posture=None):
         "generated_at": topology.get("generated_at"),
         "containers_running": len(containers) - len(stopped),
         "containers_total": len(containers),
+        "containers_asleep": len(asleep),     # stopped on purpose (exit 0 / atlas.on-demand): not down
         "containers_unhealthy": unhealthy,
         "guests_running": sum(g["status"] == "running" for g in guests),
         "guests_total": len(guests),

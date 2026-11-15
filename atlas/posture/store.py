@@ -11,6 +11,7 @@ import re
 from datetime import datetime
 
 from sqlalchemy import delete, select
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
 from atlas.database import initialize_database
@@ -134,12 +135,11 @@ class PostureStore:
         return {"ok": True}
 
     def set_status(self, source, ok, detail, now):
+        # one upsert: two processes (atlas-scan's loop and a manual run) may write the same source at once
+        values = {"source": source, "ok": ok, "detail": json.dumps(detail), "updated_at": now}
         with Session(self.engine) as session:
-            row = session.scalars(select(PostureStatusRecord).where(PostureStatusRecord.source == source)).first()
-            if row is None:
-                row = PostureStatusRecord(source=source, ok=ok, updated_at=now)
-                session.add(row)
-            row.ok, row.detail, row.updated_at = ok, json.dumps(detail), now
+            session.execute(sqlite_insert(PostureStatusRecord).values(**values).on_conflict_do_update(
+                index_elements=["source"], set_={k: v for k, v in values.items() if k != "source"}))
             session.commit()
 
     def statuses(self):

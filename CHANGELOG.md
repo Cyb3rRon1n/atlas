@@ -6,6 +6,10 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 ## Unreleased
 
 ### Added
+- **Spanning tree, link bundles and VLANs** on the cabling map: a spare cable that spanning tree blocks shows as
+  standby (a note, not a warning); cables that all carry traffic are flagged as a loop risk and alerted once; LACP
+  bundles draw as one labelled bundle; port tooltips show VLANs, with a VLAN picker when there's more than one. The
+  switch model shows next to its name. Standard MIBs, plus UniFi's own port data.
 - **Certificate watch** (`atlas certs check`, run daily by atlas-scan): alerts 14 and 3 days before a public
   hostname's TLS certificate expires, when a browser would refuse it, and when it's renewed. Days left show next
   to each route on the Posture page's Public exposure tab. Hostnames come from the Traefik routes plus

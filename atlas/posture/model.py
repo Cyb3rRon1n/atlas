@@ -207,8 +207,20 @@ def build_posture(store, now, window="24h"):
     ]
 
     return {"generated_at": now.isoformat(), "window": window, "enabled": bool(statuses), "strip": strip_items,
-            "nodes": nodes, "edges": edges, "bands": bands, "exposure": routes,
+            "nodes": nodes, "edges": edges, "bands": bands, "exposure": routes, "router": _router(statuses),
             "review": [{**r, "first_seen": r["first_seen"].isoformat()} for r in review]}
+
+
+def _router(statuses):
+    """Port forwards / UPnP and the latest new open ports, from atlas ports check (None before its first run)."""
+
+    detail = (statuses.get("ports") or {}).get("detail")
+    if not detail:
+        return None
+    forwards = (detail.get("forwards") or {}).get("open")
+
+    return {"forwards": forwards, "upnp": detail.get("upnp"), "source": detail.get("forwards_source", ""),
+            "recent": [{"text": r["text"], "at": r.get("at", "")} for r in (detail.get("recent") or [])[:8]]}
 
 
 def build_trends(store, now):

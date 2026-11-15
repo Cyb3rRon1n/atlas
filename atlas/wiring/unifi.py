@@ -95,7 +95,8 @@ def _default_opener(verify_ssl):
                                        urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
 
-def fetch_unifi(config, env, timeout, opener_factory=None):
+def _session(config, env, timeout, opener_factory, read):
+    """Sign in with the read-only account, then read(get) - get(path) returns that API path's data list."""
 
     user, password = env.get("ATLAS_UNIFI_USER"), env.get("ATLAS_UNIFI_PASS")
     if not user or not password:
@@ -113,7 +114,7 @@ def fetch_unifi(config, env, timeout, opener_factory=None):
             with opener.open(f"{base}/proxy/network/api/s/{config.site}/{path}", timeout=timeout) as response:
                 return json.load(response).get("data") or []
 
-        return parse_unifi(get("stat/device"), get("stat/sta"))
+        return read(get)
 
     except urllib.error.HTTPError as error:
         if error.code in (401, 403):
@@ -121,3 +122,31 @@ def fetch_unifi(config, env, timeout, opener_factory=None):
         raise WiringError(f"UniFi API error {error.code}")
     except (urllib.error.URLError, OSError, ValueError) as error:
         raise WiringError(f"UniFi unreachable: {getattr(error, 'reason', error)}")
+
+
+def fetch_unifi(config, env, timeout, opener_factory=None):
+
+    return _session(config, env, timeout, opener_factory,
+                    lambda get: parse_unifi(get("stat/device"), get("stat/sta")))
+
+
+def parse_exposure(forwards, settings):
+    """Enabled port forwards and whether UPnP is on, from rest/portforward and rest/setting."""
+
+    upnp = next((bool(s.get("upnp_enabled")) for s in settings if "upnp_enabled" in s), None)
+    rules = []
+    for rule in forwards:
+        if rule.get("enabled", True) is False:
+            continue
+        for protocol in ("tcp", "udp") if rule.get("proto", "tcp_udp") == "tcp_udp" else (rule.get("proto"),):
+            rules.append({"protocol": protocol, "external": rule.get("dst_port"), "client": rule.get("fwd"),
+                          "port": rule.get("fwd_port"), "description": rule.get("name", "")})
+
+    return {"forwards": rules, "upnp": upnp}
+
+
+def fetch_exposure(config, env, timeout, opener_factory=None):
+    """What the router opens to the internet: port forwards + the UPnP switch (read-only)."""
+
+    return _session(config, env, timeout, opener_factory,
+                    lambda get: parse_exposure(get("rest/portforward"), get("rest/setting")))

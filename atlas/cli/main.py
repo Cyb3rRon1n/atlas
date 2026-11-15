@@ -3547,6 +3547,60 @@ app.add_typer(
 )
 
 
+ports_app = typer.Typer(
+    name="ports",
+    help="Open-port watch: new open ports on LAN devices, this host and the router (alerts)."
+)
+
+
+@ports_app.command("check")
+def ports_check(
+    json_output: bool = typer.Option(False, "--json", help="Print the saved state as JSON")
+):
+    """
+    TCP-connects to ~25 common service ports on every device online now, reads
+    this host's listening sockets and the router's port forwards / UPnP. The
+    first run learns; later runs alert once per newly open port. atlas-scan
+    runs it every pass.
+    """
+
+    from datetime import datetime
+
+    from atlas.devices.ports import run
+    from atlas.devices.store import InventoryStore
+    from atlas.posture.store import PostureStore
+
+    settings = load_config()
+
+    if not settings.security.port_watch:
+        console.print("[yellow]security.port_watch is false in atlas.yaml - nothing to do.[/yellow]")
+        return
+
+    texts, state = run(settings, PostureStore(), InventoryStore().devices(), datetime.utcnow())
+
+    if json_output:
+        print(json.dumps(state, default=str))
+        return
+
+    for device in sorted(state["devices"].values(), key=lambda d: d["name"].lower()):
+        if device["open"]:
+            console.print(f"{device['name']} ({device['ip']}): {', '.join(map(str, device['open']))}")
+    listeners = (state.get("listeners") or {}).get("open")
+    if listeners is not None:
+        console.print(f"This host listens on: {', '.join(map(str, listeners)) or 'nothing'}")
+    forwards = (state.get("forwards") or {}).get("open")
+    console.print("Router: " + ("unknown (no UniFi console and no UPnP answer)" if forwards is None else
+                                f"{len(forwards)} port forward(s), UPnP {'on' if state.get('upnp') else 'off'}"))
+    console.print(f"[green]{state['probed']} devices checked, {len(texts)} new[/green]")
+    for text in texts:
+        console.print(f"[yellow]! {text.splitlines()[0].strip('*')}[/yellow]")
+
+
+app.add_typer(
+    ports_app
+)
+
+
 lan_app = typer.Typer(
     name="lan",
     help="LAN watch: rogue DHCP servers and gateway ARP spoofing (web /posture)."

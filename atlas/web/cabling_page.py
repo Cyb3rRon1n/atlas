@@ -39,10 +39,12 @@ CABLING_STYLE = """
 .fp span { position:absolute; width:56px; height:38px; box-sizing:border-box; border:1px solid #2f3b4c; border-radius:6px;
            padding:2px 5px; font-size:11px; background:#111821; opacity:.55; }
 .fp span.up { opacity:1; }
+.fp span.poe-cap, .fp span.poe { border:2px dashed #d9b44a; }
+.fp span.poe { border-style:solid; }
+.fp span.poe-cap::after { content:"PoE"; position:absolute; right:3px; top:1px; font-size:9px; color:#d9b44a; }
+.fp span.poe::after { content:"⚡"; position:absolute; right:3px; top:1px; font-size:11px; }
 .fp span.h-bad { border:2px solid var(--red); box-shadow:0 0 0 2px color-mix(in srgb, var(--red) 30%, transparent); }
 .fp span.h-watch { border:2px solid var(--orange); }
-.fp span.poe-cap { border-style:dashed; }
-.fp span.poe::after { content:"⚡"; position:absolute; right:3px; top:1px; font-size:11px; }
 #health ul { list-style:none; padding:0; margin:0; } #health li { padding:6px 0; border-top:1px solid var(--line); }
 #health li:first-child { border-top:0; } #health .lvl { font-weight:600; margin-right:6px; }
 #health .bad .lvl { color:var(--red); } #health .watch .lvl { color:var(--orange); }
@@ -386,11 +388,13 @@ def _faceplates(snapshot, raw, panels=None):
             for port in layout["logical"] if (node_id, port) in attached)
         sockets = [cell for cell in layout["ports"] if not cell["cage"]]   # a combo cage is the same port
         up = sum(1 for cell in sockets if cell["up"])
+        poe_note = ('<p class="when">Yellow = can supply PoE: solid with ⚡ when powering a device, '
+                    'dashed when not.</p>' if any(p.get("poe") for p in ports.values()) else "")
         html.append(f'<details id="fp-{_esc(node_id)}"><summary>{_esc(name)} '
                     f'<span class="when">· {up}/{len(sockets)} ports up{_esc(_budget(devices.get(name) or {}))}</span></summary>'
                     f'<div class="fp-wrap"><div class="fp" style="width:calc({layout["width"]:g} * var(--pw));'
                     f'height:calc({layout["rows"]} * var(--ph))">{"".join(cells)}</div></div>'
-                    + (f'<p class="when">Port-channels: {logical}</p>' if logical else "") + '</details>')
+                    + (f'<p class="when">Port-channels: {logical}</p>' if logical else "") + poe_note + '</details>')
 
     return "".join(html) or '<p class="muted">No switch port data yet.</p>'
 

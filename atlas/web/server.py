@@ -204,6 +204,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         health_settings = settings.health if settings else None
         topology = safe("topology", query.latest_topology)
         pve_scan = safe("proxmox scan", lambda: query.latest_event_payload("atlas.proxmox.scan.completed"))
+        host_issues = safe("host issues", lambda: ((PostureStore().statuses().get("host") or {}).get("detail")
+                                                    or {}).get("issues"))
         local = safe("host health", lambda: get_host_health(health_settings.status_urls if health_settings else None))
 
         def usage():
@@ -215,7 +217,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                                 (local or {}).get("status_feeds"), pve_scan, topology)
 
         return dict(
-            posture=posture, hosts=build_hosts(topology, local, pve_scan),
+            posture=posture, hosts=build_hosts(topology, local, pve_scan, host_issues),
             events=interesting_events(safe("events", lambda: query.recent_events(200)) or []),
             storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now)),
             analysis=safe("analysis", query.latest_analysis), now=now,

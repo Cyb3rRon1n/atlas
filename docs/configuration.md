@@ -151,6 +151,23 @@ Markdown is searched section by section; scripts whole (they document themselves
 |---|---|---|
 | `status_urls` | `{}` | `name: url` of JSON status feeds that `get_host_health` includes (e.g. a RAID-card watchdog). |
 | `storage_paths` | `{}` | `label: path` whose disk usage the web home page's Storage & RAID card shows - e.g. `media array: /media` with the array bind-mounted read-only into the container. Software-RAID (`/proc/mdstat`) and Proxmox ZFS pools are shown automatically. |
+| `alerts` | `true` | Host health alerts (below) |
+| `temp_margin_c` | `5.0` | Alert when a sensor is this close to its own "high" limit, two samples in a row |
+| `memory_percent` | `90` | Alert when memory use reaches this |
+| `disk_percent` | `90` | Alert when the root disk or any `storage_paths` entry reaches this |
+
+### Host health alerts
+
+Every atlas-scan pass (`atlas sample`) checks the machine atlas runs on and sends one alert when a problem starts and another when it clears:
+
+- a temperature sensor within `temp_margin_c` of the limit the chip itself reports (CPUs and NVMe drives report one; sensors without a limit are skipped);
+- memory, the root disk or a `storage_paths` disk above its limit;
+- a container that crashed (stopped with an error code), keeps restarting, or fails its health check;
+- a `status_urls` feed whose `state` is anything but `ok` (for example a RAID-card watchdog saying `warn`).
+
+**Containers that sleep on purpose are not problems.** One that stopped cleanly (exit code 0), such as a game room an idle timer shuts down, shows as *Asleep* on the home page and never alerts. For an app that sleeps but exits with an error code, add the label `atlas.on-demand=true`. The `/api/summary` tile data counts them as `containers_asleep`.
+
+A status feed only reachable from Docker's network can be read as a file instead: mount its directory read-only and use a `file://` URL (`raid card: file:///run/raid-watchdog/status.json`).
 
 ## `access`
 

@@ -14,6 +14,7 @@ import json
 from datetime import datetime
 
 from atlas.web.render import _esc, render_page
+from atlas.wiring.build import IDLE
 from atlas.wiring.faceplate import physical_layout
 
 
@@ -51,6 +52,10 @@ CABLING_STYLE = """
 .fp span b { display:block; font-size:12px; }
 .fp span small { display:block; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .fp span.cage { border-style:dashed; background:transparent; }
+.fp span.standby { border:2px dashed #8b98a5; opacity:.7; }
+.fp span.standby::before { content:"standby"; position:absolute; left:4px; bottom:1px; font-size:8px; color:#8b98a5; }
+.fp span.vlan-off { opacity:.15; }
+.notes { margin:6px 0 12px; padding:6px 12px 6px 28px; color:var(--muted); font-size:14px; }
 .lag { border:1px solid var(--line); border-radius:6px; padding:1px 6px; margin-right:6px; }
 .fp .s100 { border-color:#8b98a5; } .fp .s1g { border-color:#5aa7f0; } .fp .s25 { border-color:#3ccfb4; } .fp .s10g { border-color:#b48cf2; }
 #faceplates details { border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:8px; }
@@ -74,7 +79,7 @@ DIAGRAM_SCRIPT = r"""
     + ".nm{fill:#e6edf3;font:600 13px system-ui,sans-serif}.sub{fill:#8b98a5;font:11px system-ui,sans-serif}"
     + ".pt{fill:#3a4a5e}.pl{fill:#c9d1d9;font:10px ui-monospace,monospace}"
     + ".edge{fill:none;stroke-width:2.5}.s100{stroke:#8b98a5}.s1g{stroke:#5aa7f0}.s25{stroke:#3ccfb4}.s10g{stroke:#b48cf2}"
-    + ".down{stroke-dasharray:6 4;opacity:.6}.el{fill:#e6edf3;font:11px ui-monospace,monospace;paint-order:stroke;"
+    + ".down{stroke-dasharray:6 4;opacity:.6}.standby{stroke:#8b98a5;stroke-dasharray:2 4;opacity:.7}.bundle{stroke-width:4.5}.el{fill:#e6edf3;font:11px ui-monospace,monospace;paint-order:stroke;"
     + "stroke:#0b1016;stroke-width:4px;stroke-linejoin:round}"
     + ".fc{fill:#1b2430;stroke:#3a4a5e}.fc.up.s100{fill:#8b98a5}.fc.up.s1g{fill:#5aa7f0}.fc.up.s25{fill:#3ccfb4}"
     + ".fc.up.s10g{fill:#b48cf2}.fc.used{stroke:#fff;stroke-width:1.6}.fc.cage{fill:none;stroke-dasharray:3 2}.fn{fill:#8b98a5;font:10px ui-monospace,monospace;"
@@ -162,13 +167,15 @@ DIAGRAM_SCRIPT = r"""
         if (!s) { return; }
         var pts = [s.startPoint].concat(s.bendPoints || []).concat([s.endPoint]);
         el("polyline", {points: pts.map(function (p) { return p.x + "," + p.y; }).join(" "),
-                        "class": "edge " + speedClass(link.speed) + (link.up ? "" : " down")}, edgeLayer);
+                        "class": "edge " + speedClass(link.speed) + (link.up ? "" : " down")
+                                 + (link.standby ? " standby" : "") + (link.lag ? " bundle" : "")}, edgeLayer);
         // Label each cable on its last leg (the drop into its own device): every device has its own
         // drop, so labels never pile up on the shared horizontal runs.
         var end = pts[pts.length - 1];
         var stack = (dropCount[link.b] = (dropCount[link.b] || 0) + 1) - 1;   // several cables into one box: stagger
         var text = (link.a_port || "·") + " ⇄ " + (link.b_port || "·") + " · " + speedText(link.speed)
-                   + (link.patch ? " · " + link.patch : "");
+                   + (link.patch ? " · " + link.patch : "") + (link.lag ? " · " + link.lag : "")
+                   + (link.standby && link.up ? " · standby" : "");
         el("text", {x: end.x + 6, y: end.y - 12 - stack * 14, "class": "el"}, labelLayer, text);
       });
       (res.children || []).forEach(function (c) {
@@ -179,7 +186,7 @@ DIAGRAM_SCRIPT = r"""
         el("title", {}, g, tip);
         el("rect", {width: c.width, height: c.height, rx: 8, "class": "node k-" + n.kind}, g);
         el("text", {x: 10, y: 19, "class": "nm"}, g, short(n.name, Math.floor(c.width / 8)));
-        var sub = [n.kind, n.ip].filter(Boolean).join(" · ") + (n.behind.length ? "  +" + n.behind.length + " behind" : "");
+        var sub = [n.model ? short(n.model.split(" ")[0], 18) : n.kind, n.ip].filter(Boolean).join(" · ") + (n.behind.length ? "  +" + n.behind.length + " behind" : "");
         el("text", {x: 10, y: 34, "class": "sub"}, g, sub);
         if (box.face) {
           var used = {};
@@ -239,6 +246,16 @@ DIAGRAM_SCRIPT = r"""
           refresh.disabled = false; refresh.textContent = "Refresh map";
         })
         .catch(function (error) { say("Refresh failed: " + error); refresh.disabled = false; refresh.textContent = "Refresh map"; });
+    });
+  }
+
+  var vlanPick = document.getElementById("vlan-filter");
+  if (vlanPick) {
+    vlanPick.addEventListener("change", function () {
+      var v = vlanPick.value;
+      document.querySelectorAll(".fp span[data-vlans]").forEach(function (cell) {
+        cell.classList.toggle("vlan-off", v !== "" && cell.dataset.vlans.split(" ").indexOf(v) === -1);
+      });
     });
   }
 
@@ -379,7 +396,12 @@ def _faceplates(snapshot, raw, panels=None):
             if issues:
                 tip += " · " + " · ".join(f'{i["reason"]}: {i["detail"]}' for i in issues)
             poe_class = ("poe " if poe["delivering"] else "poe-cap ") if poe else ""
-            cells.append(f'<span class="{state}{poe_class}{"cage " if cell["cage"] else ""}{"up " if cell["up"] else ""}{_speed_class(cell["speed"])}" '
+            info = {} if cell["cage"] else ports.get(cell["name"]) or {}
+            tip += _topology_text(info)
+            vlans = _vlans(info)
+            standby = "standby " if info.get("stp") in IDLE and cell["up"] else ""
+            cells.append(f'<span class="{state}{poe_class}{standby}{"cage " if cell["cage"] else ""}{"up " if cell["up"] else ""}{_speed_class(cell["speed"])}" '
+                         + (f'data-vlans="{" ".join(map(str, vlans))}" ' if vlans else "") +
                          f'style="left:calc({cell["x"]:g} * var(--pw));top:calc({cell["row"]} * var(--ph))" '
                          f'title="{_esc(tip)}"><b>{_esc(cell["label"])}</b><small>{_esc(other or "")}</small></span>')
         logical = "".join(
@@ -390,13 +412,41 @@ def _faceplates(snapshot, raw, panels=None):
         up = sum(1 for cell in sockets if cell["up"])
         poe_note = ('<p class="when">Yellow = can supply PoE: solid with ⚡ when powering a device, '
                     'dashed when not.</p>' if any(p.get("poe") for p in ports.values()) else "")
+        model = (devices.get(name) or {}).get("model") if node_id.startswith("s:") else ""
         html.append(f'<details id="fp-{_esc(node_id)}"><summary>{_esc(name)} '
+                    + (f'<span class="when">· {_esc(model)}</span> ' if model else "") +
                     f'<span class="when">· {up}/{len(sockets)} ports up{_esc(_budget(devices.get(name) or {}))}</span></summary>'
                     f'<div class="fp-wrap"><div class="fp" style="width:calc({layout["width"]:g} * var(--pw));'
                     f'height:calc({layout["rows"]} * var(--ph))">{"".join(cells)}</div></div>'
                     + (f'<p class="when">Port-channels: {logical}</p>' if logical else "") + poe_note + '</details>')
 
-    return "".join(html) or '<p class="muted">No switch port data yet.</p>'
+    every = sorted({vlan for _, _, ports in _boxes(snapshot, raw) for info in ports.values() for vlan in _vlans(info)})
+    pick = ('<div class="cab-tools"><label for="vlan-filter">VLAN</label><select id="vlan-filter"><option value="">all</option>'
+            + "".join(f'<option value="{vlan}">{vlan}</option>' for vlan in every) + '</select></div>'
+            if len(every) > 1 else "")
+
+    return pick + "".join(html) if html else '<p class="muted">No switch port data yet.</p>'
+
+
+def _vlans(info):
+
+    return sorted({info["vlan"]} if info.get("vlan") else set()) + sorted(set(info.get("tagged") or []) - {info.get("vlan")})
+
+
+def _topology_text(info):
+
+    parts = []
+    if info.get("lag"):
+        parts.append(f'in {info["lag"]}')
+    if info.get("stp") in IDLE:
+        parts.append(f'spanning tree: {info["stp"]} (standby)')
+    if info.get("vlan"):
+        parts.append(f'VLAN {info["vlan"]}' + (f', tagged {", ".join(map(str, sorted(info["tagged"])))}'
+                                               if info.get("tagged") else ""))
+    elif info.get("tagged"):
+        parts.append(f'tagged VLANs {", ".join(map(str, sorted(info["tagged"])))}')
+
+    return "".join(" · " + part for part in parts)
 
 
 def _health(snapshot):
@@ -444,6 +494,7 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None):
                      f'{" · stale" if state == "stale" else ""}{" · " + _esc(source["note"]) if source["note"] else ""}</span>')
 
     warnings = "".join(f"<li>{_esc(warning)}</li>" for warning in snapshot["warnings"])
+    notes = "".join(f"<li>{_esc(note)}</li>" for note in snapshot.get("notes") or [])
     data = json.dumps({"nodes": snapshot["nodes"], "links": snapshot["links"],
                        "faces": faces(snapshot, latest.get("raw") or {}, faceplates)}).replace("</", "<\\/")
 
@@ -473,10 +524,11 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None):
         f'<time datetime="{_esc(taken.isoformat())}Z">{_esc(_ago(taken, now))}</time></span>{"".join(chips)}</div>'
         '<p id="msg"></p>'
         + (f'<ul class="warn">{warnings}</ul>' if warnings else "")
+        + (f'<ul class="notes">{notes}</ul>' if notes else "")
         + '<section id="diagram"><h2>Wired topology</h2>'
         '<div class="legend"><span><i style="background:#8b98a5"></i>100M</span>'
         '<span><i style="background:#5aa7f0"></i>1G</span><span><i style="background:#3ccfb4"></i>2.5G</span>'
-        '<span><i style="background:#b48cf2"></i>10G</span><span>dashed = down</span>'
+        '<span><i style="background:#b48cf2"></i>10G</span><span>dashed = down</span><span>dotted grey = standby</span>'
         '<span>click a box for its ports</span>'
         '<button class="cab-btn ghost" id="wiring-export" type="button">Export SVG</button></div>'
         f'<div class="frame"><svg id="wiring-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>'

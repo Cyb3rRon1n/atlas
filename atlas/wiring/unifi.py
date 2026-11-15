@@ -49,7 +49,7 @@ def parse_unifi(devices, clients):
     parsed = []
 
     for device in devices:
-        ports, port_macs = {}, {}
+        ports, port_macs, bundles = {}, {}, {}
         for port in device.get("port_table") or []:
             index = port.get("port_idx")
             name = port.get("name") or f"Port {index}"
@@ -64,8 +64,16 @@ def parse_unifi(devices, clients):
                                       "fault": False, "enabled": port.get("poe_mode", "auto") != "off",
                                       "watts": watts, "mode": port.get("poe_mode", ""),
                                       "class": port.get("poe_class", "") if (watts or 0) > 0 else ""}
+            if port.get("stp_state"):
+                ports[name]["stp"] = str(port["stp_state"]).lower()
+            if port.get("aggregated_by"):       # the bundle's first port_idx; that port is in it too
+                bundles[port["aggregated_by"]] = f"LAG {port['aggregated_by']}"
+                ports[name]["lag"] = bundles[port["aggregated_by"]]
             if normalize_mac(port.get("mac")):
                 port_macs[normalize_mac(port.get("mac"))] = name
+        for info in ports.values():
+            if info["index"] in bundles:
+                info["lag"] = bundles[info["index"]]
         uplink = device.get("last_uplink") or device.get("uplink") or {}
         poe_watts = [p["poe"]["watts"] or 0 for p in ports.values() if "poe" in p]
         parsed.append({

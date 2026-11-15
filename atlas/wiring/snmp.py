@@ -48,7 +48,20 @@ POE = {
     "pseMain": "1.3.6.1.2.1.105.1.3.1.1",   # .2 budget W, .4 consumption W; index group
 }
 
-OPTIONAL = {**COUNTERS, **POE}
+# Model, spanning tree, link bundles (IEEE 802.3ad LAG-MIB) and VLANs (Q-BRIDGE-MIB). Optional too:
+# a switch that lacks a table just shows nothing for it.
+TOPOLOGY = {
+    "sysDescr": "1.3.6.1.2.1.1.1",
+    "stp": "1.3.6.1.2.1.17.2.15.1.3",            # dot1dStpPortState, index = bridge port
+    "lag": "1.2.840.10006.300.43.1.2.1.1.13",    # dot3adAggPortAttachedAggID, ifIndex -> aggregator ifIndex
+    "pvid": "1.3.6.1.2.1.17.7.1.4.5.1.1",        # dot1qPvid, index = bridge port
+    "vlanEgress": "1.3.6.1.2.1.17.7.1.4.2.1.4",  # dot1qVlanCurrentEgressPorts, index timemark.vlan
+    "vlanUntagged": "1.3.6.1.2.1.17.7.1.4.2.1.5",
+}
+
+OPTIONAL = {**COUNTERS, **POE, **TOPOLOGY}
+
+STP = {"1": "disabled", "2": "blocking", "3": "listening", "4": "learning", "5": "forwarding", "6": "broken"}
 
 DETECTION = {"1": "disabled", "2": "searching", "3": "delivering", "4": "fault", "5": "test", "6": "fault"}
 
@@ -134,6 +147,49 @@ def _poe(get, names):
     return ports, main.get("2"), main.get("4")
 
 
+def _bitmap(value):
+    """A PortList (one bit per bridge port, port 1 = the first byte's top bit) -> set of bridge port numbers."""
+
+    ports = set()
+    for byte_number, octet in enumerate(re.findall(r"[0-9A-Fa-f]{2}", value or "")):
+        for bit in range(8):
+            if int(octet, 16) & (0x80 >> bit):
+                ports.add(str(byte_number * 8 + bit + 1))
+
+    return ports
+
+
+def _topology(get, ports, names, oper, speed, base):
+    """Adds stp / lag / vlan / tagged to the port dicts (only where the switch reports them)."""
+
+    by_bridge = {bridge: names.get(index) for bridge, index in base.items()}
+
+    for bridge, value in get("stp").items():
+        if by_bridge.get(bridge) in ports:
+            ports[by_bridge[bridge]]["stp"] = STP.get(re.sub(r"\D", "", value), "unknown")
+
+    for index, aggregator in get("lag").items():
+        aggregator = re.sub(r"\D", "", aggregator)
+        if aggregator in ("", "0", index) or index not in names or aggregator not in names:
+            continue
+        # a bundled port can drop out of the bridge table (the port-channel takes its place): keep it on the panel
+        port = ports.setdefault(names[index], {"index": int(index), "up": oper.get(index, "").startswith("up")
+                                               or oper.get(index) == "1", "speed": int(speed.get(index) or 0),
+                                               "alias": "", "counters": {}})
+        port["lag"] = names[aggregator]
+
+    for bridge, value in get("pvid").items():
+        if by_bridge.get(bridge) in ports:
+            ports[by_bridge[bridge]]["vlan"] = int(_number(value) or 0)
+
+    untagged = {suffix.split(".")[-1]: _bitmap(value) for suffix, value in get("vlanUntagged").items()}
+    for suffix, value in get("vlanEgress").items():
+        vlan = suffix.split(".")[-1]
+        for bridge in _bitmap(value) - untagged.get(vlan, set()):
+            if by_bridge.get(bridge) in ports:
+                ports[by_bridge[bridge]].setdefault("tagged", []).append(int(vlan))
+
+
 def parse_switch(walks):
 
     get = lambda key: parse_walk(walks.get(key, ""), {**OIDS, **OPTIONAL}[key])
@@ -185,10 +241,13 @@ def parse_switch(walks):
         if name in ports:
             ports[name]["poe"] = info
 
+    _topology(get, ports, names, oper, speed, base)
+
     sys_name = next(iter(get("sysName").values()), "")
+    model = next(iter(get("sysDescr").values()), "").splitlines()[0][:80] if get("sysDescr") else ""
     chassis = normalize_mac(next(iter(get("lldpLocChassis").values()), ""))
 
-    return {"sys_name": sys_name, "chassis_mac": chassis, "ports": ports, "fdb": fdb, "neighbors": neighbors,
+    return {"sys_name": sys_name, "model": model, "chassis_mac": chassis, "ports": ports, "fdb": fdb, "neighbors": neighbors,
             "poe_budget_w": budget, "poe_used_w": used}
 
 

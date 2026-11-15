@@ -36,10 +36,58 @@ def _slug(name):
     return re.sub(r"\s+", "-", name or "").strip().lower()
 
 
+def _port_info(info):
+
+    return {"up": info["up"], "speed": info["speed"], **{key: info[key] for key in ("stp", "lag") if info.get(key)}}
+
+
+IDLE = ("blocking", "discarding", "listening", "learning", "broken")
+
+
+def _redundant(members, port_info, nodes):
+    """Several cables between the same two infrastructure boxes: (kind, text), kind one of
+    lag (bundled - fine), standby (spanning tree keeps all but one idle - fine), loop (more than one
+    carries traffic) or unknown (no spanning-tree data from either end). Marks each link lag/standby."""
+
+    a, b = nodes[members[0]["a"]]["name"], nodes[members[0]["b"]]["name"]
+    ends = [(port_info.get((link["a"], link["a_port"]), {}), port_info.get((link["b"], link["b_port"]), {}))
+            for link in members]
+
+    for side in (0, 1):
+        bundles = {end[side].get("lag") for end in ends}
+        if len(bundles) == 1 and None not in bundles:
+            name = bundles.pop()
+            for link in members:
+                link["lag"] = name
+            return "lag", f"{a} ⇄ {b}: {len(members)} cables bundled as {name} (LACP)"
+
+    spare = []
+    for link, (end_a, end_b) in zip(members, ends):
+        idle_port = (link["a_port"] if end_a.get("stp") in IDLE else
+                     link["b_port"] if end_b.get("stp") in IDLE else None)
+        link["standby"] = not link["up"] or idle_port is not None
+        if link["standby"]:
+            spare.append(idle_port or link["b_port"] or link["a_port"])
+    carrying = sum(not link["standby"] for link in members)
+    known = ["stp" in end_a or "stp" in end_b for end_a, end_b in ends]
+    ports = ", ".join(link["a_port"] for link in members)
+
+    if carrying <= 1 and any(known):
+        return "standby", (f"Backup cable: {a} ⇄ {b} has {len(members)} cables; {', '.join(spare)} is on standby "
+                           f"(spanning tree keeps it idle, so there is no loop). Fine as a spare - or bundle them "
+                           f"(LACP) to use both.")
+    if all(known):
+        return "loop", (f"Loop risk: {len(members)} cables between {a} and {b} ({ports}) all carry traffic - "
+                        f"spanning tree is not blocking any. Unplug one, or bundle them (LACP).")
+
+    return "unknown", (f"{len(members)} links between {a} and {b} ({ports}) - spanning tree blocks all but one; "
+                       f"remove one or bundle them (LACP)")
+
+
 def build_wiring(switches, unifi, devices, cabling):
 
     unifi = unifi or {"devices": [], "clients": []}
-    nodes, pending, links, warnings = {}, [], [], []
+    nodes, pending, links, warnings, notes, loops = {}, [], [], [], [], []
     port_info = {}
 
     inventory = {}
@@ -89,7 +137,7 @@ def build_wiring(switches, unifi, devices, cabling):
         add_node(node_id, device["name"], device["role"], device["ip"], device["mac"])
         unifi_by_id[node_id], by_mac[device["mac"]] = device, node_id
         for port, info in device["ports"].items():
-            port_info[(node_id, port)] = {"up": info["up"], "speed": info["speed"]}
+            port_info[(node_id, port)] = _port_info(info)
         for mac, port in device["port_macs"].items():
             port_macs[mac] = (node_id, port)
 
@@ -117,10 +165,10 @@ def build_wiring(switches, unifi, devices, cabling):
     snmp = {}
     for switch in switches:
         node_id = f"s:{switch['name']}"
-        add_node(node_id, switch["name"], "switch", switch["host"], switch.get("chassis_mac"))
+        add_node(node_id, switch["name"], "switch", switch["host"], switch.get("chassis_mac"))["model"] = switch.get("model", "")
         snmp[node_id] = switch
         for port, info in switch["ports"].items():
-            port_info[(node_id, port)] = {"up": info["up"], "speed": info["speed"]}
+            port_info[(node_id, port)] = _port_info(info)
 
     chassis = {switch["chassis_mac"]: f"s:{switch['name']}" for switch in switches if switch.get("chassis_mac")}
     switch_hosts = {switch["host"]: f"s:{switch['name']}" for switch in switches}
@@ -278,10 +326,10 @@ def build_wiring(switches, unifi, devices, cabling):
         pairs.setdefault(frozenset((link["a"], link["b"])), []).append(link)
     for pair, members in pairs.items():
         if len(members) > 1 and all(nodes[node_id]["kind"] in INFRA for node_id in pair):
-            first = members[0]
-            ports = ", ".join(link["a_port"] for link in members)
-            warnings.append(f"{len(members)} links between {nodes[first['a']]['name']} and {nodes[first['b']]['name']} "
-                            f"({ports}) - spanning tree blocks all but one; remove one or bundle them (LACP)")
+            kind, text = _redundant(members, port_info, nodes)
+            (warnings if kind in ("loop", "unknown") else notes).append(text)
+            if kind == "loop":
+                loops.append(" ⇄ ".join(sorted(nodes[node_id]["name"] for node_id in pair)))
 
     if cabling.get("error"):
         warnings.append(cabling["error"])
@@ -295,4 +343,4 @@ def build_wiring(switches, unifi, devices, cabling):
     used = {link["a"] for link in links} | {link["b"] for link in links} | ({gateway} if gateway else set())
 
     return {"nodes": [node for node_id, node in nodes.items() if node_id in used], "links": links,
-            "panels": panels, "warnings": warnings}
+            "panels": panels, "warnings": warnings, "notes": notes, "loops": loops}

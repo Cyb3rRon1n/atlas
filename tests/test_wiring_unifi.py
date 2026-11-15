@@ -35,7 +35,9 @@ def test_parse_unifi_roles_ports_uplinks():
     by_name = {d["name"]: d for d in result["devices"]}
     assert by_name["gateway"]["role"] == "gateway" and by_name["ap-express"]["role"] == "ap"
     assert by_name["mesh-ap"]["role"] == "ap" and by_name["flex"]["role"] == "switch"
-    assert by_name["gateway"]["ports"]["Port 4"] == {"index": 4, "up": True, "speed": 2500}
+    port4 = dict(by_name["gateway"]["ports"]["Port 4"])
+    assert port4.pop("counters")["duplex"] == "unknown"
+    assert port4 == {"index": 4, "up": True, "speed": 2500}
     assert by_name["ap-express"]["ports"]["Port 2"]["speed"] == 2500        # name falls back to "Port N"
     assert by_name["gateway"]["port_macs"] == {"02:00:00:00:00:02": "Port 1"}
     assert by_name["flex"]["uplink"] == {"type": "wire", "mac": "02:00:00:00:00:03", "remote_port": 1, "local_port": 5}

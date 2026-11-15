@@ -195,6 +195,44 @@ How often the `atlas-scan` container loops `atlas scan; atlas discover; atlas pr
 
 `atlas scan` never pings and never opens a raw socket: it TCP-connects to port 9 on every address in scope, which makes the kernel ARP-resolve each live host, then reads `/proc/net/arp` for the resulting IP-to-MAC table (only complete entries count — an address nobody answered for isn't in it) and does a best-effort reverse DNS lookup for a hostname. This needs host networking (`network_mode: host`) but no extra capabilities. A scan refuses to run over more than 1024 addresses at once — narrow `subnets` if your LAN is bigger than that.
 
+## `wiring`
+
+The cabling map (web `/cabling`): every switch port, what's plugged into it, patch panels, and cable health. Read-only: atlas reads your switches over SNMPv3 and, optionally, a UniFi console, and never changes their settings. The atlas-scan container refreshes it every cycle; the page's **Refresh map** button does it on demand.
+
+```yaml
+wiring:
+  enabled: true
+  switches:
+    - name: core-switch          # secrets in .env: ATLAS_SNMP_CORE_SWITCH_AUTH / _PRIV
+      host: 192.168.1.2
+      priv: aes                  # des only for old gear that offers nothing else
+  unifi:
+    enabled: true                # a local View Only account: ATLAS_UNIFI_USER / ATLAS_UNIFI_PASS in .env
+    url: https://192.168.1.1
+```
+
+| Field | Default | Description |
+|---|---|---|
+| `switches` | `[]` | Managed switches that speak the standard MIBs (IF-MIB, LLDP-MIB, BRIDGE-MIB). SNMPv3 authPriv only; `snmp_user` defaults to `atlas` |
+| `unifi` | off | Adds UniFi gateway/AP/switch ports and their uplinks, which SNMP can't see |
+| `cabling_file` | `cabling.yaml` | Patch panels and wall jacks, by hand (see `cabling.example.yaml`) |
+| `keep_snapshots` | `30` | Scans kept for "changes since the last scan" and cable health history |
+| `timeout` | `10` | Seconds per SNMP or UniFi request |
+
+### Cable health
+
+Each scan compares every connected port's counters with the scan before it, so only new errors count. A switch reboot that resets the counters is recognised and ignored.
+
+| Finding | Level | What it usually means |
+|---|---|---|
+| CRC / alignment errors growing (10 or more per scan, above 0.01% of packets; 0.1% = problem) | watch → problem | A damaged cable, a bad jack or a worn patch lead |
+| Half duplex, or late collisions | problem | Duplex mismatch: one end is set to a fixed speed |
+| Link slower than the port ran before (e.g. 100 Mbit/s instead of 1 Gbit/s) | watch | A damaged wire pair or bad jack, or simply a computer asleep |
+| Link went down and up since the last scan | watch | Unplugged, rebooted, or a loose connector |
+| Output errors growing | watch | Congestion or a failing port |
+
+Problems turn the port red on the faceplate, appear in **Cable health** and send one alert to every `notify:` channel, plus another alert when they clear. "Watch" findings are shown on the page only, because they have harmless causes too often to send alerts about. Switches without the EtherLike counters fall back to plain input errors, and UniFi ports use the console's own error counts.
+
 ## `notify`
 
 Where alerts go: new devices, important devices gone offline, VPN/torrent clients disconnected, and sign-ins from new places. Set any number of channels — every one that is set gets each alert, and one failing never stops the others. Check your setup with `atlas notify test`.

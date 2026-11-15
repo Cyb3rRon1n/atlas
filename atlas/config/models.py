@@ -213,6 +213,9 @@ class SecurityConfig(BaseModel):
     dhcp_probe: bool = True          # one DHCP discover per run; never takes an address
     dhcp_timeout: float = 3.0
     dhcp_servers: list[str] = []     # DHCP servers besides the default gateway (Pi-hole, a second router)
+    port_watch: bool = True          # atlas ports check: new open ports on LAN devices, this host, the router
+    port_timeout: float = 0.5
+    extra_ports: list[int] = []      # watched besides the ~25 common service ports
 
 
 class WebConfig(BaseModel):

@@ -109,13 +109,28 @@ function renderStrip(items) {
   }));
 }
 
-function renderExposure(routes) {
+function renderExposure(routes, router) {
   exposure.replaceChildren(...routes.map((r) => {
     const li = el("li");
     li.append(el("span", (r.hosts[0] || r.name)), el("span", r.protection === "authelia" ? "Authelia" : "public · own login", "prot-" + r.protection));
     return li;
   }));
   if (!routes.length) exposure.replaceChildren(el("li", "No routes seen yet.", "muted"));
+  if (!router) return;
+  const head = el("li");
+  const forwards = router.forwards;
+  const text = forwards === null ? "Router: unknown (no UniFi console and no UPnP answer)"
+    : "Router: " + (forwards.length ? forwards.length + " port forward" + (forwards.length > 1 ? "s" : "") : "no port forwards")
+      + " · UPnP " + (router.upnp ? "on" : "off");
+  head.append(el("span", text), el("span", router.source || "", "muted"));
+  exposure.prepend(head);
+  (forwards || []).forEach((f) => {
+    const li = el("li");
+    li.append(el("span", (f.protocol || "").toUpperCase() + " " + f.external + " → " + f.client + ":" + f.port),
+              el("span", f.description || "", "muted"));
+    head.after(li);
+  });
+  router.recent.forEach((r) => exposure.append(el("li", r.at + " · " + r.text, "muted")));
 }
 
 async function markExpected(button, source, asnKey) {
@@ -281,7 +296,7 @@ async function load() {
     const data = await response.json();
     msg.textContent = DEFAULT_MSG;
     off.hidden = data.enabled !== false;
-    renderStrip(data.strip); renderExposure(data.exposure); renderReview(data.review); draw(data);
+    renderStrip(data.strip); renderExposure(data.exposure, data.router); renderReview(data.review); draw(data);
   } catch (error) { msg.textContent = "Could not load posture data: " + error; }
 }
 

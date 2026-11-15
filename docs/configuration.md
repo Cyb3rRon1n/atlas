@@ -268,6 +268,9 @@ security:
 | `dhcp_probe` | `true` | Send one DHCP discover per run and list every server that answers. It never asks for or takes an address |
 | `dhcp_timeout` | `3.0` | Seconds to wait for answers |
 | `dhcp_servers` | `[]` | DHCP servers you expect besides the default gateway |
+| `port_watch` | `true` | `atlas ports check`: alert on newly open ports (below) |
+| `port_timeout` | `0.5` | Seconds per port connect |
+| `extra_ports` | `[]` | Ports to watch besides the ~25 common service ports |
 
 | Finding | Level | What it usually means |
 |---|---|---|
@@ -280,6 +283,16 @@ security:
 | One IP on two wired UniFi clients | watch | An address conflict, or a recent DHCP reassignment |
 
 Problems send one alert to every `notify:` channel and another when they clear. The ARP checks see what the atlas host sees; UniFi's client list (when `wiring.unifi` is set) widens that to the rest of the wired network. Hearing DHCP answers needs UDP port 68: the Docker image ships `atlas-dhcp-python`, an interpreter copy holding only that one permission. Run outside Docker as a normal user, the probe reports that it can't listen and the ARP checks still run.
+
+### Open-port watch
+
+`atlas ports check` (run by atlas-scan after every device scan) looks at three things, all read-only:
+
+- **LAN devices:** a plain TCP connect to about 25 common service ports (SSH, telnet, web, file sharing, remote desktop, VNC, databases, camera streams, MQTT, printers) on every device that is online, within your scan subnets. It never sends data or logs in.
+- **This host:** sockets listening for other machines (loopback-only ones are left out).
+- **The router:** port forwards and the UPnP switch from the UniFi console when `wiring.unifi` is set, and the standard UPnP port-mapping list that most home routers answer (only the default gateway is asked).
+
+The first run learns what is normal and sends nothing. After that every newly open port sends one alert (risky ones such as telnet, SMB, remote desktop or databases say so), a new port forward or UPnP mapping alerts as "opened to the internet", and UPnP being switched on alerts. A port that closes and opens again later doesn't alert twice. Each device's page lists its open ports; the Posture page's **Public exposure** tab shows the router's forwards, UPnP and the latest new ports.
 
 ## `notify`
 

@@ -42,7 +42,7 @@ CABLING_STYLE = """
 .fp span.up { opacity:1; }
 .fp span.poe-cap, .fp span.poe { border:2px dashed #d9b44a; }
 .fp span.poe { border-style:solid; }
-.fp span.poe-cap::after { content:"PoE"; position:absolute; right:3px; top:1px; font-size:9px; color:#d9b44a; }
+.fp span.poe-cap::after { content:"PoE"; position:absolute; right:3px; top:1px; font-size:11px; font-weight:700; color:#d9b44a; }
 .fp span.poe::after { content:"⚡"; position:absolute; right:3px; top:1px; font-size:11px; }
 .fp span.h-bad { border:2px solid var(--red); box-shadow:0 0 0 2px color-mix(in srgb, var(--red) 30%, transparent); }
 .fp span.h-watch { border:2px solid var(--orange); }
@@ -354,13 +354,18 @@ def _poe_text(poe):
     return f'PoE capable, not powering ({poe.get("mode") or "off"})'
 
 
-def _budget(device):
+def _poe_summary(device, names, ports):
+    """' · PoE: Port 4, Port 5 (1 powering, 12 W of 30 W)' - which ports can supply PoE, shown without expanding."""
 
+    poe = [ports[n]["poe"] for n in names if (ports.get(n) or {}).get("poe")]
+    if not poe:
+        return ""
+    powering = sum(1 for p in poe if p.get("delivering"))
     budget, used = device.get("poe_budget_w"), device.get("poe_used_w")
-    if budget:
-        return f" · PoE {used or 0:g} W of {budget:g} W"
+    watts = f", {used or 0:g} W of {budget:g} W" if budget else f", {used:g} W" if used else ""
+    listed = ", ".join(n for n in names if (ports.get(n) or {}).get("poe"))
 
-    return f" · PoE {used:g} W" if used else ""
+    return f" · PoE: {listed} ({powering or 'none'} powering{watts})"
 
 
 def _faceplates(snapshot, raw, panels=None):
@@ -415,7 +420,7 @@ def _faceplates(snapshot, raw, panels=None):
         model = (devices.get(name) or {}).get("model") if node_id.startswith("s:") else ""
         html.append(f'<details id="fp-{_esc(node_id)}"><summary>{_esc(name)} '
                     + (f'<span class="when">· {_esc(model)}</span> ' if model else "") +
-                    f'<span class="when">· {up}/{len(sockets)} ports up{_esc(_budget(devices.get(name) or {}))}</span></summary>'
+                    f'<span class="when">· {up}/{len(sockets)} ports up{_esc(_poe_summary(devices.get(name) or {}, [c["name"] for c in sockets], ports))}</span></summary>'
                     f'<div class="fp-wrap"><div class="fp" style="width:calc({layout["width"]:g} * var(--pw));'
                     f'height:calc({layout["rows"]} * var(--ph))">{"".join(cells)}</div></div>'
                     + (f'<p class="when">Port-channels: {logical}</p>' if logical else "") + poe_note + '</details>')

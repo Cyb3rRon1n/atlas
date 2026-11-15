@@ -40,6 +40,7 @@ services:
       CONTAINERS: 1
       NETWORKS: 1
       INFO: 1
+      IMAGES: 1      # read-only: the container list shows each image's tags
       POST: ${ATLAS_DOCKER_WRITE:-0}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

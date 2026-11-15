@@ -3,6 +3,13 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
+## 0.5.1 - 2026-11-14
+
+### Fixed
+- Docker page and scans failed with "403 Forbidden" behind the socket proxy: the container list
+  reads each container's image tags, so the proxy now also allows read-only image lookups
+  (`IMAGES: 1`). Upgrade by running the installer again.
+
 ## 0.5.0 - 2026-11-14
 
 ### Upgrading from 0.4.x - read first

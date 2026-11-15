@@ -55,3 +55,11 @@ def test_atlas_scan_runs_posture_watch_with_net_admin():
     scan = data["services"]["atlas-scan"]
     assert "NET_ADMIN" in scan["cap_add"]
     assert "while :; do atlas posture watch; sleep 30; done &" in "\n".join(scan["command"])   # restarts if it dies
+
+
+def test_docker_proxy_allows_what_the_container_list_reads():
+    import yaml
+    env = yaml.safe_load(open("docker-compose.yml"))["services"]["docker-proxy"]["environment"]
+    # collect_containers() reads container.image.tags -> GET /images/<id>/json
+    assert env["CONTAINERS"] == 1 and env["IMAGES"] == 1
+    assert env["POST"] == "${ATLAS_DOCKER_WRITE:-0}"   # writes stay off by default

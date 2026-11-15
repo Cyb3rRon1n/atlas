@@ -39,6 +39,11 @@ CABLING_STYLE = """
 .fp span { position:absolute; width:56px; height:38px; box-sizing:border-box; border:1px solid #2f3b4c; border-radius:6px;
            padding:2px 5px; font-size:11px; background:#111821; opacity:.55; }
 .fp span.up { opacity:1; }
+.fp span.h-bad { border:2px solid var(--red); box-shadow:0 0 0 2px color-mix(in srgb, var(--red) 30%, transparent); }
+.fp span.h-watch { border:2px solid var(--orange); }
+#health ul { list-style:none; padding:0; margin:0; } #health li { padding:6px 0; border-top:1px solid var(--line); }
+#health li:first-child { border-top:0; } #health .lvl { font-weight:600; margin-right:6px; }
+#health .bad .lvl { color:var(--red); } #health .watch .lvl { color:var(--orange); }
 .fp span b { display:block; font-size:12px; }
 .fp span small { display:block; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .fp span.cage { border-style:dashed; background:transparent; }
@@ -319,6 +324,9 @@ def faces(snapshot, raw, panels=None):
 
 def _faceplates(snapshot, raw, panels=None):
 
+    health = {}
+    for issue in snapshot.get("health") or []:
+        health.setdefault((issue["device"], issue["port"]), []).append(issue)
     names = {node["id"]: node["name"] for node in snapshot["nodes"]}
     attached = {}
     for link in snapshot["links"]:
@@ -337,7 +345,11 @@ def _faceplates(snapshot, raw, panels=None):
             # Positioned like the front panel: x in port columns, row 0 = top (odd ports on rack switches).
             if cell["cage"]:
                 tip = f'{cell["name"]} SFP cage (combo: shares {cell["name"]} with the RJ45 port)'
-            cells.append(f'<span class="{"cage " if cell["cage"] else ""}{"up " if cell["up"] else ""}{_speed_class(cell["speed"])}" '
+            issues = [] if cell["cage"] else health.get((name, cell["name"]), [])
+            state = ("h-bad " if any(i["level"] == "bad" for i in issues) else "h-watch ") if issues else ""
+            if issues:
+                tip += " · " + " · ".join(f'{i["reason"]}: {i["detail"]}' for i in issues)
+            cells.append(f'<span class="{state}{"cage " if cell["cage"] else ""}{"up " if cell["up"] else ""}{_speed_class(cell["speed"])}" '
                          f'style="left:calc({cell["x"]:g} * var(--pw));top:calc({cell["row"]} * var(--ph))" '
                          f'title="{_esc(tip)}"><b>{_esc(cell["label"])}</b><small>{_esc(other or "")}</small></span>')
         logical = "".join(
@@ -353,6 +365,25 @@ def _faceplates(snapshot, raw, panels=None):
                     + (f'<p class="when">Port-channels: {logical}</p>' if logical else "") + '</details>')
 
     return "".join(html) or '<p class="muted">No switch port data yet.</p>'
+
+
+def _health(snapshot):
+    """The Cable health list, problems first. Snapshots saved before cable health existed show nothing."""
+
+    if "health" not in snapshot:
+        return ""
+    issues = sorted(snapshot["health"], key=lambda i: (i["level"] != "bad", i["device"], i["port"]))
+    if not issues:
+        body = '<p class="muted">No problems: every connected port is clean since the last scan.</p>'
+    else:
+        body = "<ul>" + "".join(
+            f'<li class="{i["level"]}"><span class="lvl">{"Problem" if i["level"] == "bad" else "Watch"}</span>'
+            f'<b>{_esc(i["device"])} {_esc(i["port"])}</b> · {_esc(i["reason"])}: {_esc(i["detail"])}</li>'
+            for i in issues) + "</ul>"
+
+    return ('<section id="health"><h2>Cable health</h2>' + body +
+            '<p class="when">Checked on every scan. Growing CRC errors and duplex mismatches send an alert; '
+            'a slower link or a link that dropped is only shown here.</p></section>')
 
 
 def render_cabling_page(latest, changes, enabled, now=None, faceplates=None):
@@ -418,6 +449,7 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None):
         f'<div class="frame"><svg id="wiring-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>'
         f'<script type="application/json" id="wiring-data">{data}</script></section>'
         f'<section id="faceplates"><h2>Switch ports</h2>{_faceplates(snapshot, latest.get("raw") or {}, faceplates)}</section>'
+        + _health(snapshot) +
         '<section id="portmap"><h2>Port map</h2><div class="cab-tools">'
         '<input id="portmap-filter" type="search" placeholder="Filter: device, port, label…" aria-label="Filter port map">'
         '<a class="cab-btn ghost" href="/cabling.csv" download>CSV</a></div>'

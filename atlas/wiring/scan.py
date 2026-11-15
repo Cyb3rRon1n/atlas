@@ -12,6 +12,7 @@ from datetime import datetime
 from atlas.wiring import WiringError
 from atlas.wiring.build import build_wiring
 from atlas.wiring.cabling import load_cabling
+from atlas.wiring.health import alerts, assess
 from atlas.wiring.snmp import collect_switch
 from atlas.wiring.unifi import fetch_unifi
 
@@ -23,7 +24,17 @@ class WiringBusy(Exception):
     """A scan is already running."""
 
 
-def run_scan(settings, store, devices, env=None, now=None, collect=collect_switch, fetch=fetch_unifi):
+def _send(settings, text, send):
+
+    from atlas import notify
+
+    if send:
+        send(text)
+    elif notify.configured(settings.notify):
+        notify.send(settings.notify, text)
+
+
+def run_scan(settings, store, devices, env=None, now=None, collect=collect_switch, fetch=fetch_unifi, send=None):
 
     if not _LOCK.acquire(blocking=False):
         raise WiringBusy()
@@ -31,7 +42,8 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
     try:
         env = os.environ if env is None else env
         config = settings.wiring
-        previous = store.latest(1)
+        history = store.latest(config.keep_snapshots)
+        previous = history[:1]
         old_raw = previous[0]["raw"] if previous else {"switches": {}, "unifi": None}
         raw = {"switches": {}, "unifi": None}
         sources = {}
@@ -57,6 +69,15 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
 
         snapshot = build_wiring(list(raw["switches"].values()), raw["unifi"], devices,
                                 load_cabling(config.cabling_file))
+
+        # cable health: this scan's counters against the earlier scans (stale sources have nothing new)
+        stale = {name for name, source in sources.items() if not source["ok"]}
+        if "unifi" in stale:
+            stale |= {d.get("name") for d in ((raw["unifi"] or {}).get("devices") or [])}
+        snapshot["health"] = assess(raw, [h["raw"] for h in history], stale)
+        if previous:
+            for text in alerts(previous[0]["snapshot"].get("health"), snapshot["health"]):
+                _send(settings, text, send)
         taken_at = now or datetime.utcnow()
         store.save(snapshot, raw, sources, taken_at, keep=config.keep_snapshots)
 

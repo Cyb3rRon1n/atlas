@@ -87,6 +87,7 @@ services:
           atlas discover >/dev/null 2>&1
           atlas proxmox scan >/dev/null 2>&1
           atlas map >/dev/null 2>&1 && echo "$$(date -u +%FT%TZ) map refreshed"
+          atlas wiring scan >/dev/null 2>&1     # no-op unless wiring.enabled; cable health compares scans
           atlas access collect >/dev/null 2>&1   # no-op unless access.enabled
           atlas sample >/dev/null 2>&1           # host history for the Trends charts
           atlas vpn check >/dev/null 2>&1        # no-op unless vpn.clients is set

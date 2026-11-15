@@ -42,6 +42,16 @@ COUNTERS = {
     "duplex": "1.3.6.1.2.1.10.7.2.1.19",
 }
 
+# PoE (POWER-ETHERNET-MIB, RFC 3621). Optional like COUNTERS: switches without PoE answer nothing.
+POE = {
+    "psePort": "1.3.6.1.2.1.105.1.1.1",     # .3 admin enable, .6 detection status, .10 power class; index group.port
+    "pseMain": "1.3.6.1.2.1.105.1.3.1.1",   # .2 budget W, .4 consumption W; index group
+}
+
+OPTIONAL = {**COUNTERS, **POE}
+
+DETECTION = {"1": "disabled", "2": "searching", "3": "delivering", "4": "fault", "5": "test", "6": "fault"}
+
 DUPLEX = {"2": "half", "3": "full"}     # dot3StatsDuplexStatus; 1 = unknown
 
 LINE = re.compile(r"^\.([\d.]+) = (.*)$")
@@ -97,9 +107,36 @@ def port_counters(get_counter, index):
             "last_change": value("lastChange")}
 
 
+def _poe(get, names):
+    """({port name: poe}, budget W, used W). The MIB's port number is the ifIndex on the switches
+    seen so far. ponytail: per-vendor group/port -> ifIndex maps if one numbers them differently."""
+
+    columns = {}
+    for suffix, value in get("psePort").items():
+        parts = suffix.split(".")
+        if len(parts) == 3:
+            columns.setdefault(parts[2], {})[parts[0]] = re.sub(r"\D", "", value)
+
+    ports = {}
+    for number, cols in columns.items():
+        if number in names:
+            state = DETECTION.get(cols.get("6"), "unknown")
+            power_class = int(cols["10"]) - 1 if cols.get("10", "").isdigit() and int(cols["10"]) > 0 else None
+            ports[names[number]] = {"delivering": state == "delivering", "fault": state == "fault",
+                                    "enabled": cols.get("3") != "2", "watts": None, "mode": state,
+                                    "class": f"Class {power_class}" if power_class is not None else ""}
+
+    main = {}
+    for suffix, value in get("pseMain").items():
+        column = suffix.split(".")[0]
+        main[column] = (main.get(column) or 0) + (_number(value) or 0)
+
+    return ports, main.get("2"), main.get("4")
+
+
 def parse_switch(walks):
 
-    get = lambda key: parse_walk(walks.get(key, ""), {**OIDS, **COUNTERS}[key])
+    get = lambda key: parse_walk(walks.get(key, ""), {**OIDS, **OPTIONAL}[key])
     counters = {key: get(key) for key in COUNTERS}
     names, oper, speed, alias = get("ifName"), get("ifOper"), get("ifHighSpeed"), get("ifAlias")
     base = get("basePort")      # bridge port -> ifIndex
@@ -143,10 +180,16 @@ def parse_switch(walks):
                           "remote_port": port_id, "remote_port_mac": normalize_mac(port_id),
                           "remote_port_desc": columns.get("8", ""), "sys_name": columns.get("9", "")})
 
+    poe, budget, used = _poe(get, names)
+    for name, info in poe.items():
+        if name in ports:
+            ports[name]["poe"] = info
+
     sys_name = next(iter(get("sysName").values()), "")
     chassis = normalize_mac(next(iter(get("lldpLocChassis").values()), ""))
 
-    return {"sys_name": sys_name, "chassis_mac": chassis, "ports": ports, "fdb": fdb, "neighbors": neighbors}
+    return {"sys_name": sys_name, "chassis_mac": chassis, "ports": ports, "fdb": fdb, "neighbors": neighbors,
+            "poe_budget_w": budget, "poe_used_w": used}
 
 
 def walk_switch(switch, env, timeout, run=subprocess.run, which=shutil.which):
@@ -169,7 +212,7 @@ def walk_switch(switch, env, timeout, run=subprocess.run, which=shutil.which):
                          f"defAuthPassphrase {auth}\ndefPrivPassphrase {priv}\n")
         child_env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "SNMPCONFPATH": conf_dir, "MIBS": ""}
 
-        for name, oid in {**OIDS, **COUNTERS}.items():
+        for name, oid in {**OIDS, **OPTIONAL}.items():
             if name == "dFdb" and walks.get("qFdb", "").strip():
                 walks[name] = ""
                 continue
@@ -178,8 +221,8 @@ def walk_switch(switch, env, timeout, run=subprocess.run, which=shutil.which):
                              capture_output=True, text=True, timeout=timeout * 4, env=child_env)
             except subprocess.TimeoutExpired:
                 raise WiringError(f"{switch.name}: SNMP walk timed out")
-            if result.returncode != 0 and name in COUNTERS:
-                walks[name] = ""        # optional health counter: leave it out, keep the scan
+            if result.returncode != 0 and name in OPTIONAL:
+                walks[name] = ""        # optional health counter / PoE table: leave it out, keep the scan
                 continue
             if result.returncode != 0:
                 first = (result.stderr or "").strip().splitlines()[:1]

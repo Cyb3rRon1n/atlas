@@ -81,4 +81,11 @@ def diff_snapshots(previous, current):
             state = "up" if link["up"] else "down"
             changes.append({"type": state, "text": f"{link['a_port']} went {state}"})
 
+    old_poe = {(p["device"], p["port"]): p["delivering"] for p in previous.get("poe") or []}
+    for p in current.get("poe") or []:
+        before = old_poe.get((p["device"], p["port"]))
+        if before is not None and before != p["delivering"]:
+            changes.append({"type": "poe", "text": f"{p['device']} {p['port']} "
+                                                   f"{'started' if p['delivering'] else 'stopped'} delivering PoE"})
+
     return changes

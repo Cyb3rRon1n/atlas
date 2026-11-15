@@ -12,7 +12,7 @@ from datetime import datetime
 from atlas.wiring import WiringError
 from atlas.wiring.build import build_wiring
 from atlas.wiring.cabling import load_cabling
-from atlas.wiring.health import alerts, assess
+from atlas.wiring.health import alerts, assess, poe_ports
 from atlas.wiring.snmp import collect_switch
 from atlas.wiring.unifi import fetch_unifi
 
@@ -75,6 +75,7 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
         if "unifi" in stale:
             stale |= {d.get("name") for d in ((raw["unifi"] or {}).get("devices") or [])}
         snapshot["health"] = assess(raw, [h["raw"] for h in history], stale)
+        snapshot["poe"] = poe_ports(raw)
         if previous:
             for text in alerts(previous[0]["snapshot"].get("health"), snapshot["health"]):
                 _send(settings, text, send)

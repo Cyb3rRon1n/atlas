@@ -66,7 +66,7 @@ def test_store_summary_page_map_people_and_anonymous(temp_db):
 
 def test_places_learn_then_review_confirm_and_alert(temp_db):
     from atlas.access.collect import AccessCollector
-    from atlas.config.models import AccessConfig, PostureConfig, SignalNotifyConfig
+    from atlas.config.models import AccessConfig, PostureConfig, NotifyConfig, SignalNotifyConfig
     store = AccessStore(temp_db)
     t0 = datetime(2026, 10, 1)
     geo = {"9.9.9.9": {"cc": "US", "country": "United States", "city": "Tampa", "region": "Florida", "org": "Spectrum"},
@@ -84,7 +84,7 @@ def test_places_learn_then_review_confirm_and_alert(temp_db):
     assert places == {"US/Spectrum": "learned", "PT/MEO": "review"}            # home network never becomes a place
 
     sent = []
-    c = AccessCollector(AccessConfig(), PostureConfig(), store, signal=SignalNotifyConfig(url="http://signal"),
+    c = AccessCollector(AccessConfig(), PostureConfig(), store, notify=NotifyConfig(signal=SignalNotifyConfig(url="http://signal")),
                         send=lambda cfg, text: (sent.append(text) or True, ""))
     assert c._alert() == 1 and "dave" in sent[0] and "Lisbon" in sent[0] and c._alert() == 0   # alerted once
 

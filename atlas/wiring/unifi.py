@@ -45,7 +45,11 @@ def parse_unifi(devices, clients):
         for port in device.get("port_table") or []:
             index = port.get("port_idx")
             name = port.get("name") or f"Port {index}"
-            ports[name] = {"index": index, "up": bool(port.get("up")), "speed": int(port.get("speed") or 0)}
+            ports[name] = {"index": index, "up": bool(port.get("up")), "speed": int(port.get("speed") or 0),
+                           "counters": {"in_errors": port.get("rx_errors"), "out_errors": port.get("tx_errors"),
+                                        "fcs": None, "align": None, "late": None, "packets": port.get("rx_packets"),
+                                        "duplex": {True: "full", False: "half"}.get(port.get("full_duplex"), "unknown"),
+                                        "last_change": None}}
             if normalize_mac(port.get("mac")):
                 port_macs[normalize_mac(port.get("mac"))] = name
         uplink = device.get("last_uplink") or device.get("uplink") or {}

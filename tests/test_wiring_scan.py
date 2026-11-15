@@ -52,3 +52,23 @@ def test_cli_wiring_scan_disabled(isolated_cwd):
 
     result = CliRunner().invoke(app, ["wiring", "scan"])
     assert result.exit_code == 0 and "wiring.enabled is false" in result.output
+
+
+def test_scan_reports_cable_health_and_alerts_once(temp_db, tmp_path):
+    settings = _settings(tmp_path)
+
+    def switch(fcs, packets):
+        port = {"index": 53, "up": True, "speed": 1000, "alias": "",
+                "counters": {"in_errors": 0, "out_errors": 0, "fcs": fcs, "align": 0, "late": 0,
+                             "packets": packets, "duplex": "full", "last_change": 1}}
+        return {**SWITCH_RESULT, "ports": {"gi5": port}}
+
+    sent = []
+    first = run_scan(settings, WiringStore(), [], env={}, collect=lambda *a, **k: switch(0, 1000), send=sent.append)
+    assert first["snapshot"]["health"] == [] and sent == []
+    bad = run_scan(settings, WiringStore(), [], env={}, collect=lambda *a, **k: switch(400, 50_000), send=sent.append)
+    assert [i["kind"] for i in bad["snapshot"]["health"]] == ["crc"] and len(sent) == 1
+    run_scan(settings, WiringStore(), [], env={}, collect=lambda *a, **k: switch(800, 100_000), send=sent.append)
+    assert len(sent) == 1                                     # still bad: no repeat alert
+    run_scan(settings, WiringStore(), [], env={}, collect=lambda *a, **k: switch(800, 200_000), send=sent.append)
+    assert len(sent) == 2 and "healthy again" in sent[-1]

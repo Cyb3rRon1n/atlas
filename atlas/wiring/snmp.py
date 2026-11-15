@@ -28,6 +28,22 @@ OIDS = {
     "lldpRem": "1.0.8802.1.1.2.1.4.1.1",
 }
 
+# Per-port health counters (cable health). Optional: a switch that lacks one (EtherLike-MIB is
+# common but not universal) just reports nothing for it - the walk never fails because of them.
+COUNTERS = {
+    "inErrors": "1.3.6.1.2.1.2.2.1.14",
+    "outErrors": "1.3.6.1.2.1.2.2.1.20",
+    "inUcast": "1.3.6.1.2.1.2.2.1.11",
+    "hcInUcast": "1.3.6.1.2.1.31.1.1.1.7",
+    "lastChange": "1.3.6.1.2.1.2.2.1.9",
+    "fcs": "1.3.6.1.2.1.10.7.2.1.3",
+    "align": "1.3.6.1.2.1.10.7.2.1.2",
+    "late": "1.3.6.1.2.1.10.7.2.1.8",
+    "duplex": "1.3.6.1.2.1.10.7.2.1.19",
+}
+
+DUPLEX = {"2": "half", "3": "full"}     # dot3StatsDuplexStatus; 1 = unknown
+
 LINE = re.compile(r"^\.([\d.]+) = (.*)$")
 TYPE = re.compile(r"^[A-Za-z0-9-]+: ?")
 
@@ -61,9 +77,30 @@ def _mac_from_index(parts):
     return ":".join(f"{int(part):02x}" for part in parts)
 
 
+def _number(value):
+    """A counter or TimeTicks value as an int; None when the switch didn't report it."""
+
+    match = re.search(r"\d+", value or "")
+
+    return int(match.group()) if match else None
+
+
+def port_counters(get_counter, index):
+
+    value = lambda key: _number(get_counter(key).get(index))
+    hc, ucast = value("hcInUcast"), value("inUcast")
+
+    return {"in_errors": value("inErrors"), "out_errors": value("outErrors"),
+            "fcs": value("fcs"), "align": value("align"), "late": value("late"),
+            "packets": hc if hc else ucast,      # some switches (e.g. Cisco SG300) leave the 64-bit counter at 0
+            "duplex": DUPLEX.get(get_counter("duplex").get(index, ""), "unknown"),
+            "last_change": value("lastChange")}
+
+
 def parse_switch(walks):
 
-    get = lambda key: parse_walk(walks.get(key, ""), OIDS[key])
+    get = lambda key: parse_walk(walks.get(key, ""), {**OIDS, **COUNTERS}[key])
+    counters = {key: get(key) for key in COUNTERS}
     names, oper, speed, alias = get("ifName"), get("ifOper"), get("ifHighSpeed"), get("ifAlias")
     base = get("basePort")      # bridge port -> ifIndex
 
@@ -72,7 +109,8 @@ def parse_switch(walks):
         if index in names:
             status = oper.get(index, "")
             ports[names[index]] = {"index": int(index), "up": status.startswith("up") or status == "1",
-                                   "speed": int(speed.get(index) or 0), "alias": alias.get(index, "")}
+                                   "speed": int(speed.get(index) or 0), "alias": alias.get(index, ""),
+                                   "counters": port_counters(counters.__getitem__, index)}
 
     def port_name(bridge_port):
         return names.get(base.get(bridge_port, ""))
@@ -131,7 +169,7 @@ def walk_switch(switch, env, timeout, run=subprocess.run, which=shutil.which):
                          f"defAuthPassphrase {auth}\ndefPrivPassphrase {priv}\n")
         child_env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "SNMPCONFPATH": conf_dir, "MIBS": ""}
 
-        for name, oid in OIDS.items():
+        for name, oid in {**OIDS, **COUNTERS}.items():
             if name == "dFdb" and walks.get("qFdb", "").strip():
                 walks[name] = ""
                 continue
@@ -140,6 +178,9 @@ def walk_switch(switch, env, timeout, run=subprocess.run, which=shutil.which):
                              capture_output=True, text=True, timeout=timeout * 4, env=child_env)
             except subprocess.TimeoutExpired:
                 raise WiringError(f"{switch.name}: SNMP walk timed out")
+            if result.returncode != 0 and name in COUNTERS:
+                walks[name] = ""        # optional health counter: leave it out, keep the scan
+                continue
             if result.returncode != 0:
                 first = (result.stderr or "").strip().splitlines()[:1]
                 raise WiringError(f"{switch.name}: {first[0] if first else 'snmpbulkwalk failed'}")

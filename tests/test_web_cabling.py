@@ -80,3 +80,19 @@ def test_diagram_gets_physical_faces():
     face = data["faces"]["s:core-switch"]
     assert face["rows"] == 1 and [p["name"] for p in face["ports"]] == ["gi1", "gi2", "gi5", "gi6"]
     assert 'style="left:calc(0 * var(--pw));top:calc(0 * var(--ph))"' in page
+
+
+def test_cable_health_on_faceplate_and_list():
+    latest = _latest()
+    assert "Cable health" not in render_cabling_page(latest, [], True)       # scan from before cable health
+    latest["snapshot"]["health"] = [
+        {"device": "core-switch", "port": "gi5", "kind": "crc", "level": "bad",
+         "reason": "Likely bad cable or jack", "detail": "520 CRC errors since the last scan (0.52% of packets)"},
+        {"device": "core-switch", "port": "gi6", "kind": "speed", "level": "watch",
+         "reason": "Speed dropped", "detail": "links at 100 Mbit/s, ran at 1 Gbit/s before"}]
+    page = render_cabling_page(latest, [], True, now=datetime(2026, 1, 1, 13))
+    assert '<span class="h-bad ' in page and '<span class="h-watch ' in page
+    assert "Likely bad cable or jack: 520 CRC errors" in page
+    assert page.index("Problem</span><b>core-switch gi5") < page.index("Watch</span><b>core-switch gi6")
+    latest["snapshot"]["health"] = []
+    assert "every connected port is clean" in render_cabling_page(latest, [], True)

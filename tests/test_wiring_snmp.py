@@ -4,7 +4,9 @@ import pytest
 
 from atlas.config.models import WiringSwitch
 from atlas.wiring import WiringError
-from atlas.wiring.snmp import OIDS, collect_switch, parse_switch, parse_walk, walk_switch
+from atlas.wiring.snmp import COUNTERS, OIDS, collect_switch, parse_switch, parse_walk, walk_switch
+
+ALL = {**OIDS, **COUNTERS}
 
 WALKS = {
     "sysName": ".1.3.6.1.2.1.1.5.0 = STRING: core-switch\n",
@@ -42,7 +44,9 @@ def test_parse_switch():
     result = parse_switch(WALKS)
     assert result["sys_name"] == "core-switch" and result["chassis_mac"] == "02:00:00:00:00:10"
     assert set(result["ports"]) == {"gi1", "gi2", "gi3"}            # loopback is not a bridge port
-    assert result["ports"]["gi1"] == {"index": 49, "up": True, "speed": 1000, "alias": "uplink"}
+    gi1 = dict(result["ports"]["gi1"])
+    assert gi1.pop("counters")["duplex"] == "unknown"     # no counters walked in this fixture
+    assert gi1 == {"index": 49, "up": True, "speed": 1000, "alias": "uplink"}
     assert result["ports"]["gi3"]["up"] is False
     assert {"port": "gi2", "mac": "00:00:5e:00:53:01", "vlan": 1} in result["fdb"]
     gateway = next(n for n in result["neighbors"] if n["port"] == "gi1")
@@ -67,7 +71,7 @@ def test_walk_switch_keeps_secrets_off_the_command_line(tmp_path):
     def fake_run(args, **kwargs):
         conf = (kwargs["env"]["SNMPCONFPATH"] + "/snmp.conf")
         seen.append((args, open(conf).read()))
-        key = next(k for k, oid in OIDS.items() if oid == args[-1])
+        key = next(k for k, oid in ALL.items() if oid == args[-1])
         return subprocess.CompletedProcess(args, 0, WALKS.get(key, ""), "")
 
     walks = walk_switch(SWITCH, ENV, 5, run=fake_run, which=lambda _: "/usr/bin/snmpbulkwalk")
@@ -92,7 +96,35 @@ def test_walk_switch_errors():
 
 def test_collect_switch_marks_des_weak():
     def fake_run(args, **kwargs):
-        key = next(k for k, oid in OIDS.items() if oid == args[-1])
+        key = next(k for k, oid in ALL.items() if oid == args[-1])
         return subprocess.CompletedProcess(args, 0, WALKS.get(key, ""), "")
     result = collect_switch(SWITCH, ENV, 5, run=fake_run, which=lambda _: "/x")
     assert result["name"] == "core-switch" and result["weak_privacy"] is True
+
+COUNTER_WALKS = {
+    "inErrors": ".1.3.6.1.2.1.2.2.1.14.49 = Counter32: 7\n",
+    "outErrors": ".1.3.6.1.2.1.2.2.1.20.49 = Counter32: 0\n",
+    "inUcast": ".1.3.6.1.2.1.2.2.1.11.49 = Counter32: 123456\n",
+    "hcInUcast": ".1.3.6.1.2.1.31.1.1.1.7.49 = Counter64: 0\n",       # SG300 style: 64-bit counter left at 0
+    "lastChange": ".1.3.6.1.2.1.2.2.1.9.49 = Timeticks: (4242) 0:00:42.42\n",
+    "fcs": ".1.3.6.1.2.1.10.7.2.1.3.49 = Counter32: 5\n",
+    "align": ".1.3.6.1.2.1.10.7.2.1.2.49 = Counter32: 2\n",
+    "late": ".1.3.6.1.2.1.10.7.2.1.8.49 = Counter32: 0\n",
+    "duplex": ".1.3.6.1.2.1.10.7.2.1.19.49 = INTEGER: 3\n",
+}
+
+
+def test_parse_switch_reads_health_counters():
+    counters = parse_switch({**WALKS, **COUNTER_WALKS})["ports"]["gi1"]["counters"]
+    assert counters == {"in_errors": 7, "out_errors": 0, "fcs": 5, "align": 2, "late": 0,
+                        "packets": 123456, "duplex": "full", "last_change": 4242}
+
+
+def test_missing_counter_table_does_not_fail_the_walk():
+    def fake_run(args, **kwargs):
+        key = next(k for k, oid in ALL.items() if oid == args[-1])
+        if key == "fcs":
+            return subprocess.CompletedProcess(args, 1, "", "No Such Object\n")
+        return subprocess.CompletedProcess(args, 0, {**WALKS, **COUNTER_WALKS}.get(key, ""), "")
+    result = collect_switch(SWITCH, ENV, 5, run=fake_run, which=lambda _: "/x")
+    assert result["ports"]["gi1"]["counters"]["fcs"] is None and result["ports"]["gi1"]["counters"]["align"] == 2

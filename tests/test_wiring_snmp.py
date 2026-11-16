@@ -90,7 +90,7 @@ def test_walk_switch_errors():
 
     def failing(args, **kwargs):
         return subprocess.CompletedProcess(args, 1, "", "Timeout: No Response from 192.0.2.2\n")
-    with pytest.raises(WiringError, match="Timeout"):
+    with pytest.raises(WiringError, match="no answer from 192.0.2.2"):
         walk_switch(SWITCH, ENV, 5, run=failing, which=lambda _: "/x")
 
 

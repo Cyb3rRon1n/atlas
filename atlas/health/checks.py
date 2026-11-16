@@ -140,7 +140,11 @@ def check_intelligence(config):
 
     provider = config.intelligence.provider
 
-    if provider == "anthropic":
+    if provider == "none":
+
+        healthy, details = True, "off (no AI model configured - optional)"
+
+    elif provider == "anthropic":
 
         healthy = bool(os.environ.get("ANTHROPIC_API_KEY"))
 

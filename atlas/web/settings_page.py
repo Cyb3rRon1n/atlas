@@ -1,8 +1,9 @@
 """
-The Setup page (/settings): connect alerts and an AI model from the browser instead of editing atlas.yaml.
+The Setup page (/settings): connect alerts, an AI model, switches, UniFi and Proxmox from the browser instead of
+editing atlas.yaml.
 
 Each card is one integration: Test checks the values as typed without saving them (alerts send a real test
-message; the AI card only lists models, which costs nothing), Save stores them through atlas.config.local,
+message; the AI card only lists models, which costs nothing; switches, UniFi and Proxmox get one read-only request), Save stores them through atlas.config.local,
 Turn off removes them. A field atlas.yaml sets is shown read-only ("set in atlas.yaml") and never written; a
 secret the real environment (.env) sets is shown as "set in .env". Secret values are never put in the page.
 """
@@ -47,7 +48,32 @@ CARDS = {
                      hint="http://192.168.1.10:11434"),
                Field("model", "Model", "text", ("intelligence", "model"), hint="qwen3:8b or claude-opus-5"),
                Field("api_key", "Anthropic API key", "secret", None, "ANTHROPIC_API_KEY")]),
+    "switches": ("Managed switches (SNMP)", "Draws every port on the Cabling page. Create a read-only SNMPv3 user "
+                 "on the switch (SHA + AES), then add it here. Saving a name that exists updates it.", [
+                     Field("name", "Name", "text", hint="core-switch"),
+                     Field("host", "Address", "text", hint="192.168.1.2"),
+                     Field("snmp_user", "SNMPv3 user", "text", hint="atlas"),
+                     Field("priv", "Privacy", "select", options=("aes", "des")),
+                     Field("auth", "Auth passphrase (SHA)", "secret", None, "ATLAS_SNMP_{}_AUTH"),
+                     Field("priv_pass", "Privacy passphrase", "secret", None, "ATLAS_SNMP_{}_PRIV")]),
+    "unifi": ("UniFi console", "Optional: adds UniFi gateway, AP and switch ports, port forwards and wired "
+              "clients. Use a local account with the View Only role.", [
+                  Field("url", "Console address", "text", ("wiring", "unifi", "url"), hint="https://192.168.1.1"),
+                  Field("site", "Site", "text", ("wiring", "unifi", "site"), hint="default"),
+                  Field("verify_ssl", "Check the console's certificate (off for the self-signed one)", "bool",
+                        ("wiring", "unifi", "verify_ssl")),
+                  Field("user", "Username", "secret", None, "ATLAS_UNIFI_USER"),
+                  Field("password", "Password", "secret", None, "ATLAS_UNIFI_PASS")]),
+    "proxmox": ("Proxmox VE", "Lists your VMs and containers and draws them under their host. An API token "
+                "with the PVEAuditor role is enough.", [
+                    Field("host", "Host", "text", ("proxmox", "host"), hint="192.168.1.10"),
+                    Field("user", "User", "text", ("proxmox", "user"), hint="atlas@pve"),
+                    Field("token_name", "Token ID", "text", ("proxmox", "token_name"), hint="atlas"),
+                    Field("token_value", "Token secret", "secret", ("proxmox", "token_value"), "ATLAS_PROXMOX_TOKEN"),
+                    Field("verify_ssl", "Check the host's certificate", "bool", ("proxmox", "verify_ssl"))]),
 }
+ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "enabled")]}
+WIRING_CARDS = ("switches", "unifi")
 
 ACTIONS = re.compile(r"^/api/settings/([a-z]+)/(test|save|off)$")
 TEST_TEXT = "**✅ Test alert from Atlas**\nIf you can read this, alerts reach you here."
@@ -89,8 +115,55 @@ def _webhook_names():
                   key=lambda n: int(n.rsplit("_", 1)[1]) if n.rsplit("_", 1)[1].isdigit() else 0)
 
 
+def _saved(name):
+
+    return name in local.secret_names() or _from_env(name)
+
+
+def _switch_changes(body, off):
+    """Add, update (same name) or remove one switch; the list is the Setup page's own, atlas.yaml's locks it."""
+
+    from atlas.wiring import env_key
+
+    if local.locked(("wiring", "switches")):
+        raise ValueError("The switches are set in atlas.yaml - edit them there.")
+    name = str(body.get("name") or "").strip()
+    if not name:
+        raise ValueError("Enter the switch name.")
+    others = [s for s in _get(local.read_settings(), ("wiring", "switches")) or [] if s.get("name") != name]
+    names = {key: secret.format(env_key(name)) for key, secret in (("auth", "ATLAS_SNMP_{}_AUTH"),
+                                                                    ("priv_pass", "ATLAS_SNMP_{}_PRIV"))}
+    if off:
+        return {"wiring": {"switches": others or None}}, {n: None for n in names.values() if not _from_env(n)}
+
+    host = str(body.get("host") or "").strip()
+    if not host:
+        raise ValueError("Enter the switch address.")
+    secrets = {n: str(body[key]) for key, n in names.items() if body.get(key) and not _from_env(n)}
+    if any(n not in secrets and not _saved(n) for n in names.values()):
+        raise ValueError("Enter both passphrases.")
+    switch = {"name": name, "host": host, "snmp_user": str(body.get("snmp_user") or "").strip() or "atlas",
+              "priv": body.get("priv") or "aes"}
+
+    return {"wiring": {"switches": others + [switch]}}, secrets
+
+
 def _changes(card, body, off=False):
     """(settings patch, secrets) a Save (or Turn off) of this card would write; locked fields are left alone."""
+
+    settings, secrets = _switch_changes(body, off) if card == "switches" else _field_changes(card, body, off)
+    for path in ENABLES.get(card, ()):
+        if not local.locked(path):
+            _put(settings, path, None if off else True)
+    if card in WIRING_CARDS and not local.locked(("wiring", "enabled")):
+        merged = local._merge(local.read_settings(), settings)       # the cabling scan runs while either is set
+        wanted = _get(merged, ("wiring", "switches")) or _get(merged, ("wiring", "unifi", "enabled"))
+        _put(settings, ("wiring", "enabled"), True if wanted else None)
+
+    return settings, secrets
+
+
+def _field_changes(card, body, off):
 
     settings, secrets = {}, {}
     for field in CARDS[card][2]:
@@ -185,11 +258,54 @@ def _test_ai(config, environ):
     return True, "The key works" + (f" and {intelligence.model} is available." if intelligence.model else ".")
 
 
+def _test_network(card, body, config, environ):
+
+    from atlas.wiring import WiringError
+
+    try:
+        if card == "switches":
+            from atlas.wiring.snmp import probe_switch
+            name = str(body.get("name") or "").strip()
+            switch = next((s for s in config.wiring.switches if s.name == name), None)
+            if switch is None:
+                return False, f"No switch named {name or '(blank)'} - names: " \
+                              f"{', '.join(s.name for s in config.wiring.switches) or 'none yet'}"
+            sys_name, description = probe_switch(switch, environ, config.wiring.timeout)
+            return True, f"Connected to {sys_name or switch.host}" + (f": {description[:90]}" if description else ".")
+        if card == "unifi":
+            from atlas.wiring.unifi import _session
+            if not config.wiring.unifi.url:
+                return False, "Enter the console address."
+            devices = _session(config.wiring.unifi, environ, config.wiring.timeout, None,
+                               lambda get: get("stat/device"))
+            return True, f"Signed in: the console reports {len(devices)} UniFi device{'s' * (len(devices) != 1)}."
+    except WiringError as error:
+        return False, str(error)
+
+    from atlas.proxmox.client import connect
+
+    proxmox = config.proxmox
+    if not (proxmox.host and proxmox.user and proxmox.token_name and proxmox.token_value):
+        return False, "Enter the host, user, token ID and token secret."
+    api = connect(proxmox.host, proxmox.user, token_name=proxmox.token_name, token_value=proxmox.token_value,
+                  verify_ssl=proxmox.verify_ssl)
+    if api is None:
+        return False, "Couldn't set up the Proxmox connection - check the host."
+    version = api.version.get().get("version", "?")
+    nodes = api.nodes.get()
+    return True, f"Connected: Proxmox VE {version}, {len(nodes)} node{'s' * (len(nodes) != 1)}."
+
+
 def _test(card, body):
 
     from atlas import notify
 
-    config, environ = _candidate(card, body)
+    if card == "switches" and local.locked(("wiring", "switches")):    # test the atlas.yaml switch by name
+        config, environ = load_config(), dict(os.environ)
+    else:
+        config, environ = _candidate(card, body)
+    if card in ("switches", "unifi", "proxmox"):
+        return _test_network(card, body, config, environ)
     alerts = config.notify
     if card == "ntfy":
         if not (alerts.ntfy.url and alerts.ntfy.topic):
@@ -256,6 +372,9 @@ def _field_html(card, field, config):
     disabled = " disabled" if locked else ""
     value = _get(config.model_dump(), field.path) if field.path else None
 
+    if field.kind == "secret" and "{}" in field.secret:     # per-switch: named by the switch
+        return (f'<label for="{name}">{_esc(field.label)}</label><input id="{name}" name="{field.key}" '
+                f'type="password" autocomplete="new-password" placeholder="blank keeps a saved switch\'s passphrase">')
     if field.kind == "secret":
         env = _from_env(field.secret)
         saved = field.secret in local.secret_names() or env or (locked and value)
@@ -288,7 +407,8 @@ def _on(card, config):
     alerts = config.notify
     return {"ntfy": bool(alerts.ntfy.url and alerts.ntfy.topic), "webhooks": bool(alerts.webhooks),
             "email": bool(alerts.email.host and alerts.email.to),
-            "ai": config.intelligence.provider != "none"}[card]
+            "ai": config.intelligence.provider != "none", "switches": bool(config.wiring.switches),
+            "unifi": config.wiring.unifi.enabled, "proxmox": config.proxmox.enabled}[card]
 
 
 SCRIPT = """
@@ -338,14 +458,21 @@ def render_settings_page():
     cards = []
     for card, (title, intro, fields) in CARDS.items():
         on = _on(card, config)
+        saved = ""
+        if card == "switches" and config.wiring.switches:
+            where = " (from atlas.yaml)" if local.locked(("wiring", "switches")) else ""
+            saved = '<ul class="saved">' + "".join(
+                f"<li><b>{_esc(s.name)}</b> {_esc(s.host)} - user {_esc(s.snmp_user)}, {s.priv}{where}</li>"
+                for s in config.wiring.switches) + "</ul>"
         cards.append(
             f'<section class="card"><h2>{_esc(title)}<span class="badge{" on" if on else ""}">{"on" if on else "off"}'
-            f'</span></h2><p class="muted">{_esc(intro)}</p><form data-card="{card}">'
+            f'</span></h2><p class="muted">{_esc(intro)}</p>{saved}<form data-card="{card}">'
             + "".join(_field_html(card, field, config) for field in fields) +
             '<p class="status muted" role="status"></p><div class="buttons">'
-            f'<button data-act="test">{"Send test" if card != "ai" else "Test"}</button>'
+            f'<button data-act="test">{"Send test" if card in ("ntfy", "webhooks", "email") else "Test"}</button>'
             '<button class="primary" data-act="save">Save</button>'
-            + ('<button data-act="off">Turn off</button>' if on else "") + '</div></form></section>')
+            + (f'<button data-act="off">{"Remove this switch" if card == "switches" else "Turn off"}</button>'
+               if on else "") + '</div></form></section>')
 
     body = (STYLE + '<p class="muted">Changes here take effect within a minute, no restart. Anything set in '
             'atlas.yaml or .env stays read-only here - edit it there. Passwords and keys are stored privately '

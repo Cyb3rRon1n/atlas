@@ -6,6 +6,7 @@ compiled Python dependency. Passphrases go through a private snmp.conf
 (SNMPCONFPATH), never argv, where any local `ps` could read them.
 """
 
+import contextlib
 import os
 import re
 import shutil
@@ -251,26 +252,38 @@ def parse_switch(walks):
             "poe_budget_w": budget, "poe_used_w": used}
 
 
-def walk_switch(switch, env, timeout, run=subprocess.run, which=shutil.which):
+@contextlib.contextmanager
+def _snmp(switch, env, which, tool="snmpbulkwalk"):
+    """(binary, child env) with the passphrases in a private snmp.conf that's deleted afterwards."""
 
-    binary = which("snmpbulkwalk")
+    binary = which(tool)
     if not binary:
-        raise WiringError("snmpbulkwalk not found - install net-snmp (Debian/Ubuntu: apt install snmp)")
+        raise WiringError(f"{tool} not found - install net-snmp (Debian/Ubuntu: apt install snmp)")
 
     key = env_key(switch.name)
     auth, priv = env.get(f"ATLAS_SNMP_{key}_AUTH"), env.get(f"ATLAS_SNMP_{key}_PRIV")
     if not auth or not priv:
         raise WiringError(f"set ATLAS_SNMP_{key}_AUTH and ATLAS_SNMP_{key}_PRIV in the atlas env file")
 
-    walks = {}
     with tempfile.TemporaryDirectory() as conf_dir:
         conf = os.path.join(conf_dir, "snmp.conf")
         with open(os.open(conf, os.O_WRONLY | os.O_CREAT, 0o600), "w") as handle:
             handle.write(f"defVersion 3\ndefSecurityName {switch.snmp_user}\ndefSecurityLevel authPriv\n"
                          f"defAuthType SHA\ndefPrivType {switch.priv.upper()}\n"
                          f"defAuthPassphrase {auth}\ndefPrivPassphrase {priv}\n")
-        child_env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "SNMPCONFPATH": conf_dir, "MIBS": ""}
+        yield binary, {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "SNMPCONFPATH": conf_dir, "MIBS": ""}
 
+
+def _failure(switch, result):
+
+    first = (result.stderr or "").strip().splitlines()[:1]
+    return WiringError(f"{switch.name}: {first[0] if first else 'SNMP request failed'}")
+
+
+def walk_switch(switch, env, timeout, run=subprocess.run, which=shutil.which):
+
+    walks = {}
+    with _snmp(switch, env, which) as (binary, child_env):
         for name, oid in {**OIDS, **OPTIONAL}.items():
             if name == "dFdb" and walks.get("qFdb", "").strip():
                 walks[name] = ""
@@ -284,11 +297,27 @@ def walk_switch(switch, env, timeout, run=subprocess.run, which=shutil.which):
                 walks[name] = ""        # optional health counter / PoE table: leave it out, keep the scan
                 continue
             if result.returncode != 0:
-                first = (result.stderr or "").strip().splitlines()[:1]
-                raise WiringError(f"{switch.name}: {first[0] if first else 'snmpbulkwalk failed'}")
+                raise _failure(switch, result)
             walks[name] = result.stdout
 
     return walks
+
+
+def probe_switch(switch, env, timeout, run=subprocess.run, which=shutil.which):
+    """One read-only request (sysName + sysDescr) to check the address and passphrases: (name, description)."""
+
+    with _snmp(switch, env, which, "snmpget") as (binary, child_env):
+        try:
+            result = run([binary, "-On", "-Oqv", "-t", str(timeout), "-r", "1", switch.host,
+                          "1.3.6.1.2.1.1.5.0", "1.3.6.1.2.1.1.1.0"],
+                         capture_output=True, text=True, timeout=timeout * 3, env=child_env)
+        except subprocess.TimeoutExpired:
+            raise WiringError(f"{switch.name}: no answer from {switch.host}")
+    if result.returncode != 0:
+        raise _failure(switch, result)
+    lines = [line.strip().strip('"') for line in result.stdout.splitlines()] + ["", ""]
+
+    return lines[0], lines[1]
 
 
 def collect_switch(switch, env, timeout, **kwargs):

@@ -11,6 +11,9 @@ wiring scan already saves.
          Shown on /cabling only: they have innocent causes too often to page anyone.
 """
 
+from atlas.alerts import Text
+
+
 CRC_MIN = 10            # errors per scan before a port is worth a look ...
 RATE_WATCH = 1e-4       # ... and only above 0.01% of packets
 RATE_BAD = 1e-3         # 0.1% of packets = a real problem
@@ -167,11 +170,13 @@ def alerts(previous_issues, issues):
 
     for key, issue in new.items():
         if key not in old:
-            texts.append(f"**🔌 {issue['reason']}: {issue['device']} {issue['port']}**\n"
-                         f"• {issue['detail']}\n\nSee Atlas → Cabling.")
+            texts.append(Text(f"**🔌 {issue['reason']}: {issue['device']} {issue['port']}**\n"
+                              f"• {issue['detail']}\n\nSee Atlas → Cabling.",
+                              f"wiring:cable:{issue['kind']}:{issue['device']}:{issue['port']}"))
     for key, issue in old.items():
         if key not in new:
-            texts.append(f"**✅ {issue['device']} {issue['port']} is healthy again**\n"
-                         f"• no more {issue['reason'].lower()}")
+            texts.append(Text(f"**✅ {issue['device']} {issue['port']} is healthy again**\n"
+                              f"• no more {issue['reason'].lower()}",
+                              f"wiring:cable:{issue['kind']}:{issue['device']}:{issue['port']}"))
 
     return texts

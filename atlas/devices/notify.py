@@ -72,7 +72,18 @@ def deliver(store, config, now=None):
 
     errors = []
 
+    from atlas.alerts import Text, allowed
+
     for kind, items in store.due_notifications(now).items():
+
+        held = [item for item in items if not allowed(store, Text("", f"devices:offline:{item.get('device_id')}"
+                                                                  if kind == "offline" else "", item.get("device_id")
+                                                                  if kind == "offline" else None), now)]
+        if held:                                    # muted / paused: on the Alerts page, not sent
+            store.mark_sent([item["id"] for item in held], now)
+            items = [item for item in items if item not in held]
+            if not items:
+                continue
 
         ok, error = notify.send(config, format_message(kind, items))
 

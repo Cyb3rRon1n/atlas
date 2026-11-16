@@ -66,7 +66,7 @@ def test_migrate_devices_table_tolerates_a_concurrent_migration(tmp_path, monkey
             "created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)"
         ))
 
-    database_module._migrate_devices_table(engine)  # the "winner" adds both columns
+    database_module._migrate_table(engine, "devices", database_module.DEVICE_COLUMN_MIGRATIONS)  # the "winner" adds both columns
 
     class StaleInspector:
         """Stands in for a second process that read the column list before
@@ -77,7 +77,7 @@ def test_migrate_devices_table_tolerates_a_concurrent_migration(tmp_path, monkey
 
     monkeypatch.setattr(database_module, "inspect", lambda target_engine: StaleInspector())
 
-    database_module._migrate_devices_table(engine)  # the "loser" - must not raise
+    database_module._migrate_table(engine, "devices", database_module.DEVICE_COLUMN_MIGRATIONS)  # the "loser" - must not raise
 
     columns = {column["name"] for column in inspect(engine).get_columns("devices")}
     assert {"connection", "uplink_id"} <= columns

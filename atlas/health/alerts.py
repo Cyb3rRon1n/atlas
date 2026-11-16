@@ -97,8 +97,11 @@ def alerts(previous_issues, issues):
     key = lambda i: (i["kind"], i["subject"])
     old = {key(i): i for i in previous_issues or []}
     new = {key(i): i for i in issues}
-    texts = [f"**🖥️ {i['reason']}**\n• {i['detail']}\n\nSee Atlas → Home." for k, i in new.items() if k not in old]
-    texts += [f"**✅ Resolved: {i['reason'].lower()}**\n• {i['subject']}" for k, i in old.items() if k not in new]
+    from atlas.alerts import Text
+    tag = lambda k: f"host:{k[0]}:{k[1]}"
+    texts = [Text(f"**🖥️ {i['reason']}**\n• {i['detail']}\n\nSee Atlas → Home.", tag(k))
+             for k, i in new.items() if k not in old]
+    texts += [Text(f"**✅ Resolved: {i['reason'].lower()}**\n• {i['subject']}", tag(k)) for k, i in old.items() if k not in new]
 
     return texts
 
@@ -114,7 +117,10 @@ def run(settings, store, health, containers, now, send=None):
     report("host", [issue(i["kind"], i["subject"], i["reason"], i["detail"], href="/")
                     for i in issues] if settings.health.alerts else [], now, store)
     if settings.health.alerts:
+        from atlas.alerts import allowed
         for text in alerts(previous.get("issues"), issues):
+            if not allowed(store, text, now):
+                continue
             if send:
                 send(text)
             elif notify.configured(settings.notify):

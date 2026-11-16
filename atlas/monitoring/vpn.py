@@ -65,6 +65,10 @@ def check(clients, store, send=None, session=None):
             if st["down"]:
                 back.append(client.name)
 
+    from atlas.alerts import Text, allowed
+    down = [(name, problem) for name, problem in down if allowed(store, Text("", f"vpn:vpn:{name}"))]
+    back = [name for name in back if allowed(store, Text("", f"vpn:vpn:{name}"))]
+
     if down or back:
         lines = []
         if down:

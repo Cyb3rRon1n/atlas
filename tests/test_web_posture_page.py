@@ -44,7 +44,7 @@ def test_posture_side_lists_are_tabs_and_map_click_shows_details():
 def test_nav_order_and_hosts_tabs():
     from datetime import datetime
     from atlas.web.trends_page import render_trends_page
-    assert [label for _, label, _ in NAV] == ["Home", "Posture", "Hosts", "Devices", "Network", "Cabling", "Access", "History"]
+    assert [label for _, label, _ in NAV] == ["Home", "Posture", "Hosts", "Devices", "Network", "Cabling", "Access", "History", "Setup"]
     html = render_trends_page([], [], "24h", datetime(2026, 10, 11))
     assert 'href="/overview"' in html and ">Trends<" in html
 

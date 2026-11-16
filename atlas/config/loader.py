@@ -25,7 +25,7 @@ def expand_env(text, environ=None):
     )
 
 
-def _expand_values(value):
+def _expand_values(value, environ=None):
     """
     Expand ${...} inside string values *after* YAML parsing - expanding the
     raw text first turned `api_key: ${UNSET}` into `api_key:` (YAML null,
@@ -33,24 +33,35 @@ def _expand_values(value):
     """
 
     if isinstance(value, str):
-        return expand_env(value)
+        return expand_env(value, environ)
 
     if isinstance(value, dict):
-        return {key: _expand_values(item) for key, item in value.items()}
+        return {key: _expand_values(item, environ) for key, item in value.items()}
 
     if isinstance(value, list):
-        return [_expand_values(item) for item in value]
+        return [_expand_values(item, environ) for item in value]
 
     return value
+
+
+def read_user_config():
+    """atlas.yaml as written by the user (unexpanded), or {}."""
+
+    if not CONFIG_FILE.exists():
+        return {}
+    with open(CONFIG_FILE, "r") as file:
+        return yaml.safe_load(file) or {}
+
+
+def build_config(web_settings, environ=None):
+    """The config atlas.yaml plus these web settings would give - the Setup page tests and validates with it."""
+
+    return AtlasConfig(**_expand_values(local.layered(read_user_config(), web_settings), environ))
 
 
 def load_config():
     """atlas.yaml, with settings saved from the web Setup page filling in what it leaves out (atlas.config.local)."""
 
     local.apply_secrets()
-    user = {}
-    if CONFIG_FILE.exists():
-        with open(CONFIG_FILE, "r") as file:
-            user = yaml.safe_load(file) or {}
 
-    return AtlasConfig(**_expand_values(local.layered(user, local.read_settings())))
+    return build_config(local.read_settings())

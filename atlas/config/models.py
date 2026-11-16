@@ -23,7 +23,7 @@ class ProxmoxConfig(BaseModel):
 
 
 class IntelligenceConfig(BaseModel):
-    provider: str = "anthropic"
+    provider: str = "none"          # AI is optional: none, ollama or anthropic
     model: str = "claude-opus-5"
     ollama_host: str = "http://localhost:11434"
     # Ollama-only: thinking models (e.g. qwen3) reason silently before

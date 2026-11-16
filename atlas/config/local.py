@@ -52,8 +52,8 @@ def _merge(base, patch):
     for key, value in patch.items():
         if value is None:
             out.pop(key, None)
-        elif isinstance(value, dict) and isinstance(out.get(key), dict):
-            out[key] = _merge(out[key], value)
+        elif isinstance(value, dict):
+            out[key] = _merge(out[key] if isinstance(out.get(key), dict) else {}, value)
         else:
             out[key] = value
 
@@ -133,6 +133,6 @@ def apply_secrets(environ=None):
             environ.pop(name, None)
             _APPLIED.discard(name)
     for name, value in stored.items():
-        if name in _APPLIED or name not in environ:
+        if name in _APPLIED or not environ.get(name):      # an empty variable (compose's ${X:-}) counts as unset
             environ[name] = value
             _APPLIED.add(name)

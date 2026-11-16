@@ -213,6 +213,9 @@ def handle(method, path, body=None):
     if method == "POST":
         if path == "/api/wiring/refresh":
             return _wiring_refresh()
+        if path.startswith("/api/settings/"):
+            from atlas.web.settings_page import handle_post
+            return handle_post(path, body)
         return _post(path, body)
 
     return None

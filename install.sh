@@ -152,16 +152,14 @@ else
 
     if [ ! -f "$DIR/atlas.yaml" ]; then
         cat > "$DIR/atlas.yaml" <<EOF
-# Written by install.sh - atlas.yaml.example shows every option.
+# Written by install.sh - atlas.yaml.example shows every option. Alerts, the AI model and
+# more can also be set on the web page's Setup tab; anything set here wins over it.
 name: $(hostname -s 2>/dev/null || echo atlas-node)
 discovery:
   hardware: true
   storage: true
   network: true
-intelligence:
-  provider: $provider
-  model: '$model'
-  ollama_host: $ollama
+$([ "$provider" = none ] || printf "intelligence:\n  provider: %s\n  model: '%s'\n  ollama_host: %s\n" "$provider" "$model" "$ollama")
 web:
   auth: builtin        # proxy = an auth proxy in front of atlas signs people in instead
 EOF

@@ -8,7 +8,7 @@ def test_load_config_defaults_when_no_file(isolated_cwd):
 
     assert config == AtlasConfig()
     assert config.name == "atlas-node"
-    assert config.intelligence.provider == "anthropic"
+    assert config.intelligence.provider == "none"
     assert config.intelligence.model == "claude-opus-5"
 
 

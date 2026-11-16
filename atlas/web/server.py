@@ -251,6 +251,9 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             body = render_home_page(**self._home_data(query))
         elif path == "/posture":
             body = render_posture_page()
+        elif path == "/settings":
+            from atlas.web.settings_page import render_settings_page
+            body = render_settings_page()
         elif path == "/overview":
             home = self._home_data(query)
             body = render_overview_page(query.latest_environment(), query.latest_analysis(),

@@ -19,6 +19,7 @@ from urllib.parse import parse_qs, quote, urlsplit
 import psutil
 
 from atlas.config.loader import load_config
+from atlas.alerts import AlertStore
 from atlas.devices.store import InventoryStore
 from atlas.discovery.host_health import get_host_health
 from atlas.knowledge.queries import KnowledgeQueries
@@ -234,6 +235,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now)),
             analysis=safe("analysis", query.latest_analysis), now=now,
             access_reviews=safe("access reviews", lambda: AccessStore().places("review")) or [],
+            open_alerts=safe("alerts", lambda: AlertStore().listing(now)["open"]) or [],
             steps=safe("setup steps", lambda: setup_steps(settings, InventoryStore().devices())) if settings else None)
 
     def do_GET(self):
@@ -268,6 +270,10 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             summary = AccessStore().summary(datetime.utcnow() - timedelta(days=ACCESS_WINDOWS[window]))
             body = render_access_page(summary, window, settings.access.home_ips, settings.access.enabled,
                                       AccessStore().places())
+        elif path == "/alerts":
+            from atlas.web.alerts_page import render_alerts_page
+            now = datetime.utcnow()
+            body = render_alerts_page(AlertStore().listing(now), now)
         elif path == "/history":
             body = render_history_page(query.recent_events(300))
         elif path == "/trends":

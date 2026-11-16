@@ -1628,6 +1628,9 @@ def lan_scan(
     result["subnets"] = subnets
     result["offline"] = store.queue_offline()
     result["notify_errors"] = deliver(store, settings.notify)
+    from datetime import datetime
+    from atlas.devices.notify import report_alerts
+    report_alerts(store, store.devices(), datetime.utcnow())
 
     if result["new"] or result["offline"] or result["notify_errors"]:
         application.runtime.events.publish(

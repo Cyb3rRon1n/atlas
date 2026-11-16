@@ -171,7 +171,7 @@ def alerts(previous_issues, issues):
     for key, issue in new.items():
         if key not in old:
             texts.append(Text(f"**🔌 {issue['reason']}: {issue['device']} {issue['port']}**\n"
-                              f"• {issue['detail']}\n\nSee Atlas → Cabling.",
+                              f"• {issue['detail']}\n\nSee Atlas → Network → Cabling.",
                               f"wiring:cable:{issue['kind']}:{issue['device']}:{issue['port']}"))
     for key, issue in old.items():
         if key not in new:

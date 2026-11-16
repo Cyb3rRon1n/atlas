@@ -84,11 +84,11 @@ def _text(host, entry):
 
     days = entry["days"]
     if entry["level"] == "invalid":
-        return f"**🔒 Certificate not trusted: {host}**\n• {entry['error'][len('invalid: '):]}\n\nSee Atlas → Posture."
+        return f"**🔒 Certificate not trusted: {host}**\n• {entry['error'][len('invalid: '):]}\n\nSee Atlas → Security."
     when = "expired" if days < 0 else "expires today" if days == 0 else f"expires in {days} day{'s' * (days != 1)}"
     icon = "🔴" if entry["level"] == "urgent" else "🟡"
     return (f"**{icon} Certificate {when}: {host}**\n• {entry['expires'][:10]}"
-            + (f", issued by {entry['issuer']}" if entry["issuer"] else "") + "\n\nSee Atlas → Posture.")
+            + (f", issued by {entry['issuer']}" if entry["issuer"] else "") + "\n\nSee Atlas → Security.")
 
 
 def assess(previous, results, now, warn_days, urgent_days):

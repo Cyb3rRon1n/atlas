@@ -191,7 +191,7 @@ def alerts(previous_issues, issues):
     new = {key(i): i for i in issues if i["level"] == "bad"}
     from atlas.alerts import Text
     tag = lambda k: f"lan:{k[0]}:{k[1]}"
-    texts = [Text(f"**🛡️ {i['reason']}**\n• {i['detail']}\n\nSee Atlas → Posture.", tag(k))
+    texts = [Text(f"**🛡️ {i['reason']}**\n• {i['detail']}\n\nSee Atlas → Security.", tag(k))
              for k, i in new.items() if k not in old]
     texts += [Text(f"**✅ Resolved: {i['reason'].lower()}**\n• {i['subject']}", tag(k)) for k, i in old.items() if k not in new]
 

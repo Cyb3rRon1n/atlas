@@ -38,15 +38,24 @@ def test_posture_side_lists_are_tabs_and_map_click_shows_details():
     assert 'id="exposure-tab" role="tabpanel" hidden' in html and 'id="review-count"' in html
     select = POSTURE_SCRIPT.split("async function select")[1]
     assert 'if (id === "dst:review-more") { showTab("review-tab"); return; }\n  showTab("posture-panel")' in select
-    assert 'class="tabs"' not in html
+    assert 'href="/map">Services<' in html                         # Security section's sub-tabs
 
 
 def test_nav_order_and_hosts_tabs():
     from datetime import datetime
     from atlas.web.trends_page import render_trends_page
-    assert [label for _, label, _ in NAV] == ["Home", "Alerts", "Posture", "Hosts", "Devices", "Network", "Cabling", "Access", "History", "Setup"]
+    assert [label for _, label, _ in NAV] == ["Home", "Alerts", "Network", "Servers", "Security", "Setup"]
     html = render_trends_page([], [], "24h", datetime(2026, 10, 11))
     assert 'href="/overview"' in html and ">Trends<" in html
+    assert 'href="/overview" aria-current="page">Servers<' in html
+
+
+def test_every_old_page_sits_under_one_top_tab():
+    from atlas.web.render import SECTIONS
+    for key, href in (("cabling", "/devices"), ("history", "/alerts"), ("access", "/posture"), ("lan", "/posture")):
+        html = render_page("x", "", active=key)
+        assert f'href="{href}" aria-current="page"' in html
+    assert len({page for pages in SECTIONS.values() for _, _, page in pages}) == 11
 
 
 def test_docked_chat_shell_and_collapse_state():

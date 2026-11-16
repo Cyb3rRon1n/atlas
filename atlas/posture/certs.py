@@ -13,6 +13,8 @@ import socket
 import ssl
 from datetime import datetime, timedelta, timezone
 
+from atlas.alerts import Text
+
 ALERTING = ("soon", "urgent", "invalid")
 RANK = {"ok": 0, "unreachable": 0, "soon": 1, "invalid": 2, "urgent": 3}
 CHECK_EVERY = timedelta(hours=24)
@@ -100,9 +102,9 @@ def assess(previous, results, now, warn_days, urgent_days):
         before = (old.get(host) or {}).get("alerted")         # last level alerted about, kept while unreachable
         entries[host]["alerted"] = name if name in ALERTING else before if name == "unreachable" else None
         if name in ALERTING and RANK[name] > RANK.get(before or "ok", 0):
-            texts.append(_text(host, entries[host]))
+            texts.append(Text(_text(host, entries[host]), f"certs:cert:{host}"))
         elif name == "ok" and before:
-            texts.append(f"**✅ Resolved: certificate for {host}**\n• valid for {days} more days")
+            texts.append(Text(f"**✅ Resolved: certificate for {host}**\n• valid for {days} more days", f"certs:cert:{host}"))
 
     return texts, entries
 
@@ -138,7 +140,10 @@ def run(settings, store, now, *, get=fetch, send=None, force=False):
             found.append(issue("cert", host, f"Couldn't check the certificate for {host}", entry["error"],
                                "watch", "/posture"))
     report("certs", found, now, store)
+    from atlas.alerts import allowed
     for text in texts:
+        if not allowed(store, text, now):
+            continue
         if send:
             send(text)
         elif notify.configured(settings.notify):

@@ -468,7 +468,7 @@ class InventoryStore:
                     continue
 
                 due.setdefault(note.kind, []).append({
-                    "id": note.id, "device": device.get("name", "?"),
+                    "id": note.id, "device_id": note.device_id, "device": device.get("name", "?"),
                     "ip": device.get("ip"), "last_seen": device.get("last_seen")})
 
             session.commit()

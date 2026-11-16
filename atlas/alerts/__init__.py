@@ -1,7 +1,8 @@
 """
 The Alerts page's list: every check reports the problems it sees now (sync) or a one-off finding (event);
-the store opens new ones, refreshes ongoing ones and resolves the ones that went away. Sending messages
-stays with each check for now; mute, pause and grouping will decide here what gets sent.
+the store opens new ones, refreshes ongoing ones and resolves the ones that went away. Each check still
+writes its own messages, tagged with the problem they are about (Text); before sending, it asks allowed()
+whether that problem or its device is muted, or alerts are paused. The page always shows everything.
 """
 
 from datetime import timedelta
@@ -11,10 +12,19 @@ from sqlalchemy.orm import Session
 
 from atlas.database import initialize_database
 from atlas.database.engine import engine
-from atlas.database.models import AlertRecord
+from atlas.database.models import AlertQuietRecord, AlertRecord
 
 EVENT_DAYS = 7          # a one-off finding stays under "Needs action" this long
 KEEP_DAYS = 30          # resolved alerts are kept this long
+
+
+class Text(str):
+    """An alert message that knows which problem it is about: key as in sync() ("lan:rogue_dhcp:192.0.2.9")."""
+
+    def __new__(cls, text, key, device_id=None):
+        self = super().__new__(cls, text)
+        self.key, self.device_id = key, device_id
+        return self
 
 
 def issue(kind, subject, title, detail="", level="problem", href="", device_id=None):
@@ -27,7 +37,8 @@ def issue(kind, subject, title, detail="", level="problem", href="", device_id=N
 def _row(record):
 
     return {name: getattr(record, name) for name in ("id", "key", "source", "level", "title", "detail", "href",
-                                                     "device_id", "event", "opened_at", "seen_at", "resolved_at")}
+                                                     "device_id", "event", "opened_at", "seen_at", "resolved_at",
+                                                     "acked_at")}
 
 
 class AlertStore:
@@ -64,6 +75,69 @@ class AlertStore:
                                     href=href, device_id=device_id, event=True, opened_at=now, seen_at=now))
             session.commit()
 
+    def ack(self, alert_id, now):
+        """Seen it: an ongoing problem stays listed (marked acknowledged); a one-off finding is done."""
+
+        with Session(self.engine) as session:
+            row = session.get(AlertRecord, alert_id)
+            if row is None:
+                return False
+            row.acked_at = now
+            if row.event and row.resolved_at is None:
+                row.resolved_at = now
+            session.commit()
+        return True
+
+    def mute(self, alert_id, days, now):
+        """No messages about this problem - or its whole device when it has one - for days (0 = always)."""
+
+        with Session(self.engine) as session:
+            row = session.get(AlertRecord, alert_id)
+            if row is None:
+                return False
+            if row.device_id is not None:
+                rule = AlertQuietRecord(device_id=row.device_id, label=f"device: {row.title}")
+            else:
+                rule = AlertQuietRecord(key=row.key, label=row.title)
+            rule.until, rule.created_at = (now + timedelta(days=days)) if days else None, now
+            session.add(rule)
+            session.commit()
+        return True
+
+    def pause(self, hours, now):
+
+        with Session(self.engine) as session:
+            session.execute(delete(AlertQuietRecord).where(AlertQuietRecord.key == "*"))
+            session.add(AlertQuietRecord(key="*", label="all alerts", until=now + timedelta(hours=hours), created_at=now))
+            session.commit()
+
+    def unquiet(self, rule_id=None):
+        """Remove one mute, or (no id) end a pause."""
+
+        with Session(self.engine) as session:
+            where = AlertQuietRecord.id == rule_id if rule_id is not None else AlertQuietRecord.key == "*"
+            session.execute(delete(AlertQuietRecord).where(where))
+            session.commit()
+
+    def quiet(self, now):
+        """Active mutes and pause; expired ones are removed."""
+
+        with Session(self.engine) as session:
+            session.execute(delete(AlertQuietRecord).where(AlertQuietRecord.until.is_not(None),
+                                                           AlertQuietRecord.until <= now))
+            session.commit()
+            return [{"id": r.id, "key": r.key, "device_id": r.device_id, "label": r.label, "until": r.until}
+                    for r in session.scalars(select(AlertQuietRecord).order_by(AlertQuietRecord.created_at))]
+
+    def allowed(self, key, device_id, now):
+        """Should a message about this problem go out now?"""
+
+        for rule in self.quiet(now):
+            if rule["key"] == "*" or (key and rule["key"] == key) or \
+                    (device_id is not None and rule["device_id"] == device_id):
+                return False
+        return True
+
     def listing(self, now, days=7):
         """{"open": [...], "watch": [...], "resolved": [...]} - newest first; old events and rows tidied."""
 
@@ -77,7 +151,11 @@ class AlertStore:
             rows = [_row(r) for r in session.scalars(select(AlertRecord).order_by(AlertRecord.opened_at.desc()))]
 
         live = [r for r in rows if r["resolved_at"] is None]
+        live.sort(key=lambda r: r["acked_at"] is not None)          # acknowledged ones sink, order kept
+        quiet = self.quiet(now)
         return {"open": [r for r in live if r["level"] == "problem"],
+                "paused_until": next((q["until"] for q in quiet if q["key"] == "*"), None),
+                "muted": [q for q in quiet if q["key"] != "*"],
                 "watch": [r for r in live if r["level"] != "problem"],
                 "resolved": [r for r in rows if r["resolved_at"] and r["resolved_at"] >= now - timedelta(days=days)]}
 
@@ -87,6 +165,19 @@ def _store(owner):
 
     engine_ = getattr(owner, "engine", None)
     return AlertStore(engine_) if engine_ is not None else None
+
+
+def allowed(owner, text, now=None):
+    """True when a message may go out: Text tagged as muted, or any message while paused, is held.
+    Fails open - a broken alert database must never silence a real problem."""
+
+    try:
+        from datetime import datetime
+        store = _store(owner)
+        return store is None or store.allowed(getattr(text, "key", ""), getattr(text, "device_id", None),
+                                               now or datetime.utcnow())
+    except Exception:
+        return True
 
 
 def report(source, issues, now, owner):

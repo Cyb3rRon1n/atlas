@@ -156,3 +156,34 @@ def test_devices_page_attention_groups_and_ignored():
     assert "Servers (1)" in html and "Computers (1)" in html and "Ignored (1)" in html
     assert html.count("data-row") >= 4 and 'id="filter"' in html
     assert 'data-ask="Which devices are new' in html
+
+
+def test_device_page_shows_wiring_model_and_links_its_front_panel():
+
+    dev = device(1, "core-switch")
+    snapshot = {"nodes": [{"id": "s:core-switch", "name": "core-switch", "kind": "switch", "ip": "192.168.50.1",
+                           "mac": None, "model": "ACME-28 28-Port Gigabit Managed Switch"},
+                          {"id": "h:aa:00:00:00:00:02", "name": "nas", "kind": "host", "ip": "",
+                           "mac": "AA:00:00:00:00:02"}]}
+
+    html = render_device_page(dev, [dev], wiring=snapshot)
+    assert "ACME-28 28-Port Gigabit Managed Switch - " in html and 'href="/cabling#fp-s%3Acore-switch"' in html
+
+    nas = device(2, "nas", sightings=[{"id": 20, "source": "lan", "external_id": "x", "ip": "192.168.50.9",
+                                        "mac": "aa-00-00-00-00-02", "hostname": None, "detail": {},
+                                        "first_seen": None, "last_seen": None}])
+    html = render_device_page(nas, [nas], wiring=snapshot)
+    assert 'href="/cabling"' in html and "where it plugs in" in html          # matched by MAC, no front panel
+
+    assert "Cabling page" not in render_device_page(device(3, "pixel"), [device(3, "pixel")], wiring=snapshot)
+    assert "Cabling page" not in render_device_page(dev, [dev])
+
+
+def test_device_page_matches_the_gateway_by_role():
+
+    router = device(5, "router", sightings=[{"id": 50, "source": "lan", "external_id": "x", "ip": "192.168.50.254",
+                                              "mac": "aa:00:00:00:00:6d", "hostname": None,
+                                              "detail": {"gateway": True}, "first_seen": None, "last_seen": None}])
+    snapshot = {"nodes": [{"id": "u:aa:00:00:00:00:68", "name": "gw", "kind": "gateway", "ip": "",
+                           "mac": "aa:00:00:00:00:68"}]}
+    assert 'href="/cabling#fp-u%3Aaa%3A00%3A00%3A00%3A00%3A68"' in render_device_page(router, [router], wiring=snapshot)

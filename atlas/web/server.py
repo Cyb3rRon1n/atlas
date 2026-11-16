@@ -51,6 +51,17 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 STATIC_FILES = {"cytoscape.min.js", "elk.bundled.js"}
 
 
+def _latest_wiring():
+    """Latest wiring snapshot, or None when the wired map is off or never ran - a device page never fails over it."""
+
+    try:
+        from atlas.wiring.store import WiringStore
+        rows = WiringStore().latest(1)
+        return rows[0]["snapshot"] if rows else None
+    except Exception:
+        return None
+
+
 def same_origin(headers):
     """
     Cross-site request forgery guard for the write routes: Authelia's cookie rides along
@@ -360,7 +371,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                     return
                 ports = (((PostureStore().statuses().get("ports") or {}).get("detail") or {})
                          .get("devices") or {}).get(str(device_id))
-                body = render_device_page(device, devices, ports)
+                body = render_device_page(device, devices, ports, _latest_wiring())
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)
                 self._send(500, "text/plain; charset=utf-8", "Internal error")

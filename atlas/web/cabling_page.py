@@ -268,6 +268,10 @@ DIAGRAM_SCRIPT = r"""
       });
     });
   }
+
+  // A device page links to /cabling#fp-<node>: open that front panel.
+  var linked = location.hash.indexOf("#fp-") === 0 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (linked) { linked.open = true; linked.scrollIntoView(); }
 })();
 </script>
 """

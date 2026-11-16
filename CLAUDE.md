@@ -30,6 +30,8 @@ No linter or formatter is configured. Match the style of the file you are editin
 | `atlas/actions/` | Registry of actions the AI may suggest; each one still asks before it runs |
 | `atlas/notify.py` | Alert fan-out (ntfy, webhooks, email, Signal, Apprise) |
 | `atlas/config/models.py` | Every `atlas.yaml` setting (pydantic); add a section by adding a model |
+| `atlas/config/local.py` | Settings and secrets saved from the web Setup tab (`inventory/`); `atlas.yaml` and `.env` always win |
+| `atlas/web/settings_page.py` | The Setup tab: one card per integration, read-only Test, Save / Turn off |
 
 ## Rules
 

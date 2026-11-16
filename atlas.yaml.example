@@ -14,7 +14,7 @@ proxmox:
   token_value: ''
   verify_ssl: false
 intelligence:
-  provider: anthropic
+  provider: none            # none (default), ollama or anthropic - optional; powers Chat and the daily check-up
   model: claude-opus-5
   ollama_host: http://localhost:11434
 monitoring:

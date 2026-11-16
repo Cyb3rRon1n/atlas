@@ -206,6 +206,7 @@ class WiringConfig(BaseModel):
     switches: list[WiringSwitch] = []
     unifi: WiringUnifi = WiringUnifi()
     cabling_file: str = "cabling.yaml"
+    not_managed: list[str] = []   # addresses/MACs never suggested as "add a login" (Setup's "Don't ask")
 
 
 class SecurityConfig(BaseModel):
@@ -215,6 +216,7 @@ class SecurityConfig(BaseModel):
     dhcp_servers: list[str] = []     # DHCP servers besides the default gateway (Pi-hole, a second router)
     port_watch: bool = True          # atlas ports check: new open ports on LAN devices, this host, the router
     port_timeout: float = 0.5
+    snmp_discovery: bool = True      # SNMPv3 engine discovery (no user, no password) finds switches to suggest
     extra_ports: list[int] = []      # watched besides the ~25 common service ports
     cert_watch: bool = True          # atlas certs check: daily TLS expiry check of public hostnames
     cert_hosts: list[str] = []       # checked besides the hostnames in the Traefik routes

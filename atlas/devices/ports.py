@@ -243,7 +243,7 @@ def _local_ips():
 
 
 def run(settings, store, devices, now, *, read=None, check=_open, listeners=host_listeners, exposure=None,
-        upnp=upnp_mappings, local_ips=_local_ips, send=None):
+        upnp=upnp_mappings, local_ips=_local_ips, send=None, snmp=None):
     """
     One check: devices = InventoryStore().devices(). Probes the ones online now (complete ARP entries
     inside the scan subnets), reads this host's listeners and the router's openings, alerts, saves.
@@ -300,6 +300,12 @@ def run(settings, store, devices, now, *, read=None, check=_open, listeners=host
         elif notify.configured(settings.notify):
             notify.send(settings.notify, text)
     state.update(checked_at=now.isoformat(timespec="minutes"), forwards_source=source, probed=len(online))
+    if config.snmp_discovery:                     # which devices speak SNMPv3 (Setup suggests adding them)
+        from atlas.devices.snmpprobe import discover
+        try:
+            state["snmp"] = (snmp or discover)([d["ip"] for d in online.values()])
+        except OSError:
+            pass
     store.set_status("ports", True, state, now)
 
     return texts, state

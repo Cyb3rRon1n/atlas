@@ -22,6 +22,7 @@ INFRA = ("wan", "gateway", "switch", "ap")
 
 CABLING_STYLE = """
 <style>
+.suggest { margin:0 0 12px; padding:8px 12px; border:1px solid #30363d; border-radius:10px; }
 .cab-head { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px; }
 .cab-head .when { color:var(--muted); font-size:14px; }
 .chip { font-size:12px; padding:2px 9px; border-radius:999px; border:1px solid var(--line); }
@@ -478,11 +479,25 @@ def _health(snapshot):
             '⚡ = port powering a device, dashed outline = port that can supply PoE.</p></section>')
 
 
-def render_cabling_page(latest, changes, enabled, now=None, faceplates=None):
+def suggestion_banner(suggested):
+    """'N devices could show their ports with a login' - links to the Setup tab's Switches card."""
+
+    if not suggested:
+        return ""
+    names = ", ".join(entry["name"] for entry in suggested[:3]) + (" and more" if len(suggested) > 3 else "")
+    count = len(suggested)
+
+    return (f'<p class="suggest">\U0001F511 {count} device{"s" * (count != 1)} on your network could show '
+            f'{"their" if count != 1 else "its"} ports with a login: {_esc(names)}. '
+            '<a href="/settings#switches">Add on the Setup tab \u2192</a></p>')
+
+
+def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, suggested=()):
 
     if not enabled:
-        body = ('<p class="muted">The cabling map is off. Add a <code>wiring:</code> section to atlas.yaml '
-                '(see atlas.yaml.example) and copy cabling.example.yaml to cabling.yaml for patch panels.</p>')
+        body = ('<p class="muted">The cabling map is off. Add a managed switch or a UniFi console on the '
+                '<a href="/settings#switches">Setup tab</a> (or a <code>wiring:</code> section in atlas.yaml), '
+                'and copy cabling.example.yaml to cabling.yaml for patch panels.</p>' + suggestion_banner(suggested))
         return render_page("Cabling", CABLING_STYLE + body, active="cabling")
 
     refresh = '<button class="cab-btn" id="wiring-refresh" type="button">Refresh map</button>'
@@ -532,6 +547,7 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None):
         f'<div class="cab-head">{refresh}<span class="when">Refreshed '
         f'<time datetime="{_esc(taken.isoformat())}Z">{_esc(_ago(taken, now))}</time></span>{"".join(chips)}</div>'
         '<p id="msg"></p>'
+        + suggestion_banner(suggested)
         + (f'<ul class="warn">{warnings}</ul>' if warnings else "")
         + (f'<ul class="notes">{notes}</ul>' if notes else "")
         + '<section id="diagram"><h2>Wired topology</h2>'

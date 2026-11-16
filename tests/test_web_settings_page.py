@@ -250,3 +250,26 @@ def test_proxmox_test_reads_version_and_nodes(env, monkeypatch):
     config = load_config()
     assert config.proxmox.enabled and config.proxmox.token_value == "uuid-secret"
     assert "uuid-secret" not in render_settings_page()
+
+
+def test_network_test_errors_are_plain_words(env, monkeypatch):
+    import atlas.proxmox.client as client
+    from requests.exceptions import ConnectionError as Refused
+
+    from atlas.config.models import WiringSwitch
+    from atlas.wiring.snmp import _failure
+
+    switch = WiringSwitch(name="lab", host="192.0.2.2", priv="des")
+    timeout = type("R", (), {"stderr": "snmpget: Timeout\n"})()
+    assert str(_failure(switch, timeout)).startswith("lab: no answer from 192.0.2.2")
+    assert "(DES) doesn't match" in str(_failure(switch, type("R", (), {"stderr": "Decryption error"})()))
+    assert str(_failure(switch, type("R", (), {"stderr": "odd thing\nmore"})())) == "lab: odd thing"
+
+    def down():
+        raise Refused("HTTPSConnectionPool(host='192.0.2.1', port=8006): Max retries exceeded")
+
+    api = type("A", (), {"version": type("V", (), {"get": staticmethod(down)})()})()
+    monkeypatch.setattr(client, "connect", lambda *a, **k: api)
+    body = {"host": "192.0.2.1", "user": "atlas@pve", "token_name": "t", "token_value": "x"}
+    status, data = handle_post("/api/settings/proxmox/test", body)
+    assert status == 400 and data["error"] == "No answer from Proxmox at 192.0.2.1:8006 - check the host and that it's on."

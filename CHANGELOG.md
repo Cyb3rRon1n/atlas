@@ -3,6 +3,13 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
+## Unreleased
+
+### Changed
+- Clearer errors from the Setup tab's tests and the cabling scan: a switch that doesn't answer, an unknown
+  SNMPv3 user, a wrong passphrase or privacy type, and a Proxmox host that's down or refuses the token are each
+  explained in plain words instead of net-snmp's or the HTTP library's raw message.
+
 ## 0.8.0 - 2026-11-16
 
 ### Added

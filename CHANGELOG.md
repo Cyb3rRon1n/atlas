@@ -5,7 +5,13 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 
 ## Unreleased
 
+## 0.7.0 - 2026-11-15
+
 ### Added
+- **PoE at a glance**: each device's front-panel header on the Cabling page lists the ports that can supply PoE
+  and how many are powering something, e.g. `PoE: Port 4 (1 powering, 9.6 W of 30 W)`.
+- **Device pages link to the wired map**: a switch, gateway or access point shows its model and a link that opens
+  its front panel on the Cabling page; other wired devices link to where they plug in.
 - **Spanning tree, link bundles and VLANs** on the cabling map: a spare cable that spanning tree blocks shows as
   standby (a note, not a warning); cables that all carry traffic are flagged as a loop risk and alerted once; LACP
   bundles draw as one labelled bundle; port tooltips show VLANs, with a VLAN picker when there's more than one. The
@@ -21,14 +27,6 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   `security.dhcp_servers`, on DHCP going silent, and on the gateway's IP answering from a new MAC (ARP spoofing).
   Shown as the LAN tile on the Posture page. The Docker image adds `atlas-dhcp-python`, an interpreter copy
   with only the permission to listen on UDP port 68.
-
-### Changed
-- **Asleep containers:** a container that stopped cleanly (exit code 0, e.g. a game room put to sleep by an idle
-  timer) or has the label `atlas.on-demand=true` is listed as *Asleep* on the home page, not as a problem;
-  `/api/summary` adds `containers_asleep`.
-- Posture forgets a container's destinations and "expected" marks after `posture.retention_days` without traffic.
-
-### Added
 - **Open-port watch** (`atlas ports check`, run by atlas-scan): alerts once when a LAN device, this host or the
   router opens a new port - common service ports by TCP connect, listening sockets, UniFi port forwards / UPnP
   switch, and UPnP IGD mappings on other routers. The first run only learns. Device pages list open ports; the
@@ -39,6 +37,14 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 - **Host health alerts** (`atlas sample`): a sensor near its own temperature limit, memory or disks above 90%,
   crashed or restart-looping containers, and status feeds (e.g. a RAID watchdog) reporting a problem - one alert
   when it starts, one when it clears. Limits under `health:`.
+
+### Changed
+- **Asleep containers:** a container that stopped cleanly (exit code 0, e.g. a game room put to sleep by an idle
+  timer) or has the label `atlas.on-demand=true` is listed as *Asleep* on the home page, not as a problem;
+  `/api/summary` adds `containers_asleep`.
+- Posture forgets a container's destinations and "expected" marks after `posture.retention_days` without traffic.
+- The README shows the cabling map and switch front panels; the long design history moved from `CLAUDE.md`
+  to [Design notes](docs/development/design-notes.md).
 
 ## 0.6.0 - 2026-11-15
 

@@ -1,13 +1,13 @@
 
 import os
 import re
-from pathlib import Path
 import yaml
 
+from atlas.config import local
 from atlas.config.models import AtlasConfig
 
 
-CONFIG_FILE = Path("atlas.yaml")
+CONFIG_FILE = local.CONFIG_FILE
 
 # ${NAME} / ${NAME:-default} - lets a stack keep secrets in its .env and
 # out of atlas.yaml. Only the braced form, so a literal "$" in a value
@@ -45,11 +45,12 @@ def _expand_values(value):
 
 
 def load_config():
+    """atlas.yaml, with settings saved from the web Setup page filling in what it leaves out (atlas.config.local)."""
 
-    if not CONFIG_FILE.exists():
-        return AtlasConfig()
+    local.apply_secrets()
+    user = {}
+    if CONFIG_FILE.exists():
+        with open(CONFIG_FILE, "r") as file:
+            user = yaml.safe_load(file) or {}
 
-    with open(CONFIG_FILE, "r") as file:
-        data = _expand_values(yaml.safe_load(file) or {})
-
-    return AtlasConfig(**data)
+    return AtlasConfig(**_expand_values(local.layered(user, local.read_settings())))

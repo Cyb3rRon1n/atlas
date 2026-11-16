@@ -4,7 +4,7 @@
 
 Atlas itself needs Linux, Python 3.11+, and pip — that's enough for `atlas discover`, `atlas report`, `atlas docker`, `atlas services`, `atlas compose`, and `atlas doctor`, no config file or external services required.
 
-Everything else is an optional integration, gated independently by `atlas.yaml` and checked by `atlas doctor`:
+Everything else is an optional integration, gated independently by `atlas.yaml` (or the web page's **Setup** tab) and checked by `atlas doctor`:
 
 | Integration | Enables | What it actually needs |
 |---|---|---|

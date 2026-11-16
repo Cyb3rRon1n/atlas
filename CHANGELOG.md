@@ -5,6 +5,11 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 
 ## Unreleased
 
+### Fixed
+- The one-line installer (`curl ... | bash`) stopped silently after starting the containers, without printing
+  the address and setup code: `docker compose` read the rest of the piped script as its input. Atlas itself was
+  running fine. The installer now reads the whole script before running anything.
+
 ## 0.7.0 - 2026-11-15
 
 ### Added

@@ -14,6 +14,7 @@ import json
 from datetime import datetime
 
 from atlas.web.render import _esc, render_page
+from atlas.wiring import traffic
 from atlas.wiring.build import IDLE
 from atlas.wiring.faceplate import physical_layout
 
@@ -67,6 +68,9 @@ CABLING_STYLE = """
 .cab-tools { display:flex; gap:8px; align-items:center; margin:8px 0; }
 .cab-tools input { background:#0d1117; color:inherit; border:1px solid var(--line); border-radius:6px; padding:5px 8px; min-width:240px; }
 #changes li { font-size:14px; }
+.spark { vertical-align:middle; margin-right:6px; } .spark polyline { fill:none; stroke:#5aa7f0; stroke-width:1.5; }
+.spark.busy polyline { stroke:#f0a35a; } .spark.hot polyline { stroke:#ff6b6b; }
+.portmap td.rate { white-space:nowrap; color:var(--muted); }
 </style>
 """
 
@@ -80,7 +84,7 @@ DIAGRAM_SCRIPT = r"""
     + ".nm{fill:#e6edf3;font:600 13px system-ui,sans-serif}.sub{fill:#8b98a5;font:11px system-ui,sans-serif}"
     + ".pt{fill:#3a4a5e}.pl{fill:#c9d1d9;font:10px ui-monospace,monospace}"
     + ".edge{fill:none;stroke-width:2.5}.s100{stroke:#8b98a5}.s1g{stroke:#5aa7f0}.s25{stroke:#3ccfb4}.s10g{stroke:#b48cf2}"
-    + ".down{stroke-dasharray:6 4;opacity:.6}.standby{stroke:#8b98a5;stroke-dasharray:2 4;opacity:.7}.bundle{stroke-width:4.5}.el{fill:#e6edf3;font:11px ui-monospace,monospace;paint-order:stroke;"
+    + ".busy{stroke:#f0a35a;stroke-width:4}.hot{stroke:#ff6b6b;stroke-width:5}.down{stroke-dasharray:6 4;opacity:.6}.standby{stroke:#8b98a5;stroke-dasharray:2 4;opacity:.7}.bundle{stroke-width:4.5}.el{fill:#e6edf3;font:11px ui-monospace,monospace;paint-order:stroke;"
     + "stroke:#0b1016;stroke-width:4px;stroke-linejoin:round}"
     + ".fc{fill:#1b2430;stroke:#3a4a5e}.fc.up.s100{fill:#8b98a5}.fc.up.s1g{fill:#5aa7f0}.fc.up.s25{fill:#3ccfb4}"
     + ".fc.up.s10g{fill:#b48cf2}.fc.used{stroke:#fff;stroke-width:1.6}.fc.cage{fill:none;stroke-dasharray:3 2}.fn{fill:#8b98a5;font:10px ui-monospace,monospace;"
@@ -97,6 +101,12 @@ DIAGRAM_SCRIPT = r"""
     return e;
   }
   function speedClass(s) { return s >= 10000 ? "s10g" : s >= 2500 ? "s25" : s >= 1000 ? "s1g" : "s100"; }
+  function rateText(b) {
+    var u = [["Gb/s", 1e9], ["Mb/s", 1e6], ["kb/s", 1e3]];
+    for (var i = 0; i < u.length; i++) { if (b >= u[i][1]) { return (b / u[i][1]).toFixed(1).replace(/\.0$/, "") + " " + u[i][0]; } }
+    return Math.round(b) + " b/s";
+  }
+  function loadClass(l) { return l >= 0.8 ? " hot" : l >= 0.5 ? " busy" : ""; }
   function speedText(s) { return s >= 1000 ? (s / 1000) + "G" : (s ? s + "M" : "?"); }
   function short(text, n) { text = String(text || ""); return text.length > n ? text.slice(0, n - 1) + "…" : text; }
 
@@ -168,7 +178,7 @@ DIAGRAM_SCRIPT = r"""
         if (!s) { return; }
         var pts = [s.startPoint].concat(s.bendPoints || []).concat([s.endPoint]);
         el("polyline", {points: pts.map(function (p) { return p.x + "," + p.y; }).join(" "),
-                        "class": "edge " + speedClass(link.speed) + (link.up ? "" : " down")
+                        "class": "edge " + speedClass(link.speed) + loadClass(link.load || 0) + (link.up ? "" : " down")
                                  + (link.standby ? " standby" : "") + (link.lag ? " bundle" : "")}, edgeLayer);
         // Label each cable on its last leg (the drop into its own device): every device has its own
         // drop, so labels never pile up on the shared horizontal runs.
@@ -176,7 +186,8 @@ DIAGRAM_SCRIPT = r"""
         var stack = (dropCount[link.b] = (dropCount[link.b] || 0) + 1) - 1;   // several cables into one box: stagger
         var text = (link.a_port || "·") + " ⇄ " + (link.b_port || "·") + " · " + speedText(link.speed)
                    + (link.patch ? " · " + link.patch : "") + (link.lag ? " · " + link.lag : "")
-                   + (link.standby && link.up ? " · standby" : "");
+                   + (link.standby && link.up ? " · standby" : "")
+                   + (link.bps >= 1e6 ? " · " + rateText(link.bps) : "");
         el("text", {x: end.x + 6, y: end.y - 12 - stack * 14, "class": "el"}, labelLayer, text);
       });
       (res.children || []).forEach(function (c) {
@@ -301,12 +312,30 @@ def _ago(taken_at, now):
     return f"{hours} h ago" if hours < 48 else f"{hours // 24} days ago"
 
 
+def _spark(points, speed):
+    """A small 24 h graph of a port's busier direction; the title says now and peak in words."""
+
+    if len(points) < 2:
+        return ""
+    values = [max(a, b) for _, a, b in points]
+    top = max(max(values), 1.0)
+    step = 120 / (len(values) - 1)
+    line = " ".join(f"{i * step:.1f},{22 - value / top * 20:.1f}" for i, value in enumerate(values))
+    load = max(values) / (speed * 1e6) if speed else 0
+    tip = (f"now {traffic.text(points[-1][1])} in / {traffic.text(points[-1][2])} out · "
+           f"24 h peak {traffic.text(max(values))}" + (f" ({load:.0%} of the link)" if speed else ""))
+
+    return (f'<svg class="spark{" hot" if load >= traffic.HOT else " busy" if load >= traffic.BUSY else ""}" '
+            f'width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="{_esc(tip)}">'
+            f'<title>{_esc(tip)}</title><polyline points="{line}"/></svg>')
+
+
 def port_rows(snapshot):
     """One row per cable, upstream side first - shared by the table and the CSV."""
 
     names = {node["id"]: node["name"] for node in snapshot["nodes"]}
 
-    return [{"switch": names.get(link["a"], link["a"]), "port": link["a_port"],
+    return [{"switch": names.get(link["a"], link["a"]), "port": link["a_port"], "bps": link.get("bps"),
              "device": names.get(link["b"], link["b"]), "device_port": link["b_port"],
              "speed": link["speed"], "up": link["up"], "via": link["via"],
              "patch": link["patch"] or "", "label": link["label"]}
@@ -492,7 +521,7 @@ def suggestion_banner(suggested):
             '<a href="/settings#switches">Add on the Setup tab \u2192</a></p>')
 
 
-def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, suggested=()):
+def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, suggested=(), history=None):
 
     if not enabled:
         body = ('<p class="muted">The cabling map is off. Add a managed switch or a UniFi console on the '
@@ -526,6 +555,8 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
         f'<tr><td>{_esc(row["switch"])}</td><td>{_esc(row["port"])}</td><td>{_esc(row["device"])}</td>'
         f'<td>{_esc(row["device_port"])}</td><td class="{"" if row["up"] else "down"}">'
         f'{_esc(_speed_text(row["speed"]) if row["up"] else "down")}</td><td>{_esc(row["patch"])}</td>'
+        f'<td class="rate">{_spark((history or {}).get((row["switch"], row["port"]), []), row["speed"])}'
+        f'{_esc(traffic.text(row["bps"])) if row["bps"] is not None else ""}</td>'
         f'<td>{_esc(row["label"])}</td><td>{_esc(row["via"])}</td></tr>'
         for row in port_rows(snapshot))
 
@@ -553,7 +584,7 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
         + '<section id="diagram"><h2>Wired topology</h2>'
         '<div class="legend"><span><i style="background:#8b98a5"></i>100M</span>'
         '<span><i style="background:#5aa7f0"></i>1G</span><span><i style="background:#3ccfb4"></i>2.5G</span>'
-        '<span><i style="background:#b48cf2"></i>10G</span><span>dashed = down</span><span>dotted grey = standby</span>'
+        '<span><i style="background:#b48cf2"></i>10G</span><span>thick orange = over half full, red = over 80%</span><span>dashed = down</span><span>dotted grey = standby</span>'
         '<span>click a box for its ports</span>'
         '<button class="cab-btn ghost" id="wiring-export" type="button">Export SVG</button></div>'
         f'<div class="frame"><svg id="wiring-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>'
@@ -564,7 +595,7 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
         '<input id="portmap-filter" type="search" placeholder="Filter: device, port, label…" aria-label="Filter port map">'
         '<a class="cab-btn ghost" href="/cabling.csv" download>CSV</a></div>'
         '<table class="portmap"><thead><tr><th>Switch</th><th>Port</th><th>Device</th><th>Device port</th>'
-        f'<th>Link</th><th>Patch</th><th>Label</th><th>Source</th></tr></thead><tbody>{rows}</tbody></table></section>'
+        f'<th>Link</th><th>Patch</th><th>Traffic (24 h)</th><th>Label</th><th>Source</th></tr></thead><tbody>{rows}</tbody></table></section>'
         f'<section id="patch"><h2>Patch panels</h2>{panel_html}</section>'
         f'<section id="changes"><h2>Changes since the previous scan</h2>{change_html}</section>'
     )

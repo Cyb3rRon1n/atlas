@@ -76,6 +76,12 @@ CARDS = {
                     Field("token_name", "Token ID", "text", ("proxmox", "token_name"), hint="atlas"),
                     Field("token_value", "Token secret", "secret", ("proxmox", "token_value"), "ATLAS_PROXMOX_TOKEN"),
                     Field("verify_ssl", "Check the host's certificate", "bool", ("proxmox", "verify_ssl"))]),
+    "ups": ("UPS (NUT)", "Alerts on a power cut, a low battery, and when power is back. Atlas reads a NUT server "
+            "(Network UPS Tools): nut-server on the computer the UPS is plugged into, or a Synology, QNAP, Unraid or "
+            "TrueNAS with its network UPS server switched on (allow this machine's address). Read-only, no login.", [
+                Field("host", "UPS server address", "text", ("ups", "host"), hint="192.168.1.20"),
+                Field("port", "Port", "number", ("ups", "port"), hint="3493"),
+                Field("name", "UPS name (blank = every UPS on that server)", "text", ("ups", "name"), hint="ups")]),
 }
 # "What's on your network?" - each tick shows the Setup cards that gear uses. Alert and AI cards always show.
 GEAR = [
@@ -84,9 +90,10 @@ GEAR = [
     ("nas", "NAS", "Synology, QNAP, TrueNAS - over SNMP", ("switches",)),
     ("unifi", "UniFi", "gateway, switches or access points", ("unifi",)),
     ("proxmox", "Proxmox server", "VMs and containers", ("proxmox",)),
+    ("ups", "UPS", "battery backup, read through NUT", ("ups",)),
     ("plain", "Only an internet-provider or store-bought router", "ASUS, Netgear, eero, Fritz!Box, Deco...", ()),
 ]
-HARDWARE_CARDS = ("switches", "unifi", "proxmox")
+HARDWARE_CARDS = ("switches", "unifi", "proxmox", "ups")
 SNMP_GEAR = {"Ubiquiti": "unifi", "Synology": "nas", "QNAP": "nas", "MikroTik": "router"}   # SNMPv3 discovery maker
 
 
@@ -96,6 +103,7 @@ def _detected(config):
     found = {"switch"} if config.wiring.switches else set()
     found |= {"unifi"} if config.wiring.unifi.enabled else set()
     found |= {"proxmox"} if config.proxmox.enabled else set()
+    found |= {"ups"} if config.ups.enabled else set()
     try:
         from atlas.posture.store import PostureStore
         snmp = ((PostureStore().statuses().get("ports") or {}).get("detail") or {}).get("snmp") or {}
@@ -124,7 +132,7 @@ def _gear_html(chosen, detected):
             'under <a href="/uptime">Servers → Uptime</a>.</p></section>')
 
 
-ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "enabled")]}
+ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "enabled")], "ups": [("ups", "enabled")]}
 WIRING_CARDS = ("switches", "unifi")
 
 ACTIONS = re.compile(r"^/api/settings/([a-z]+)/(test|save|off|dismiss)$")
@@ -375,6 +383,18 @@ def _test(card, body):
         config, environ = _candidate(card, body)
     if card in ("switches", "unifi", "proxmox"):
         return _test_network(card, body, config, environ)
+    if card == "ups":
+        from atlas.monitoring.ups import STATES, fetch, summarize
+        if not config.ups.host:
+            return False, "Enter the UPS server address."
+        try:
+            upses = fetch(config.ups.host, config.ups.port, config.ups.timeout, config.ups.name)
+        except OSError as error:
+            return False, (f"No answer from {config.ups.host}:{config.ups.port} - check the address, that the "
+                           f"network UPS server is on and allows this machine ({error}).")
+        return True, "Connected: " + "; ".join(
+            f"{name} {STATES[info['state']]}" + (f", {info['charge']:.0f}% charged" if info["charge"] is not None else "")
+            for name, info in ((name, summarize(v)) for name, v in upses.items())) + "."
     alerts = config.notify
     if card == "ntfy":
         if not (alerts.ntfy.url and alerts.ntfy.topic):
@@ -514,7 +534,7 @@ def _on(card, config):
     return {"ntfy": bool(alerts.ntfy.url and alerts.ntfy.topic), "webhooks": bool(alerts.webhooks),
             "email": bool(alerts.email.host and alerts.email.to),
             "ai": config.intelligence.provider != "none", "switches": bool(config.wiring.switches),
-            "unifi": config.wiring.unifi.enabled, "proxmox": config.proxmox.enabled}[card]
+            "unifi": config.wiring.unifi.enabled, "proxmox": config.proxmox.enabled, "ups": config.ups.enabled}[card]
 
 
 SCRIPT = """
@@ -543,7 +563,7 @@ const showVersion = () => {
 if (snmpVersion) { snmpVersion.addEventListener("change", showVersion); showVersion(); }
 // "What's on your network?": show the hardware cards for what's ticked, save the ticks.
 const gearBoxes = [...document.querySelectorAll("#gear input[type=checkbox]")];
-const hardware = ["switches", "unifi", "proxmox"];
+const hardware = ["switches", "unifi", "proxmox", "ups"];
 const showGear = () => {
   const want = new Set(gearBoxes.filter((box) => box.checked).flatMap((box) => box.dataset.cards.split(" ")));
   for (const card of hardware) {

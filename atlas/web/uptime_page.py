@@ -30,6 +30,7 @@ STYLE = """<style>
 .up-btn { background:#1f6feb; color:#fff; border:0; border-radius:6px; padding:7px 14px; cursor:pointer; font:inherit; }
 .up-btn.ghost { background:transparent; color:inherit; border:1px solid var(--line); padding:4px 10px; font-size:13px; }
 .up-sugg { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; color:var(--muted); font-size:13px; }
+.up-power { margin:.4rem 0; } .up-power .state { margin-right:.4rem; }
 #up-msg { color:var(--red); min-height:1.2em; }
 </style>"""
 
@@ -95,7 +96,30 @@ def _pct(value):
     return "–" if value is None else f"{value:g}%"
 
 
-def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locked=False):
+def _power(power):
+    """The UPS line(s) when the UPS watch is on: state, charge, time left, load."""
+
+    if not power:
+        return ""
+    if power.get("error") and not power.get("upses"):
+        return (f'<p class="up-power"><span class="state failing">UPS</span> Can\'t read the UPS server: '
+                f'{_esc(power["error"])} - <a href="/settings#ups">check Setup</a></p>')
+    rows = []
+    for name, info in (power.get("upses") or {}).items():
+        state, label = {"online": ("up", "On mains"), "battery": ("down", "On battery"),
+                        "low": ("down", "Battery low")}.get(info["state"], ("waiting", info["state"]))
+        facts = [f"{info['charge']:.0f}% charged" if info.get("charge") is not None else "",
+                 f"about {info['runtime_min']} min on battery" if info.get("runtime_min") is not None else "",
+                 f"{info['load']:.0f}% load" if info.get("load") is not None else "",
+                 "asks for a new battery" if info.get("replace") else ""]
+        rows.append(f'<p class="up-power"><span class="state {state}">{label}</span> <b>{_esc(name)}</b>'
+                    f'{" (" + _esc(info["model"]) + ")" if info.get("model") else ""} · '
+                    f'{_esc(" · ".join(filter(None, facts)))}</p>')
+
+    return "<h2>Power</h2>" + "".join(rows)
+
+
+def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locked=False, power=None):
 
     rows = []
     for check in checks:
@@ -138,7 +162,7 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
               'is up when it answers at all (a login page counts); <code>host:port</code> is up when the port accepts '
               f'a connection. After {fail_after} failures in a row it is <strong>down</strong>: you get one alert, and '
               'another when it is back.</p>'
-            + table + add + SCRIPT)
+            + _power(power) + ("<h2>Services</h2>" if power else "") + table + add + SCRIPT)
 
     return render_page("Uptime", body, active="uptime")
 

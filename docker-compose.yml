@@ -82,7 +82,7 @@ services:
       - -c
       - |
         while :; do atlas posture watch; sleep 30; done &
-        while :; do atlas uptime check >/dev/null 2>&1; sleep 60; done &   # no-op until you add a check
+        while :; do atlas uptime check >/dev/null 2>&1; atlas ups check >/dev/null 2>&1; sleep 60; done &   # no-ops until set up
         while :; do
           atlas scan
           atlas lan check >/dev/null 2>&1        # rogue DHCP / gateway ARP spoofing (Posture page)

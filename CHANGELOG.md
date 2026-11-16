@@ -17,6 +17,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   device, for a day, a week or always - it stays listed. *Pause alerts* (1 hour to a day) holds every message
   during maintenance and shows a banner; *Resume now* ends it. Muted items are listed with *Unmute*. Every check
   asks before sending; if the alert list can't be read, alerts are sent as before.
+- **UPS watch** (Setup → UPS): reads a NUT server - nut-server, or a Synology/QNAP/Unraid/TrueNAS network UPS
+  server - once a minute. One alert on a power cut (charge and time left), one when the battery runs low, one when
+  power is back (with how long it lasted). Status shows on Servers → Uptime.
 - **Setup asks what's on your network.** Tick what you have (managed switch, SNMP router/firewall, NAS, UniFi,
   Proxmox, or just an ISP router) and Setup shows only the matching cards; gear atlas already found is ticked for
   you. Nothing is required - atlas works on any network from its own scan.

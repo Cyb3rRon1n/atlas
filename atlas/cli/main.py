@@ -3688,6 +3688,39 @@ app.add_typer(
 )
 
 
+ups_app = typer.Typer(name="ups", help="UPS watch over NUT (Network UPS Tools): power cuts and low battery")
+
+
+@ups_app.command("check")
+def ups_check(json_output: bool = typer.Option(False, "--json", help="Print the result as JSON")):
+    """
+    Reads the NUT server in ups: (host, port 3493) and alerts once on a power cut, once when the battery runs
+    low, and once when power is back. atlas-scan runs it once a minute; it does nothing until ups.enabled.
+    """
+
+    from datetime import datetime
+
+    from atlas.monitoring.ups import STATES, run
+    from atlas.posture.store import PostureStore
+
+    settings = load_config()
+    if not settings.ups.enabled:
+        console.print("UPS watch is off - turn it on in Setup (UPS) or under ups: in atlas.yaml.")
+        return
+    detail = run(settings, PostureStore(), datetime.utcnow())
+    if json_output:
+        print(json.dumps(detail))
+        return
+    if detail["error"]:
+        console.print(f"[red]Can't read the UPS server: {detail['error']}[/red]")
+    for name, info in detail["upses"].items():
+        console.print(f"{name}: {STATES.get(info['state'], info['state'])}, "
+                      f"battery {info['charge'] if info['charge'] is not None else '?'}%")
+
+
+app.add_typer(ups_app)
+
+
 lan_app = typer.Typer(
     name="lan",
     help="LAN watch: rogue DHCP servers and gateway ARP spoofing (web /posture)."

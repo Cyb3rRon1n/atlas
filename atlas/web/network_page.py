@@ -159,7 +159,7 @@ def render_network_page(topology, routes, graph):
 
     if not topology:
         body = '<p class="muted">No network snapshot yet - atlas-scan refreshes it every 15 minutes (<code>atlas map</code>).</p>'
-        return render_page("Network", body, active="lan")
+        return render_page("Services", body, active="lan")
 
     lanes = classify(topology, routes)
     grid = lambda lane, items=None: '<div class="svc">' + "".join(_service(i, lane) for i in (lanes[lane] if items is None else items)) + "</div>"
@@ -202,4 +202,4 @@ def render_network_page(topology, routes, graph):
         + '<section class="nlane"><h2>\U0001F50C Devices by connection</h2>' + _tree(graph) + "</section>"
     )
 
-    return render_page("Network", body, active="lan")
+    return render_page("Services", body, active="lan")

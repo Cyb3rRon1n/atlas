@@ -277,7 +277,7 @@ Problems turn the port red on the faceplate, appear in **Cable health** and send
 
 ## `security`
 
-LAN watch: `atlas lan check` looks for a second DHCP server and for something impersonating your router. atlas-scan runs it after every device scan, and the result shows as the **LAN** tile on the Posture page.
+LAN watch: `atlas lan check` looks for a second DHCP server and for something impersonating your router. atlas-scan runs it after every device scan, and the result shows as the **LAN** tile on the Security tab (Exposure).
 
 ```yaml
 security:
@@ -314,7 +314,7 @@ Problems send one alert to every `notify:` channel and another when they clear. 
 - **This host:** sockets listening for other machines (loopback-only ones are left out).
 - **The router:** port forwards and the UPnP switch from the UniFi console when `wiring.unifi` is set, and the standard UPnP port-mapping list that most home routers answer (only the default gateway is asked).
 
-The first run learns what is normal and sends nothing. After that every newly open port sends one alert (risky ones such as telnet, SMB, remote desktop or databases say so), a new port forward or UPnP mapping alerts as "opened to the internet", and UPnP being switched on alerts. A port that closes and opens again later doesn't alert twice. Each device's page lists its open ports; the Posture page's **Public exposure** tab shows the router's forwards, UPnP and the latest new ports.
+The first run learns what is normal and sends nothing. After that every newly open port sends one alert (risky ones such as telnet, SMB, remote desktop or databases say so), a new port forward or UPnP mapping alerts as "opened to the internet", and UPnP being switched on alerts. A port that closes and opens again later doesn't alert twice. Each device's page lists its open ports; the Security tab (Exposure)'s **Public exposure** tab shows the router's forwards, UPnP and the latest new ports.
 
 ### Certificate watch
 

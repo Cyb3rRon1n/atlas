@@ -359,4 +359,4 @@ def render_posture_page():
         + POSTURE_SCRIPT
     )
 
-    return render_page("Posture", body, active="posture")
+    return render_page("Exposure", body, active="posture")

@@ -17,6 +17,10 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   device, for a day, a week or always - it stays listed. *Pause alerts* (1 hour to a day) holds every message
   during maintenance and shows a banner; *Resume now* ends it. Muted items are listed with *Unmute*. Every check
   asks before sending; if the alert list can't be read, alerts are sent as before.
+- **Fewer, clearer tabs.** Ten top tabs are now six - *Home, Alerts, Network, Servers, Security, Setup* - each
+  with its pages as sub-tabs: Alerts · Activity (was History); Devices · Triage · Coverage · Cabling; Overview ·
+  Trends (was Hosts); Exposure (was Posture) · Services (was Network) · Visitors (was Access). Every old address
+  still works.
 - **Traffic per port.** The cabling scan now reads each port's byte counters and works out its average traffic
   since the last scan. Busy cables show on the map (thick orange over half full, red over 80%, with the rate on the
   label), and the Port map gains a 24-hour graph per port. Kept a week; no extra polling.

@@ -9,7 +9,7 @@ import json
 from urllib.parse import quote, urlencode
 
 from atlas.devices.store import CONNECTIONS, KINDS, STATES
-from atlas.web.render import ask_chips, _esc, render_page
+from atlas.web.render import section_tabs, ask_chips, _esc, render_page
 
 
 ACTIONS_SCRIPT = """
@@ -82,8 +82,7 @@ def _status(device):
 
 
 def device_tabs(current):
-    return [("/devices", "Devices", current == "devices"), ("/triage", "Triage", current == "triage"),
-            ("/coverage", "Coverage", current == "coverage")]
+    return section_tabs(current)
 
 
 def _page(title, body, tabs=None):

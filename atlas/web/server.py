@@ -282,8 +282,12 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             from atlas.web.uptime_page import render_uptime_page, suggestions
             settings, now = load_config(), datetime.utcnow()
             checks = settings.uptime.checks
+            power = None
+            if settings.ups.enabled:
+                power = (PostureStore().statuses().get("ups") or {}).get("detail") or {"error": "not read yet"}
             body = render_uptime_page(checks, UptimeStore().summary([c.name for c in checks], now), now,
-                                      settings.uptime.fail_after, suggestions(checks), local.locked(("uptime", "checks")))
+                                      settings.uptime.fail_after, suggestions(checks), local.locked(("uptime", "checks")),
+                                      power)
         elif path == "/trends":
             from datetime import timedelta
             window = (parse_qs(self.path.partition("?")[2]).get("window") or ["24h"])[0]

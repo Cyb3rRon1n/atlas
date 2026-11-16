@@ -72,27 +72,41 @@ def _esc(value):
     return escape(str(value))
 
 
-NAV = [("/", "Home", "home"), ("/alerts", "Alerts", "alerts"), ("/posture", "Posture", "posture"), ("/overview", "Hosts", "hosts"),
-       ("/devices", "Devices", "devices"), ("/map", "Network", "lan"), ("/cabling", "Cabling", "cabling"), ("/access", "Access", "access"),
-       ("/history", "History", "history"), ("/settings", "Setup", "settings")]
+NAV = [("/", "Home", "home"), ("/alerts", "Alerts", "alerts"), ("/devices", "Network", "network"),
+       ("/overview", "Servers", "servers"), ("/posture", "Security", "security"), ("/settings", "Setup", "settings")]
+
+# Each top tab's pages, shown as a strip under the title. A page names itself (render_page active=); the strip and
+# the highlighted top tab follow from this table. Old addresses (/posture, /map, /history...) all still work.
+SECTIONS = {
+    "alerts": [("/alerts", "Alerts", "alerts"), ("/history", "Activity", "history")],
+    "network": [("/devices", "Devices", "devices"), ("/triage", "Triage", "triage"), ("/coverage", "Coverage", "coverage"),
+                ("/cabling", "Cabling", "cabling")],
+    "servers": [("/overview", "Overview", "hosts"), ("/trends", "Trends", "trends")],
+    "security": [("/posture", "Exposure", "posture"), ("/map", "Services", "lan"), ("/access", "Visitors", "access")],
+}
+SECTION_OF = {page: section for section, pages in SECTIONS.items() for _, _, page in pages}
+
+
+def section_tabs(page):
+    """The sub-tab strip for a page: [(href, label, is_current)]."""
+
+    return [(href, label, key == page) for href, label, key in SECTIONS.get(SECTION_OF.get(page), [])]
 
 SIGN_OUT = False    # set by run_server when atlas does its own sign-in (web.auth: builtin)
 
-HOSTS_TABS = (("/overview", "Overview"), ("/trends", "Trends"))
-
-
 def _hosts_tabs(current):
 
-    return [(href, label, href == current) for href, label in HOSTS_TABS]
+    return section_tabs("trends" if current == "/trends" else "hosts")
 
 
 def render_page(title, body_html, active="", tabs=None, drawer=True):
 
     here = ' aria-current="page"'   # built outside the f-strings: backslashes in f-string expressions need 3.12
     links = "".join(
-        f'<a href="{href}"{here if key == active else ""}>{_esc(label)}</a>'
+        f'<a href="{href}"{here if key in (active, SECTION_OF.get(active)) else ""}>{_esc(label)}</a>'
         for href, label, key in NAV
     )
+    tabs = tabs if tabs is not None else section_tabs(active)
     tab_html = ""
     if tabs:
         tab_html = '<nav class="tabs" aria-label="Section">' + "".join(
@@ -326,7 +340,7 @@ def render_history_page(events, today=None):
     if not events:
 
         return render_page(
-            "History",
+            "Activity",
             ask_chips(HISTORY_CHIPS) + "<p class=\"muted\">No historical events found.</p>",
             active="history"
         )
@@ -370,7 +384,7 @@ def render_history_page(events, today=None):
             + sections + script + "<script>document.querySelectorAll('.day').forEach((d) => {"
               " d.hidden = !d.querySelector('.ev:not([hidden])'); });</script>")
 
-    return render_page("History", body, active="history")
+    return render_page("Activity", body, active="history")
 
 def _count(number, word):
 

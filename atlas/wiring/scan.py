@@ -93,7 +93,7 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
             before = set(previous[0]["snapshot"].get("loops") or [])
             for pair in sorted(set(snapshot["loops"]) - before):
                 _send(settings, Text(f"**🔁 Possible network loop: {pair}**\n• more than one cable between them "
-                                     "carries traffic\n\nSee Atlas → Cabling.", f"wiring:loop:{pair}"), send, store)
+                                     "carries traffic\n\nSee Atlas → Network → Cabling.", f"wiring:loop:{pair}"), send, store)
             for pair in sorted(before - set(snapshot["loops"])):
                 _send(settings, Text(f"**✅ Resolved: loop between {pair}**\n• only one cable carries traffic now",
                                      f"wiring:loop:{pair}"), send, store)

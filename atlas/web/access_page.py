@@ -60,7 +60,7 @@ def _xy(v):
 def render_access_page(summary, window, home_ips=(), enabled=True, user_places=()):
 
     if not enabled:
-        return render_page("Access", '<p class="muted">Access tracking is off - set <code>access.enabled: true</code> '
+        return render_page("Visitors", '<p class="muted">Access tracking is off - set <code>access.enabled: true</code> '
                            'in atlas.yaml; atlas-scan then runs <code>atlas access collect</code> every cycle.</p>',
                            active="access")
 
@@ -172,4 +172,4 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
           'City-level, approximate.</p>'
     )
 
-    return render_page("Access", body, active="access")
+    return render_page("Visitors", body, active="access")

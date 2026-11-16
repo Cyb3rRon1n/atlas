@@ -188,7 +188,7 @@ def assess(previous, current):
             ports = "\n".join(f"• {port_label(port)}" for port in new)
             from atlas.alerts import Text
             texts.append(Text(f"**🔓 New open port{'s' * (len(new) > 1)} on {device['name']}** ({device['ip']})\n"
-                              f"{ports}\n\nExpected (a new app or update)? Nothing to do. Otherwise see Atlas → Devices.",
+                              f"{ports}\n\nExpected (a new app or update)? Nothing to do. Otherwise see Atlas → Network.",
                               "", int(device_id) if str(device_id).isdigit() else None))
         devices[device_id] = {"name": device["name"], "ip": device["ip"], "open": device["open"],
                               "known": sorted(known | set(device["open"]))}

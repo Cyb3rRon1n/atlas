@@ -17,18 +17,12 @@
     <circle cx="42" cy="46" r="2.6" fill="#d9ab5c"/>
   </g>
 
-  <text x="432" y="308" font-family="JetBrains Mono" font-weight="700" font-size="96" letter-spacing="-2" fill="#eef1f0">atlas</text>
+  <text x="432" y="308" font-family="JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, DejaVu Sans Mono, monospace" font-weight="700" font-size="96" letter-spacing="-2" fill="#eef1f0">atlas</text>
 
-  <text x="435" y="360" font-family="Inter" font-weight="400" font-size="30" fill="#93a3ac">
-    <tspan x="435" dy="0">AI-powered operations platform</tspan>
-    <tspan x="435" dy="40">for self-hosted infrastructure</tspan>
+  <text x="435" y="360" font-family="Inter, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-weight="400" font-size="30" fill="#93a3ac">
+    <tspan x="435" dy="0">See and secure everything</tspan>
+    <tspan x="435" dy="40">on your home network</tspan>
   </text>
 
-  <text x="70" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#56636b" letter-spacing="0.5">observe</text>
-  <text x="205" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#3a4b58">&#8594;</text>
-  <text x="245" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#56636b" letter-spacing="0.5">understand</text>
-  <text x="450" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#3a4b58">&#8594;</text>
-  <text x="490" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#56636b" letter-spacing="0.5">recommend</text>
-  <text x="690" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#3a4b58">&#8594;</text>
-  <text x="730" y="580" font-family="JetBrains Mono" font-weight="400" font-size="22" fill="#d9ab5c" letter-spacing="0.5">automate with approval</text>
+  <text x="70" y="580" font-family="JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, DejaVu Sans Mono, monospace" font-size="22" fill="#56636b" letter-spacing="0.5" xml:space="preserve">devices<tspan fill="#3a4b58">  ·  </tspan>cabling<tspan fill="#3a4b58">  ·  </tspan>security<tspan fill="#3a4b58">  ·  </tspan>alerts<tspan fill="#3a4b58">  ·  </tspan><tspan fill="#d9ab5c">nothing leaves home</tspan></text>
 </svg>

@@ -6,6 +6,7 @@ data into innerHTML.
 """
 
 import json
+from urllib.parse import quote
 
 from atlas.devices.store import CONNECTIONS, KINDS, STATES
 from atlas.web.render import ask_chips, _esc, render_page
@@ -231,7 +232,40 @@ def _open_ports(ports):
             + f'<p class="muted">Last seen at {_esc(ports["ip"])}. A newly opened port sends an alert.</p></div>')
 
 
-def render_device_page(device, devices, ports=None):
+def wiring_node(device, snapshot):
+    """The wired-map node (latest wiring scan) that is this device - matched by IP or a sighting's MAC - or None."""
+
+    from atlas.wiring import normalize_mac
+
+    macs = {normalize_mac(s.get("mac")) for s in device["sightings"]} - {None}
+    ips = {device["ip"]} | {s.get("ip") for s in device["sightings"]}
+    for node in (snapshot or {}).get("nodes") or []:
+        if node.get("kind") != "unknown" and ((node.get("ip") and node["ip"] in ips)
+                                              or normalize_mac(node.get("mac")) in macs):
+            return node
+    # A gateway's LAN MAC often differs from the base MAC its controller reports: match the LAN scan's default gateway.
+    gateways = [n for n in (snapshot or {}).get("nodes") or [] if n.get("kind") == "gateway"]
+    if len(gateways) == 1 and any(s.get("source") == "lan" and (s.get("detail") or {}).get("gateway") is True
+                                  for s in device["sightings"]):
+        return gateways[0]
+
+    return None
+
+
+def _wired(node):
+
+    if not node:
+        return ""
+    model = f"{_esc(node['model'])} - " if node.get("model") else ""
+
+    box = node["id"].startswith(("s:", "u:"))          # switches/gateways/APs get a front panel there
+    href = f"/cabling#fp-{quote(node['id'])}" if box else "/cabling"
+
+    return (f"<p class=\"muted\">{model}<a href=\"{_esc(href)}\">"
+            f"{'front panel' if box else 'where it plugs in'} on the Cabling page</a></p>")
+
+
+def render_device_page(device, devices, ports=None, wiring=None):
 
     # The form edits the stored value, which is "unknown" whenever the shown one is a guess.
     connection = "unknown" if device["connection_guessed"] else device["connection"]
@@ -290,6 +324,7 @@ def render_device_page(device, devices, ports=None):
     body = (
         f"<p>{_status(device)} <span class=\"muted\">- {_esc(device['ip'] or 'no ip')} - last seen "
         f"{_esc(device['last_seen'] or 'never')}</span></p>"
+        + _wired(wiring_node(device, wiring)) +
         f"<div class=\"card\"><h2>Details</h2>{form}</div>"
         + _open_ports(ports) +
         "<div class=\"card\"><h2>Where atlas saw it</h2><table><thead><tr><th>source</th><th>id</th><th>ip</th>"

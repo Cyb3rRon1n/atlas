@@ -222,6 +222,8 @@ The web page's **Alerts** tab lists everything the checks below find: *Needs act
 - **Mute this alert / this device** (1 day, 7 days or always): no more messages about it - when the alert is about a device, about anything on that device - but it stays listed. *Muted* at the top of the page lists them, each with *Unmute*.
 - **Pause alerts** (1 hour, 4 hours or a day) for maintenance: nothing is sent, problems are still recorded, and a banner shows until *Resume now* or the time runs out.
 
+**One alert per outage.** When a switch or access point on the cabling map goes offline, the offline devices wired behind it fold under it: one alert ("core-switch is offline - 12 devices behind it unreachable") and one message, instead of one per device. Only the topmost offline box counts, so a dead core switch doesn't also report the edge switch behind it. Switches and APs are matched to inventory devices by MAC, then IP; muting the switch mutes its outage. Without a cabling map, every important device alerts on its own as before.
+
 ## `wiring`
 
 The cabling map (web `/cabling`): every switch port, what's plugged into it, patch panels, and cable health. Read-only: atlas reads your switches over SNMPv3 and, optionally, a UniFi console, and never changes their settings. The atlas-scan container refreshes it every cycle; the page's **Refresh map** button does it on demand.

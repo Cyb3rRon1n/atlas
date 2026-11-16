@@ -17,6 +17,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   device, for a day, a week or always - it stays listed. *Pause alerts* (1 hour to a day) holds every message
   during maintenance and shows a banner; *Resume now* ends it. Muted items are listed with *Unmute*. Every check
   asks before sending; if the alert list can't be read, alerts are sent as before.
+- **One alert per outage.** When a switch or AP on the cabling map goes offline, the offline devices behind it fold
+  under it - one alert and one message ("core-switch is offline - 12 devices behind it unreachable") instead of one
+  per device.
 - **Atlas finds switches it could read.** Each port check sends devices the standard SNMPv3 discovery message
   (no user, no password) and reads the LLDP capability flags the mapped switches already collect. Devices that
   look like managed switches or routers are suggested on the Cabling page, on their device page and under

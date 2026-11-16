@@ -57,7 +57,8 @@ def parse_unifi(devices, clients):
                            "counters": {"in_errors": port.get("rx_errors"), "out_errors": port.get("tx_errors"),
                                         "fcs": None, "align": None, "late": None, "packets": port.get("rx_packets"),
                                         "duplex": {True: "full", False: "half"}.get(port.get("full_duplex"), "unknown"),
-                                        "last_change": None}}
+                                        "last_change": None, "in_bytes": port.get("rx_bytes"),
+                                        "out_bytes": port.get("tx_bytes")}}
             if port.get("port_poe"):
                 watts = _float(port.get("poe_power"))
                 ports[name]["poe"] = {"delivering": bool(port.get("poe_enable")) and (watts or 0) > 0,

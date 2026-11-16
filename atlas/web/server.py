@@ -315,10 +315,11 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 from atlas.wiring.cabling import load_cabling
                 wiring = load_config().wiring
                 # cabling.yaml is read on every view, so a faceplate/label edit shows without a rescan
-                from atlas.wiring import suggest
+                from atlas.wiring import suggest, traffic
                 body = render_cabling_page(rows[0] if rows else None, changes, wiring.enabled,
                                            faceplates=load_cabling(wiring.cabling_file)["faceplates"],
-                                           suggested=suggest.current())
+                                           suggested=suggest.current(),
+                                           history=traffic.history(WiringStore().engine))
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)
                 self._send(500, "text/plain; charset=utf-8", "Internal error")

@@ -17,6 +17,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   device, for a day, a week or always - it stays listed. *Pause alerts* (1 hour to a day) holds every message
   during maintenance and shows a banner; *Resume now* ends it. Muted items are listed with *Unmute*. Every check
   asks before sending; if the alert list can't be read, alerts are sent as before.
+- **Traffic per port.** The cabling scan now reads each port's byte counters and works out its average traffic
+  since the last scan. Busy cables show on the map (thick orange over half full, red over 80%, with the rate on the
+  label), and the Port map gains a 24-hour graph per port. Kept a week; no extra polling.
 - **One alert per outage.** When a switch or AP on the cabling map goes offline, the offline devices behind it fold
   under it - one alert and one message ("core-switch is offline - 12 devices behind it unreachable") instead of one
   per device.

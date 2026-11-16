@@ -312,6 +312,19 @@ class AccessPlaceRecord(Base):
     alerted: Mapped[bool] = mapped_column(default=False)
 
 
+class PortTrafficRecord(Base):
+    """Average traffic on one switch port between two wiring scans (bits per second), kept a week for graphs."""
+
+    __tablename__ = "port_traffic"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    taken_at: Mapped[datetime] = mapped_column(index=True)
+    device: Mapped[str]
+    port: Mapped[str]
+    in_bps: Mapped[float]
+    out_bps: Mapped[float]
+
+
 class WiringSnapshotRecord(Base):
     """One wired-map scan (atlas wiring scan): the built snapshot + raw per-source input, as JSON text."""
 

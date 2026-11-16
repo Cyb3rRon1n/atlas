@@ -117,7 +117,7 @@ COUNTER_WALKS = {
 def test_parse_switch_reads_health_counters():
     counters = parse_switch({**WALKS, **COUNTER_WALKS})["ports"]["gi1"]["counters"]
     assert counters == {"in_errors": 7, "out_errors": 0, "fcs": 5, "align": 2, "late": 0,
-                        "packets": 123456, "duplex": "full", "last_change": 4242}
+                        "packets": 123456, "duplex": "full", "last_change": 4242, "in_bytes": None, "out_bytes": None}
 
 
 def test_missing_counter_table_does_not_fail_the_walk():

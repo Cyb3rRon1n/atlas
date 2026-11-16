@@ -7,7 +7,7 @@ guests). Plain inline SVG, no dependencies. Pure renderer.
 
 from datetime import timedelta
 
-from atlas.web.render import _esc, ask_chips, render_page
+from atlas.web.render import _esc, ask_chips, render_page, section_tabs
 
 WINDOWS = {"24h": 1, "7d": 7, "30d": 30}
 MAX_POINTS = 240
@@ -112,7 +112,7 @@ def render_trends_page(samples, scans, window, now, host_name="this host", node_
 
     since = now - timedelta(days=WINDOWS[window])
     win = "".join(f'<a href="/trends?window={w}"{" aria-current=page" if w == window else ""}>{w}</a>' for w in WINDOWS)
-    tabs = [("/overview", "Overview", False), ("/trends", "Trends", True)]
+    tabs = section_tabs("trends")
     s = lambda key: [(t, p.get(key)) for t, p in samples]
 
     host = (f'<section class="tcard"><h2>{_esc(host_name)}</h2><div class="tgrid">'

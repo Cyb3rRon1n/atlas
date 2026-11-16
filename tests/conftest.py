@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 import atlas.devices.store as devices_store_module
 import atlas.knowledge.queries as queries_module
 import atlas.knowledge.store as store_module
+import atlas.monitoring.uptime as uptime_module
 import atlas.posture.store as posture_store_module
 import atlas.wiring.store as wiring_store_module
 from atlas.database.models import Base
@@ -47,6 +48,7 @@ def temp_db(tmp_path, monkeypatch):
     monkeypatch.setattr(posture_store_module, "engine", engine)
     monkeypatch.setattr(wiring_store_module, "engine", engine)
     monkeypatch.setattr(alerts_module, "engine", engine)
+    monkeypatch.setattr(uptime_module, "engine", engine)
 
     yield engine
 

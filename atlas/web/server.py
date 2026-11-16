@@ -276,6 +276,14 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             body = render_alerts_page(AlertStore().listing(now), now)
         elif path == "/history":
             body = render_history_page(query.recent_events(300))
+        elif path == "/uptime":
+            from atlas.config import local
+            from atlas.monitoring.uptime import UptimeStore
+            from atlas.web.uptime_page import render_uptime_page, suggestions
+            settings, now = load_config(), datetime.utcnow()
+            checks = settings.uptime.checks
+            body = render_uptime_page(checks, UptimeStore().summary([c.name for c in checks], now), now,
+                                      settings.uptime.fail_after, suggestions(checks), local.locked(("uptime", "checks")))
         elif path == "/trends":
             from datetime import timedelta
             window = (parse_qs(self.path.partition("?")[2]).get("window") or ["24h"])[0]

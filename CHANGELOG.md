@@ -5,6 +5,10 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 
 ## Unreleased
 
+### Changed
+- New description everywhere: atlas is a self-hosted watchdog for your home network (devices, cabling, security,
+  alerts), not an "AI operations platform". New banner, docs home page and package description to match.
+
 ### Fixed
 - The one-line installer (`curl ... | bash`) stopped silently after starting the containers, without printing
   the address and setup code: `docker compose` read the rest of the piped script as its input. Atlas itself was

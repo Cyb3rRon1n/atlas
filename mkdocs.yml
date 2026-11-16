@@ -1,5 +1,5 @@
 site_name: Atlas
-site_description: AI-powered operations platform for self-hosted infrastructure.
+site_description: "Self-hosted watchdog for your home network: every device, every cable, every change. Alerts included, cloud not required."
 repo_url: https://github.com/Cyb3rRon1n/atlas
 repo_name: Cyb3rRon1n/atlas
 edit_uri: edit/main/docs/

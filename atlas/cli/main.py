@@ -53,7 +53,7 @@ from atlas import __version__
 
 app = typer.Typer(
     name="atlas",
-    help="AI-powered operations platform for self-hosted infrastructure."
+    help="Self-hosted watchdog for your home network: devices, cabling, security and alerts."
 )
 
 console = Console()

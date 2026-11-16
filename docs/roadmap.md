@@ -2,7 +2,7 @@
 
 ## Next: more of the hardware people own
 
-See [Supported hardware](hardware.md#coming-next) for the ordered list: UPS (NUT), device identification
+See [Supported hardware](hardware.md#coming-next) for the ordered list: device identification
 without logins (MAC maker, mDNS, UPnP), internet health history, Pi-hole / AdGuard Home, router DHCP leases and
 Wi-Fi clients (OPNsense, OpenWrt, MikroTik, Fritz!Box), NAS disk health, Home Assistant, Omada and Unraid.
 

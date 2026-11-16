@@ -244,6 +244,15 @@ class UptimeConfig(BaseModel):
     fail_after: int = 2                 # failures in a row before a check counts as down (1 a minute)
 
 
+class UpsConfig(BaseModel):
+    # A NUT server (Network UPS Tools): nut-server on Linux, or a Synology/QNAP/Unraid/TrueNAS "network UPS server".
+    enabled: bool = False
+    host: str = ""
+    port: int = 3493
+    name: str = ""          # blank = every UPS the server lists
+    timeout: float = 5.0
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -265,3 +274,4 @@ class AtlasConfig(BaseModel):
     security: SecurityConfig = SecurityConfig()
     wiring: WiringConfig = WiringConfig()
     uptime: UptimeConfig = UptimeConfig()
+    ups: UpsConfig = UpsConfig()

@@ -295,6 +295,20 @@ uptime:
 
 A check that fails `fail_after` times in a row is **down**: one alert ("Media server is down"), listed on the Alerts page, and one "back up" message saying how long it was down. Mute or pause it from the Alerts page like any other alert. The page shows each check's response time over 24 hours and its uptime over 24 hours, 7 days and 30 days; results are kept 30 days. Certificates aren't verified here - expiry and trust are the certificate watch's job (`security.cert_watch`). A list set in atlas.yaml wins over the page and makes the page read-only.
 
+## `ups`
+
+Alerts on a power cut, a low battery, and when power is back, read from a NUT server (Network UPS Tools, TCP 3493). The computer the UPS's USB cable goes into usually runs one: `nut-server` on Linux, or the *network UPS server* option on Synology, QNAP, Unraid and TrueNAS (add atlas's address to its allowed list). Set it up on **Setup → UPS** or here. atlas-scan reads it once a minute; only `LIST` commands are sent, so no login is needed.
+
+```yaml
+ups:
+  enabled: true
+  host: 192.168.1.20
+  port: 3493
+  name: ""          # blank = every UPS that server lists (Synology calls its UPS "ups")
+```
+
+The UPS status (charge, time left on battery, load) is shown at the top of **Servers → Uptime**. If the server can't be read, the last known state is kept and the Alerts page shows it under *Watching* - a hiccup reading it never counts as a power change.
+
 ## `security`
 
 LAN watch: `atlas lan check` looks for a second DHCP server and for something impersonating your router. atlas-scan runs it after every device scan, and the result shows as the **LAN** tile on the Security tab (Exposure).

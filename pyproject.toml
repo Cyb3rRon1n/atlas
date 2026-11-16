@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "atlas-homelab"
 version = "0.7.0"
-description = "AI-powered operations platform for self-hosted infrastructure."
+description = "Self-hosted watchdog for your home network: every device, every cable, every change. Alerts included, cloud not required."
 readme = "README.md"
 requires-python = ">=3.11"
 

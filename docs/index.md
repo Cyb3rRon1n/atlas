@@ -1,30 +1,54 @@
 <p align="center">
-  <img src="images/social-preview.svg" alt="Atlas - AI-powered operations platform for self-hosted infrastructure" style="max-width: 100%;">
+  <img src="images/social-preview.svg" alt="Atlas - see and secure everything on your home network" style="max-width: 100%;">
 </p>
 
 # Atlas
 
-**AI-powered operations platform for self-hosted infrastructure.**
+**Know every device on your home network, what changed, and what needs you — without sending anything to the cloud.**
 
-Atlas is an extensible infrastructure intelligence platform designed to discover, understand, and eventually automate self-hosted environments — homelabs, private clouds, and self-managed infrastructure.
+Atlas is a self-hosted watchdog for homelabs. It finds every machine on your LAN without installing anything on
+them, maps how they are cabled together down to the switch port, watches your Docker containers and Proxmox
+guests, checks your network's security, and alerts you when something new shows up or something important goes
+quiet. An AI model is optional: run one locally with Ollama and ask questions in plain language.
 
-Atlas is guided by one principle:
+!!! quote "Watch everything. Change nothing without asking."
+    Atlas observes and explains. Restarting a container or a VM is only ever suggested, and every action asks you
+    first. There is no autonomous mode and no bypass flag.
 
-!!! quote "Observe first. Understand second. Recommend third. Automate with approval."
-    Atlas should never blindly modify infrastructure. It gathers information, builds context, explains its findings, and requires approval before anything destructive.
+## What Atlas does
 
-## What Atlas does today
+- **Device inventory**: every device on the LAN, found from ARP, SNMP and LLDP. New ones wait for you to name them;
+  important ones alert you when they drop off.
+- **Cabling map**: a wired view from the internet down to every switch port — link speeds, PoE, spanning tree,
+  link bundles, VLANs and your patch panels — read over SNMP and (optionally) your UniFi console.
+- **Security watch**: new open ports on LAN devices, a rogue DHCP server, ARP spoofing of your gateway, expiring
+  TLS certificates, what reaches the internet and what the internet can reach, and whether your torrent client is
+  still behind its VPN.
+- **Health**: cable errors, temperatures near their limit, full disks, crashed or restart-looping containers.
+- **Alerts where you already look**: ntfy, Discord, Slack, email, any webhook, Signal, or 100+ services through
+  Apprise. One alert when a problem starts, one when it clears.
+- **Containers and VMs**: Docker, Proxmox and libvirt — what's running, what's unhealthy, and restart, stop or
+  resize when you approve it.
+- **Chat with your homelab** (optional): answers come from live state, logs and your own notes, using Ollama on
+  your own hardware or Claude.
 
-- **Discovers** your hardware, OS, storage, network, Docker containers, Compose stacks, and Proxmox cluster (nodes, VMs, and containers)
-- **Remembers** what it finds — every discovery run and event is persisted to a local knowledge store, including host and per-container resource-usage history you can trend over time (`atlas trends`)
-- **Analyzes** that knowledge with an AI provider (Anthropic Claude or a self-hosted Ollama model) and returns a plain-language summary plus concrete recommendations — either as a single-shot report (`atlas analyze`) or an interactive conversation (`atlas chat`) that can call back into live state mid-request
-- **Monitors** an existing Prometheus for host and per-container metrics, flags anything over a configurable threshold, and reports what changed since the last scan
-- **Acts**, when you say so — restart, stop, or resize a Docker container; restart a Proxmox guest — always showing current state and asking for confirmation first, including for a multi-step plan when a fix genuinely needs an ordered sequence of steps
-- **Extends** via a plugin architecture and an internal event bus, so new capabilities don't require rewriting the core
-
-See [Architecture](architecture/index.md) for how these pieces fit together, or jump straight to [Getting Started](getting-started/index.md).
+Start with [Getting Started](getting-started/index.md), or see [Architecture](architecture/index.md) for how the
+pieces fit together.
 
 ## See it in action
+
+<p align="center">
+  <img src="images/screenshots/cabling-map.png" alt="Cabling map: internet, gateway, a 28-port switch and the hosts on each port" style="max-width: 100%; width: 900px;"><br>
+  <img src="images/screenshots/cabling-ports.png" alt="Switch front panels with a standby backup cable and a PoE-powered access point" style="max-width: 100%; width: 900px;"><br>
+  <sub>The Cabling page, shown with example data.</sub>
+</p>
+
+<p align="center">
+  <img src="images/screenshots/devices.png" alt="Devices page" style="max-width: 100%; width: 900px;"><br>
+  <sub>The Devices page, shown with example data.</sub>
+</p>
+
+### From the terminal
 
 Representative output, not a literal capture — field names and formatting match real commands; hostnames, containers, and figures are illustrative.
 

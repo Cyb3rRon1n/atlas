@@ -32,6 +32,7 @@ nav:
   - Architecture: architecture/index.md
   - CLI Reference: cli-reference.md
   - Configuration: configuration.md
+  - Supported hardware: hardware.md
   - Deployment: deployment/index.md
   - Service Catalog: service-catalog.md
   - Roadmap: roadmap.md

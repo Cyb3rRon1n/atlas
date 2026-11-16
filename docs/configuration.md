@@ -235,6 +235,9 @@ wiring:
     - name: core-switch          # secrets in .env: ATLAS_SNMP_CORE_SWITCH_AUTH / _PRIV
       host: 192.168.1.2
       priv: aes                  # des only for old gear that offers nothing else
+    - name: nas                  # SNMPv2c: read-only community in .env as ATLAS_SNMP_NAS_COMMUNITY
+      host: 192.168.1.20
+      version: 2c
   unifi:
     enabled: true                # a local View Only account: ATLAS_UNIFI_USER / ATLAS_UNIFI_PASS in .env
     url: https://192.168.1.1
@@ -242,7 +245,7 @@ wiring:
 
 | Field | Default | Description |
 |---|---|---|
-| `switches` | `[]` | Managed switches that speak the standard MIBs (IF-MIB, LLDP-MIB, BRIDGE-MIB). SNMPv3 authPriv only; `snmp_user` defaults to `atlas` |
+| `switches` | `[]` | Switches, routers and NAS boxes that speak the standard MIBs (IF-MIB, LLDP-MIB, BRIDGE-MIB). `version: "3"` (default, authPriv; `snmp_user` defaults to `atlas`) or `"2c"` with a read-only community - unencrypted, so only when the device offers nothing else. See [Supported hardware](hardware.md) |
 | `unifi` | off | Adds UniFi gateway/AP/switch ports and their uplinks, which SNMP can't see |
 | `cabling_file` | `cabling.yaml` | Patch panels and wall jacks, by hand (see `cabling.example.yaml`) |
 | `not_managed` | `[]` | Addresses never suggested for a login (the Setup tab's *Don't ask* adds them) |

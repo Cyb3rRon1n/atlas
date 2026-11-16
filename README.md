@@ -59,7 +59,7 @@ No Docker? `pip install` works as well; see [Getting started](https://cyb3rron1n
 1. **Open the page** and set your password. The Home page shows a *Getting started* list until the next two steps are done.
 2. **Name your devices**: Devices → *Needs attention*. Give each new device a name and press Keep, or Ignore it.
 3. **Turn on alerts** on the **Setup** tab: ntfy (the quickest), Discord, Slack, any webhook or email. *Send test* checks it before you save.
-4. **Add what you have**, also on the Setup tab: your switches (SNMPv3), a UniFi console, Proxmox and an AI model (Ollama or Claude). Each card has a read-only *Test* button.
+4. **Add what you have**, also on the Setup tab: tick what's on your network and it shows the matching cards - switches, routers and NAS boxes over SNMP (v3 or v2c), a UniFi console, Proxmox, and an AI model (Ollama or Claude). Each card has a read-only *Test* button. Nothing is required: [Supported hardware](https://cyb3rron1n.github.io/atlas/hardware/) lists what each adds.
 
 Prefer files? Everything on the Setup tab can also go in `~/atlas/atlas.yaml`, and anything set there wins; [Configuration](https://cyb3rron1n.github.io/atlas/configuration/) has copy-paste examples. Signal and Apprise alerts are set there.
 

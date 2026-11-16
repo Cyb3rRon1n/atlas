@@ -183,9 +183,11 @@ class VpnWatchConfig(BaseModel):
 
 
 class WiringSwitch(BaseModel):
-    # SNMPv3 authPriv only; passphrases come from env ATLAS_SNMP_<NAME>_AUTH / _PRIV.
+    # SNMPv3 authPriv: passphrases from env ATLAS_SNMP_<NAME>_AUTH / _PRIV. SNMPv2c (cheaper switches, many
+    # routers and NAS boxes): a read-only community from ATLAS_SNMP_<NAME>_COMMUNITY - sent in clear text.
     name: str
     host: str
+    version: Literal["3", "2c"] = "3"
     snmp_user: str = "atlas"
     priv: Literal["aes", "des"] = "aes"   # des: older gear (e.g. Cisco Sx300) offers nothing else
 

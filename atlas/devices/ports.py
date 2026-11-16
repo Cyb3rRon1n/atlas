@@ -292,6 +292,10 @@ def run(settings, store, devices, now, *, read=None, check=_open, listeners=host
 
     previous = ((store.statuses().get("ports") or {}).get("detail")) or {}
     texts, state = assess(previous, current)
+    from atlas.alerts import report_event
+    for text in texts:
+        title, _, rest = text.partition("\n")
+        report_event("ports", title.strip("*").split(" ", 1)[1], now, store, detail=rest.strip(), href="/devices")
     for entry in state["recent"][:len(texts)]:
         entry["at"] = now.isoformat(timespec="minutes")
     for text in texts:

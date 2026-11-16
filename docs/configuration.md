@@ -214,6 +214,10 @@ How often the `atlas-scan` container loops `atlas scan; atlas discover; atlas pr
 
 `atlas scan` never pings and never opens a raw socket: it TCP-connects to port 9 on every address in scope, which makes the kernel ARP-resolve each live host, then reads `/proc/net/arp` for the resulting IP-to-MAC table (only complete entries count — an address nobody answered for isn't in it) and does a best-effort reverse DNS lookup for a hostname. This needs host networking (`network_mode: host`) but no extra capabilities. A scan refuses to run over more than 1024 addresses at once — narrow `subnets` if your LAN is bigger than that.
 
+## Alerts page
+
+The web page's **Alerts** tab lists everything the checks below find: *Needs action* (problems: these also go to every `notify:` channel), *Watching* (shown on the page only) and *Resolved in the last 7 days*. Each item links to the page where you can investigate it, and resolves by itself once the check no longer sees it. One-off findings, such as a newly opened port, stay under *Needs action* for 7 days. Resolved items are kept for 30 days.
+
 ## `wiring`
 
 The cabling map (web `/cabling`): every switch port, what's plugged into it, patch panels, and cable health. Read-only: atlas reads your switches over SNMPv3 and, optionally, a UniFi console, and never changes their settings. The atlas-scan container refreshes it every cycle; the page's **Refresh map** button does it on demand.

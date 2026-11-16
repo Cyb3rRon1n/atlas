@@ -323,7 +323,7 @@ def _card(href, title, state, inner, wide=False, flagged=False):
             f"{inner}</a>")
 
 
-def attention_items(posture, hosts, storage, access_reviews=()):
+def attention_items(posture, hosts, storage, access_reviews=(), open_alerts=()):
     """
     One plain-words line per problem behind the verdict: (card, what, why, href, action).
     """
@@ -345,6 +345,13 @@ def attention_items(posture, hosts, storage, access_reviews=()):
     for row in storage["rows"]:
         if row["warn"]:
             items.append(("storage", "Storage", f"{row['name']}: {row['detail']}", "/overview", "Details"))
+
+    covered = {"lan", "host"}        # already listed above through posture / hosts
+    others = [alert for alert in open_alerts if alert["source"] not in covered]
+    if others:
+        first = others[0]["title"]
+        more = f" and {len(others) - 1} more" if len(others) > 1 else ""
+        items.append(("alerts", "Alerts", f"{first}{more}", "/alerts", "Review"))
 
     for place in access_reviews:
         items.append(("access", "Sign-in", f"{place['user']} signed in from a new place: {place['label']}", "/access", "Review"))
@@ -449,7 +456,7 @@ def _checklist(steps):
 
 
 def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=(),
-                     steps=None):
+                     steps=None, open_alerts=()):
     """
     posture: render._posture_block() output or None; hosts: build_hosts()
     output; events: interesting_events() pairs; storage: build_storage()
@@ -458,7 +465,7 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
     """
 
     storage = storage or {"rows": [], "state": "unknown"}
-    items = attention_items(posture, hosts, storage, access_reviews)
+    items = attention_items(posture, hosts, storage, access_reviews, open_alerts)
     flagged = {card for card, *_ in items}
     verdict = ('<p class="verdict ok">\u2713 All good</p>' if not items else
                '<section class="attention" aria-label="Needs attention"><h2>Needs attention</h2><ul>' + "".join(

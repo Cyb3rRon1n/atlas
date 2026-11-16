@@ -110,6 +110,9 @@ def run(settings, store, health, containers, now, send=None):
 
     previous = ((store.statuses().get("host") or {}).get("detail")) or {}
     issues, state = assess(health, containers, settings.health, previous)
+    from atlas.alerts import issue, report
+    report("host", [issue(i["kind"], i["subject"], i["reason"], i["detail"], href="/")
+                    for i in issues] if settings.health.alerts else [], now, store)
     if settings.health.alerts:
         for text in alerts(previous.get("issues"), issues):
             if send:

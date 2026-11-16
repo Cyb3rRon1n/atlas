@@ -321,3 +321,22 @@ class WiringSnapshotRecord(Base):
     taken_at: Mapped[datetime] = mapped_column(index=True)
     data: Mapped[str]      # {"snapshot": ..., "raw": ...} - raw keeps a failed source's last good input
     errors: Mapped[str]    # per-source status {"name": {"ok", "error", "stale", "note"}}
+
+
+class AlertRecord(Base):
+    """One problem a check found (the Alerts page): open until the check stops seeing it, then resolved."""
+
+    __tablename__ = "alerts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(index=True)            # source:kind:subject - one open row per key
+    source: Mapped[str]
+    level: Mapped[str]                                      # problem (alerts are sent) or watch (page only)
+    title: Mapped[str]
+    detail: Mapped[str] = mapped_column(default="")
+    href: Mapped[str] = mapped_column(default="")
+    device_id: Mapped[int | None] = mapped_column(default=None)
+    event: Mapped[bool] = mapped_column(default=False)      # a one-off (a port opened): resolves by itself later
+    opened_at: Mapped[datetime]
+    seen_at: Mapped[datetime]
+    resolved_at: Mapped[datetime | None] = mapped_column(default=None, index=True)

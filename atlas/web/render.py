@@ -72,7 +72,7 @@ def _esc(value):
     return escape(str(value))
 
 
-NAV = [("/", "Home", "home"), ("/posture", "Posture", "posture"), ("/overview", "Hosts", "hosts"),
+NAV = [("/", "Home", "home"), ("/alerts", "Alerts", "alerts"), ("/posture", "Posture", "posture"), ("/overview", "Hosts", "hosts"),
        ("/devices", "Devices", "devices"), ("/map", "Network", "lan"), ("/cabling", "Cabling", "cabling"), ("/access", "Access", "access"),
        ("/history", "History", "history"), ("/settings", "Setup", "settings")]
 

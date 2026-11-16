@@ -127,6 +127,17 @@ def run(settings, store, now, *, get=fetch, send=None, force=False):
     results = {host: get(host, timeout=config.cert_timeout)
                for host in hosts(store.latest_routes(), config.cert_hosts)}
     texts, entries = assess(previous.get("hosts"), results, utc, config.cert_warn_days, config.cert_urgent_days)
+    from atlas.alerts import issue, report
+    found = []
+    for host, entry in entries.items():
+        if entry["level"] in ALERTING:
+            title = _text(host, entry).split("\n", 1)[0].strip("*")
+            found.append(issue("cert", host, title.split(" ", 1)[1], entry["error"] or f"expires {entry['expires'][:10]}",
+                               href="/posture"))
+        elif entry["level"] == "unreachable":
+            found.append(issue("cert", host, f"Couldn't check the certificate for {host}", entry["error"],
+                               "watch", "/posture"))
+    report("certs", found, now, store)
     for text in texts:
         if send:
             send(text)

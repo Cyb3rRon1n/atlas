@@ -86,6 +86,16 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
             for pair in sorted(before - set(snapshot["loops"])):
                 _send(settings, f"**✅ Resolved: loop between {pair}**\n• only one cable carries traffic now", send)
         taken_at = now or datetime.utcnow()
+        from atlas.alerts import issue, report
+        found = [issue(f"cable:{i['kind']}", f"{i['device']}:{i['port']}", f"{i['reason']}: {i['device']} {i['port']}",
+                       i["detail"], "problem" if i["level"] == "bad" else "watch", "/cabling")
+                 for i in snapshot["health"]]
+        found += [issue("loop", pair, f"Possible network loop: {pair}",
+                        "more than one cable between them carries traffic", href="/cabling")
+                  for pair in snapshot["loops"]]
+        found += [issue("source", name, f"Can't read {name}", source["error"], "watch", "/cabling")
+                  for name, source in sources.items() if not source["ok"]]
+        report("wiring", found, taken_at, store)
         store.save(snapshot, raw, sources, taken_at, keep=config.keep_snapshots)
 
         return {"taken_at": taken_at, "snapshot": snapshot, "sources": sources}

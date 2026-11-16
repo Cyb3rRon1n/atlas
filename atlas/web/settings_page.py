@@ -287,12 +287,25 @@ def _test_network(card, body, config, environ):
     proxmox = config.proxmox
     if not (proxmox.host and proxmox.user and proxmox.token_name and proxmox.token_value):
         return False, "Enter the host, user, token ID and token secret."
+    from proxmoxer.core import AuthenticationError, ResourceException
+    from requests.exceptions import RequestException
+
     api = connect(proxmox.host, proxmox.user, token_name=proxmox.token_name, token_value=proxmox.token_value,
                   verify_ssl=proxmox.verify_ssl)
     if api is None:
         return False, "Couldn't set up the Proxmox connection - check the host."
-    version = api.version.get().get("version", "?")
-    nodes = api.nodes.get()
+    try:
+        version = api.version.get().get("version", "?")
+        nodes = api.nodes.get()
+    except (AuthenticationError, ResourceException) as error:
+        if getattr(error, "status_code", 401) in (401, 403):
+            return False, "Proxmox refused the token - check the user, token ID and secret, and that the token " \
+                          "has the PVEAuditor role."
+        return False, f"Proxmox answered with an error: {error}"
+    except RequestException as error:
+        if "SSL" in type(error).__name__ or "certificate" in str(error).lower():
+            return False, f"Proxmox's certificate isn't trusted - untick the certificate check for its self-signed one."
+        return False, f"No answer from Proxmox at {proxmox.host}:8006 - check the host and that it's on."
     return True, f"Connected: Proxmox VE {version}, {len(nodes)} node{'s' * (len(nodes) != 1)}."
 
 

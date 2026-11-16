@@ -274,10 +274,21 @@ def _snmp(switch, env, which, tool="snmpbulkwalk"):
         yield binary, {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "SNMPCONFPATH": conf_dir, "MIBS": ""}
 
 
+HINTS = {      # net-snmp's terse errors, in words a person can act on
+    "Timeout": "no answer from {host} - check the address, that SNMP is on, and the user and passphrases",
+    "Unknown user name": "the switch has no SNMPv3 user {user}",
+    "Authentication failure": "the switch refused the auth passphrase",
+    "Decryption error": "the privacy passphrase or type ({priv}) doesn't match the switch",
+}
+
+
 def _failure(switch, result):
 
-    first = (result.stderr or "").strip().splitlines()[:1]
-    return WiringError(f"{switch.name}: {first[0] if first else 'SNMP request failed'}")
+    first = ((result.stderr or "").strip().splitlines() or ["SNMP request failed"])[0]
+    hint = next((text for key, text in HINTS.items() if key in first), None)
+    message = hint.format(host=switch.host, user=switch.snmp_user, priv=switch.priv.upper()) if hint else first
+
+    return WiringError(f"{switch.name}: {message}")
 
 
 def walk_switch(switch, env, timeout, run=subprocess.run, which=shutil.which):

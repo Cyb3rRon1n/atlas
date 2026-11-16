@@ -6,7 +6,7 @@ data into innerHTML.
 """
 
 import json
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from atlas.devices.store import CONNECTIONS, KINDS, STATES
 from atlas.web.render import ask_chips, _esc, render_page
@@ -265,7 +265,7 @@ def _wired(node):
             f"{'front panel' if box else 'where it plugs in'} on the Cabling page</a></p>")
 
 
-def render_device_page(device, devices, ports=None, wiring=None):
+def render_device_page(device, devices, ports=None, wiring=None, suggestion=None):
 
     # The form edits the stored value, which is "unknown" whenever the shown one is a guess.
     connection = "unknown" if device["connection_guessed"] else device["connection"]
@@ -324,7 +324,7 @@ def render_device_page(device, devices, ports=None, wiring=None):
     body = (
         f"<p>{_status(device)} <span class=\"muted\">- {_esc(device['ip'] or 'no ip')} - last seen "
         f"{_esc(device['last_seen'] or 'never')}</span></p>"
-        + _wired(wiring_node(device, wiring)) +
+        + _wired(wiring_node(device, wiring)) + _login_hint(suggestion) +
         f"<div class=\"card\"><h2>Details</h2>{form}</div>"
         + _open_ports(ports) +
         "<div class=\"card\"><h2>Where atlas saw it</h2><table><thead><tr><th>source</th><th>id</th><th>ip</th>"
@@ -333,6 +333,17 @@ def render_device_page(device, devices, ports=None, wiring=None):
     )
 
     return _page(device["name"], body)
+
+
+def _login_hint(suggestion):
+
+    if not suggestion:
+        return ""
+    query = urlencode({"add": suggestion["ip"], "name": suggestion["suggested_name"] or ""})
+
+    return (f'<div class="card"><h2>Could show its ports</h2><p>This looks like a managed switch or router '
+            f'({_esc("; ".join(suggestion["why"]))}). With a read-only SNMPv3 login atlas can draw every port. '
+            f'<a href="/settings?{query}#switches">Add it on the Setup tab \u2192</a></p></div>')
 
 
 def render_coverage_page(coverage):

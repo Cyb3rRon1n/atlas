@@ -309,8 +309,10 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 from atlas.wiring.cabling import load_cabling
                 wiring = load_config().wiring
                 # cabling.yaml is read on every view, so a faceplate/label edit shows without a rescan
+                from atlas.wiring import suggest
                 body = render_cabling_page(rows[0] if rows else None, changes, wiring.enabled,
-                                           faceplates=load_cabling(wiring.cabling_file)["faceplates"])
+                                           faceplates=load_cabling(wiring.cabling_file)["faceplates"],
+                                           suggested=suggest.current())
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)
                 self._send(500, "text/plain; charset=utf-8", "Internal error")
@@ -376,7 +378,9 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                     return
                 ports = (((PostureStore().statuses().get("ports") or {}).get("detail") or {})
                          .get("devices") or {}).get(str(device_id))
-                body = render_device_page(device, devices, ports, _latest_wiring())
+                from atlas.wiring import suggest
+                suggestion = next((s for s in suggest.current(devices) if s["device_id"] == device_id), None)
+                body = render_device_page(device, devices, ports, _latest_wiring(), suggestion)
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)
                 self._send(500, "text/plain; charset=utf-8", "Internal error")

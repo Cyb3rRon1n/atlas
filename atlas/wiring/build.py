@@ -175,7 +175,7 @@ def build_wiring(switches, unifi, devices, cabling):
     switch_macs = set(chassis)
     by_slug = {_slug(device["name"]): node_id for node_id, device in unifi_by_id.items()}
 
-    uplink_ports, lldp_host, seen_pairs = set(), {}, set()
+    uplink_ports, lldp_host, seen_pairs, unread = set(), {}, set(), []
 
     for node_id, switch in snmp.items():
         for neighbor in switch["neighbors"]:
@@ -194,6 +194,11 @@ def build_wiring(switches, unifi, devices, cabling):
             if target is None:
                 if neighbor["chassis_mac"]:
                     lldp_host[(node_id, neighbor["port"])] = neighbor["chassis_mac"]
+                    if neighbor.get("caps"):      # a switch/router/AP atlas can't read yet: Setup suggests it
+                        name, device_id, ip = name_for(neighbor["chassis_mac"])
+                        unread.append({"switch": node_id, "port": neighbor["port"], "mac": neighbor["chassis_mac"],
+                                       "sys_name": neighbor["sys_name"], "caps": neighbor["caps"], "ip": ip,
+                                       "device_id": device_id})
                 continue
 
             uplink_ports.add((node_id, neighbor["port"]))
@@ -343,4 +348,4 @@ def build_wiring(switches, unifi, devices, cabling):
     used = {link["a"] for link in links} | {link["b"] for link in links} | ({gateway} if gateway else set())
 
     return {"nodes": [node for node_id, node in nodes.items() if node_id in used], "links": links,
-            "panels": panels, "warnings": warnings, "notes": notes, "loops": loops}
+            "panels": panels, "warnings": warnings, "notes": notes, "loops": loops, "unread": unread}

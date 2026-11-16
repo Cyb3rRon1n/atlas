@@ -1,6 +1,8 @@
 # Configuration
 
-Atlas uses YAML configuration, loaded from `atlas.yaml` in the current working directory. If the file doesn't exist, Atlas runs on defaults (safe — no Proxmox connection is attempted, discovery is fully enabled, the Anthropic provider is assumed but nothing is contacted until you run `atlas analyze`).
+Atlas uses YAML configuration, loaded from `atlas.yaml` in the current working directory. If the file doesn't exist, Atlas runs on defaults (safe — no Proxmox connection is attempted, discovery is fully enabled, no AI model is used until you choose one).
+
+**Prefer a web page?** The **Setup** tab sets up alerts (ntfy, webhooks, email) and the AI model, with a Test button for each. It saves to `inventory/settings.yaml` and keeps passwords in `inventory/secrets.json` (readable only by atlas), both in the data volume. Anything you set in `atlas.yaml` or `.env` wins and shows read-only there.
 
 Run `atlas init` to generate this file interactively instead of writing it by hand — it only prompts for the fields below that actually vary per deployment (Proxmox, AI provider, Prometheus), leaves `discovery`/`inventory` at their defaults, and logs the session to `logs/` for troubleshooting. The reference below is for editing the result by hand, or understanding what each field does.
 
@@ -86,7 +88,7 @@ Controls the AI backend behind `atlas analyze`.
 
 | Field | Default | Description |
 |---|---|---|
-| `provider` | `anthropic` | `anthropic` or `ollama` |
+| `provider` | `none` | `none`, `ollama` or `anthropic` |
 | `model` | `claude-opus-5` | The Claude model ID, or an Ollama model name (e.g. `llama3.1`) when `provider: ollama` |
 | `ollama_host` | `http://localhost:11434` | Only used when `provider: ollama` |
 | `think` | `false` | Only used when `provider: ollama`. Thinking models such as qwen3 reason silently before answering, which is much slower — `false` keeps replies fast. Set `null` if your Ollama or model rejects the field. |

@@ -5,7 +5,16 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 
 ## Unreleased
 
+### Added
+- **Setup tab** on the web page: turn on alerts (ntfy, Discord/Slack/webhooks, email) and pick an AI model
+  without editing files. Each card has a Test button (alerts send a real test message; the AI check only lists
+  models) and Save / Turn off. Values set in `atlas.yaml` or `.env` win and show read-only; passwords and keys
+  are stored privately in the data volume and never shown again. No restart needed.
+
 ### Changed
+- No AI model is assumed by default (`intelligence.provider` defaults to `none`, as the installer always
+  wrote); `atlas doctor` reports it as off instead of an unknown provider. The installer no longer writes the AI
+  section unless you choose one, so it can be set on the Setup tab.
 - New description everywhere: atlas is a self-hosted watchdog for your home network (devices, cabling, security,
   alerts), not an "AI operations platform". New banner, docs home page and package description to match.
 

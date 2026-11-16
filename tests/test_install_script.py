@@ -95,3 +95,10 @@ def test_piped_install_survives_docker_reading_stdin(sandbox):
                             capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
     assert "Atlas is running" in result.stdout and "c0ffee12" in result.stdout
+
+
+def test_no_ai_choice_leaves_the_ai_section_to_the_setup_page(sandbox):
+    home, run = sandbox
+    assert run("--yes").returncode == 0
+    written = yaml.safe_load((home / "atlas" / "atlas.yaml").read_text())
+    assert "intelligence" not in written and written["web"]["auth"] == "builtin"

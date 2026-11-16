@@ -231,6 +231,17 @@ class WebConfig(BaseModel):
     auth: Literal["builtin", "proxy"] = "builtin"
 
 
+class UptimeCheck(BaseModel):
+    name: str
+    target: str             # https://host/path (any answer below HTTP 500 is up) or host:port (TCP connect)
+    timeout: float = 10.0
+
+
+class UptimeConfig(BaseModel):
+    checks: list[UptimeCheck] = []      # also added from the web Servers > Uptime page
+    fail_after: int = 2                 # failures in a row before a check counts as down (1 a minute)
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -251,3 +262,4 @@ class AtlasConfig(BaseModel):
     web: WebConfig = WebConfig()
     security: SecurityConfig = SecurityConfig()
     wiring: WiringConfig = WiringConfig()
+    uptime: UptimeConfig = UptimeConfig()

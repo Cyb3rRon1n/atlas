@@ -312,6 +312,19 @@ class AccessPlaceRecord(Base):
     alerted: Mapped[bool] = mapped_column(default=False)
 
 
+class UptimeRecord(Base):
+    """One uptime check result (atlas uptime check, once a minute), kept 30 days."""
+
+    __tablename__ = "uptime"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    checked_at: Mapped[datetime] = mapped_column(index=True)
+    name: Mapped[str] = mapped_column(index=True)
+    ok: Mapped[bool]
+    ms: Mapped[float | None] = mapped_column(default=None)
+    detail: Mapped[str] = mapped_column(default="")
+
+
 class PortTrafficRecord(Base):
     """Average traffic on one switch port between two wiring scans (bits per second), kept a week for graphs."""
 

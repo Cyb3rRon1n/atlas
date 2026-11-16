@@ -55,6 +55,7 @@ def test_atlas_scan_runs_posture_watch_with_net_admin():
     scan = data["services"]["atlas-scan"]
     assert "NET_ADMIN" in scan["cap_add"]
     assert "while :; do atlas posture watch; sleep 30; done &" in "\n".join(scan["command"])   # restarts if it dies
+    assert "atlas uptime check" in "\n".join(scan["command"])
 
 
 def test_docker_proxy_allows_what_the_container_list_reads():

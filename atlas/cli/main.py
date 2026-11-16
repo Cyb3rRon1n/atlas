@@ -3654,6 +3654,40 @@ app.add_typer(
 )
 
 
+uptime_app = typer.Typer(
+    name="uptime",
+    help="Uptime checks: is each listed service answering? (web Servers > Uptime)"
+)
+
+
+@uptime_app.command("check")
+def uptime_check(json_output: bool = typer.Option(False, "--json", help="Print the results as JSON")):
+    """
+    One pass over uptime.checks (and the checks added on the web page). atlas-scan runs it once a minute;
+    a check is down after uptime.fail_after failures in a row, and alerts once then and once when it's back.
+    """
+
+    from datetime import datetime
+
+    from atlas.monitoring.uptime import UptimeStore, run
+
+    results = run(load_config(), UptimeStore(), datetime.utcnow())
+
+    if json_output:
+        print(json.dumps({name: {"ok": ok, "ms": ms, "detail": detail} for name, (ok, ms, detail) in results.items()}))
+        return
+    if not results:
+        console.print("No uptime checks yet - add them on the web page (Servers > Uptime) or under uptime.checks.")
+    for name, (ok, ms, detail) in results.items():
+        timing = f" {ms:.0f} ms" if ms is not None else ""
+        console.print(f"[{'green' if ok else 'red'}]{name}: {'up' if ok else 'failed'}{timing} ({detail})[/]")
+
+
+app.add_typer(
+    uptime_app
+)
+
+
 lan_app = typer.Typer(
     name="lan",
     help="LAN watch: rogue DHCP servers and gateway ARP spoofing (web /posture)."

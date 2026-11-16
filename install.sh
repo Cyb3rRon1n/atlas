@@ -17,6 +17,10 @@
 
 set -euo pipefail
 
+# Everything runs from main(), called on the last line: under `curl | bash` bash reads this script from
+# stdin, so the whole file must be read before any docker command (which inherits stdin) can swallow the rest.
+main() {
+
 REPO="Cyb3rRon1n/atlas"
 DIR="${ATLAS_DIR:-$HOME/atlas}"
 YES=0
@@ -204,3 +208,6 @@ case "$code" in
 esac
 echo "    Settings: $DIR/atlas.yaml (then: cd $DIR && docker compose up -d)"
 echo "    Upgrade: run this installer again. Remove: bash install.sh --uninstall"
+}
+
+main "$@"

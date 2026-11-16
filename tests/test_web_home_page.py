@@ -145,3 +145,20 @@ def test_home_attention_lists_new_sign_in_places():
     html = render_home_page(POSTURE_OK, build_hosts(None, LOCAL, None), [],
                             access_reviews=[{"user": "dave", "label": "Lisbon, PT \u00b7 MEO"}])
     assert "dave signed in from a new place: Lisbon, PT" in html and 'href="/access">Review' in html
+
+
+def test_getting_started_checklist_until_the_required_steps_are_done():
+    from atlas.config.models import AtlasConfig
+    from atlas.web.home_page import setup_steps
+
+    hosts = {"rows": [], "down": [], "state": "unknown"}
+    fresh = setup_steps(AtlasConfig(), [{"state": "new"}, {"state": "new"}, {"state": "known"}])
+    page = render_home_page(None, hosts, [], steps=fresh)
+    assert "Getting started" in page and "2 devices still marked new" in page
+    assert 'href="/settings#ntfy"' in page and "(optional)" in page
+
+    config = AtlasConfig(notify={"ntfy": {"url": "https://ntfy.example.org", "topic": "t"}})
+    done = setup_steps(config, [{"state": "known"}])
+    assert [step[3] for step in done] == [True, True, False, False]
+    assert "Getting started" not in render_home_page(None, hosts, [], steps=done)   # optional steps don't keep it up
+    assert "Getting started" not in render_home_page(None, hosts, [])

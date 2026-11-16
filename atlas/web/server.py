@@ -32,7 +32,8 @@ from atlas.web.devices_pages import render_coverage_page, render_device_page, re
 from atlas.web.hosts_page import render_hosts_summary
 from atlas.access.store import AccessStore
 from atlas.web.access_page import WINDOWS as ACCESS_WINDOWS, render_access_page
-from atlas.web.home_page import build_hosts, build_storage, interesting_events, parse_mdstat, render_home_page
+from atlas.web.home_page import (build_hosts, build_storage, interesting_events, parse_mdstat, render_home_page,
+                                 setup_steps)
 from atlas.web.posture_page import render_posture_page
 from atlas.web.graph import build_graph
 from atlas.web.network_page import render_network_page
@@ -232,7 +233,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             events=interesting_events(safe("events", lambda: query.recent_events(200)) or []),
             storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now)),
             analysis=safe("analysis", query.latest_analysis), now=now,
-            access_reviews=safe("access reviews", lambda: AccessStore().places("review")) or [])
+            access_reviews=safe("access reviews", lambda: AccessStore().places("review")) or [],
+            steps=safe("setup steps", lambda: setup_steps(settings, InventoryStore().devices())) if settings else None)
 
     def do_GET(self):
 

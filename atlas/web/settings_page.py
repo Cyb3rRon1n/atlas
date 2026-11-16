@@ -465,7 +465,7 @@ def render_settings_page():
                 f"<li><b>{_esc(s.name)}</b> {_esc(s.host)} - user {_esc(s.snmp_user)}, {s.priv}{where}</li>"
                 for s in config.wiring.switches) + "</ul>"
         cards.append(
-            f'<section class="card"><h2>{_esc(title)}<span class="badge{" on" if on else ""}">{"on" if on else "off"}'
+            f'<section class="card" id="{card}"><h2>{_esc(title)}<span class="badge{" on" if on else ""}">{"on" if on else "off"}'
             f'</span></h2><p class="muted">{_esc(intro)}</p>{saved}<form data-card="{card}">'
             + "".join(_field_html(card, field, config) for field in fields) +
             '<p class="status muted" role="status"></p><div class="buttons">'

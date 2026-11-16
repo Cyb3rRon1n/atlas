@@ -14,6 +14,12 @@ from atlas.web.render import _esc, ask_chips, render_page
 
 HOME_STYLE = """
 <style>
+.steps { margin:0 0 16px; padding:12px 16px; border:1px solid #30363d; border-radius:12px; }
+.steps h2 { margin:0 0 6px; font-size:15px; border:0; padding:0; }
+.steps ol { list-style:none; margin:0; padding:0; }
+.steps li { display:flex; gap:10px; align-items:baseline; padding:4px 0; }
+.steps li .what { flex:1; } .steps li.done { opacity:.6; }
+.steps .tick { width:1em; color:#7fdcb5; }
 .verdict { font-size:20px; font-weight:600; margin:0 0 16px; }
 .verdict.ok { color:#7fdcb5; }
 .attention { margin:0 0 16px; padding:12px 16px; border:1px solid var(--orange); border-radius:12px; background:#1d1810; }
@@ -401,7 +407,49 @@ def _activity_card(events):
     return _card("/history", "Recent activity", "ok", inner)
 
 
-def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=()):
+def setup_steps(config, devices):
+    """The first-steps checklist: (title, why, href, done, optional) per step."""
+
+    alerts, wiring = config.notify, config.wiring
+    new = sum(device["state"] == "new" for device in devices)
+    has_alerts = bool(alerts.signal.url or (alerts.ntfy.url and alerts.ntfy.topic) or alerts.webhooks
+                      or (alerts.email.host and alerts.email.to) or alerts.apprise)
+
+    return [
+        ("Name your devices", f"{new} device{'s' * (new != 1)} still marked new - name them, or mark them known"
+         if new else "Atlas hasn't found any devices yet - the first scan runs within a few minutes",
+         "/devices", bool(devices) and not new, False),
+        ("Turn on alerts", "Get a message when something new joins, a port opens or a cable goes bad",
+         "/settings#ntfy", has_alerts, False),
+        ("Map your cabling", "Add a managed switch or a UniFi console to see every port",
+         "/settings#switches", wiring.enabled and bool(wiring.switches or wiring.unifi.enabled), True),
+        ("Connect Proxmox", "See your VMs and containers under their host", "/settings#proxmox",
+         config.proxmox.enabled, True),
+    ]
+
+
+def _checklist(steps):
+    """Shown until every required step is done; optional ones ride along."""
+
+    if not steps or all(done for *_, done, optional in steps if not optional):
+        return ""
+
+    rows = []
+    for title, why, href, done, optional in steps:
+        extra = ' <span class="muted">(optional)</span>' if optional else ""
+        if done:
+            rows.append(f'<li class="done"><span class="tick">\u2713</span><span class="what"><b>{_esc(title)}</b>'
+                        f'{extra}</span></li>')
+        else:
+            rows.append(f'<li><span class="tick">\u25cb</span><span class="what"><b>{_esc(title)}</b>{extra} '
+                        f'\u2014 {_esc(why)}</span><a href="{href}">Set up \u2192</a></li>')
+
+    return ('<section class="steps" aria-label="Getting started"><h2>Getting started</h2><ol>' + "".join(rows)
+            + "</ol></section>")
+
+
+def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=(),
+                     steps=None):
     """
     posture: render._posture_block() output or None; hosts: build_hosts()
     output; events: interesting_events() pairs; storage: build_storage()
@@ -418,7 +466,7 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
                    f'</span><a href="{href}">{_esc(action)} \u2192</a></li>'
                    for _, what, why, href, action in items) + "</ul></section>")
 
-    body = (HOME_STYLE + verdict + ask_chips(ASK_SHORTCUTS) + '<div class="cards">'
+    body = (HOME_STYLE + _checklist(steps) + verdict + ask_chips(ASK_SHORTCUTS) + '<div class="cards">'
             + _posture_card(posture, "posture" in flagged) + _hosts_card(hosts, "hosts" in flagged)
             + _storage_card(storage, "storage" in flagged)
             + _trends_card(trends) + _analysis_card(analysis, now or datetime.utcnow())

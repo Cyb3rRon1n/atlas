@@ -36,6 +36,8 @@ COUNTERS = {
     "outErrors": "1.3.6.1.2.1.2.2.1.20",
     "inUcast": "1.3.6.1.2.1.2.2.1.11",
     "hcInUcast": "1.3.6.1.2.1.31.1.1.1.7",
+    "hcInOctets": "1.3.6.1.2.1.31.1.1.1.6",     # bytes, for traffic graphs (64-bit: no wrap between scans)
+    "hcOutOctets": "1.3.6.1.2.1.31.1.1.1.10",
     "lastChange": "1.3.6.1.2.1.2.2.1.9",
     "fcs": "1.3.6.1.2.1.10.7.2.1.3",
     "align": "1.3.6.1.2.1.10.7.2.1.2",
@@ -118,7 +120,7 @@ def port_counters(get_counter, index):
             "fcs": value("fcs"), "align": value("align"), "late": value("late"),
             "packets": hc if hc else ucast,      # some switches (e.g. Cisco SG300) leave the 64-bit counter at 0
             "duplex": DUPLEX.get(get_counter("duplex").get(index, ""), "unknown"),
-            "last_change": value("lastChange")}
+            "last_change": value("lastChange"), "in_bytes": value("hcInOctets"), "out_bytes": value("hcOutOctets")}
 
 
 def _poe(get, names):

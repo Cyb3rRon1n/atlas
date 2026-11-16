@@ -249,6 +249,10 @@ wiring:
 | `keep_snapshots` | `30` | Scans kept for "changes since the last scan" and cable health history |
 | `timeout` | `10` | Seconds per SNMP or UniFi request |
 
+### Traffic
+
+Each scan compares every port's byte counters (64-bit `ifHCInOctets`/`ifHCOutOctets` over SNMP; UniFi's port table) with the scan before, giving the average traffic over that gap - 15 minutes with the default scan interval, so short bursts are smoothed out. Nothing extra is polled. On the map, a cable over half its link speed is drawn thick orange and over 80% red, and its label shows the rate. The **Port map** has a *Traffic (24 h)* column with a small graph per port; hover it for now, in/out and the peak. Rates are kept 7 days. A counter reset (switch reboot) skips one point instead of showing a spike.
+
 ### Cable health
 
 Each scan compares every connected port's counters with the scan before it, so only new errors count. A switch reboot that resets the counters is recognised and ignored.

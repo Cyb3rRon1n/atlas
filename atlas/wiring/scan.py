@@ -10,7 +10,7 @@ import threading
 from datetime import datetime
 
 from atlas.alerts import Text
-from atlas.wiring import WiringError
+from atlas.wiring import WiringError, traffic
 from atlas.wiring.build import build_wiring
 from atlas.wiring.cabling import load_cabling
 from atlas.wiring.health import alerts, assess, poe_ports
@@ -81,6 +81,12 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
             stale |= {d.get("name") for d in ((raw["unifi"] or {}).get("devices") or [])}
         snapshot["health"] = assess(raw, [h["raw"] for h in history], stale)
         snapshot["poe"] = poe_ports(raw)
+        taken_at = now or datetime.utcnow()
+        if previous:                                # per-port traffic since the last scan, for the map and graphs
+            found = traffic.rates(raw, old_raw, (taken_at - previous[0]["taken_at"]).total_seconds(), stale)
+            traffic.annotate(snapshot, found)
+            if getattr(store, "engine", None) is not None:
+                traffic.save(store.engine, found, taken_at)
         if previous:
             for text in alerts(previous[0]["snapshot"].get("health"), snapshot["health"]):
                 _send(settings, text, send, store)
@@ -91,7 +97,6 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
             for pair in sorted(before - set(snapshot["loops"])):
                 _send(settings, Text(f"**✅ Resolved: loop between {pair}**\n• only one cable carries traffic now",
                                      f"wiring:loop:{pair}"), send, store)
-        taken_at = now or datetime.utcnow()
         from atlas.alerts import issue, report
         found = [issue(f"cable:{i['kind']}", f"{i['device']}:{i['port']}", f"{i['reason']}: {i['device']} {i['port']}",
                        i["detail"], "problem" if i["level"] == "bad" else "watch", "/cabling")

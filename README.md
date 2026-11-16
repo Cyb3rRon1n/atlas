@@ -34,6 +34,12 @@ It never changes anything on its own. Restarting a container or a VM is only eve
 - **Security posture**: what reaches the internet and what the internet can reach, new sign-in locations, and whether your torrent client is still behind its VPN.
 - **Chat with your homelab**: "why did Jellyfin stop transcoding?" gets answered from live logs, status and your own notes, using Ollama on your hardware or Claude.
 
+<p align="center">
+  <img src="docs/images/screenshots/cabling-map.png" alt="Atlas cabling map: internet, gateway, a 28-port switch and the hosts on each port, with link speeds and patch-panel labels" width="90%">
+  <br><img src="docs/images/screenshots/cabling-ports.png" alt="Switch front panels: which device is on each port, a standby backup cable, and a gateway port powering an access point over PoE" width="90%">
+  <br><sub>The cabling map and switch front panels, shown with example data.</sub>
+</p>
+
 ## Install
 
 You need Linux with Docker. One line sets it up in `~/atlas` and starts it:

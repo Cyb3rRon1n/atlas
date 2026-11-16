@@ -86,6 +86,9 @@ inventory/generated/
 # Operational database - grows a new row on every command run,
 # self-heals its schema on first use (see atlas.database.initialize_database)
 inventory/atlas.db
+inventory/settings.yaml
+inventory/secrets.json
+inventory/*.tmp
 
 # Local reports
 

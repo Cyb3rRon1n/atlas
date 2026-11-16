@@ -48,10 +48,15 @@ CARDS = {
                      hint="http://192.168.1.10:11434"),
                Field("model", "Model", "text", ("intelligence", "model"), hint="qwen3:8b or claude-opus-5"),
                Field("api_key", "Anthropic API key", "secret", None, "ANTHROPIC_API_KEY")]),
-    "switches": ("Managed switches (SNMP)", "Draws every port on the Cabling page. Create a read-only SNMPv3 user "
-                 "on the switch (SHA + AES), then add it here. Saving a name that exists updates it.", [
+    "switches": ("Switches and routers (SNMP)", "Draws every port on the Cabling page. Works with managed switches "
+                 "and with routers, firewalls and NAS boxes that speak SNMP (OPNsense, pfSense, OpenWrt, MikroTik, "
+                 "Synology, QNAP...). Prefer SNMPv3 (a read-only user, SHA + AES); use v2c with a read-only "
+                 "community only when the device offers nothing else - it travels unencrypted. Saving a name that "
+                 "exists updates it.", [
                      Field("name", "Name", "text", hint="core-switch"),
                      Field("host", "Address", "text", hint="192.168.1.2"),
+                     Field("version", "SNMP version", "select", options=("3", "2c")),
+                     Field("community", "v2c read-only community", "secret", None, "ATLAS_SNMP_{}_COMMUNITY"),
                      Field("snmp_user", "SNMPv3 user", "text", hint="atlas"),
                      Field("priv", "Privacy", "select", options=("aes", "des")),
                      Field("auth", "Auth passphrase (SHA)", "secret", None, "ATLAS_SNMP_{}_AUTH"),
@@ -72,6 +77,53 @@ CARDS = {
                     Field("token_value", "Token secret", "secret", ("proxmox", "token_value"), "ATLAS_PROXMOX_TOKEN"),
                     Field("verify_ssl", "Check the host's certificate", "bool", ("proxmox", "verify_ssl"))]),
 }
+# "What's on your network?" - each tick shows the Setup cards that gear uses. Alert and AI cards always show.
+GEAR = [
+    ("switch", "Managed switch", "Cisco, Netgear, TP-Link, Zyxel, MikroTik...", ("switches",)),
+    ("router", "Router or firewall with SNMP", "OPNsense, pfSense, OpenWrt, MikroTik", ("switches",)),
+    ("nas", "NAS", "Synology, QNAP, TrueNAS - over SNMP", ("switches",)),
+    ("unifi", "UniFi", "gateway, switches or access points", ("unifi",)),
+    ("proxmox", "Proxmox server", "VMs and containers", ("proxmox",)),
+    ("plain", "Only an internet-provider or store-bought router", "ASUS, Netgear, eero, Fritz!Box, Deco...", ()),
+]
+HARDWARE_CARDS = ("switches", "unifi", "proxmox")
+SNMP_GEAR = {"Ubiquiti": "unifi", "Synology": "nas", "QNAP": "nas", "MikroTik": "router"}   # SNMPv3 discovery maker
+
+
+def _detected(config):
+    """Gear atlas has already seen or been given: configured cards, and makers answering SNMPv3 discovery."""
+
+    found = {"switch"} if config.wiring.switches else set()
+    found |= {"unifi"} if config.wiring.unifi.enabled else set()
+    found |= {"proxmox"} if config.proxmox.enabled else set()
+    try:
+        from atlas.posture.store import PostureStore
+        snmp = ((PostureStore().statuses().get("ports") or {}).get("detail") or {}).get("snmp") or {}
+    except Exception:
+        snmp = {}
+    for info in snmp.values():
+        maker = info.get("vendor") or ""
+        found.add(SNMP_GEAR.get(maker, "switch" if maker and maker not in ("net-snmp (Linux)", "VMware") else None))
+
+    return found - {None}
+
+
+def _gear_html(chosen, detected):
+
+    boxes = "".join(
+        f'<label class="gear-item"><input type="checkbox" value="{key}" data-cards="{" ".join(cards)}"'
+        f'{" checked" if key in chosen else ""}><span><b>{_esc(label)}</b>'
+        f'{"<em>found</em>" if key in detected else ""}<small>{_esc(hint)}</small></span></label>'
+        for key, label, hint, cards in GEAR)
+
+    return ('<section class="card gear" id="gear"><h2>What\'s on your network?</h2><p class="muted">Atlas finds '
+            'every device by itself. Tick what you have and Setup shows the matching cards - each one adds detail, '
+            'like switch ports or your VMs. Nothing here is required.</p>'
+            f'<div class="gear-list">{boxes}</div><p class="muted gear-plain" hidden>Nothing more to connect: '
+            'atlas maps your network from its own scan. Turn on alerts below, and add the services you care about '
+            'under <a href="/uptime">Servers → Uptime</a>.</p></section>')
+
+
 ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "enabled")]}
 WIRING_CARDS = ("switches", "unifi")
 
@@ -131,19 +183,23 @@ def _switch_changes(body, off):
     if not name:
         raise ValueError("Enter the switch name.")
     others = [s for s in _get(local.read_settings(), ("wiring", "switches")) or [] if s.get("name") != name]
-    names = {key: secret.format(env_key(name)) for key, secret in (("auth", "ATLAS_SNMP_{}_AUTH"),
-                                                                    ("priv_pass", "ATLAS_SNMP_{}_PRIV"))}
+    every = {key: secret.format(env_key(name)) for key, secret in (("auth", "ATLAS_SNMP_{}_AUTH"),
+                                                                    ("priv_pass", "ATLAS_SNMP_{}_PRIV"),
+                                                                    ("community", "ATLAS_SNMP_{}_COMMUNITY"))}
     if off:
-        return {"wiring": {"switches": others or None}}, {n: None for n in names.values() if not _from_env(n)}
+        return {"wiring": {"switches": others or None}}, {n: None for n in every.values() if not _from_env(n)}
 
     host = str(body.get("host") or "").strip()
     if not host:
         raise ValueError("Enter the switch address.")
+    version = "2c" if str(body.get("version") or "3") == "2c" else "3"
+    names = {key: n for key, n in every.items() if (key == "community") == (version == "2c")}
     secrets = {n: str(body[key]) for key, n in names.items() if body.get(key) and not _from_env(n)}
     if any(n not in secrets and not _saved(n) for n in names.values()):
-        raise ValueError("Enter both passphrases.")
+        raise ValueError("Enter the read-only community." if version == "2c" else "Enter both passphrases.")
+    secrets |= {n: None for key, n in every.items() if key not in names and _saved(n) and not _from_env(n)}
     switch = {"name": name, "host": host, "snmp_user": str(body.get("snmp_user") or "").strip() or "atlas",
-              "priv": body.get("priv") or "aes"}
+              "priv": body.get("priv") or "aes"} | ({"version": "2c"} if version == "2c" else {})
 
     return {"wiring": {"switches": others + [switch]}}, secrets
 
@@ -347,6 +403,13 @@ def handle_post(path, body):
     if not match:
         return None
     card, action = match.groups()
+    if card == "gear" and action == "save":
+        gear = body.get("gear") if isinstance(body, dict) else None
+        keys = {key for key, *_ in GEAR}
+        if not isinstance(gear, list) or not set(gear) <= keys:
+            return 400, {"error": "unknown gear"}
+        local.save_settings({"setup": {"gear": sorted(set(gear))}})
+        return 200, {"ok": True}
     if card not in CARDS:
         return 404, {"error": "no such setting"}
     body = body if isinstance(body, dict) else {}
@@ -459,11 +522,50 @@ SCRIPT = """
 const fill = (ip, name) => {
   const form = document.querySelector('form[data-card="switches"]');
   if (!form) return;
+  form.closest("section").hidden = false;
   form.elements.host.value = ip;
   if (name && !form.elements.name.value) form.elements.name.value = name;
   form.elements.name.focus();
   form.scrollIntoView({block: "center"});
 };
+// Show only the login fields the chosen SNMP version uses (v2c: a community; v3: user + passphrases).
+const snmpVersion = document.getElementById("switches-version");
+const showVersion = () => {
+  const v2 = snmpVersion && snmpVersion.value === "2c";
+  for (const key of ["community", "snmp_user", "priv", "auth", "priv_pass"]) {
+    const input = document.getElementById("switches-" + key);
+    const label = input && document.querySelector('label[for="switches-' + key + '"]');
+    const hide = (key === "community") !== v2;
+    if (input) { input.hidden = hide; input.disabled = hide; }
+    if (label) label.hidden = hide;
+  }
+};
+if (snmpVersion) { snmpVersion.addEventListener("change", showVersion); showVersion(); }
+// "What's on your network?": show the hardware cards for what's ticked, save the ticks.
+const gearBoxes = [...document.querySelectorAll("#gear input[type=checkbox]")];
+const hardware = ["switches", "unifi", "proxmox"];
+const showGear = () => {
+  const want = new Set(gearBoxes.filter((box) => box.checked).flatMap((box) => box.dataset.cards.split(" ")));
+  for (const card of hardware) {
+    const section = document.getElementById(card);
+    if (section && !section.querySelector(".badge.on")) section.hidden = !want.has(card);
+  }
+  const plain = document.querySelector(".gear-plain");
+  if (plain) plain.hidden = !(gearBoxes.some((b) => b.checked) && want.size === 0);
+};
+for (const box of gearBoxes) box.addEventListener("change", () => {
+  showGear();
+  fetch("/api/settings/gear/save", {method: "POST", credentials: "same-origin",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({gear: gearBoxes.filter((b) => b.checked).map((b) => b.value)})});
+});
+showGear();
+const linked = document.getElementById(location.hash.slice(1));   // /settings#proxmox from Home: show that card
+if (linked && linked.hidden) { linked.hidden = false; linked.scrollIntoView(); }
+document.getElementById("show-all")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  for (const card of hardware) { const section = document.getElementById(card); if (section) section.hidden = false; }
+});
 const wanted = new URLSearchParams(location.search);
 if (wanted.get("add")) fill(wanted.get("add"), wanted.get("name"));
 document.addEventListener("click", async (event) => {
@@ -512,6 +614,14 @@ STYLE = """<style>
 .setup input:disabled, .setup select:disabled, .setup textarea:disabled { opacity:.55; cursor:not-allowed; }
 .setup .buttons { display:flex; gap:.5rem; flex-wrap:wrap; }
 .setup .found { border:1px dashed #30363d; border-radius:8px; padding:.4rem .8rem; margin-bottom:.6rem; }
+.gear-list { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:.5rem; margin:.6rem 0; }
+.gear-item { display:flex; gap:.6rem; align-items:flex-start; border:1px solid #30363d; border-radius:8px;
+  padding:.55rem .7rem; cursor:pointer; }
+.gear-item:has(input:checked) { border-color:#1f6feb; background:color-mix(in srgb, #1f6feb 10%, transparent); }
+.gear-item input { margin-top:.25rem; } .gear-item small { display:block; color:#8b949e; }
+.gear-item em { font-style:normal; font-size:.7rem; color:#3fb950; border:1px solid #238636; border-radius:999px;
+  padding:0 6px; margin-left:.4rem; }
+.gear { margin-bottom:1rem; }
 .setup .found ul { margin:.3rem 0; padding-left:1rem; } .setup .found li { margin:.3rem 0; }
 </style>"""
 
@@ -522,17 +632,23 @@ def render_settings_page():
 
     config = load_config()
     suggested = suggest.current()
+    detected = _detected(config)
+    saved_gear = (local.read_settings().get("setup") or {}).get("gear")
+    chosen = set(saved_gear) if isinstance(saved_gear, list) else detected
+    wanted = {card for key, *_, cards in GEAR if key in chosen for card in cards}
     cards = []
     for card, (title, intro, fields) in CARDS.items():
         on = _on(card, config)
+        hidden = card in HARDWARE_CARDS and card not in wanted and not on
         saved = _found_html(suggested) if card == "switches" else ""
         if card == "switches" and config.wiring.switches:
             where = " (from atlas.yaml)" if local.locked(("wiring", "switches")) else ""
             saved += '<ul class="saved">' + "".join(
-                f"<li><b>{_esc(s.name)}</b> {_esc(s.host)} - user {_esc(s.snmp_user)}, {s.priv}{where}</li>"
+                f"<li><b>{_esc(s.name)}</b> {_esc(s.host)} - "
+                + (f"SNMPv2c (community){where}</li>" if s.version == "2c" else f"user {_esc(s.snmp_user)}, {s.priv}{where}</li>")
                 for s in config.wiring.switches) + "</ul>"
         cards.append(
-            f'<section class="card" id="{card}"><h2>{_esc(title)}<span class="badge{" on" if on else ""}">{"on" if on else "off"}'
+            f'<section class="card" id="{card}"{" hidden" if hidden else ""}><h2>{_esc(title)}<span class="badge{" on" if on else ""}">{"on" if on else "off"}'
             f'</span></h2><p class="muted">{_esc(intro)}</p>{saved}<form data-card="{card}">'
             + "".join(_field_html(card, field, config) for field in fields) +
             '<p class="status muted" role="status"></p><div class="buttons">'
@@ -543,6 +659,8 @@ def render_settings_page():
 
     body = (STYLE + '<p class="muted">Changes here take effect within a minute, no restart. Anything set in '
             'atlas.yaml or .env stays read-only here - edit it there. Passwords and keys are stored privately '
-            'on this machine and never shown again.</p><div class="setup">' + "".join(cards) + "</div>" + SCRIPT)
+            'on this machine and never shown again.</p>' + _gear_html(chosen, detected)
+            + '<div class="setup">' + "".join(cards) + "</div>"
+            '<p class="muted"><a href="#" id="show-all">Show every integration</a></p>' + SCRIPT)
 
     return render_page("Setup", body, active="settings")

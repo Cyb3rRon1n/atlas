@@ -277,21 +277,29 @@ def _snmp(switch, env, which, tool="snmpbulkwalk"):
         raise WiringError(f"{tool} not found - install net-snmp (Debian/Ubuntu: apt install snmp)")
 
     key = env_key(switch.name)
-    auth, priv = env.get(f"ATLAS_SNMP_{key}_AUTH"), env.get(f"ATLAS_SNMP_{key}_PRIV")
-    if not auth or not priv:
-        raise WiringError(f"set ATLAS_SNMP_{key}_AUTH and ATLAS_SNMP_{key}_PRIV in the atlas env file")
+    if getattr(switch, "version", "3") == "2c":
+        community = env.get(f"ATLAS_SNMP_{key}_COMMUNITY")
+        if not community:
+            raise WiringError(f"set ATLAS_SNMP_{key}_COMMUNITY (the read-only community) in the atlas env file")
+        settings = f"defVersion 2c\ndefCommunity {community}\n"
+    else:
+        auth, priv = env.get(f"ATLAS_SNMP_{key}_AUTH"), env.get(f"ATLAS_SNMP_{key}_PRIV")
+        if not auth or not priv:
+            raise WiringError(f"set ATLAS_SNMP_{key}_AUTH and ATLAS_SNMP_{key}_PRIV in the atlas env file")
+        settings = (f"defVersion 3\ndefSecurityName {switch.snmp_user}\ndefSecurityLevel authPriv\n"
+                    f"defAuthType SHA\ndefPrivType {switch.priv.upper()}\n"
+                    f"defAuthPassphrase {auth}\ndefPrivPassphrase {priv}\n")
 
     with tempfile.TemporaryDirectory() as conf_dir:
         conf = os.path.join(conf_dir, "snmp.conf")
         with open(os.open(conf, os.O_WRONLY | os.O_CREAT, 0o600), "w") as handle:
-            handle.write(f"defVersion 3\ndefSecurityName {switch.snmp_user}\ndefSecurityLevel authPriv\n"
-                         f"defAuthType SHA\ndefPrivType {switch.priv.upper()}\n"
-                         f"defAuthPassphrase {auth}\ndefPrivPassphrase {priv}\n")
+            handle.write(settings)
         yield binary, {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "SNMPCONFPATH": conf_dir, "MIBS": ""}
 
 
 HINTS = {      # net-snmp's terse errors, in words a person can act on
-    "Timeout": "no answer from {host} - check the address, that SNMP is on, and the user and passphrases",
+    "Timeout": "no answer from {host} - check the address, that SNMP is on, and the login (SNMPv3 user and "
+               "passphrases, or the v2c community)",
     "Unknown user name": "the switch has no SNMPv3 user {user}",
     "Authentication failure": "the switch refused the auth passphrase",
     "Decryption error": "the privacy passphrase or type ({priv}) doesn't match the switch",

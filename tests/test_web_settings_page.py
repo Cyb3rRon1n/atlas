@@ -273,3 +273,49 @@ def test_network_test_errors_are_plain_words(env, monkeypatch):
     body = {"host": "192.0.2.1", "user": "atlas@pve", "token_name": "t", "token_value": "x"}
     status, data = handle_post("/api/settings/proxmox/test", body)
     assert status == 400 and data["error"] == "No answer from Proxmox at 192.0.2.1:8006 - check the host and that it's on."
+
+
+def test_snmp_v2c_switch_saves_a_community_and_drops_v3_secrets(env, isolated_cwd):
+    assert handle_post("/api/settings/switches/save", SWITCH)[0] == 200
+    v2 = {"name": "core switch", "host": "192.0.2.9", "version": "2c", "community": ""}
+    assert handle_post("/api/settings/switches/save", v2)[1]["error"] == "Enter the read-only community."
+    assert handle_post("/api/settings/switches/save", {**v2, "community": "ro-community"})[0] == 200
+
+    switch = load_config().wiring.switches[0]
+    assert (switch.version, switch.host) == ("2c", "192.0.2.9")
+    assert local.secret_names() == {"ATLAS_SNMP_CORE_SWITCH_COMMUNITY"}          # the v3 passphrases are gone
+    page = render_settings_page()
+    assert "SNMPv2c (community)" in page and "ro-community" not in page
+
+
+def test_snmp_session_file_for_each_version(tmp_path):
+    from atlas.config.models import WiringSwitch
+    from atlas.wiring import WiringError
+    from atlas.wiring.snmp import _snmp
+
+    def conf(switch, env):
+        with _snmp(switch, env, lambda tool: "/usr/bin/" + tool) as (_, child):
+            return open(child["SNMPCONFPATH"] + "/snmp.conf").read()
+
+    v2 = WiringSwitch(name="nas", host="192.0.2.5", version="2c")
+    assert conf(v2, {"ATLAS_SNMP_NAS_COMMUNITY": "ro"}) == "defVersion 2c\ndefCommunity ro\n"
+    with pytest.raises(WiringError, match="COMMUNITY"):
+        conf(v2, {})
+    v3 = conf(WiringSwitch(name="sw", host="192.0.2.2"), {"ATLAS_SNMP_SW_AUTH": "a" * 8, "ATLAS_SNMP_SW_PRIV": "p" * 8})
+    assert v3.startswith("defVersion 3\n") and "defPrivType AES" in v3
+
+
+def test_gear_chooser_shows_matching_cards_and_saves(env, isolated_cwd):
+    page = render_settings_page()
+    assert "What's on your network?" in page
+    assert '<section class="card" id="proxmox" hidden>' in page          # nothing ticked or found yet
+    assert '<section class="card" id="ntfy">' in page                    # alerts always show
+
+    assert handle_post("/api/settings/gear/save", {"gear": ["proxmox", "plain"]}) == (200, {"ok": True})
+    assert handle_post("/api/settings/gear/save", {"gear": ["toaster"]})[0] == 400
+    page = render_settings_page()
+    assert '<section class="card" id="proxmox">' in page and '<section class="card" id="unifi" hidden>' in page
+    assert 'value="proxmox" data-cards="proxmox" checked' in page
+
+    handle_post("/api/settings/switches/save", SWITCH)                    # a configured card always shows
+    assert '<section class="card" id="switches">' in render_settings_page()

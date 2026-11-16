@@ -275,6 +275,23 @@ Each scan compares every connected port's counters with the scan before it, so o
 
 Problems turn the port red on the faceplate, appear in **Cable health** and send one alert to every `notify:` channel, plus another alert when they clear. "Watch" findings are shown on the page only, because they have harmless causes too often to send alerts about. Switches without the EtherLike counters fall back to plain input errors, and UniFi ports use the console's own error counts.
 
+## `uptime`
+
+Is each service you care about answering? Add checks on the web page (**Servers → Uptime**: name, address, *Add*; your public hostnames are offered as one-click suggestions) or here. The atlas-scan container tries every check once a minute.
+
+```yaml
+uptime:
+  fail_after: 2                 # failures in a row before a check counts as down
+  checks:
+    - name: Media server
+      target: https://media.example.org     # up when it answers below HTTP 500 - a login page counts
+    - name: NAS (SMB)
+      target: 192.0.2.20:445                # up when the port accepts a connection
+      timeout: 5                            # seconds, default 10
+```
+
+A check that fails `fail_after` times in a row is **down**: one alert ("Media server is down"), listed on the Alerts page, and one "back up" message saying how long it was down. Mute or pause it from the Alerts page like any other alert. The page shows each check's response time over 24 hours and its uptime over 24 hours, 7 days and 30 days; results are kept 30 days. Certificates aren't verified here - expiry and trust are the certificate watch's job (`security.cert_watch`). A list set in atlas.yaml wins over the page and makes the page read-only.
+
 ## `security`
 
 LAN watch: `atlas lan check` looks for a second DHCP server and for something impersonating your router. atlas-scan runs it after every device scan, and the result shows as the **LAN** tile on the Security tab (Exposure).

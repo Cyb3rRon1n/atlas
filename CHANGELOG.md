@@ -17,6 +17,10 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   device, for a day, a week or always - it stays listed. *Pause alerts* (1 hour to a day) holds every message
   during maintenance and shows a banner; *Resume now* ends it. Muted items are listed with *Unmute*. Every check
   asks before sending; if the alert list can't be read, alerts are sent as before.
+- **Uptime checks** (Servers → Uptime). Add a web address or `host:port`; atlas tries it every minute. After two
+  failures in a row it alerts once ("Media server is down") and again when it's back, with how long it was down.
+  The page shows response time over 24 hours and uptime over 24 hours, 7 days and 30 days, and offers your public
+  hostnames as one-click checks. `atlas uptime check` runs one pass; the compose file runs it every minute.
 - **Fewer, clearer tabs.** Ten top tabs are now six - *Home, Alerts, Network, Servers, Security, Setup* - each
   with its pages as sub-tabs: Alerts · Activity (was History); Devices · Triage · Coverage · Cabling; Overview ·
   Trends (was Hosts); Exposure (was Posture) · Services (was Network) · Visitors (was Access). Every old address

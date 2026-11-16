@@ -81,7 +81,7 @@ SECTIONS = {
     "alerts": [("/alerts", "Alerts", "alerts"), ("/history", "Activity", "history")],
     "network": [("/devices", "Devices", "devices"), ("/triage", "Triage", "triage"), ("/coverage", "Coverage", "coverage"),
                 ("/cabling", "Cabling", "cabling")],
-    "servers": [("/overview", "Overview", "hosts"), ("/trends", "Trends", "trends")],
+    "servers": [("/overview", "Overview", "hosts"), ("/trends", "Trends", "trends"), ("/uptime", "Uptime", "uptime")],
     "security": [("/posture", "Exposure", "posture"), ("/map", "Services", "lan"), ("/access", "Visitors", "access")],
 }
 SECTION_OF = {page: section for section, pages in SECTIONS.items() for _, _, page in pages}

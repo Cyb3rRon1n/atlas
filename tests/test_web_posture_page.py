@@ -55,7 +55,7 @@ def test_every_old_page_sits_under_one_top_tab():
     for key, href in (("cabling", "/devices"), ("history", "/alerts"), ("access", "/posture"), ("lan", "/posture")):
         html = render_page("x", "", active=key)
         assert f'href="{href}" aria-current="page"' in html
-    assert len({page for pages in SECTIONS.values() for _, _, page in pages}) == 11
+    assert len({page for pages in SECTIONS.values() for _, _, page in pages}) == 12
 
 
 def test_docked_chat_shell_and_collapse_state():

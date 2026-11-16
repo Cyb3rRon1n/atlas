@@ -13,21 +13,24 @@ DEVICE_COLUMN_MIGRATIONS = {
     "connection": "VARCHAR NOT NULL DEFAULT 'unknown'",
     "uplink_id": "INTEGER REFERENCES devices(id)",
 }
+ALERT_COLUMN_MIGRATIONS = {
+    "acked_at": "DATETIME",
+}
 
 
-def _migrate_devices_table(engine):
+def _migrate_table(engine, table, migrations):
 
-    existing = {column["name"] for column in inspect(engine).get_columns("devices")}
+    existing = {column["name"] for column in inspect(engine).get_columns(table)}
 
     with engine.begin() as connection:
 
-        for column, definition in DEVICE_COLUMN_MIGRATIONS.items():
+        for column, definition in migrations.items():
 
             if column in existing:
                 continue
 
             try:
-                connection.execute(text(f"ALTER TABLE devices ADD COLUMN {column} {definition}"))
+                connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {definition}"))
 
             except OperationalError as error:
 
@@ -66,7 +69,8 @@ def initialize_database(engine=None):
         engine
     )
 
-    _migrate_devices_table(engine)
+    _migrate_table(engine, "devices", DEVICE_COLUMN_MIGRATIONS)
+    _migrate_table(engine, "alerts", ALERT_COLUMN_MIGRATIONS)
 
 
 __all__ = [

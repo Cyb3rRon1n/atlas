@@ -11,7 +11,12 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   the last 7 days*, each with a link to investigate. Covers the LAN watch, host health, certificates, cabling
   (cable health, loops, unreadable switches), open ports, important devices offline and the torrent VPN check.
   Problems resolve by themselves when the check stops seeing them; one-off findings (a new open port) after 7
-  days. Home's *Needs attention* includes them. What gets sent is unchanged.
+  days. Home's *Needs attention* includes them.
+- **Acknowledge, mute and pause** on the Alerts page. *Acknowledge* marks a problem as seen (it sinks down the
+  list and leaves Home; a one-off finding is cleared). *Mute* stops messages about one alert, or about its whole
+  device, for a day, a week or always - it stays listed. *Pause alerts* (1 hour to a day) holds every message
+  during maintenance and shows a banner; *Resume now* ends it. Muted items are listed with *Unmute*. Every check
+  asks before sending; if the alert list can't be read, alerts are sent as before.
 - **Atlas finds switches it could read.** Each port check sends devices the standard SNMPv3 discovery message
   (no user, no password) and reads the LLDP capability flags the mapped switches already collect. Devices that
   look like managed switches or routers are suggested on the Cabling page, on their device page and under

@@ -347,7 +347,7 @@ def attention_items(posture, hosts, storage, access_reviews=(), open_alerts=()):
             items.append(("storage", "Storage", f"{row['name']}: {row['detail']}", "/overview", "Details"))
 
     covered = {"lan", "host"}        # already listed above through posture / hosts
-    others = [alert for alert in open_alerts if alert["source"] not in covered]
+    others = [alert for alert in open_alerts if alert["source"] not in covered and not alert.get("acked_at")]
     if others:
         first = others[0]["title"]
         more = f" and {len(others) - 1} more" if len(others) > 1 else ""

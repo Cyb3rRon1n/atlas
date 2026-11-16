@@ -9,6 +9,7 @@ import os
 import threading
 from datetime import datetime
 
+from atlas.alerts import Text
 from atlas.wiring import WiringError
 from atlas.wiring.build import build_wiring
 from atlas.wiring.cabling import load_cabling
@@ -24,7 +25,11 @@ class WiringBusy(Exception):
     """A scan is already running."""
 
 
-def _send(settings, text, send):
+def _send(settings, text, send, store=None):
+
+    from atlas.alerts import allowed
+    if not allowed(store, text):
+        return
 
     from atlas import notify
 
@@ -78,13 +83,14 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
         snapshot["poe"] = poe_ports(raw)
         if previous:
             for text in alerts(previous[0]["snapshot"].get("health"), snapshot["health"]):
-                _send(settings, text, send)
+                _send(settings, text, send, store)
             before = set(previous[0]["snapshot"].get("loops") or [])
             for pair in sorted(set(snapshot["loops"]) - before):
-                _send(settings, f"**🔁 Possible network loop: {pair}**\n• more than one cable between them "
-                                "carries traffic\n\nSee Atlas → Cabling.", send)
+                _send(settings, Text(f"**🔁 Possible network loop: {pair}**\n• more than one cable between them "
+                                     "carries traffic\n\nSee Atlas → Cabling.", f"wiring:loop:{pair}"), send, store)
             for pair in sorted(before - set(snapshot["loops"])):
-                _send(settings, f"**✅ Resolved: loop between {pair}**\n• only one cable carries traffic now", send)
+                _send(settings, Text(f"**✅ Resolved: loop between {pair}**\n• only one cable carries traffic now",
+                                     f"wiring:loop:{pair}"), send, store)
         taken_at = now or datetime.utcnow()
         from atlas.alerts import issue, report
         found = [issue(f"cable:{i['kind']}", f"{i['device']}:{i['port']}", f"{i['reason']}: {i['device']} {i['port']}",

@@ -189,8 +189,11 @@ def alerts(previous_issues, issues):
     key = lambda i: (i["kind"], i["subject"])
     old = {key(i): i for i in previous_issues or [] if i["level"] == "bad"}
     new = {key(i): i for i in issues if i["level"] == "bad"}
-    texts = [f"**🛡️ {i['reason']}**\n• {i['detail']}\n\nSee Atlas → Posture." for k, i in new.items() if k not in old]
-    texts += [f"**✅ Resolved: {i['reason'].lower()}**\n• {i['subject']}" for k, i in old.items() if k not in new]
+    from atlas.alerts import Text
+    tag = lambda k: f"lan:{k[0]}:{k[1]}"
+    texts = [Text(f"**🛡️ {i['reason']}**\n• {i['detail']}\n\nSee Atlas → Posture.", tag(k))
+             for k, i in new.items() if k not in old]
+    texts += [Text(f"**✅ Resolved: {i['reason'].lower()}**\n• {i['subject']}", tag(k)) for k, i in old.items() if k not in new]
 
     return texts
 
@@ -226,7 +229,10 @@ def run(settings, store, now, *, probe=probe_with_helper, read=None, unifi_clien
     report("lan", [issue(i["kind"], i["subject"], i["reason"], i["detail"],
                          "problem" if i["level"] == "bad" else "watch", "/posture") for i in issues], now, store)
 
+    from atlas.alerts import allowed
     for text in alerts(previous.get("issues"), issues):
+        if not allowed(store, text, now):
+            continue
         if send:
             send(text)
         elif notify.configured(settings.notify):

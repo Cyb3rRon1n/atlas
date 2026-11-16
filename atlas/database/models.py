@@ -340,3 +340,17 @@ class AlertRecord(Base):
     opened_at: Mapped[datetime]
     seen_at: Mapped[datetime]
     resolved_at: Mapped[datetime | None] = mapped_column(default=None, index=True)
+    acked_at: Mapped[datetime | None] = mapped_column(default=None)
+
+
+class AlertQuietRecord(Base):
+    """What not to send: a muted alert (key), a muted device (device_id), or a pause of everything (key "*")."""
+
+    __tablename__ = "alert_quiet"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(default="")
+    device_id: Mapped[int | None] = mapped_column(default=None)
+    label: Mapped[str] = mapped_column(default="")
+    until: Mapped[datetime | None] = mapped_column(default=None)      # None = always
+    created_at: Mapped[datetime]

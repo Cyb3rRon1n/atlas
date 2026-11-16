@@ -218,6 +218,10 @@ How often the `atlas-scan` container loops `atlas scan; atlas discover; atlas pr
 
 The web page's **Alerts** tab lists everything the checks below find: *Needs action* (problems: these also go to every `notify:` channel), *Watching* (shown on the page only) and *Resolved in the last 7 days*. Each item links to the page where you can investigate it, and resolves by itself once the check no longer sees it. One-off findings, such as a newly opened port, stay under *Needs action* for 7 days. Resolved items are kept for 30 days.
 
+- **Acknowledge**: you've seen it. It moves down the list and off the Home page; a one-off finding is cleared.
+- **Mute this alert / this device** (1 day, 7 days or always): no more messages about it - when the alert is about a device, about anything on that device - but it stays listed. *Muted* at the top of the page lists them, each with *Unmute*.
+- **Pause alerts** (1 hour, 4 hours or a day) for maintenance: nothing is sent, problems are still recorded, and a banner shows until *Resume now* or the time runs out.
+
 ## `wiring`
 
 The cabling map (web `/cabling`): every switch port, what's plugged into it, patch panels, and cable health. Read-only: atlas reads your switches over SNMPv3 and, optionally, a UniFi console, and never changes their settings. The atlas-scan container refreshes it every cycle; the page's **Refresh map** button does it on demand.

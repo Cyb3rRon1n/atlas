@@ -50,16 +50,23 @@ curl -fsSL https://raw.githubusercontent.com/Cyb3rRon1n/atlas/main/install.sh | 
 
 Prefer to read it first? `curl -fsSLO https://raw.githubusercontent.com/Cyb3rRon1n/atlas/main/install.sh`, then `less install.sh` and `bash install.sh`.
 
-The installer asks three things (port, whether the whole LAN may open the page, and which AI to use), then prints the address. The first visit asks for a **setup code** to choose the admin password; the installer shows it, and `docker compose logs atlas` does too.
+The installer asks three things (port, whether the whole LAN may open the page, and which AI to use, if any), then prints the address. The first visit asks for a **setup code** to choose the admin password; the installer shows it, and `docker compose logs atlas` does too.
 
 No Docker? `pip install` works as well; see [Getting started](https://cyb3rron1n.github.io/atlas/getting-started/).
 
 ## First steps
 
-1. **Open the page** and set your password.
+1. **Open the page** and set your password. The Home page shows a *Getting started* list until the next two steps are done.
 2. **Name your devices**: Devices → *Needs attention*. Give each new device a name and press Keep, or Ignore it.
-3. **Turn on alerts**: add a channel under `notify:` in `~/atlas/atlas.yaml` (an [ntfy](https://ntfy.sh) topic is the quickest), then check it from `~/atlas` with `docker compose exec atlas atlas notify test`.
-4. **Add what you have**: Proxmox, your switches (SNMP), a UniFi console, Ollama. Each one is a few lines in `atlas.yaml`, and [Configuration](https://cyb3rron1n.github.io/atlas/configuration/) has copy-paste examples.
+3. **Turn on alerts** on the **Setup** tab: ntfy (the quickest), Discord, Slack, any webhook or email. *Send test* checks it before you save.
+4. **Add what you have**, also on the Setup tab: your switches (SNMPv3), a UniFi console, Proxmox and an AI model (Ollama or Claude). Each card has a read-only *Test* button.
+
+Prefer files? Everything on the Setup tab can also go in `~/atlas/atlas.yaml`, and anything set there wins; [Configuration](https://cyb3rron1n.github.io/atlas/configuration/) has copy-paste examples. Signal and Apprise alerts are set there.
+
+<p align="center">
+  <img src="docs/images/screenshots/setup.png" alt="The Setup tab: cards for ntfy, webhooks, email, the AI model, managed switches and a UniFi console, each with Test and Save buttons" width="80%">
+  <br><sub>The Setup tab, shown with example data.</sub>
+</p>
 
 ## Privacy
 

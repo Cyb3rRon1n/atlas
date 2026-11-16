@@ -48,6 +48,11 @@ pieces fit together.
   <sub>The Devices page, shown with example data.</sub>
 </p>
 
+<p align="center">
+  <img src="images/screenshots/setup.png" alt="The Setup tab: alerts, the AI model, switches and UniFi, each with a Test button" style="max-width: 100%; width: 820px;"><br>
+  <sub>The Setup tab: connect alerts, switches, UniFi and Proxmox from the browser. Shown with example data.</sub>
+</p>
+
 ### From the terminal
 
 Representative output, not a literal capture — field names and formatting match real commands; hostnames, containers, and figures are illustrative.

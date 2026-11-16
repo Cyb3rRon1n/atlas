@@ -3,20 +3,18 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
-## Unreleased
+## 0.8.0 - 2026-11-16
 
 ### Added
-- **Setup tab** on the web page: turn on alerts (ntfy, Discord/Slack/webhooks, email) and pick an AI model
-  without editing files. Each card has a Test button (alerts send a real test message; the AI check only lists
-  models) and Save / Turn off. Values set in `atlas.yaml` or `.env` win and show read-only; passwords and keys
-  are stored privately in the data volume and never shown again. No restart needed.
+- **Setup tab** on the web page: connect alerts (ntfy, Discord/Slack/webhooks, email), an AI model, managed
+  switches (SNMPv3), a UniFi console and Proxmox without editing files. Every card has a Test button (alerts send
+  one test message; the AI check only lists models; switches get one SNMP request; UniFi and Proxmox are signed
+  in to and read) and Save / Turn off. Saving a switch, UniFi or Proxmox turns that feature on. Values set in
+  `atlas.yaml` or `.env` win and show read-only; passwords and keys are stored privately in the data volume and
+  never shown again. No restart needed.
 - **Getting started checklist** on the Home page: name your devices, turn on alerts, then (optional) map your
   cabling and connect Proxmox. Each step links to where it's done and ticks off by itself; the list disappears
   once the required steps are done.
-- **Setup tab: switches, UniFi and Proxmox.** Add managed switches (SNMPv3; saving an existing name updates it),
-  a UniFi console and Proxmox from the browser. Saving one turns the cabling map or Proxmox on. Their Test
-  buttons are read-only: one SNMP request (switch name and model), a UniFi sign-in that counts the devices, and
-  the Proxmox version and node count.
 
 ### Changed
 - No AI model is assumed by default (`intelligence.provider` defaults to `none`, as the installer always

@@ -35,6 +35,7 @@ nav:
   - Deployment: deployment/index.md
   - Service Catalog: service-catalog.md
   - Roadmap: roadmap.md
+  - Design notes: development/design-notes.md
 
 markdown_extensions:
   - admonition

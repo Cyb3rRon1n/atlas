@@ -75,7 +75,7 @@ CARDS = {
 ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "enabled")]}
 WIRING_CARDS = ("switches", "unifi")
 
-ACTIONS = re.compile(r"^/api/settings/([a-z]+)/(test|save|off)$")
+ACTIONS = re.compile(r"^/api/settings/([a-z]+)/(test|save|off|dismiss)$")
 TEST_TEXT = "**✅ Test alert from Atlas**\nIf you can read this, alerts reach you here."
 
 
@@ -351,6 +351,8 @@ def handle_post(path, body):
         return 404, {"error": "no such setting"}
     body = body if isinstance(body, dict) else {}
 
+    if action == "dismiss":
+        return _dismiss(card, body)
     try:
         if action == "test":
             try:
@@ -375,6 +377,34 @@ def handle_post(path, body):
         local.save_settings(settings)
 
     return 200, {"ok": True, "message": "Turned off." if action == "off" else "Saved."}
+
+
+def _dismiss(card, body):
+    """'Don't ask': never suggest this address (or MAC) for a login again."""
+
+    key = str(body.get("ip") or "").strip().lower()
+    if card != "switches" or not re.fullmatch(r"[0-9a-f.:]{3,39}", key):
+        return 400, {"error": "Nothing to dismiss."}
+    if local.locked(("wiring", "not_managed")):
+        return 400, {"error": "wiring.not_managed is set in atlas.yaml - add it there."}
+    current = _get(local.read_settings(), ("wiring", "not_managed")) or []
+    if key not in current:
+        local.save_settings({"wiring": {"not_managed": current + [key]}})
+
+    return 200, {"ok": True, "message": "Won't suggest it again."}
+
+
+def _found_html(suggested):
+
+    if not suggested:
+        return ""
+    rows = "".join(
+        f'<li><b>{_esc(entry["name"])}</b> {_esc(entry["ip"])} <span class="muted">- {_esc("; ".join(entry["why"]))}'
+        f'</span><br><button data-use="{_esc(entry["ip"])}" data-name="{_esc(entry["suggested_name"])}">Use</button> '
+        f'<button data-dismiss="{_esc(entry["ip"])}">Don\'t ask</button></li>'
+        for entry in suggested)
+
+    return f'<div class="found"><p><b>Found on your network</b> - these could show their ports with a login:</p><ul>{rows}</ul></div>'
 
 
 def _field_html(card, field, config):
@@ -426,7 +456,26 @@ def _on(card, config):
 
 SCRIPT = """
 <script>
+const fill = (ip, name) => {
+  const form = document.querySelector('form[data-card="switches"]');
+  if (!form) return;
+  form.elements.host.value = ip;
+  if (name && !form.elements.name.value) form.elements.name.value = name;
+  form.elements.name.focus();
+  form.scrollIntoView({block: "center"});
+};
+const wanted = new URLSearchParams(location.search);
+if (wanted.get("add")) fill(wanted.get("add"), wanted.get("name"));
 document.addEventListener("click", async (event) => {
+  const use = event.target.closest("[data-use]"), skip = event.target.closest("[data-dismiss]");
+  if (use) { event.preventDefault(); fill(use.dataset.use, use.dataset.name); return; }
+  if (skip) {
+    event.preventDefault();
+    const response = await fetch("/api/settings/switches/dismiss", {method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify({ip: skip.dataset.dismiss})});
+    if (response.ok) skip.closest("li").remove();
+    return;
+  }
   const button = event.target.closest("[data-act]");
   if (!button) return;
   event.preventDefault();
@@ -462,19 +511,24 @@ STYLE = """<style>
 .setup .lock { font-size:.75rem; border:1px solid #30363d; border-radius:999px; padding:0 6px; margin-left:.3rem; }
 .setup input:disabled, .setup select:disabled, .setup textarea:disabled { opacity:.55; cursor:not-allowed; }
 .setup .buttons { display:flex; gap:.5rem; flex-wrap:wrap; }
+.setup .found { border:1px dashed #30363d; border-radius:8px; padding:.4rem .8rem; margin-bottom:.6rem; }
+.setup .found ul { margin:.3rem 0; padding-left:1rem; } .setup .found li { margin:.3rem 0; }
 </style>"""
 
 
 def render_settings_page():
 
+    from atlas.wiring import suggest
+
     config = load_config()
+    suggested = suggest.current()
     cards = []
     for card, (title, intro, fields) in CARDS.items():
         on = _on(card, config)
-        saved = ""
+        saved = _found_html(suggested) if card == "switches" else ""
         if card == "switches" and config.wiring.switches:
             where = " (from atlas.yaml)" if local.locked(("wiring", "switches")) else ""
-            saved = '<ul class="saved">' + "".join(
+            saved += '<ul class="saved">' + "".join(
                 f"<li><b>{_esc(s.name)}</b> {_esc(s.host)} - user {_esc(s.snmp_user)}, {s.priv}{where}</li>"
                 for s in config.wiring.switches) + "</ul>"
         cards.append(

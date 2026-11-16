@@ -5,6 +5,13 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 
 ## Unreleased
 
+### Added
+- **Atlas finds switches it could read.** Each port check sends devices the standard SNMPv3 discovery message
+  (no user, no password) and reads the LLDP capability flags the mapped switches already collect. Devices that
+  look like managed switches or routers are suggested on the Cabling page, on their device page and under
+  *Found on your network* on the Setup tab's Switches card (**Use** fills in the form, **Don't ask** hides it).
+  `security.snmp_discovery` turns the probe off; `wiring.not_managed` lists dismissed addresses.
+
 ### Changed
 - Clearer errors from the Setup tab's tests and the cabling scan: a switch that doesn't answer, an unknown
   SNMPv3 user, a wrong passphrase or privacy type, and a Proxmox host that's down or refuses the token are each

@@ -160,6 +160,19 @@ def _bitmap(value):
     return ports
 
 
+CAPABILITIES = {"3": "bridge", "4": "access point", "5": "router"}   # LLDP system capability bits (1-based)
+
+
+def _caps(value):
+    """lldpRemSysCapEnabled -> {"bridge", "router", ...}; net-snmp prints it as hex or, when printable, as text."""
+
+    value = value or ""
+    if not re.fullmatch(r"(?:[0-9A-Fa-f]{2}\s*)+", value.strip()):
+        value = value.encode("latin-1", "replace").hex()
+
+    return sorted(CAPABILITIES[bit] for bit in _bitmap(value) if bit in CAPABILITIES)
+
+
 def _topology(get, ports, names, oper, speed, base):
     """Adds stp / lag / vlan / tagged to the port dicts (only where the switch reports them)."""
 
@@ -235,7 +248,8 @@ def parse_switch(walks):
         chassis, port_id = columns.get("5", ""), columns.get("7", "")
         neighbors.append({"port": port, "chassis_mac": normalize_mac(chassis), "chassis": chassis,
                           "remote_port": port_id, "remote_port_mac": normalize_mac(port_id),
-                          "remote_port_desc": columns.get("8", ""), "sys_name": columns.get("9", "")})
+                          "remote_port_desc": columns.get("8", ""), "sys_name": columns.get("9", ""),
+                          "caps": _caps(columns.get("12", ""))})
 
     poe, budget, used = _poe(get, names)
     for name, info in poe.items():

@@ -235,6 +235,7 @@ wiring:
 | `switches` | `[]` | Managed switches that speak the standard MIBs (IF-MIB, LLDP-MIB, BRIDGE-MIB). SNMPv3 authPriv only; `snmp_user` defaults to `atlas` |
 | `unifi` | off | Adds UniFi gateway/AP/switch ports and their uplinks, which SNMP can't see |
 | `cabling_file` | `cabling.yaml` | Patch panels and wall jacks, by hand (see `cabling.example.yaml`) |
+| `not_managed` | `[]` | Addresses never suggested for a login (the Setup tab's *Don't ask* adds them) |
 | `keep_snapshots` | `30` | Scans kept for "changes since the last scan" and cable health history |
 | `timeout` | `10` | Seconds per SNMP or UniFi request |
 
@@ -251,6 +252,8 @@ Each scan compares every connected port's counters with the scan before it, so o
 | Output errors growing | watch | Congestion or a failing port |
 | PoE fault: a powered device detected but not powered | problem | A bad cable, or the device needs more power than the port gives |
 | PoE budget 90% or more used | watch | Another powered device (camera, access point) may not start |
+
+**Finding switches to add:** atlas notices network gear it can't read yet: devices that answer SNMPv3 discovery (the maker comes from the answer, e.g. Cisco, Netgear, MikroTik) and devices a mapped switch hears announcing themselves as a bridge, router or access point over LLDP. NAS and Linux SNMP agents are left out. The Cabling page then says how many devices could show their ports with a login, the device's own page links to the Setup tab with the address filled in, and the Switches card lists them under *Found on your network* with **Use** and **Don't ask**. Atlas never tries passwords: you give the SNMPv3 login, press Test, then Save.
 
 **PoE:** ports powering a device show ⚡ on the faceplate, ports that can supply PoE but aren't have a dashed outline, and each device's line shows its PoE use and budget ("PoE 6.5 W of 30 W"). Hover a port for the PoE class, mode and watts. Switches report this over SNMP (the standard POWER-ETHERNET-MIB; per-port watts only come from UniFi), UniFi devices through the console. "Started/stopped delivering PoE" appears with the other changes since the last scan.
 
@@ -273,6 +276,7 @@ security:
 | `dhcp_timeout` | `3.0` | Seconds to wait for answers |
 | `dhcp_servers` | `[]` | DHCP servers you expect besides the default gateway |
 | `port_watch` | `true` | `atlas ports check`: alert on newly open ports (below) |
+| `snmp_discovery` | `true` | During `atlas ports check`, send each device online the standard SNMPv3 discovery message (no user name, no password, so never a failed login) to find switches and routers that could show their ports |
 | `port_timeout` | `0.5` | Seconds per port connect |
 | `extra_ports` | `[]` | Ports to watch besides the ~25 common service ports |
 

@@ -222,6 +222,10 @@ def run(settings, store, now, *, probe=probe_with_helper, read=None, unifi_clien
     issues, state = assess(offers=offers, probe_error=probe_error, gateway_ip=gateway_ip, arp=arp,
                            clients=unifi_clients, allowed=config.dhcp_servers, state=state)
 
+    from atlas.alerts import issue, report
+    report("lan", [issue(i["kind"], i["subject"], i["reason"], i["detail"],
+                         "problem" if i["level"] == "bad" else "watch", "/posture") for i in issues], now, store)
+
     for text in alerts(previous.get("issues"), issues):
         if send:
             send(text)

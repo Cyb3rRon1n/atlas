@@ -45,6 +45,23 @@ def send_signal(config, text):
         return False, str(error)
 
 
+def report_alerts(store, devices, now):
+    """The Alerts page's view of the inventory: important devices offline, devices waiting for a name."""
+
+    from atlas.alerts import issue, report
+
+    found = [issue("offline", device["id"], f"{device['name']} is offline",
+                   f"last seen {(device['last_seen'] or 'never')[:16].replace('T', ' ')}"
+                   + (f" ({device['ip']})" if device.get("ip") else ""), href=f"/devices/{device['id']}",
+                   device_id=device["id"])
+             for device in devices if device["important"] and device["status"] == "quiet" and device["state"] != "ignored"]
+    new = sum(device["state"] == "new" for device in devices)
+    if new:
+        found.append(issue("new", "devices", f"{new} new device{'s' * (new != 1)} waiting for a name",
+                           "Name them, or mark them known or ignored", "watch", "/devices"))
+    report("devices", found, now, store)
+
+
 def deliver(store, config, now=None):
     """config is the whole notify: section (NotifyConfig)."""
 

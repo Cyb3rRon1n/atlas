@@ -1,3 +1,4 @@
+import atlas.alerts as alerts_module
 import pytest
 from sqlalchemy import create_engine
 
@@ -45,6 +46,7 @@ def temp_db(tmp_path, monkeypatch):
     monkeypatch.setattr(devices_store_module, "engine", engine)
     monkeypatch.setattr(posture_store_module, "engine", engine)
     monkeypatch.setattr(wiring_store_module, "engine", engine)
+    monkeypatch.setattr(alerts_module, "engine", engine)
 
     yield engine
 

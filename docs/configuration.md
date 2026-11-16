@@ -2,7 +2,7 @@
 
 Atlas uses YAML configuration, loaded from `atlas.yaml` in the current working directory. If the file doesn't exist, Atlas runs on defaults (safe — no Proxmox connection is attempted, discovery is fully enabled, no AI model is used until you choose one).
 
-**Prefer a web page?** The **Setup** tab sets up alerts (ntfy, webhooks, email) and the AI model, with a Test button for each. It saves to `inventory/settings.yaml` and keeps passwords in `inventory/secrets.json` (readable only by atlas), both in the data volume. Anything you set in `atlas.yaml` or `.env` wins and shows read-only there.
+**Prefer a web page?** The **Setup** tab sets up alerts (ntfy, webhooks, email), the AI model, managed switches (SNMPv3), a UniFi console and Proxmox, with a Test button for each. Tests are read-only: alerts send one test message, switches get one SNMP request, UniFi and Proxmox are signed in to and read. It saves to `inventory/settings.yaml` and keeps passwords in `inventory/secrets.json` (readable only by atlas), both in the data volume. Anything you set in `atlas.yaml` or `.env` wins and shows read-only there.
 
 Run `atlas init` to generate this file interactively instead of writing it by hand — it only prompts for the fields below that actually vary per deployment (Proxmox, AI provider, Prometheus), leaves `discovery`/`inventory` at their defaults, and logs the session to `logs/` for troubleshooting. The reference below is for editing the result by hand, or understanding what each field does.
 

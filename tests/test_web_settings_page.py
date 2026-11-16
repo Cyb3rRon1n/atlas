@@ -148,3 +148,105 @@ def test_anthropic_key_check_lists_models_only(env, monkeypatch):
     bad = handle_post("/api/settings/ai/test", {"provider": "anthropic", "model": "claude-opus-5", "api_key": "sk-bad"})
     assert bad[0] == 400 and "refused the key" in bad[1]["error"]
     assert local.secret_names() == set()
+
+
+SWITCH = {"name": "core switch", "host": "192.0.2.2", "snmp_user": "atlas", "priv": "des",
+          "auth": "auth-pass", "priv_pass": "priv-pass"}
+
+
+def test_switches_add_update_remove_and_turn_wiring_on(env, isolated_cwd):
+    assert handle_post("/api/settings/switches/save", {**SWITCH, "auth": ""})[0] == 400     # a new switch needs both
+    assert handle_post("/api/settings/switches/save", SWITCH)[0] == 200
+    assert handle_post("/api/settings/switches/save", {**SWITCH, "name": "spare", "host": "192.0.2.3"})[0] == 200
+    # updating by name keeps the saved passphrases when left blank
+    assert handle_post("/api/settings/switches/save", {**SWITCH, "host": "192.0.2.9", "auth": "", "priv_pass": ""})[0] == 200
+
+    config = load_config()
+    assert config.wiring.enabled is True
+    assert [(s.name, s.host, s.priv) for s in config.wiring.switches] == [("spare", "192.0.2.3", "des"),
+                                                                         ("core switch", "192.0.2.9", "des")]
+    assert env["ATLAS_SNMP_CORE_SWITCH_AUTH"] == "auth-pass" and env["ATLAS_SNMP_CORE_SWITCH_PRIV"] == "priv-pass"
+    assert "pass" not in (isolated_cwd / "inventory" / "settings.yaml").read_text()
+    page = render_settings_page()
+    assert "core switch" in page and "auth-pass" not in page and "Remove this switch" in page
+
+    handle_post("/api/settings/switches/off", {"name": "spare"})
+    handle_post("/api/settings/switches/off", {"name": "core switch"})
+    assert local.read_settings() == {} and local.secret_names() == set()      # last one out turns the map off
+
+
+def test_switches_in_atlas_yaml_lock_the_card(env, isolated_cwd):
+    (isolated_cwd / "atlas.yaml").write_text("wiring:\n  switches:\n    - name: core\n      host: 192.0.2.2\n")
+    status, data = handle_post("/api/settings/switches/save", SWITCH)
+    assert status == 400 and "atlas.yaml" in data["error"] and local.read_settings() == {}
+    assert "(from atlas.yaml)" in render_settings_page()
+    assert "No switch named core switch - names: core" in handle_post("/api/settings/switches/test", SWITCH)[1]["error"]
+
+
+def test_switch_test_makes_one_read_only_snmp_request(env, monkeypatch):
+    from atlas.wiring import snmp
+
+    calls = []
+
+    def run(argv, **kwargs):
+        conf = open(kwargs["env"]["SNMPCONFPATH"] + "/snmp.conf").read()
+        calls.append((argv, conf))
+        return type("R", (), {"returncode": 0, "stderr": "", "stdout": '"core"\n"SG300-28 28-Port Gigabit"\n'})()
+
+    probe = snmp.probe_switch
+    monkeypatch.setattr(snmp, "probe_switch", lambda switch, environ, timeout: probe(
+        switch, environ, timeout, run=run, which=lambda tool: f"/usr/bin/{tool}"))
+    status, data = handle_post("/api/settings/switches/test", SWITCH)
+    assert status == 200 and data["message"] == "Connected to core: SG300-28 28-Port Gigabit"
+    (argv, conf), = calls
+    assert argv[0] == "/usr/bin/snmpget" and "auth-pass" not in " ".join(argv)    # passphrases never in argv
+    assert "defPrivType DES" in conf and "defAuthPassphrase auth-pass" in conf
+    assert local.read_settings() == {} and local.secret_names() == set()
+
+
+def test_unifi_test_signs_in_and_counts_devices(env, monkeypatch):
+    from atlas.wiring import WiringError, unifi
+
+    seen = {}
+
+    def session(config, environ, timeout, opener_factory, read):
+        seen.update(url=config.url, user=environ["ATLAS_UNIFI_USER"])
+        return read(lambda path: [{"mac": "a"}, {"mac": "b"}] if path == "stat/device" else [])
+
+    monkeypatch.setattr(unifi, "_session", session)
+    body = {"url": "https://192.0.2.1", "site": "", "verify_ssl": False, "user": "viewer", "password": "pw"}
+    status, data = handle_post("/api/settings/unifi/test", body)
+    assert status == 200 and "2 UniFi devices" in data["message"] and seen["user"] == "viewer"
+
+    def refused(*args):
+        raise WiringError("UniFi login refused - check ATLAS_UNIFI_USER/PASS (a local, read-only account)")
+
+    monkeypatch.setattr(unifi, "_session", refused)
+    assert handle_post("/api/settings/unifi/test", body)[1]["error"].startswith("UniFi login refused")
+
+    assert handle_post("/api/settings/unifi/save", body)[0] == 200
+    config = load_config()
+    assert config.wiring.enabled and config.wiring.unifi.enabled and config.wiring.unifi.site == "default"
+    handle_post("/api/settings/unifi/off", {})
+    assert local.read_settings() == {} and local.secret_names() == set()
+
+
+def test_proxmox_test_reads_version_and_nodes(env, monkeypatch):
+    import atlas.proxmox.client as client
+
+    class Api:
+        version = type("V", (), {"get": staticmethod(lambda: {"version": "8.4.1"})})()
+        nodes = type("N", (), {"get": staticmethod(lambda: [{"node": "pve"}])})()
+
+    got = {}
+    monkeypatch.setattr(client, "connect", lambda host, user, **kw: got.update(host=host, **kw) or Api())
+    body = {"host": "192.0.2.10", "user": "atlas@pve", "token_name": "atlas", "token_value": "uuid-secret",
+            "verify_ssl": False}
+    status, data = handle_post("/api/settings/proxmox/test", body)
+    assert status == 200 and data["message"] == "Connected: Proxmox VE 8.4.1, 1 node."
+    assert got["token_value"] == "uuid-secret"
+
+    assert handle_post("/api/settings/proxmox/save", body)[0] == 200
+    config = load_config()
+    assert config.proxmox.enabled and config.proxmox.token_value == "uuid-secret"
+    assert "uuid-secret" not in render_settings_page()

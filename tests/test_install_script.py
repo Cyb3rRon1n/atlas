@@ -82,3 +82,16 @@ def test_refuses_without_docker(sandbox):
     result = run("--yes", PATH=f"{home / 'bin'}:/nonexistent")
 
     assert result.returncode != 0 and "Docker is not installed" in result.stderr
+
+
+def test_piped_install_survives_docker_reading_stdin(sandbox):
+    # `curl ... | bash`: bash reads the script from stdin, and docker commands inherit that stdin. A real
+    # `docker compose` read the rest of the script, so the installer stopped silently after "Started".
+    home, run = sandbox
+    (home / "bin" / "docker").write_text(FAKE_DOCKER.replace('echo "docker $*"', 'cat >/dev/null; echo "docker $*"'))
+    env = {"PATH": f"{home / 'bin'}:/usr/bin:/bin", "HOME": str(home), "ATLAS_SOURCE": str(REPO),
+           "ATLAS_DIR": str(home / "atlas"), "FAKE_LOG": str(home / "docker.log"), "ATLAS_BIND": "0.0.0.0"}
+    result = subprocess.run([shutil.which("bash")], input=(REPO / "install.sh").read_text(), env=env,
+                            capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stderr
+    assert "Atlas is running" in result.stdout and "c0ffee12" in result.stdout

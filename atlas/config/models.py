@@ -149,6 +149,7 @@ class NotifyConfig(BaseModel):
     apprise: list[str] = []    # Apprise URLs (tgram://, pover://, matrix://, ...) - needs the apprise package
     quiet_hours: list[QuietHours] = []   # no messages in these weekly windows (atlas.alerts.quiet)
     timezone: str = ""                   # for quiet_hours: an IANA name like America/Detroit; UTC when empty
+    weekly_summary: bool = True          # Sunday evening (timezone): how the week went (atlas.monitoring.summary)
 
 
 class AccessConfig(BaseModel):

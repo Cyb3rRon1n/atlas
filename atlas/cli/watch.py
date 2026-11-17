@@ -161,6 +161,14 @@ def lan_scan(
         except Exception as error:                      # NAS trouble never fails the LAN scan
             console.print(f"[yellow]NAS check failed: {error}[/yellow]")
 
+    try:                                                # Sunday evening: how the week went
+        from atlas.monitoring.summary import run as summary_run
+        from atlas.posture.store import PostureStore
+        if summary_run(settings, PostureStore(), datetime.utcnow()):
+            console.print("Weekly summary sent.")
+    except Exception as error:
+        console.print(f"[yellow]Weekly summary failed: {error}[/yellow]")
+
     if result["new"] or result["offline"] or result["notify_errors"]:
         application.runtime.events.publish(
             AtlasEvent(event_type="atlas.devices.scan.completed", source="LanScan", payload=result)

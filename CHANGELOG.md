@@ -3,7 +3,10 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
-## Unreleased
+## 0.9.0 - 2026-11-16
+
+A new look (side menu, light and dark, Home and Cabling redesigned), clues that say what each new device is,
+uptime checks, UPS power alerts, per-port traffic, one alert per outage, and a Setup tab that asks what you own.
 
 ### Added
 - **Clues for new devices** on Devices and Triage, so you can tell what an IP address is: the maker from its

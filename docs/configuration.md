@@ -222,6 +222,13 @@ How often the `atlas-scan` container loops `atlas scan; atlas discover; atlas pr
 
 `atlas scan` never pings and never opens a raw socket: it TCP-connects to port 9 on every address in scope, which makes the kernel ARP-resolve each live host, then reads `/proc/net/arp` for the resulting IP-to-MAC table (only complete entries count — an address nobody answered for isn't in it) and does a best-effort reverse DNS lookup for a hostname. This needs host networking (`network_mode: host`) but no extra capabilities. With `discover` on it also sends one mDNS question and one SSDP search to the LAN and reads each answering UPnP device's own description - read-only, and nothing leaves the network. The maker of each MAC address comes from the IEEE's public list (`inventory/oui.csv`, downloaded monthly; without internet it is skipped). A scan refuses to run over more than 1024 addresses at once — narrow `subnets` if your LAN is bigger than that.
 
+### Weekly summary
+
+Every Sunday from 18:00 (in `notify.timezone`; UTC when empty) the next `atlas scan` sends one message on how the
+week went: internet outages, services below 100%, new devices and how many wait for a name, open alerts,
+heartbeats, disks and the UPS - only the parts you use. Getting it also tells you atlas itself is alive.
+`notify.weekly_summary: false` turns it off; quiet hours over Sunday evening hold it.
+
 ### Quiet hours
 
 A weekly schedule when no alert messages go out - the night, or the Sunday update window. Problems still show on the Alerts page; only the messages are held, the same as **Pause alerts**. Add them on the Alerts page (times in your browser's time zone, which is saved as `notify.timezone`) or in `atlas.yaml`:

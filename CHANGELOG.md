@@ -24,6 +24,8 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   lookups fail while the internet answers, one when they work again.
 - **Prometheus `/metrics`**: uptime, internet, DNS, devices, alerts, disks, UPS, heartbeats and Pi-hole numbers
   for Grafana; read with the existing read-only API token.
+- **Weekly summary**: Sunday evening, one message on how the week went (internet, services, new devices, alerts,
+  heartbeats, disks, UPS) - which also shows atlas is alive. `notify.weekly_summary: false` turns it off.
 
 ## 0.10.0 - 2026-11-17
 

@@ -322,7 +322,7 @@ def test_analyze_json_prints_result_and_exits_zero(isolated_cwd, temp_db):
             )
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ):
 
@@ -354,7 +354,7 @@ def test_analyze_json_with_ai_provider_error_exits_one(isolated_cwd, temp_db):
             raise AIProviderError("no API key configured")
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FailingProvider()
     ):
 
@@ -416,9 +416,9 @@ def test_analyze_json_with_plan_reports_it_without_running_it(isolated_cwd, temp
             )
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
-    ), patch("atlas.cli.main.execute_action") as mock_execute:
+    ), patch("atlas.cli.ai.execute_action") as mock_execute:
 
         result = runner.invoke(app, ["analyze", "--json"])
 
@@ -490,7 +490,7 @@ def test_analyze_prints_suggested_action_for_known_container_only(
             )
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ):
 
@@ -542,7 +542,7 @@ def test_analyze_prints_suggested_stop_command_for_known_container(
             )
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ):
 
@@ -604,7 +604,7 @@ def test_analyze_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db
             )
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ):
 
@@ -678,7 +678,7 @@ def _analyze_with_plan(monkeypatch_input, sonarr_status="running"):
             )
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
         "atlas.actions.registry.stop_container",
@@ -797,7 +797,7 @@ def test_analyze_plan_step_failure_stops_remaining_steps(isolated_cwd, temp_db):
             )
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
         "atlas.actions.registry.stop_container",
@@ -835,7 +835,7 @@ def test_chat_prints_reply_and_suggested_action(isolated_cwd, temp_db):
             )
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
         "atlas.docker.collect_containers",
@@ -872,7 +872,7 @@ def test_chat_drops_suggested_action_for_hallucinated_container(
             )
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
         "atlas.docker.collect_containers",
@@ -924,7 +924,7 @@ def test_chat_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db):
             )
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
         "atlas.docker.collect_containers",
@@ -986,7 +986,7 @@ def test_chat_confirms_plan_executes_all_steps_and_logs_events(
             )
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
         "atlas.docker.collect_containers",
@@ -1033,7 +1033,7 @@ def test_chat_saves_transcript_as_a_single_event_on_exit(isolated_cwd, temp_db):
             return ChatReply(text="All quiet on the media stack.")
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
         "atlas.docker.collect_containers",
@@ -1079,7 +1079,7 @@ def test_chat_exiting_immediately_does_not_save_a_transcript(
             raise AssertionError("should never be called")
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=FakeProvider()
     ):
 
@@ -1130,10 +1130,10 @@ def test_chat_keeps_assistant_reply_in_messages_when_notes_are_configured(
     fake_agent = FakeAgent()
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=MagicMock()
     ), patch(
-        "atlas.cli.main.AtlasAgent",
+        "atlas.cli.ai.AtlasAgent",
         return_value=fake_agent
     ):
 
@@ -1177,10 +1177,10 @@ def test_chat_drops_failed_question_from_messages_on_provider_error(
     fake_agent = FlakyAgent()
 
     with patch(
-        "atlas.cli.main.get_provider",
+        "atlas.cli.ai.get_provider",
         return_value=MagicMock()
     ), patch(
-        "atlas.cli.main.AtlasAgent",
+        "atlas.cli.ai.AtlasAgent",
         return_value=fake_agent
     ):
 
@@ -1399,13 +1399,13 @@ def test_proxmox_scan_first_run_prints_no_changes_section(isolated_cwd, temp_db)
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch("atlas.cli.virt.connect", return_value=MagicMock()),
         patch(
-            "atlas.cli.main.discover_nodes",
+            "atlas.cli.virt.discover_nodes",
             return_value=[{"name": "pve1", "status": "online"}]
         ),
         patch(
-            "atlas.cli.main.discover_resources",
+            "atlas.cli.virt.discover_resources",
             return_value=[
                 {
                     "vmid": 100, "name": "plex", "node": "pve1", "type": "qemu",
@@ -1444,13 +1444,13 @@ def test_proxmox_scan_second_run_reports_changes(isolated_cwd, temp_db):
     ]
 
     with (
-        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch("atlas.cli.virt.connect", return_value=MagicMock()),
         patch(
-            "atlas.cli.main.discover_nodes",
+            "atlas.cli.virt.discover_nodes",
             return_value=[{"name": "pve1", "status": "online"}]
         ),
         patch(
-            "atlas.cli.main.discover_resources",
+            "atlas.cli.virt.discover_resources",
             side_effect=[first_guests, second_guests]
         )
     ):
@@ -1487,7 +1487,7 @@ def test_proxmox_restart_guest_not_found(isolated_cwd):
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch("atlas.cli.virt.connect", return_value=MagicMock()),
         patch("atlas.proxmox.manager.discover_resources", return_value=[]),
     ):
 
@@ -1509,12 +1509,12 @@ def test_proxmox_restart_declined_does_not_restart_guest(isolated_cwd):
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch("atlas.cli.virt.connect", return_value=MagicMock()),
         patch(
             "atlas.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
-        patch("atlas.cli.main.restart_guest") as mock_restart,
+        patch("atlas.cli.virt.restart_guest") as mock_restart,
     ):
 
         result = runner.invoke(
@@ -1533,13 +1533,13 @@ def test_proxmox_restart_confirmed_restarts_guest_and_logs_event(
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch("atlas.cli.virt.connect", return_value=MagicMock()),
         patch(
             "atlas.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
         patch(
-            "atlas.cli.main.restart_guest",
+            "atlas.cli.virt.restart_guest",
             return_value={"success": True}
         ) as mock_restart,
     ):
@@ -1570,12 +1570,12 @@ def test_proxmox_stop_declined_does_not_stop_guest(isolated_cwd):
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch("atlas.cli.virt.connect", return_value=MagicMock()),
         patch(
             "atlas.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
-        patch("atlas.cli.main.stop_guest") as mock_stop,
+        patch("atlas.cli.virt.stop_guest") as mock_stop,
     ):
 
         result = runner.invoke(
@@ -1594,13 +1594,13 @@ def test_proxmox_stop_confirmed_stops_guest_and_logs_event(
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch("atlas.cli.virt.connect", return_value=MagicMock()),
         patch(
             "atlas.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
         patch(
-            "atlas.cli.main.stop_guest",
+            "atlas.cli.virt.stop_guest",
             return_value={"success": True}
         ) as mock_stop,
     ):
@@ -1634,12 +1634,12 @@ def test_proxmox_resize_prints_hotplug_caveat_for_qemu_guest(isolated_cwd):
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch("atlas.cli.virt.connect", return_value=MagicMock()),
         patch(
             "atlas.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
-        patch("atlas.cli.main.resize_guest") as mock_resize,
+        patch("atlas.cli.virt.resize_guest") as mock_resize,
     ):
 
         result = runner.invoke(
@@ -1658,12 +1658,12 @@ def test_proxmox_resize_omits_hotplug_caveat_for_lxc_guest(isolated_cwd):
     lxc_guest = {**PROXMOX_GUEST, "type": "lxc"}
 
     with (
-        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch("atlas.cli.virt.connect", return_value=MagicMock()),
         patch(
             "atlas.proxmox.manager.discover_resources",
             return_value=[lxc_guest]
         ),
-        patch("atlas.cli.main.resize_guest") as mock_resize,
+        patch("atlas.cli.virt.resize_guest") as mock_resize,
     ):
 
         result = runner.invoke(
@@ -1682,13 +1682,13 @@ def test_proxmox_resize_confirmed_resizes_guest_and_logs_event(
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.main.connect", return_value=MagicMock()),
+        patch("atlas.cli.virt.connect", return_value=MagicMock()),
         patch(
             "atlas.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
         patch(
-            "atlas.cli.main.resize_guest",
+            "atlas.cli.virt.resize_guest",
             return_value={"success": True}
         ) as mock_resize,
     ):

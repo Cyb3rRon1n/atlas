@@ -64,7 +64,9 @@ def scan():
         return
 
 
-    previous = KnowledgeQueries().latest_environment()
+    # The last Proxmox scan itself - not the latest saved environment, which other atlas-scan commands keep
+    # overwriting with an empty "virtualization" (so every guest looked newly added each time).
+    previous = KnowledgeQueries().latest_event_payload("atlas.proxmox.scan.completed")
 
 
     client = connect(
@@ -134,9 +136,7 @@ CPU / Memory:
         "guests": guests
     }
 
-    previous_virtualization = (
-        previous.get("virtualization") if previous else None
-    )
+    previous_virtualization = previous if previous and previous.get("nodes") is not None else None
 
     changes = diff_virtualization(previous_virtualization, data)
 

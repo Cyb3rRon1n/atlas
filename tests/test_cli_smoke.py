@@ -1474,6 +1474,31 @@ def test_proxmox_scan_second_run_reports_changes(isolated_cwd, temp_db):
     assert "atlas.proxmox.changes_detected" in event_types
 
 
+def test_proxmox_scan_ignores_other_commands_saving_an_empty_virtualization(isolated_cwd, temp_db):
+    """atlas-scan's other commands save the environment with virtualization = {} between Proxmox scans; that
+    used to make every scan report the whole cluster as newly added."""
+
+    from atlas.core.application import application
+    from atlas.knowledge.store import KnowledgeStore
+
+    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    guests = [{"vmid": 100, "name": "plex", "node": "pve1", "type": "qemu", "status": "running", "cpu": 0.1,
+               "maxcpu": 4, "mem": 100, "maxmem": 1000, "disk": 0, "maxdisk": 0, "uptime": 10}]
+
+    with (
+        patch("atlas.cli.virt.connect", return_value=MagicMock()),
+        patch("atlas.cli.virt.discover_nodes", return_value=[{"name": "pve1", "status": "online"}]),
+        patch("atlas.cli.virt.discover_resources", return_value=guests)
+    ):
+        runner.invoke(app, ["proxmox", "scan"])
+        application.runtime.environment.update("virtualization", {})
+        KnowledgeStore().save_environment(application.runtime.environment)      # what `atlas map` etc. do
+        second = runner.invoke(app, ["proxmox", "scan"])
+
+    assert second.exit_code == 0
+    assert "No changes since last scan." in second.output and "added" not in second.output
+
+
 def test_proxmox_restart_when_disabled_does_not_attempt_connection(isolated_cwd):
 
     result = runner.invoke(app, ["proxmox", "restart", "100"])

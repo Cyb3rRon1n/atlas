@@ -177,6 +177,8 @@ def test_sign_in_sign_out_and_api_token(secured):
 
     status, headers, _ = _form(base, "/logout", {}, cookie)
     assert status == 303 and "Max-Age=0" in headers["Set-Cookie"]
+    # a copy of the old cookie no longer works after Sign out
+    assert _call(base + "/", headers={"Cookie": cookie})[0] in (302, 303, 401)
 
 
 def test_proxy_mode_is_unchanged(running_server_open):

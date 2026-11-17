@@ -163,6 +163,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         client = self.client_address[0]
 
         if path == "/logout":
+            if self._session_ok():          # only a signed-in browser can sign everyone out
+                self.auth.end_sessions()
             self._redirect("/login", cookie="")
             return
 
@@ -381,7 +383,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         elif path == "/triage":
             try:
                 store = InventoryStore()
-                body = render_triage_page(store.triage(), identify.gather(store.devices()))
+                devices = store.devices()
+                body = render_triage_page(store.triage(devices), identify.gather(devices))
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)
                 self._send(500, "text/plain; charset=utf-8", "Internal error")

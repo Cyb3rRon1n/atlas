@@ -91,3 +91,29 @@ def refresh(path, url, now, max_age=timedelta(days=7), get=requests.get):
         raise
     tmp.replace(path)
     return True
+
+
+RESOLVE = None      # socket.getaddrinfo unless a test swaps it
+
+
+def remember_download(url, note, table=None, store=None, resolve=None, asn_path="inventory/ip2asn-v4.tsv.gz"):
+    """Mark the owner of one of atlas's own download servers (this table, the IP-location file, the MAC maker
+    list) as known for the host, so atlas's own updates never show up as a new destination to review.
+    Best effort: returns the keys marked, [] when anything fails."""
+
+    import socket
+    from urllib.parse import urlsplit
+
+    from atlas.posture.store import PostureStore, asn_key
+
+    try:
+        host = urlsplit(url).hostname
+        ips = {info[4][0] for info in (resolve or RESOLVE or socket.getaddrinfo)(host, 443, socket.AF_INET, socket.SOCK_STREAM)}
+        table = table if table is not None else load_table(asn_path)
+        keys = sorted({asn_key(getattr(table.lookup(ip), "asn", None), ip) for ip in ips})
+        store = store or PostureStore()
+        for key in keys:
+            store.mark_known("host", key, note)
+        return keys
+    except Exception:
+        return []

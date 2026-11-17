@@ -22,7 +22,10 @@ def outages(snaps, devices):
     """{down box device_id: [offline device ids behind it]} - only boxes with something offline behind them."""
 
     offline = {device["id"] for device in devices if device["status"] == "quiet" and device["state"] != "ignored"}
-    by_name = {device["name"]: device["id"] for device in devices if device.get("name")}
+    names = [device["name"] for device in devices if device.get("name")]
+    # "behind" lists names: one shared by two devices (two "iPhone"s) can't say which, so it is skipped
+    by_name = {device["name"]: device["id"] for device in devices
+               if device.get("name") and names.count(device["name"]) == 1}
     by_mac = {sighting["mac"].lower(): device["id"] for device in devices
               for sighting in device.get("sightings", []) if sighting.get("mac")}
     by_ip = {device["ip"]: device["id"] for device in devices if device.get("ip")}

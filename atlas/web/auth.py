@@ -108,6 +108,15 @@ class Auth:
             data.setdefault("token", secrets.token_urlsafe(32))
             self._save(data)
 
+    def end_sessions(self):
+        """A new signing secret: every session cookie, copied or not, stops working (Sign out)."""
+
+        with self._lock:
+            data = self._load()
+            if data.get("secret"):
+                data["secret"] = secrets.token_hex(32)
+                self._save(data)
+
     def token(self, new=False):
 
         with self._lock:

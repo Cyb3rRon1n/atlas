@@ -86,6 +86,22 @@ class UptimeStore:
                 select(UptimeRecord).where(UptimeRecord.name == name)
                 .order_by(UptimeRecord.checked_at.desc(), UptimeRecord.id.desc()).limit(n))]
 
+    def latest(self, name):
+        """(checked_at, ok, ms) of the newest result for one check, or None."""
+
+        with Session(self.engine) as session:
+            row = session.scalars(select(UptimeRecord).where(UptimeRecord.name == name)
+                                  .order_by(UptimeRecord.checked_at.desc()).limit(1)).first()
+            return (row.checked_at, row.ok, row.ms) if row else None
+
+    def history(self, name, since):
+        """[(checked_at, ok)] for one check since `since`, oldest first."""
+
+        with Session(self.engine) as session:
+            return [(r.checked_at, r.ok) for r in session.scalars(
+                select(UptimeRecord).where(UptimeRecord.name == name, UptimeRecord.checked_at >= since)
+                .order_by(UptimeRecord.checked_at))]
+
     def outage_start(self, name, before):
         """When the failures that ended just now began: the first failure after the last success before `before`."""
 

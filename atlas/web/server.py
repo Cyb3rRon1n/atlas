@@ -10,7 +10,7 @@ or, with web.auth: proxy, the auth proxy in front of the host.
 
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from http.cookies import SimpleCookie
@@ -242,8 +242,13 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         ups = safe("ups", lambda: (PostureStore().statuses().get("ups") or {}).get("detail")) \
             if settings and settings.ups.enabled else None
 
+        last = safe("internet", lambda: UptimeStore().latest("Internet"))
+        internet = None
+        if last and settings and settings.internet.enabled and now - last[0] < timedelta(minutes=5):
+            internet = last[1:]                         # (up, ms); an old result means the check isn't running
+
         return dict(
-            stats=build_stats(devices, hosts, storage, posture, uptime, ups),
+            stats=build_stats(devices, hosts, storage, posture, uptime, ups, internet),
             posture=posture, hosts=hosts,
             events=interesting_events(safe("events", lambda: query.recent_events(200)) or []),
             storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now)),
@@ -293,15 +298,17 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         elif path == "/uptime":
             from atlas.config import local
             from atlas.monitoring.uptime import UptimeStore
-            from atlas.web.uptime_page import render_uptime_page, suggestions
+            from atlas.web.uptime_page import internet_data, render_uptime_page, suggestions
             settings, now = load_config(), datetime.utcnow()
             checks = settings.uptime.checks
             power = None
             if settings.ups.enabled:
                 power = (PostureStore().statuses().get("ups") or {}).get("detail") or {"error": "not read yet"}
-            body = render_uptime_page(checks, UptimeStore().summary([c.name for c in checks], now), now,
+            store = UptimeStore()
+            body = render_uptime_page(checks, store.summary([c.name for c in checks], now), now,
                                       settings.uptime.fail_after, suggestions(checks), local.locked(("uptime", "checks")),
-                                      power)
+                                      power, internet_data(store, now, settings.uptime.fail_after)
+                                      if settings.internet.enabled else None)
         elif path == "/trends":
             from datetime import timedelta
             window = (parse_qs(self.path.partition("?")[2]).get("window") or ["24h"])[0]

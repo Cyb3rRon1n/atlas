@@ -3,6 +3,15 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
+## Unreleased
+
+### Added
+- **Internet health** on Servers → Uptime and a Home tile: once a minute atlas times a connection to public DNS
+  servers (Cloudflare, Google, Quad9; `internet.targets`) and to your router. One alert when the internet drops
+  and one when it's back with how long it lasted; the outage list says whether your router answered (so it was
+  the provider) or not. Same graphs, uptime % and 30-day history as the uptime checks; no ping, no extra
+  privileges. Turn off with `internet.enabled: false`.
+
 ## 0.9.1 - 2026-11-17
 
 ### Fixed

@@ -78,6 +78,7 @@ def initialize_database(engine=None):
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_events_type_time ON events (event_type, created_at)"))
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_events_time ON events (created_at)"))
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_environment_time ON environment (created_at)"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS ix_uptime_name_time ON uptime (name, checked_at)"))
 
 
 __all__ = [

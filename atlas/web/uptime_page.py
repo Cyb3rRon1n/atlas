@@ -32,6 +32,7 @@ STYLE = """<style>
 .up-sugg { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; color:var(--muted); font-size:13px; }
 .up-power { margin:.4rem 0; } .up-power .state { margin-right:.4rem; }
 #up-msg { color:var(--red); min-height:1.2em; }
+.outages { margin:4px 0 24px; padding-left:18px; font-size:14px; } .outages li { padding:2px 0; }
 </style>"""
 
 SCRIPT = """<script>
@@ -119,7 +120,56 @@ def _power(power):
     return "<h2>Power</h2>" + "".join(rows)
 
 
-def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locked=False, power=None):
+def internet_data(store, now, fail_after=2):
+    """{"summary": UptimeStore.summary() for Internet and Router, "outages": [(start, end, router_ok)] 30 days}."""
+
+    from datetime import timedelta
+
+    from atlas.monitoring import internet
+
+    since = now - timedelta(days=30)
+    router = dict(store.history(internet.ROUTER, since))
+    rows = [(at, ok, router.get(at)) for at, ok in store.history(internet.INTERNET, since)]
+    return {"summary": store.summary(internet.NAMES, now),
+            "outages": list(reversed(internet.outages(rows, fail_after)))}
+
+
+def _internet(data, now, fail_after):
+    """The Internet section: the two built-in checks as rows, then the outage list."""
+
+    if not data or not any(info["points"] for info in data["summary"].values()):
+        return ""
+    rows = []
+    for name, info in data["summary"].items():
+        if not info["points"]:
+            continue
+        state, label = _state(info, fail_after)
+        last = info["last"]
+        rows.append(f'<tr><td><span class="state {state}">{label}</span></td><td><strong>{_esc(name)}</strong>'
+                    f'<span class="target">{"public DNS servers" if name == "Internet" else "your router"}</span></td>'
+                    f'<td class="num">{f"{last[2]:.0f} ms" if last and last[2] is not None else ""}</td>'
+                    f'<td>{_graph(info["points"])}</td>'
+                    + "".join(f'<td class="num">{_pct(info["uptime"].get(w))}</td>' for w in ("24 h", "7 days", "30 days"))
+                    + "</tr>")
+    outages = "".join(
+        f'<li><b>{_esc(start.strftime("%d %b %H:%M"))}</b> - '
+        + (f'{_minutes(end - start)}' if end else "still down")
+        + f' · {"internet provider (your router answered)" if router_ok else "router or local network"}</li>'
+        for start, end, router_ok in data["outages"][:20])
+
+    return ('<h2>Internet</h2><table class="uptime"><thead><tr><th>Status</th><th>Check</th><th>Response</th>'
+            '<th>Last 24 h</th><th>24 h</th><th>7 days</th><th>30 days</th></tr></thead><tbody>' + "".join(rows)
+            + '</tbody></table>' + (f'<h3>Outages, last 30 days</h3><ul class="outages">{outages}</ul>' if outages else
+                                   '<p class="up-intro">No outages in the last 30 days.</p>'))
+
+
+def _minutes(span):
+
+    minutes = max(1, round(span.total_seconds() / 60))
+    return f"{minutes} min" if minutes < 120 else f"{minutes // 60} h {minutes % 60} min"
+
+
+def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locked=False, power=None, internet=None):
 
     rows = []
     for check in checks:
@@ -162,7 +212,8 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
               'is up when it answers at all (a login page counts); <code>host:port</code> is up when the port accepts '
               f'a connection. After {fail_after} failures in a row it is <strong>down</strong>: you get one alert, and '
               'another when it is back.</p>'
-            + _power(power) + ("<h2>Services</h2>" if power else "") + table + add + SCRIPT)
+            + _internet(internet, now, fail_after) + _power(power)
+            + ("<h2>Services</h2>" if power or internet else "") + table + add + SCRIPT)
 
     return render_page("Uptime", body, active="uptime")
 
@@ -204,6 +255,8 @@ def handle_post(path, body):
 
     if not name:
         return 400, {"error": "Give the check a name."}
+    if name.lower() in ("internet", "router"):
+        return 400, {"error": f"{name} is the built-in internet check - pick another name."}
     if len(others) != len(saved):
         return 400, {"error": f"There is already a check called {name}."}
     try:

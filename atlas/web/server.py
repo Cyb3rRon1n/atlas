@@ -247,8 +247,12 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         if last and settings and settings.internet.enabled and now - last[0] < timedelta(minutes=5):
             internet = last[1:]                         # (up, ms); an old result means the check isn't running
 
+        dns = safe("dns", lambda: (PostureStore().statuses().get("dns") or {}).get("detail")) \
+            if settings and settings.dns_filter.enabled else None
+
         return dict(
-            stats=build_stats(devices, hosts, storage, posture, uptime, ups, internet),
+            dns=dns, names={d["ip"]: d["name"] for d in devices or [] if d.get("ip")},
+            stats=build_stats(devices, hosts, storage, posture, uptime, ups, internet, dns),
             posture=posture, hosts=hosts,
             events=interesting_events(safe("events", lambda: query.recent_events(200)) or []),
             storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now)),

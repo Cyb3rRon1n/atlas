@@ -11,6 +11,11 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   and one when it's back with how long it lasted; the outage list says whether your router answered (so it was
   the provider) or not. Same graphs, uptime % and 30-day history as the uptime checks; no ping, no extra
   privileges. Turn off with `internet.enabled: false`.
+- **Pi-hole and AdGuard Home** (Setup → *Pi-hole or AdGuard Home*, or *What's on your network?*): Home shows
+  whether ad blocking is on, how many DNS questions were asked and blocked, and the devices that ask the most,
+  named from your device list. One alert when blocking stays off (two checks in a row) and one when it's back.
+  Pi-hole 6 (password or app password; atlas signs out after every read) and AdGuard Home (username +
+  password). Read-only.
 
 ## 0.9.1 - 2026-11-17
 

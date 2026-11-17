@@ -21,6 +21,7 @@ has already found is ticked for you.
 | **Docker** | A read-only socket proxy | Containers and the services they publish | `docker-compose.yml` |
 | **UPS** (APC, CyberPower, Eaton... plugged into a computer or NAS) | NUT (Network UPS Tools), port 3493, read-only | Alerts on a power cut, low battery and power back; charge, time left and load | Setup → UPS |
 | **Any device** (phones, TVs, speakers, printers, smart plugs...) | MAC maker list, mDNS/Bonjour, SSDP/UPnP - nothing to set up | What new devices are: maker, the name and model they announce, where they're plugged in, a suggested name | Network → Devices |
+| **Pi-hole 6 or AdGuard Home** | Its web API: the password or a Pi-hole app password; AdGuard Home username + password | Ad blocking on/off (alert when it stays off), DNS questions and blocked share, the devices that ask the most | Setup → Pi-hole or AdGuard Home |
 | **Your internet connection** | TCP connects to public DNS servers and your router, once a minute - nothing to set up | Up/down alerts, response time, uptime %, an outage list that says whether it was your router or your provider | Servers → Uptime |
 | **Any web service or port** | HTTP or TCP | Up/down alerts, response time, uptime % | Servers → Uptime |
 
@@ -37,10 +38,9 @@ the LAN scan.
 
 From our research into what homes and home labs actually run, roughly in this order:
 
-1. **Pi-hole and AdGuard Home** - DNS clients and filtering status.
-2. **Router details** - DHCP leases and Wi-Fi clients from OPNsense, OpenWrt, MikroTik and Fritz!Box.
-3. **NAS health** - disk SMART status, pool health and temperatures from TrueNAS and Synology.
-4. **Home Assistant** - one connection that covers many smart devices.
-5. **TP-Link Omada and Unraid**, and APC network management cards read over SNMP (for a UPS with no NUT server).
+1. **Router details** - DHCP leases and Wi-Fi clients from OPNsense, OpenWrt, MikroTik and Fritz!Box.
+2. **NAS health** - disk SMART status, pool health and temperatures from TrueNAS and Synology.
+3. **Home Assistant** - one connection that covers many smart devices.
+4. **TP-Link Omada and Unraid**, and APC network management cards read over SNMP (for a UPS with no NUT server).
 
 Something you own missing? Open an issue with the make and model.

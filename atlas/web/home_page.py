@@ -469,7 +469,8 @@ def _checklist(steps):
             + "</ol></section>")
 
 
-def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=None, ups=None, internet=None):
+def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=None, ups=None, internet=None,
+                dns=None):
     """The number tiles along the top of Home: [(label, value, sub, href, tone)]; a source that's missing is left out.
     devices: InventoryStore().devices(); uptime: [7-day % per check]; ups: the UPS watch's saved detail."""
 
@@ -484,6 +485,12 @@ def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=Non
         up, ms = internet
         tiles.append(("Internet", "Up" if up else "Down", f"{ms:.0f} ms" if up and ms is not None else
                       "router or provider - see Uptime" if not up else "", "/uptime", "good" if up else "bad"))
+    info = (dns or {}).get("info") or {}
+    if info:                                      # Pi-hole / AdGuard Home
+        on = info.get("blocking")
+        share = f'{info["percent"]:.0f}% of queries blocked' if info.get("percent") is not None else ""
+        tiles.append(("Ad blocking", "On" if on else "Off", share if on else "every device sees ads", "/#dns",
+                      "good" if on else "bad"))
     if hosts and hosts["rows"]:
         fine = sum(not row["problems"] for row in hosts["rows"])
         tiles.append(("Servers", f"{fine} / {len(hosts['rows'])}", "healthy" if fine == len(hosts["rows"]) else
@@ -509,6 +516,30 @@ def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=Non
                       "bad" if bad else "good"))
 
     return tiles
+
+
+def _dns_card(dns, names):
+    """Pi-hole / AdGuard Home: blocking, totals, the devices that ask the most (named from the inventory)."""
+
+    info = (dns or {}).get("info") or {}
+    if not info:
+        return ""
+    state = "ok" if info.get("blocking") and not dns.get("error") else "warn" if not info.get("blocking") else "review"
+    rows = [("Ad blocking", "on" if info.get("blocking") else "OFF"),
+            ("DNS questions", f'{info["queries"]:,}' if info.get("queries") is not None else "-"),
+            ("Blocked", f'{info["blocked"]:,} ({info["percent"]:.1f}%)' if info.get("blocked") is not None
+             and info.get("percent") is not None else "-")]
+    if info.get("blocklist"):
+        rows.append(("Blocklist", f'{info["blocklist"]:,} domains'))
+    inner = "<dl>" + "".join(f"<dt>{_esc(k)}</dt><dd>{_esc(v)}</dd>" for k, v in rows) + "</dl>"
+    busiest = [(names.get(c["ip"]) or c.get("name") or c["ip"], c["count"]) for c in info.get("clients") or [] if c.get("ip")]
+    if busiest:
+        inner += ('<p class="muted" style="margin:10px 0 4px">Asks the most</p>'
+                  + "".join(f'<div class="row"><span>{_esc(n)}</span><span class="muted">{c:,}</span></div>'
+                            for n, c in busiest[:5]))
+    if dns.get("error"):
+        inner += f'<p class="bad">{_esc(dns["error"])}</p>'
+    return f'<div id="dns" style="display:contents">{_card("/settings#dnsfilter", info.get("kind") or "Ad blocking", state, inner)}</div>'
 
 
 def _kpis(stats):
@@ -544,7 +575,7 @@ def _issues(items):
 
 
 def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=(),
-                     steps=None, open_alerts=(), stats=None):
+                     steps=None, open_alerts=(), stats=None, dns=None, names=None):
     """
     posture: render._posture_block() output or None; hosts: build_hosts()
     output; events: interesting_events() pairs; storage: build_storage()
@@ -559,7 +590,7 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
     body = (HOME_STYLE + _checklist(steps) + _kpis(stats) + (_issues(items) if items else "")
             + ask_chips(ASK_SHORTCUTS) + '<div class="cards">'
             + _posture_card(posture, "posture" in flagged) + _hosts_card(hosts, "hosts" in flagged)
-            + _storage_card(storage, "storage" in flagged)
+            + _storage_card(storage, "storage" in flagged) + _dns_card(dns, names or {})
             + _trends_card(trends) + _analysis_card(analysis, now or datetime.utcnow())
             + _activity_card(events) + "</div>")
 

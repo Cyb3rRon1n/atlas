@@ -253,6 +253,17 @@ class InternetConfig(BaseModel):
     timeout: float = 3.0
 
 
+class DnsFilterConfig(BaseModel):
+    # Pi-hole (v6) or AdGuard Home, read with each scan. The password (or a Pi-hole app password) is the
+    # ATLAS_DNS_PASSWORD secret; AdGuard Home also needs its username.
+    enabled: bool = False
+    kind: Literal["pihole", "adguard"] = "pihole"
+    url: str = ""
+    user: str = ""
+    verify_ssl: bool = False
+    timeout: float = 5.0
+
+
 class UpsConfig(BaseModel):
     # A NUT server (Network UPS Tools): nut-server on Linux, or a Synology/QNAP/Unraid/TrueNAS "network UPS server".
     enabled: bool = False
@@ -284,4 +295,5 @@ class AtlasConfig(BaseModel):
     wiring: WiringConfig = WiringConfig()
     uptime: UptimeConfig = UptimeConfig()
     internet: InternetConfig = InternetConfig()
+    dns_filter: DnsFilterConfig = DnsFilterConfig()
     ups: UpsConfig = UpsConfig()

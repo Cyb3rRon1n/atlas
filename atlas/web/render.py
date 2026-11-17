@@ -150,6 +150,13 @@ def _hosts_tabs(current):
     return section_tabs("trends" if current == "/trends" else "hosts")
 
 
+# The sidebar's globe as the browser-tab icon (inline, so no extra request and no 404 for /favicon.ico).
+FAVICON = ('<link rel="icon" href="data:image/svg+xml,'
+           "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234338ca' "
+           "stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E"
+           "%3Cpath d='M3 12h18M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18'/%3E%3C/svg%3E\">")
+
+
 def render_page(title, body_html, active="", tabs=None, drawer=True, heading=None):
     """heading: the visible headline when it should say more than the tab title (Home's verdict)."""
 
@@ -174,7 +181,7 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
         "<!doctype html>\n"
         "<html lang=\"en\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-        f"<title>Atlas - {_esc(title)}</title>{THEME_SCRIPT}"
+        f"<title>Atlas - {_esc(title)}</title>{FAVICON}{THEME_SCRIPT}"
         f"<style>{PAGE_STYLE}</style></head><body><div class=\"app\">"
         f"<aside class=\"side\"><a class=\"brand\" href=\"/\">{LOGO}Atlas</a>"
         f"<nav class=\"main\" aria-label=\"Main\"><ul>{''.join(items)}</ul></nav>"

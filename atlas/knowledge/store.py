@@ -13,6 +13,9 @@ from atlas.intelligence.providers import AnalysisResult
 
 ENVIRONMENT_KEEP = timedelta(days=7)
 EVENTS_KEEP = timedelta(days=90)
+# Routine bookkeeping with no history reader (each repeats the system snapshot every scan): a week is plenty.
+ROUTINE_EVENTS = ("atlas.discovery.completed", "atlas.plugins.discovery.completed", "atlas.plugin.loaded")
+ROUTINE_KEEP = timedelta(days=7)
 
 
 class KnowledgeStore:
@@ -68,7 +71,7 @@ class KnowledgeStore:
         """
         Old rows out, once per environment save (each scan): environment
         snapshots after 7 days (pages read only the newest), events after
-        90 days (Trends reads 30) - except the newest event of each type,
+        90 days (Trends reads 30), routine discovery/plugin events after 7 - except the newest event of each type,
         which some pages read however old it is.
         """
 
@@ -78,6 +81,9 @@ class KnowledgeStore:
 
             newest = select(func.max(EventRecord.id)).group_by(EventRecord.event_type)
             session.execute(delete(EventRecord).where(EventRecord.created_at < now - EVENTS_KEEP,
+                                                      EventRecord.id.not_in(newest)))
+            session.execute(delete(EventRecord).where(EventRecord.created_at < now - ROUTINE_KEEP,
+                                                      EventRecord.event_type.in_(ROUTINE_EVENTS),
                                                       EventRecord.id.not_in(newest)))
 
 

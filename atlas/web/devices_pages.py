@@ -53,9 +53,42 @@ document.addEventListener("click", async (event) => {
       return;
     }
     if (button.dataset.after === "goto" && data.device_id) { location.href = "/devices/" + data.device_id; return; }
+    const row = button.closest(".attn-row");
+    if (row) { doneInPlace(row, button); return; }      // triage: no reload, so open lists stay open
+    keepPlace();
     location.reload();
   } catch (error) { message.textContent = "Request failed: " + error; }
 });
+function doneInPlace(row, button) {
+  const ignored = button.textContent.trim() === "Ignore";
+  const typed = (row.querySelector("input[id^=name-]") || {}).value;
+  const name = (ignored ? row.dataset.label : typed || row.dataset.label) || "the device";
+  const more = row.closest("details");
+  const note = document.createElement("div");
+  note.className = "muted done-note";
+  note.textContent = "\u2713 " + (ignored ? "Ignored " : "Saved ") + name.trim()
+    + " - it moves to its group next time the page loads.";
+  row.replaceWith(note);
+  const heading = document.querySelector(".attn h2");
+  if (heading) heading.textContent = heading.textContent.replace(/\((\d+)\)/, (_, n) => "(" + Math.max(0, n - 1) + ")");
+  if (more) {
+    const left = more.querySelectorAll(".attn-row").length;
+    more.querySelector("summary").textContent = left ? "Show " + left + " more" : "All handled";
+  }
+}
+const PLACE = "atlas-devices-place";
+function keepPlace() {
+  try { sessionStorage.setItem(PLACE, JSON.stringify({path: location.pathname, y: scrollY,
+          open: [...document.querySelectorAll("details")].map((d) => d.open)})); } catch (error) {}
+}
+try {                                                    // after a reload: reopen the lists, scroll back
+  const place = JSON.parse(sessionStorage.getItem(PLACE) || "null");
+  sessionStorage.removeItem(PLACE);
+  if (place && place.path === location.pathname) {
+    document.querySelectorAll("details").forEach((d, i) => { if (place.open[i]) d.open = true; });
+    scrollTo(0, place.y);
+  }
+} catch (error) {}
 const filter = document.getElementById("filter");
 if (filter) filter.addEventListener("input", () => {
   const needle = filter.value.toLowerCase();
@@ -251,14 +284,14 @@ def render_devices_page(devices, hints=None):
 
     hints = hints or {}
     rows = "".join(
-        f'<div class="attn-row" data-row><span class="ddot {_esc(d["status"])}"></span>'
+        f'<div class="attn-row" data-row data-label="{_esc(d["ip"] or d["name"])}"><span class="ddot {_esc(d["status"])}"></span>'
         + _name_and_kind(d, hints.get(d["id"]))
         + _button("Keep", f"/api/devices/{d['id']}", {"state": "known"}, "primary", name_from=f"name-{d['id']}",
                   kind_from=f"kind-{d['id']}")
         + _button("Ignore", f"/api/devices/{d['id']}", {"state": "ignored"})
         + f' <a href="/devices/{d["id"]}">details</a>' + _clues(d, hints.get(d["id"])) + '</div>' for d in new)
     rows += "".join(
-        f'<div class="attn-row" data-row><span class="ddot quiet"></span><a href="/devices/{d["id"]}">{_esc(d["name"])}</a>'
+        f'<div class="attn-row" data-row data-label="{_esc(d["name"])}"><span class="ddot quiet"></span><a href="/devices/{d["id"]}">{_esc(d["name"])}</a>'
         f'<span class="muted">gone quiet \u00b7 last seen {_when(d["last_seen"])}</span>'
         + _button("Ignore", f"/api/devices/{d['id']}", {"state": "ignored"}) + "</div>" for d in quiet)
     shown = 8   # the rest fold so the page doesn't start with a wall of IPs

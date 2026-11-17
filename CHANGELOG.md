@@ -16,6 +16,8 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 - **Servers → Overview and the AI check-up often saw an empty picture**: each atlas-scan command saves only its
   own part (the map, the Proxmox scan...), and the newest save was read alone. The newest state now fills each
   missing part from the most recent save that has it (container change detection gets the same fix).
+- **Devices: Keep / Ignore no longer reload the page**, so the expanded "Show more" list stays open; the row turns
+  into a short note. Buttons that still reload keep open lists and the scroll position.
 
 ## 0.11.0 - 2026-11-17
 

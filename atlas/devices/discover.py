@@ -195,11 +195,11 @@ def _clean(text):
     return re.sub(r"\s+", " ", str(text or "")).strip()[:80] or None
 
 
-def discover(timeout=2.5, ask_mdns=mdns, ask_ssdp=ssdp):
+def discover(timeout=2.5, ask_mdns=None, ask_ssdp=None):
     """{ip: {"name", "model", "maker", "services": [..]}} merged from both; {} when the network says nothing."""
 
     merged = {}
-    for ask in (ask_mdns, ask_ssdp):
+    for ask in (ask_mdns or mdns, ask_ssdp or ssdp):
         try:
             answers = ask(timeout)
         except Exception:

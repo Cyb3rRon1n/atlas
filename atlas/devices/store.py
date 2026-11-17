@@ -326,9 +326,10 @@ class InventoryStore:
 
             return {"found": True, "device_id": device.id}
 
-    def triage(self):
+    def triage(self, devices=None):
+        """devices: a devices() list the caller already has, to avoid reading it twice."""
 
-        devices = self.devices()
+        devices = self.devices() if devices is None else devices
         names = {device["id"]: device["name"] for device in devices}
 
         return {

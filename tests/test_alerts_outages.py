@@ -79,3 +79,14 @@ def test_one_message_line_per_outage(monkeypatch, temp_db):
     text = sent[0]
     assert "core-switch (192.0.2.2) and 4 devices behind it" in text and "• laptop" in text
     assert "• nas" not in text and "• cam" not in text
+
+
+def test_a_name_two_devices_share_is_not_guessed():
+    from atlas.devices.identify import places
+
+    devices = [{"id": 1, "name": "iPhone", "ip": "192.0.2.21", "sightings": []},
+               {"id": 2, "name": "iPhone", "ip": "192.0.2.22", "sightings": []},
+               {"id": 3, "name": "Tablet", "ip": "192.0.2.23", "sightings": []}]
+    snapshot = {"nodes": [{"id": "b", "name": "house Wi-Fi", "kind": "bridge", "behind": ["iPhone", "Tablet"]}],
+                "links": []}
+    assert places(snapshot, devices) == {3: "behind house Wi-Fi"}

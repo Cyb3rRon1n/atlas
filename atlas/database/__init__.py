@@ -72,6 +72,13 @@ def initialize_database(engine=None):
     _migrate_table(engine, "devices", DEVICE_COLUMN_MIGRATIONS)
     _migrate_table(engine, "alerts", ALERT_COLUMN_MIGRATIONS)
 
+    # Indexes for tables that existed before them (create_all only indexes new tables): the newest event of a
+    # type (Home, Overview) and the trimming of old rows would otherwise read the whole table.
+    with engine.begin() as connection:
+        connection.execute(text("CREATE INDEX IF NOT EXISTS ix_events_type_time ON events (event_type, created_at)"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS ix_events_time ON events (created_at)"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS ix_environment_time ON environment (created_at)"))
+
 
 __all__ = [
     "initialize_database",

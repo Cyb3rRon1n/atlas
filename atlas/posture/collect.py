@@ -11,7 +11,7 @@ from pathlib import Path
 import requests
 
 from atlas.posture.aggregate import Accountant, inbound_counts, tunnel_connections
-from atlas.posture.collectors.asn import AsnTable, load_table, refresh
+from atlas.posture.collectors.asn import AsnTable, load_table, refresh, remember_download
 from atlas.posture.collectors.conntrack import read_conntrack
 from atlas.posture.collectors.services import (container_ip, container_ips, crowdsec_bans, gluetun_status,
                                                public_ip, vpn_members)
@@ -42,8 +42,11 @@ class Collector:
     def _asn(self, now):
         self.last_asn_check = now
         try:
-            if refresh(Path(self.settings.asn_path), self.settings.asn_url, now, get=self.get) or not self.asn_table:
+            fetched = refresh(Path(self.settings.asn_path), self.settings.asn_url, now, get=self.get)
+            if fetched or not self.asn_table:
                 self.asn_table = load_table(self.settings.asn_path)
+            if fetched:
+                remember_download(self.settings.asn_url, "atlas: IP-owner table download", self.asn_table, self.store)
             self._status("asn", {"ok": len(self.asn_table) > 0, "ranges": len(self.asn_table)}, now)
         except Exception as error:
             if not self.asn_table:

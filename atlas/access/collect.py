@@ -155,6 +155,9 @@ class AccessCollector:
 
         try:
             result["geo_refreshed"] = geo.refresh(s.geo_path, now, get=self.get)
+            if result["geo_refreshed"]:
+                from atlas.posture.collectors.asn import remember_download
+                remember_download(geo.URL, "atlas: IP-location file download", asn_path=self.posture.asn_path)
         except Exception as error:
             result["geo_error"] = str(error)[:200]
         self._geo = geo.GeoDB(s.geo_path)

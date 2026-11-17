@@ -1,5 +1,7 @@
 import json
+from datetime import datetime, timedelta
 
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from atlas.database import initialize_database
@@ -7,6 +9,10 @@ from atlas.database.engine import engine
 from atlas.database.models import EventRecord, EnvironmentRecord, AnalysisRecord
 from atlas.events import AtlasEvent
 from atlas.intelligence.providers import AnalysisResult
+
+
+ENVIRONMENT_KEEP = timedelta(days=7)
+EVENTS_KEEP = timedelta(days=90)
 
 
 class KnowledgeStore:
@@ -54,6 +60,25 @@ class KnowledgeStore:
             session.add(record)
 
             session.commit()
+
+        self.prune(datetime.utcnow())
+
+
+    def prune(self, now):
+        """
+        Old rows out, once per environment save (each scan): environment
+        snapshots after 7 days (pages read only the newest), events after
+        90 days (Trends reads 30) - except the newest event of each type,
+        which some pages read however old it is.
+        """
+
+        with Session(engine) as session, session.begin():
+
+            session.execute(delete(EnvironmentRecord).where(EnvironmentRecord.created_at < now - ENVIRONMENT_KEEP))
+
+            newest = select(func.max(EventRecord.id)).group_by(EventRecord.event_type)
+            session.execute(delete(EventRecord).where(EventRecord.created_at < now - EVENTS_KEEP,
+                                                      EventRecord.id.not_in(newest)))
 
 
     def save_analysis(

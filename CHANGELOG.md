@@ -6,6 +6,14 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 ## Unreleased
 
 ### Added
+- **Clues for new devices** on Devices and Triage, so you can tell what an IP address is: the maker from its
+  MAC address (the IEEE's public list, downloaded monthly into `inventory/oui.csv`; without internet it is
+  just left out), a private (randomised) Wi-Fi address, the name it gives itself, where the cabling map saw
+  it (switch port, or behind which access point), what it announces about itself over mDNS/Bonjour and
+  UPnP ("Living Room TV - Chromecast", "HP LaserJet M404", AirPlay, printing, HomeKit; `scan.discover`, on by
+  default), its open ports and when it first appeared. Atlas fills
+  in a suggested name and kind - *Espressif smart device*, *Nintendo game console*, *Phone, tablet or
+  laptop* - and Keep saves both; change either before keeping.
 - **Alerts page**: every problem atlas's checks find, in one place - *Needs action* (problems, which also send
   alerts), *Watching* (page only, e.g. a switch atlas can't read or devices waiting for a name) and *Resolved in
   the last 7 days*, each with a link to investigate. Covers the LAN watch, host health, certificates, cabling

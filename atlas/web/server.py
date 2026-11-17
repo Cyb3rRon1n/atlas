@@ -20,6 +20,7 @@ import psutil
 
 from atlas.config.loader import load_config
 from atlas.alerts import AlertStore
+from atlas.devices import identify
 from atlas.devices.store import InventoryStore
 from atlas.discovery.host_health import get_host_health
 from atlas.knowledge.queries import KnowledgeQueries
@@ -379,14 +380,16 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             return
         elif path == "/triage":
             try:
-                body = render_triage_page(InventoryStore().triage())
+                store = InventoryStore()
+                body = render_triage_page(store.triage(), identify.gather(store.devices()))
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)
                 self._send(500, "text/plain; charset=utf-8", "Internal error")
                 return
         elif path == "/devices":
             try:
-                body = render_devices_page(InventoryStore().devices())
+                devices = InventoryStore().devices()
+                body = render_devices_page(devices, identify.gather(devices))
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)
                 self._send(500, "text/plain; charset=utf-8", "Internal error")

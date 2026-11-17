@@ -270,6 +270,8 @@ class InternetConfig(BaseModel):
     enabled: bool = True
     targets: list[str] = ["1.1.1.1:443", "8.8.8.8:443", "9.9.9.9:443"]
     timeout: float = 3.0
+    dns_name: str = "example.com"   # looked up each minute to check name lookups work ("" = off)
+    dns_servers: list[str] = []     # ask these (your router, Pi-hole...) directly; empty = this machine's resolver
 
 
 class DnsFilterConfig(BaseModel):

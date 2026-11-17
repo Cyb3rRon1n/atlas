@@ -14,14 +14,73 @@ it's back with how long it lasted.
 """
 
 import errno
+import os
 import socket
+import struct
 import time
 from concurrent.futures import ThreadPoolExecutor
 
 from atlas.alerts import Text
 
-INTERNET, ROUTER = "Internet", "Router"
+INTERNET, ROUTER, DNS = "Internet", "Router", "DNS"
 NAMES = (INTERNET, ROUTER)
+
+
+def dns_names(config):
+    """The DNS rows: one per internet.dns_servers entry, or one "DNS" for this machine's own resolver."""
+
+    return [f"{DNS} {server}" for server in config.dns_servers] or [DNS]
+
+
+def all_names(config):
+    return list(NAMES) + (dns_names(config) if config.dns_name else [])
+
+
+def _ask(server, name, timeout, port=53):
+    """Milliseconds for one A-record lookup of name at server (UDP 53), or None. Any answer that isn't an error
+    (NOERROR with records, or NXDOMAIN for a name that truly doesn't exist) means the server works."""
+
+    query_id = int.from_bytes(os.urandom(2), "big")
+    question = b"".join(bytes([len(p)]) + p.encode() for p in name.strip(".").split(".")) + b"\x00\x00\x01\x00\x01"
+    packet = struct.pack(">6H", query_id, 0x0100, 1, 0, 0, 0) + question
+    start = time.monotonic()
+    with socket.socket(socket.AF_INET6 if ":" in server else socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.settimeout(timeout)
+        try:
+            sock.sendto(packet, (server, port))
+            while True:
+                data = sock.recv(4096)
+                if len(data) >= 12 and struct.unpack(">H", data[:2])[0] == query_id:
+                    break
+        except OSError:
+            return None
+    rcode = data[3] & 0x0F
+    return (time.monotonic() - start) * 1000 if rcode in (0, 3) else None
+
+
+def _system(name, timeout):
+    """Milliseconds for this machine's own resolver to find name, or None. getaddrinfo has no timeout of its own."""
+
+    start = time.monotonic()
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(socket.getaddrinfo, name, 443, proto=socket.IPPROTO_TCP)
+        try:
+            future.result(timeout=timeout)
+        except Exception:
+            return None
+    return (time.monotonic() - start) * 1000
+
+
+def check_dns(config, ask=None, system=None):
+    """{row name: (ok, ms, detail)} for config.dns_name at each dns_servers entry, or the system resolver."""
+
+    results = {}
+    for row, server in zip(dns_names(config), config.dns_servers or [None]):
+        ms = ((ask or _ask)(server, config.dns_name, config.timeout) if server
+              else (system or _system)(config.dns_name, config.timeout))
+        results[row] = ((True, ms, f"found {config.dns_name}") if ms is not None
+                        else (False, None, f"couldn't look up {config.dns_name}"))
+    return results
 
 
 def _connect(host, port, timeout):
@@ -96,7 +155,7 @@ def outages(rows, fail_after=2):
     return found
 
 
-def run(settings, store, now, *, internet=None, router=None, gateway=None, send=None):
+def run(settings, store, now, *, internet=None, router=None, gateway=None, dns=None, send=None):
     """One check: saves "Internet" and "Router" results, alerts on a drop and on the way back."""
 
     from atlas import notify
@@ -113,6 +172,10 @@ def run(settings, store, now, *, internet=None, router=None, gateway=None, send=
     router_result = (router or check_router)((gateway or _gateway)())
     if router_result:
         results[ROUTER] = router_result
+    dns_rows = dns_names(config) if config.dns_name else []
+    dns_was = {row: _down(store, fail_after, row) for row in dns_rows}
+    if dns_rows:
+        results.update((dns or check_dns)(config))
     store.save(results, now)
 
     down = _down(store, fail_after)
@@ -131,6 +194,19 @@ def run(settings, store, now, *, internet=None, router=None, gateway=None, send=
         lasted = f"\n• it was down for about {_minutes(now - since)}" if since else ""
         texts.append(Text(f"**✅ Internet is back**{lasted}\n• see Atlas → Servers → Uptime for the outage list",
                           "internet:down"))
+    for row in dns_rows:                         # name lookups: only worth a word while the internet itself is up
+        dns_down = _down(store, fail_after, row) and not down
+        where = row[len(DNS) + 1:] or "this machine's DNS"
+        if dns_down:
+            found.append(issue("dns", row, f"Name lookups are failing ({where})",
+                               f"{config.dns_name} can't be found, though the internet answers - websites and apps "
+                               "will fail to load", href="/uptime"))
+        if dns_down and not dns_was[row]:
+            texts.append(Text(f"**🔎 Name lookups are failing ({where})**\n• the internet answers, but "
+                              f"{config.dns_name} can't be found\n• websites and apps will fail to load - check "
+                              "your DNS server (router, Pi-hole...)", f"internet:dns:{row}"))
+        elif dns_was[row] and not _down(store, fail_after, row):
+            texts.append(Text(f"**✅ Name lookups work again ({where})**", f"internet:dns:{row}"))
     report("internet", found, now, store)
 
     for text in texts:
@@ -146,7 +222,7 @@ def run(settings, store, now, *, internet=None, router=None, gateway=None, send=
     return results
 
 
-def _down(store, fail_after):
+def _down(store, fail_after, name=INTERNET):
 
-    rows = store.recent(INTERNET, fail_after)
+    rows = store.recent(name, fail_after)
     return len(rows) == fail_after and not any(ok for _, ok, _ in rows)

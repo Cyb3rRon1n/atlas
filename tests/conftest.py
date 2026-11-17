@@ -73,3 +73,5 @@ def no_network_lookups(monkeypatch):
     from atlas.monitoring import internet
     monkeypatch.setattr(internet, "_connect", lambda host, port, timeout: (5.0, False))
     monkeypatch.setattr(internet, "_gateway", lambda: None)
+    monkeypatch.setattr(internet, "_ask", lambda server, name, timeout: 5.0)
+    monkeypatch.setattr(internet, "_system", lambda name, timeout: 5.0)

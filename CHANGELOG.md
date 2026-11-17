@@ -11,6 +11,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   and the same disk alerts as Proxmox (failing, hot, worn out). TrueNAS 24.10+ over its websocket API with an API
   key; Synology DSM 7 with an admin account. Read-only. Built from the vendors' API docs and not yet checked
   against real hardware.
+- **UniFi names and Wi-Fi details on Devices**: every client UniFi knows is linked to its device by MAC. A name
+  you gave it in UniFi becomes atlas's suggested name, and the clue line shows the Wi-Fi network, access point,
+  band and signal (and a guest network). Uses the existing UniFi connection.
 
 ## 0.10.0 - 2026-11-17
 

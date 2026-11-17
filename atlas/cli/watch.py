@@ -153,6 +153,14 @@ def lan_scan(
         except Exception as error:                      # Pi-hole trouble never fails the LAN scan
             console.print(f"[yellow]Pi-hole / AdGuard Home check failed: {error}[/yellow]")
 
+    if settings.nas.enabled:
+        try:
+            from atlas.monitoring.nas import run as nas_run
+            from atlas.posture.store import PostureStore
+            nas_run(settings, PostureStore(), datetime.utcnow())
+        except Exception as error:                      # NAS trouble never fails the LAN scan
+            console.print(f"[yellow]NAS check failed: {error}[/yellow]")
+
     if result["new"] or result["offline"] or result["notify_errors"]:
         application.runtime.events.publish(
             AtlasEvent(event_type="atlas.devices.scan.completed", source="LanScan", payload=result)
@@ -832,3 +840,38 @@ def dns_check(json_output: bool = typer.Option(False, "--json", help="Print the 
 
 
 app.add_typer(dns_app)
+
+
+nas_app = typer.Typer(name="nas", help="TrueNAS or Synology: pool health, disk health and temperatures")
+
+
+@nas_app.command("check")
+def nas_check(json_output: bool = typer.Option(False, "--json", help="Print the result as JSON")):
+    """
+    Reads TrueNAS or Synology from nas: (Setup -> TrueNAS or Synology). `atlas scan` runs it too; a pool that
+    isn't healthy, or a disk that fails, runs hot or wears out, sends one alert, and another when it's fine.
+    """
+
+    from datetime import datetime
+
+    from atlas.monitoring.nas import run
+    from atlas.posture.store import PostureStore
+
+    settings = load_config()
+    if not settings.nas.enabled:
+        console.print("NAS watch is off - turn it on in Setup or under nas: in atlas.yaml.")
+        return
+    detail = run(settings, PostureStore(), datetime.utcnow())
+    if json_output:
+        print(json.dumps(detail))
+        return
+    if detail["error"]:
+        console.print(f"[red]{detail['error']}[/red]")
+    for pool in detail["info"].get("pools") or []:
+        console.print(f"{detail['name']} {pool['name']}: {pool['health']}")
+    for disk in detail["info"].get("disks") or []:
+        temp = f", {disk['temp']}°C" if disk.get("temp") is not None else ""
+        console.print(f"  {disk['dev']} {disk.get('model', '')}: {disk['health']}{temp}")
+
+
+app.add_typer(nas_app)

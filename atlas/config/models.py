@@ -268,6 +268,18 @@ class DnsFilterConfig(BaseModel):
     timeout: float = 5.0
 
 
+class NasConfig(BaseModel):
+    # TrueNAS (an API key) or Synology (an administrator account), read with each scan. The key or password is
+    # the ATLAS_NAS_PASSWORD secret; user is the TrueNAS user the key belongs to, or the Synology account.
+    enabled: bool = False
+    kind: Literal["truenas", "synology"] = "truenas"
+    url: str = ""
+    user: str = ""
+    name: str = ""                  # what to call it; the address's host name when empty
+    verify_ssl: bool = False
+    timeout: float = 10.0
+
+
 class UpsConfig(BaseModel):
     # A NUT server (Network UPS Tools): nut-server on Linux, or a Synology/QNAP/Unraid/TrueNAS "network UPS server".
     enabled: bool = False
@@ -300,4 +312,5 @@ class AtlasConfig(BaseModel):
     uptime: UptimeConfig = UptimeConfig()
     internet: InternetConfig = InternetConfig()
     dns_filter: DnsFilterConfig = DnsFilterConfig()
+    nas: NasConfig = NasConfig()
     ups: UpsConfig = UpsConfig()

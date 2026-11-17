@@ -47,6 +47,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   `security.snmp_discovery` turns the probe off; `wiring.not_managed` lists dismissed addresses.
 
 ### Changed
+- **Home** opens with one plain sentence (*Everything is healthy*, or how many things need a look), a row of
+  numbers - devices online, servers healthy, uptime over 7 days, public routes, power or storage - each
+  linking to its page, and a *Needs attention* table with how serious each item is and where to fix it.
 - **New look**: a side menu with each section's pages listed under it (no second row of tabs), and a light
   theme by default that follows your system's dark mode. The *Theme* button in the side menu picks one and
   remembers it. Every page now draws its colours from one set of theme tokens; the exported cabling SVG

@@ -33,7 +33,7 @@ from atlas.web.devices_pages import render_coverage_page, render_device_page, re
 from atlas.web.hosts_page import render_hosts_summary
 from atlas.access.store import AccessStore
 from atlas.web.access_page import WINDOWS as ACCESS_WINDOWS, render_access_page
-from atlas.web.home_page import (build_hosts, build_storage, interesting_events, parse_mdstat, render_home_page,
+from atlas.web.home_page import (build_hosts, build_stats, build_storage, interesting_events, parse_mdstat, render_home_page,
                                  setup_steps)
 from atlas.web.posture_page import render_posture_page
 from atlas.web.graph import build_graph
@@ -229,14 +229,25 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                                 (safe("storage paths", usage) if health_settings else None) or {},
                                 (local or {}).get("status_feeds"), pve_scan, topology)
 
+        from atlas.monitoring.uptime import UptimeStore
+
+        devices = safe("devices", lambda: InventoryStore().devices())
+        hosts = build_hosts(topology, local, pve_scan, host_issues)
+        checks = settings.uptime.checks if settings else []
+        uptime = safe("uptime", lambda: [info["uptime"].get("7 days") for info in
+                                         UptimeStore().summary([c.name for c in checks], now).values()])
+        ups = safe("ups", lambda: (PostureStore().statuses().get("ups") or {}).get("detail")) \
+            if settings and settings.ups.enabled else None
+
         return dict(
-            posture=posture, hosts=build_hosts(topology, local, pve_scan, host_issues),
+            stats=build_stats(devices, hosts, storage, posture, uptime, ups),
+            posture=posture, hosts=hosts,
             events=interesting_events(safe("events", lambda: query.recent_events(200)) or []),
             storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now)),
             analysis=safe("analysis", query.latest_analysis), now=now,
             access_reviews=safe("access reviews", lambda: AccessStore().places("review")) or [],
             open_alerts=safe("alerts", lambda: AlertStore().listing(now)["open"]) or [],
-            steps=safe("setup steps", lambda: setup_steps(settings, InventoryStore().devices())) if settings else None)
+            steps=safe("setup steps", lambda: setup_steps(settings, devices or [])) if settings else None)
 
     def do_GET(self):
 

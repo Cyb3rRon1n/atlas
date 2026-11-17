@@ -197,7 +197,7 @@ def parse_mdstat(text):
     return arrays
 
 
-def build_storage(arrays, usage, feeds, pve_scan, topology=None):
+def build_storage(arrays, usage, feeds, pve_scan, topology=None, health=None):
     """
     Rows for the storage card. arrays: parse_mdstat() output; usage: {label:
     psutil.disk_usage() result} for configured storage_paths; feeds: status
@@ -237,10 +237,37 @@ def build_storage(arrays, usage, feeds, pve_scan, topology=None):
             pct = round(pool["alloc"] / pool["size"] * 100) if pool.get("size") else 0
             rows.append({"name": f"{host} {pool['name']}", "detail": f"{pool['health']} · {pct}% of {_size(pool['size'])}",
                          "warn": pool["health"] != "ONLINE" or pct >= WARN_PERCENT})
+        rows.extend(_disk_rows(host, node.get("disks") or [], health))
 
     state = "unknown" if not rows else ("warn" if any(r["warn"] for r in rows) else "ok")
 
     return {"rows": rows, "state": state}
+
+
+def _disk_rows(host, disks, health=None):
+    """One summary row per node's disks, then one row per disk with a problem (SMART, heat, wear)."""
+
+    from atlas.config.models import HealthConfig
+    from atlas.monitoring.disks import problems
+
+    if not disks:
+        return []
+    health = health or HealthConfig()
+    bad = [(d, problems(d, health, was_hot=True)) for d in disks]
+    bad = [(d, found) for d, found in bad if found]
+    temps = [d["temp"] for d in disks if d.get("temp") is not None]
+    lives = [d["life"] for d in disks if d.get("life") is not None and d.get("type") != "hdd"]
+    parts = [f"{len(disks)} disk{'s' if len(disks) != 1 else ''}",
+             f"{len(bad)} need{'s' if len(bad) == 1 else ''} a look" if bad else "all healthy"]
+    if temps:
+        parts.append(f"warmest {max(temps)}°C")
+    if lives:
+        parts.append(f"lowest life left {min(lives)}%")
+    rows = [{"name": f"{host} disks", "detail": " · ".join(parts), "warn": bool(bad)}]
+    for disk, found in bad:
+        title, detail = next(iter(found.values()))
+        rows.append({"name": f"{host} {disk.get('dev') or '?'}", "detail": f"{title} · {detail}", "warn": True})
+    return rows
 
 
 def _bars_svg(series, colors, labels, height=70):

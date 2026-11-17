@@ -179,6 +179,14 @@ CPU / Memory:
         runtime.environment
     )
 
+    try:                                            # disk health alerts; never fail the scan over them
+        from datetime import datetime
+        from atlas.monitoring.disks import run as disks_run
+        from atlas.posture.store import PostureStore
+        disks_run(settings, PostureStore(), datetime.utcnow(), nodes)
+    except Exception as error:
+        console.print(f"[yellow]Disk health check failed:[/yellow] {error}")
+
     runtime.events.publish(
         AtlasEvent(
             event_type="atlas.proxmox.scan.completed",

@@ -81,6 +81,10 @@ class HealthConfig(BaseModel):
     temp_margin_c: float = 5.0      # alert this close to a sensor's own "high" limit (two samples in a row)
     memory_percent: float = 90.0
     disk_percent: float = 90.0      # root disk and every storage_paths entry
+    # Disk health from Proxmox (atlas proxmox scan): too hot at two scans in a row, nearly worn out.
+    disk_hot_hdd_c: int = 55
+    disk_hot_ssd_c: int = 70        # SSDs and NVMe drives
+    disk_life_percent: int = 10     # warn when an SSD has this much life (or less) left
 
 
 class MapHost(BaseModel):

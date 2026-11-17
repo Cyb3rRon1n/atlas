@@ -3,7 +3,7 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
-## Unreleased
+## 0.11.1 - 2026-11-17
 
 ### Added
 - **What changed** at the top of Alerts → Activity: the last 24 hours or 7 days in plain words - problems that

@@ -3,6 +3,13 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
+## Unreleased
+
+### Fixed
+- **Proxmox "changes detected" on every scan**: each scan reported the whole cluster (node and every guest) as
+  newly added, because it compared against a saved state other atlas-scan commands overwrite. It now compares
+  against the previous Proxmox scan, so Activity shows real changes only.
+
 ## 0.11.0 - 2026-11-17
 
 ### Added

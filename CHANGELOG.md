@@ -14,6 +14,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 - **UniFi names and Wi-Fi details on Devices**: every client UniFi knows is linked to its device by MAC. A name
   you gave it in UniFi becomes atlas's suggested name, and the clue line shows the Wi-Fi network, access point,
   band and signal (and a guest network). Uses the existing UniFi connection.
+- **Heartbeats** (Servers → Uptime): a backup or cron job pings its own secret address when it finishes
+  (`/fail` when it failed). One alert when it doesn't check in on time or reports a failure, one when it's fine
+  again.
 
 ## 0.10.0 - 2026-11-17
 

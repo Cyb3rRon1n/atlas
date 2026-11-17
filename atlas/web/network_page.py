@@ -7,6 +7,7 @@ server.py passes the latest topology, Traefik routes and the device graph.
 
 import re
 
+from atlas.web.icons import icon
 from atlas.web.render import _esc, ask_chips, render_page
 
 UNNAMED = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
@@ -186,20 +187,20 @@ def render_network_page(topology, routes, graph):
         NETWORK_STYLE + ask_chips(NETWORK_CHIPS)
         + f'<p class="muted">Snapshot {_esc(topology.get("generated_at", ""))}. Click a service for details.'
         + (f' <strong>{down} not healthy</strong> (listed first in each lane).' if down else "") + "</p>"
-        + '<section class="nlane"><h2>\U0001F310 From the internet</h2><p class="why">Reachable by anyone through the '
+        + '<section class="nlane"><h2>' + icon("globe") + 'From the internet</h2><p class="why">Reachable by anyone through the '
           'Cloudflare tunnel. Every request passes CrowdSec (bans bad IPs) and is logged; Atlas watches it.</p>'
-        + f'<h3 class="sub">\U0001F512 Behind Authelia ({len(guarded)})</h3><p class="why">Authelia\'s login comes first - '
+        + f'<h3 class="sub">{icon("lock")}Behind Authelia ({len(guarded)})</h3><p class="why">Authelia\'s login comes first - '
           'nobody reaches the app without your account.</p>' + grid("internet", guarded)
-        + f'<h3 class="sub">\U0001F6E1\ufe0f Own login only ({len(own)})</h3><p class="why">Not behind Authelia (their '
+        + f'<h3 class="sub">{icon("shield")}Own login only ({len(own)})</h3><p class="why">Not behind Authelia (their '
           'phone/TV apps can\'t pass it) - the app\'s own login is the gate, CrowdSec and Atlas still watch.</p>'
         + grid("internet", own) + "</section>"
-        + '<section class="nlane"><h2>\U0001F3E0 Home network only</h2><p class="why">A web page or port, but no '
+        + '<section class="nlane"><h2>' + icon("home") + 'Home network only</h2><p class="why">A web page or port, but no '
           'route from the internet.</p>' + grid("home") + "</section>"
-        + '<details class="nlane"><summary>⚙️ Background (' + str(len(lanes["background"]))
+        + '<details class="nlane"><summary>' + icon("gear") + 'Background (' + str(len(lanes["background"]))
         + ')</summary><p class="why">No web page - helpers like the VPN tunnel, CrowdSec and Recyclarr.</p>'
         + grid("background") + "</details>"
-        + '<section class="nlane"><h2>\U0001F5A5️ Machines</h2><div class="machines">' + machines + "</div></section>"
-        + '<section class="nlane"><h2>\U0001F50C Devices by connection</h2>' + _tree(graph) + "</section>"
+        + '<section class="nlane"><h2>' + icon("server") + 'Machines</h2><div class="machines">' + machines + "</div></section>"
+        + '<section class="nlane"><h2>' + icon("plug") + 'Devices by connection</h2>' + _tree(graph) + "</section>"
     )
 
     return render_page("Services", body, active="lan")

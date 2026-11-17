@@ -47,6 +47,7 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   `security.snmp_discovery` turns the probe off; `wiring.not_managed` lists dismissed addresses.
 
 ### Changed
+- Line icons instead of emoji on Devices, Activity, Services, Visitors and Cabling, drawn in the theme's colours.
 - **Cabling** opens on the switches' front panels (all expanded), with a *Front panels / Map* switch at the top
   and a one-line summary (switches, cables, what to check). Clicking a port shows a panel beside it: what's
   plugged in, speed, traffic now, PoE, VLANs, bundle or standby, and any cable problem in words. Clicking a

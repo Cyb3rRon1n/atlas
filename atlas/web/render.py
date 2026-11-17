@@ -12,6 +12,7 @@ from html import escape
 
 from atlas.devices.store import CONNECTIONS, KINDS, STATES
 from atlas.health.alerts import container_state
+from atlas.web.icons import icon
 from atlas.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE, DRAWER_HTML, DRAWER_STYLE
 
 
@@ -59,6 +60,7 @@ PAGE_STYLE = f"""
            border-radius:6px; padding:0.3rem 0.5rem; font:inherit; }
   textarea { width:100%; min-height:4rem; }
   label { display:block; margin:0.5rem 0 0.2rem; color:var(--muted); font-size:0.85rem; }
+  .ic { width:1.1em; height:1.1em; vertical-align:-0.2em; margin-right:.4em; flex:none; }
   :focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
   .status-seen { color:var(--green); } .status-quiet { color:var(--orange); } .status-invisible { color:var(--muted); }
   #msg { color:var(--red); min-height:1.2rem; }
@@ -345,11 +347,11 @@ HISTORY_CHIPS = ("Summarize what happened in the last 24 hours.", "Anything unus
                  "What changed on Proxmox this week?", "Were any actions run, and did they work?")
 
 # (category, icon, matcher) - first match wins; filter buttons use the category
-EVENT_CATEGORIES = (("alert", "\u26a0\ufe0f", ("threshold", "alert", "down", "failed", "error", "warn")),
-                    ("action", "\U0001F6E0\ufe0f", ("atlas.action.", "restart", "stopped", "resized", "plan")),
-                    ("change", "\U0001F504", ("changes_detected", "device.", ".new", "changed")),
-                    ("chat", "\U0001F4AC", ("chat",)),
-                    ("scan", "\U0001F50E", (".completed", ".loaded", "scan", "discover")))
+EVENT_CATEGORIES = (("alert", icon("alert"), ("threshold", "alert", "down", "failed", "error", "warn")),
+                    ("action", icon("tool"), ("atlas.action.", "restart", "stopped", "resized", "plan")),
+                    ("change", icon("refresh"), ("changes_detected", "device.", ".new", "changed")),
+                    ("chat", icon("chat"), ("chat",)),
+                    ("scan", icon("search"), (".completed", ".loaded", "scan", "discover")))
 
 HISTORY_STYLE = """
 <style>
@@ -370,7 +372,7 @@ HISTORY_STYLE = """
 def _event_category(event_type):
 
     lowered = event_type.lower()
-    return next(((cat, icon) for cat, icon, keys in EVENT_CATEGORIES if any(k in lowered for k in keys)), ("other", "\u2139\ufe0f"))
+    return next(((cat, icon) for cat, icon, keys in EVENT_CATEGORIES if any(k in lowered for k in keys)), ("other", icon("info")))
 
 
 def render_history_page(events, today=None):
@@ -401,19 +403,19 @@ def render_history_page(events, today=None):
     for day, items in days.items():
         rows = ""
         for event, count in items.values():
-            cat, icon = _event_category(event.event_type)
+            cat, mark = _event_category(event.event_type)
             label = event.event_type.removeprefix("atlas.").replace(".", " ").replace("_", " ")
             rows += (f'<div class="ev" data-cat="{cat}"{" hidden" if cat == "scan" else ""}><span class="time">{_esc(str(event.created_at)[11:16])}</span>'
-                     f"<span>{icon}</span><details><summary>{_esc(label)}"
+                     f"<span>{mark}</span><details><summary>{_esc(label)}"
                      + (f' <span class="count">\u00d7{count} today, latest</span>' if count > 1 and names.get(day) == "Today"
                         else f' <span class="count">\u00d7{count}, latest</span>' if count > 1 else "")
                      + f' <span class="src">{_esc(event.source)}</span></summary><pre>{_esc(event.payload)}</pre></details></div>')
         sections += f'<section class="day"><h2>{_esc(names.get(day, day))}</h2>{rows}</section>'
 
     buttons = "".join(f'<button data-filter="{cat}" aria-pressed="{str(cat == "important").lower()}">{label}</button>'
-                      for cat, label in (("important", "Important"), ("all", "All"), ("change", "\U0001F504 Changes"), ("alert", "\u26a0\ufe0f Alerts"),
-                                         ("action", "\U0001F6E0\ufe0f Actions"), ("scan", "\U0001F50E Scans"),
-                                         ("chat", "\U0001F4AC Chats"), ("other", "Other")))
+                      for cat, label in (("important", "Important"), ("all", "All"), ("change", icon("refresh") + "Changes"), ("alert", icon("alert") + "Alerts"),
+                                         ("action", icon("tool") + "Actions"), ("scan", icon("search") + "Scans"),
+                                         ("chat", icon("chat") + "Chats"), ("other", "Other")))
     script = ("<script>document.querySelectorAll('[data-filter]').forEach((b) => b.addEventListener('click', () => {"
               " const f = b.dataset.filter;"
               " document.querySelectorAll('[data-filter]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));"

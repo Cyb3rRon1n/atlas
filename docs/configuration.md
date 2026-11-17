@@ -303,6 +303,25 @@ uptime:
 
 A check that fails `fail_after` times in a row is **down**: one alert ("Media server is down"), listed on the Alerts page, and one "back up" message saying how long it was down. Mute or pause it from the Alerts page like any other alert. The page shows each check's response time over 24 hours and its uptime over 24 hours, 7 days and 30 days; results are kept 30 days. Certificates aren't verified here - expiry and trust are the certificate watch's job (`security.cert_watch`). A list set in atlas.yaml wins over the page and makes the page read-only.
 
+### Heartbeats
+
+For jobs atlas can't check from outside, such as a nightly backup or a cron job: add one on Servers → Uptime (or under `uptime.heartbeats`), then have the job call its address when it finishes. Add `/fail` when it failed.
+
+```bash
+your-backup-command && curl -fsS -m 10 http://atlas.example:8420/ping/<token> \
+                    || curl -fsS -m 10 http://atlas.example:8420/ping/<token>/fail
+```
+
+```yaml
+uptime:
+  heartbeats:
+    - name: Nightly backup
+      every_minutes: 1440   # how often it runs
+      grace_minutes: 60     # how late it may be
+```
+
+A heartbeat that hasn't pinged within `every_minutes` + `grace_minutes` is **late**: one alert, and one when it pings again. A `/fail` ping alerts within a minute. Nothing is said before the first ping. The address needs no sign-in (the token in it is the password), so if atlas sits behind a sign-in proxy, ping it on its own network address. Renaming a heartbeat changes its address.
+
 ## `internet`
 
 Internet health, checked with the uptime checks once a minute (`atlas uptime check`, run by atlas-scan). Atlas

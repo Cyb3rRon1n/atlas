@@ -1,7 +1,7 @@
 """Sign-in and first-run setup pages: plain HTML forms, no script, no nav."""
 
 from atlas.web.auth import MIN_PASSWORD
-from atlas.web.render import PAGE_STYLE, _esc
+from atlas.web.render import FAVICON, PAGE_STYLE, _esc
 
 
 CARD_STYLE = """
@@ -22,7 +22,7 @@ def _page(title, body):
 
     return ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-            f"<title>Atlas - {_esc(title)}</title><style>{PAGE_STYLE}{CARD_STYLE}</style></head><body>"
+            f"<title>Atlas - {_esc(title)}</title>{FAVICON}<style>{PAGE_STYLE}{CARD_STYLE}</style></head><body>"
             f"<main class=\"auth\">{body}</main></body></html>")
 
 

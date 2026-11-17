@@ -13,6 +13,7 @@ import io
 import json
 from datetime import datetime
 
+from atlas.web.icons import icon
 from atlas.web.render import _esc, render_page
 from atlas.wiring import traffic
 from atlas.wiring.build import IDLE
@@ -45,7 +46,9 @@ CABLING_STYLE = """
 .fp .port.poe-cap, .fp .port.poe { border:2px dashed var(--yellow); }
 .fp .port.poe { border-style:solid; }
 .fp .port.poe-cap::after { content:"PoE"; position:absolute; right:3px; top:1px; font-size:11px; font-weight:700; color:var(--yellow); }
-.fp .port.poe::after { content:"⚡"; position:absolute; right:3px; top:1px; font-size:11px; }
+.fp .port.poe::after { content:""; position:absolute; right:4px; top:4px; width:9px; height:11px; background:var(--yellow);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='4 2 15 20'%3E%3Cpath d='M13 2 4 14h7l-1 8 9-12h-7z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='4 2 15 20'%3E%3Cpath d='M13 2 4 14h7l-1 8 9-12h-7z'/%3E%3C/svg%3E") center/contain no-repeat; }
 .fp .port.h-bad { border:2px solid var(--red); box-shadow:0 0 0 2px color-mix(in srgb, var(--red) 30%, transparent); }
 .fp .port.h-watch { border:2px solid var(--orange); }
 #health ul { list-style:none; padding:0; margin:0; } #health li { padding:6px 0; border-top:1px solid var(--line); }
@@ -506,7 +509,7 @@ def _faceplates(snapshot, raw, panels=None):
             for port in layout["logical"] if (node_id, port) in attached)
         sockets = [cell for cell in layout["ports"] if not cell["cage"]]   # a combo cage is the same port
         up = sum(1 for cell in sockets if cell["up"])
-        poe_note = ('<p class="when">Yellow = can supply PoE: solid with ⚡ when powering a device, '
+        poe_note = ('<p class="when">Yellow = can supply PoE: solid with ' + icon("bolt") + 'when powering a device, '
                     'dashed when not.</p>' if any(p.get("poe") for p in ports.values()) else "")
         model = (devices.get(name) or {}).get("model") if node_id.startswith("s:") else ""
         html.append(f'<details open id="fp-{_esc(node_id)}"><summary>{_esc(name)} '
@@ -593,7 +596,7 @@ def _health(snapshot):
     return ('<section id="health"><h2>Cable health</h2>' + body +
             '<p class="when">Checked on every scan. Growing CRC errors, duplex mismatches and PoE faults send an '
             'alert; a slower link, a link that dropped or a nearly used PoE budget is only shown here. '
-            '⚡ = port powering a device, dashed outline = port that can supply PoE.</p></section>')
+            + icon("bolt") + '= port powering a device, dashed outline = port that can supply PoE.</p></section>')
 
 
 def suggestion_banner(suggested):
@@ -604,7 +607,7 @@ def suggestion_banner(suggested):
     names = ", ".join(entry["name"] for entry in suggested[:3]) + (" and more" if len(suggested) > 3 else "")
     count = len(suggested)
 
-    return (f'<p class="suggest">\U0001F511 {count} device{"s" * (count != 1)} on your network could show '
+    return (f'<p class="suggest">{icon("key")}{count} device{"s" * (count != 1)} on your network could show '
             f'{"their" if count != 1 else "its"} ports with a login: {_esc(names)}. '
             '<a href="/settings#switches">Add on the Setup tab \u2192</a></p>')
 

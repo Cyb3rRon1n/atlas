@@ -7,6 +7,7 @@ grouped by place. Pure renderer over AccessStore.summary().
 import math
 
 from atlas.access.parse import is_private
+from atlas.web.icons import icon
 from atlas.web.render import _esc, ask_chips, render_page
 from atlas.web.world_land import LAND_PATH
 
@@ -132,7 +133,7 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
         + _esc("; ".join(q["label"] for q in user_places if q["user"] == p["user"] and q["status"] != "review") or "none yet")
         + '. Verdict: expected / ask them / lock the account, and why.">Investigate</button></div>' for p in reviews)
     review_card = (
-        f'<section class="acard attn"><h2>\U0001F30D New sign-in places ({len(reviews)})</h2><p class="why">Someone signed in '
+        f'<section class="acard attn"><h2>{icon("globe")}New sign-in places ({len(reviews)})</h2><p class="why">Someone signed in '
         'from a country + provider not seen for them before (each person\'s first 14 days are learned automatically). '
         'Confirm it was them, or investigate.</p>' + review_rows + "</section>") if reviews else ""
     normal = [p for p in user_places if p["status"] != "review"]

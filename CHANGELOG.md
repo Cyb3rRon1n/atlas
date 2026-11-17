@@ -3,6 +3,17 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
+## Unreleased
+
+### Fixed
+- Atlas's own downloads (the IP-owner table, the IP-location file and the MAC maker list) no longer show up on
+  the Security page as a new place this host talks to: after a download, its server is marked known.
+- The event log and environment snapshots no longer grow forever: snapshots are kept 7 days and events 90 days
+  (the newest of each kind is always kept). The tables get indexes, so Home and Overview stay fast.
+- *Sign out* now ends every session, so a copied cookie stops working too.
+- Two devices with the same name no longer confuse outage grouping or the device clues' *behind ...* place.
+- The tests no longer touch the network (mDNS, UPnP, downloads) and run about 15 seconds faster.
+
 ## 0.9.0 - 2026-11-16
 
 A new look (side menu, light and dark, Home and Cabling redesigned), clues that say what each new device is,

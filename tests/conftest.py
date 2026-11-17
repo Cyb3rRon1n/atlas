@@ -53,3 +53,20 @@ def temp_db(tmp_path, monkeypatch):
     yield engine
 
     engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def no_network_lookups(monkeypatch):
+    """Tests never ask the real LAN (mDNS / UPnP), never download the MAC maker list and never resolve a download
+    server's name; the tests for those pieces call them with fakes."""
+
+    from atlas.devices import discover, identify
+    from atlas.posture.collectors import asn
+
+    def offline(*args, **kwargs):
+        raise OSError("tests are offline")
+
+    monkeypatch.setattr(discover, "mdns", lambda timeout=2.5: {})
+    monkeypatch.setattr(discover, "ssdp", lambda timeout=2.5, fetch=None: {})
+    monkeypatch.setattr(identify, "GET", offline)
+    monkeypatch.setattr(asn, "RESOLVE", offline)

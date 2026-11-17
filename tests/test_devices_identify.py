@@ -76,3 +76,21 @@ def test_times_read_as_ago_with_exact_time_on_hover():
     html = _when("2026-11-17T01:33:24.388437", now=datetime(2026, 11, 17, 1, 38))
     assert ">4 min ago</time>" in html and 'title="2026-11-17 01:33 UTC"' in html
     assert _when(None) == "-" and _when("garbage") == "garbage"
+
+
+def test_atlas_downloads_are_marked_known_for_the_host(temp_db):
+    from atlas.posture.collectors.asn import AsnTable, remember_download
+    from atlas.posture.store import PostureStore
+
+    store = PostureStore(temp_db)
+    table = AsnTable([(3221225984, 3221226239, 64500, "US", "EXAMPLE-NET")])          # 192.0.2.0/24
+    resolve = lambda host, port, *a: [(2, 1, 6, "", ("192.0.2.7", port)), (2, 1, 6, "", ("198.51.100.9", port))]
+    keys = remember_download("https://downloads.example.org/list.csv", "atlas: test", table, store, resolve)
+    assert keys == ["AS64500", "ip:198.51.100.9"]
+    from sqlalchemy import select
+    from sqlalchemy.orm import Session
+    from atlas.database.models import PostureKnownRecord
+    with Session(temp_db) as session:
+        known = {(k.source, k.asn_key) for k in session.scalars(select(PostureKnownRecord))}
+    assert known == {("host", "AS64500"), ("host", "ip:198.51.100.9")}
+    assert remember_download("https://x.example.org/", "n", table, store) == []        # offline in tests: nothing, no error

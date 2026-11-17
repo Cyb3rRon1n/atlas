@@ -93,6 +93,9 @@ def makers(path=OUI_PATH):
     return _load(str(path), path.stat().st_mtime) if path.exists() else {}
 
 
+GET = None          # requests.get unless a test swaps it
+
+
 def refresh(now, path=OUI_PATH, url=OUI_URL, get=None):
     """Download oui.csv when missing or a month old. True when it was fetched; never raises (no internet just
     means no maker names)."""
@@ -102,7 +105,7 @@ def refresh(now, path=OUI_PATH, url=OUI_URL, get=None):
         return False
     try:
         import requests
-        response = (get or requests.get)(url, timeout=60, headers={"User-Agent": "atlas"})
+        response = (get or GET or requests.get)(url, timeout=60, headers={"User-Agent": "atlas"})
         response.raise_for_status()
         if len(parse_oui(response.text)) < 1000:
             return False
@@ -110,6 +113,8 @@ def refresh(now, path=OUI_PATH, url=OUI_URL, get=None):
         tmp = path.with_suffix(".tmp")
         tmp.write_text(response.text, encoding="utf-8")
         tmp.replace(path)
+        from atlas.posture.collectors.asn import remember_download
+        remember_download(url, "atlas: MAC maker list download")
         return True
     except Exception:
         return False
@@ -182,7 +187,10 @@ def places(snapshot, devices):
         return {}
     by_mac = {s["mac"].lower(): d["id"] for d in devices for s in d.get("sightings", []) if s.get("mac")}
     by_ip = {d["ip"]: d["id"] for d in devices if d.get("ip")}
-    by_name = {d["name"]: d["id"] for d in devices}
+    names = [device["name"] for device in devices if device.get("name")]
+    # "behind" lists names: one shared by two devices (two "iPhone"s) can't say which, so it is skipped
+    by_name = {device["name"]: device["id"] for device in devices
+               if device.get("name") and names.count(device["name"]) == 1}
     nodes = {node["id"]: node for node in snapshot.get("nodes", [])}
     found = {}
     for link in snapshot.get("links", []):

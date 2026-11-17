@@ -39,24 +39,24 @@ CABLING_STYLE = """
 .legend i { display:inline-block; width:22px; height:3px; vertical-align:middle; margin-right:5px; }
 .fp-wrap { overflow-x:auto; padding:8px 0 14px; }
 .fp { --pw:62px; --ph:44px; position:relative; }
-.fp span { position:absolute; width:56px; height:38px; box-sizing:border-box; border:1px solid var(--line2); border-radius:6px;
+.fp .port { margin:0; text-align:left; font:inherit; color:inherit; cursor:pointer; overflow:hidden; position:absolute; width:56px; height:38px; box-sizing:border-box; border:1px solid var(--line2); border-radius:6px;
            padding:2px 5px; font-size:11px; background:var(--surface); opacity:.55; }
-.fp span.up { opacity:1; }
-.fp span.poe-cap, .fp span.poe { border:2px dashed var(--yellow); }
-.fp span.poe { border-style:solid; }
-.fp span.poe-cap::after { content:"PoE"; position:absolute; right:3px; top:1px; font-size:11px; font-weight:700; color:var(--yellow); }
-.fp span.poe::after { content:"⚡"; position:absolute; right:3px; top:1px; font-size:11px; }
-.fp span.h-bad { border:2px solid var(--red); box-shadow:0 0 0 2px color-mix(in srgb, var(--red) 30%, transparent); }
-.fp span.h-watch { border:2px solid var(--orange); }
+.fp .port.up { opacity:1; }
+.fp .port.poe-cap, .fp .port.poe { border:2px dashed var(--yellow); }
+.fp .port.poe { border-style:solid; }
+.fp .port.poe-cap::after { content:"PoE"; position:absolute; right:3px; top:1px; font-size:11px; font-weight:700; color:var(--yellow); }
+.fp .port.poe::after { content:"⚡"; position:absolute; right:3px; top:1px; font-size:11px; }
+.fp .port.h-bad { border:2px solid var(--red); box-shadow:0 0 0 2px color-mix(in srgb, var(--red) 30%, transparent); }
+.fp .port.h-watch { border:2px solid var(--orange); }
 #health ul { list-style:none; padding:0; margin:0; } #health li { padding:6px 0; border-top:1px solid var(--line); }
 #health li:first-child { border-top:0; } #health .lvl { font-weight:600; margin-right:6px; }
 #health .bad .lvl { color:var(--red); } #health .watch .lvl { color:var(--orange); }
-.fp span b { display:block; font-size:12px; }
-.fp span small { display:block; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.fp span.cage { border-style:dashed; background:transparent; }
-.fp span.standby { border:2px dashed var(--muted); opacity:.7; }
-.fp span.standby::before { content:"standby"; position:absolute; left:4px; bottom:1px; font-size:8px; color:var(--muted); }
-.fp span.vlan-off { opacity:.15; }
+.fp .port b { display:block; font-size:12px; }
+.fp .port small { display:block; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fp .port.cage { border-style:dashed; background:transparent; }
+.fp .port.standby { border:2px dashed var(--muted); opacity:.7; }
+.fp .port.standby::before { content:"standby"; position:absolute; left:4px; bottom:1px; font-size:8px; color:var(--muted); }
+.fp .port.vlan-off { opacity:.15; }
 .notes { margin:6px 0 12px; padding:6px 12px 6px 28px; color:var(--muted); font-size:14px; }
 .lag { border:1px solid var(--line); border-radius:6px; padding:1px 6px; margin-right:6px; }
 .fp .s100 { border-color:var(--muted); } .fp .s1g { border-color:var(--blue); } .fp .s25 { border-color:var(--teal); } .fp .s10g { border-color:var(--purple); }
@@ -71,6 +71,18 @@ CABLING_STYLE = """
 .spark { vertical-align:middle; margin-right:6px; } .spark polyline { fill:none; stroke:var(--blue); stroke-width:1.5; }
 .spark.busy polyline { stroke:var(--orange); } .spark.hot polyline { stroke:var(--red); }
 .portmap td.rate { white-space:nowrap; color:var(--muted); }
+.fp .port.sel { outline:3px solid var(--blue); outline-offset:2px; opacity:1; }
+.views { display:inline-flex; border:1px solid var(--line2); border-radius:8px; overflow:hidden; margin-left:auto; }
+.views button { margin:0; border:0; border-radius:0; padding:7px 14px; background:var(--surface); }
+.views button[aria-pressed="true"] { background:var(--accent); color:var(--on-accent); font-weight:600; }
+.cab-sum { color:var(--muted); font-size:14px; }
+.fp-layout { display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; }
+.fp-layout > div { flex:999 1 400px; min-width:0; }
+.pd { flex:1 1 240px; position:sticky; top:12px; border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+      background:var(--surface); font-size:14px; }
+.pd h3 { margin:0 0 10px; font-size:17px; } .pd .k { font-size:13px; color:var(--muted); margin:0; }
+.pd dl { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; margin:0; } .pd dt { color:var(--muted); }
+.pd dd { margin:0; overflow-wrap:anywhere; } .pd dd.bad { color:var(--bad-text); font-weight:600; }
 </style>
 """
 
@@ -227,7 +239,7 @@ DIAGRAM_SCRIPT = r"""
         }
         g.addEventListener("click", function () {
           var plate = document.getElementById("fp-" + c.id);
-          if (plate) { plate.open = true; plate.scrollIntoView({behavior: "smooth"}); }
+          if (plate) { showView("faceplates"); plate.open = true; plate.scrollIntoView({behavior: "smooth"}); }
         });
       });
     }).catch(function (error) { say("Diagram layout failed: " + error); });
@@ -264,11 +276,51 @@ DIAGRAM_SCRIPT = r"""
     });
   }
 
+  var detail = document.getElementById("port-detail");
+  document.addEventListener("click", function (event) {
+    var cell = event.target.closest(".fp .port");
+    if (!cell || !detail) { return; }
+    document.querySelectorAll(".fp .port.sel").forEach(function (other) { other.classList.remove("sel"); });
+    cell.classList.add("sel");
+    var pairs = JSON.parse(cell.dataset.detail || "[]");
+    detail.textContent = "";
+    function put(name, cls, parent, text) {
+      var e = document.createElement(name);
+      if (cls) { e.className = cls; }
+      e.textContent = text || "";
+      parent.appendChild(e);
+      return e;
+    }
+    put("p", "k", detail, cell.closest(".fp").dataset.box);
+    put("h3", "", detail, pairs.length ? pairs[0][1] : "");
+    var list = put("dl", "", detail);
+    pairs.slice(1).forEach(function (pair) {
+      put("dt", "", list, pair[0]);
+      put("dd", pair[0] === "Problem" ? "bad" : "", list, pair[1]);
+    });
+    var box = detail.getBoundingClientRect();
+    if (box.top > window.innerHeight || box.bottom < 0) { detail.scrollIntoView({behavior: "smooth", block: "nearest"}); }
+  });
+
+  function showView(name) {
+    document.querySelectorAll(".views button").forEach(function (button) {
+      var on = button.dataset.view === name;
+      button.setAttribute("aria-pressed", on ? "true" : "false");
+      var section = document.getElementById(button.dataset.view);
+      if (section) { section.hidden = !on; }
+    });
+    try { localStorage.setItem("atlas-cabling-view", name); } catch (e) {}
+  }
+  document.querySelectorAll(".views button").forEach(function (button) {
+    button.addEventListener("click", function () { showView(button.dataset.view); });
+  });
+  try { var saved = localStorage.getItem("atlas-cabling-view"); if (saved) { showView(saved); } } catch (e) {}
+
   var vlanPick = document.getElementById("vlan-filter");
   if (vlanPick) {
     vlanPick.addEventListener("change", function () {
       var v = vlanPick.value;
-      document.querySelectorAll(".fp span[data-vlans]").forEach(function (cell) {
+      document.querySelectorAll(".fp .port[data-vlans]").forEach(function (cell) {
         cell.classList.toggle("vlan-off", v !== "" && cell.dataset.vlans.split(" ").indexOf(v) === -1);
       });
     });
@@ -442,10 +494,12 @@ def _faceplates(snapshot, raw, panels=None):
             tip += _topology_text(info)
             vlans = _vlans(info)
             standby = "standby " if info.get("stp") in IDLE and cell["up"] else ""
-            cells.append(f'<span class="{state}{poe_class}{standby}{"cage " if cell["cage"] else ""}{"up " if cell["up"] else ""}{_speed_class(cell["speed"])}" '
+            pairs = _port_detail(cell, other, link, poe, info, issues)
+            cells.append(f'<button type="button" class="port {state}{poe_class}{standby}{"cage " if cell["cage"] else ""}{"up " if cell["up"] else ""}{_speed_class(cell["speed"])}" '
                          + (f'data-vlans="{" ".join(map(str, vlans))}" ' if vlans else "") +
+                         f'data-detail="{_esc(json.dumps(pairs))}" '
                          f'style="left:calc({cell["x"]:g} * var(--pw));top:calc({cell["row"]} * var(--ph))" '
-                         f'title="{_esc(tip)}"><b>{_esc(cell["label"])}</b><small>{_esc(other or "")}</small></span>')
+                         f'title="{_esc(tip)}"><b>{_esc(cell["label"])}</b><small>{_esc(other or "")}</small></button>')
         logical = "".join(
             f'<span class="lag" title="{_esc(port)}">{_esc(port)}'
             f'{" · " + _esc(attached[(node_id, port)][0]) if (node_id, port) in attached else ""}</span>'
@@ -455,10 +509,10 @@ def _faceplates(snapshot, raw, panels=None):
         poe_note = ('<p class="when">Yellow = can supply PoE: solid with ⚡ when powering a device, '
                     'dashed when not.</p>' if any(p.get("poe") for p in ports.values()) else "")
         model = (devices.get(name) or {}).get("model") if node_id.startswith("s:") else ""
-        html.append(f'<details id="fp-{_esc(node_id)}"><summary>{_esc(name)} '
+        html.append(f'<details open id="fp-{_esc(node_id)}"><summary>{_esc(name)} '
                     + (f'<span class="when">· {_esc(model)}</span> ' if model else "") +
                     f'<span class="when">· {up}/{len(sockets)} ports up{_esc(_poe_summary(devices.get(name) or {}, [c["name"] for c in sockets], ports))}</span></summary>'
-                    f'<div class="fp-wrap"><div class="fp" style="width:calc({layout["width"]:g} * var(--pw));'
+                    f'<div class="fp-wrap"><div class="fp" data-box="{_esc(name)}" style="width:calc({layout["width"]:g} * var(--pw));'
                     f'height:calc({layout["rows"]} * var(--ph))">{"".join(cells)}</div></div>'
                     + (f'<p class="when">Port-channels: {logical}</p>' if logical else "") + poe_note + '</details>')
 
@@ -467,7 +521,38 @@ def _faceplates(snapshot, raw, panels=None):
             + "".join(f'<option value="{vlan}">{vlan}</option>' for vlan in every) + '</select></div>'
             if len(every) > 1 else "")
 
-    return pick + "".join(html) if html else '<p class="muted">No switch port data yet.</p>'
+    if not html:
+        return '<p class="muted">No switch port data yet.</p>'
+    return (pick + '<div class="fp-layout"><div>' + "".join(html) + '</div><aside class="pd" id="port-detail" '
+            'aria-live="polite"><p class="muted">Pick a port to see what is plugged in and how it is doing.</p></aside></div>')
+
+
+def _port_detail(cell, other, link, poe, info, issues):
+    """[(label, value)] for the port panel; the first pair is its heading."""
+
+    if cell["cage"]:
+        return [("Port", f'{cell["name"]} SFP cage'), ("Shares", f'{cell["name"]} with the RJ45 port (combo)')]
+    pairs = [("Port", f'Port {cell["label"]}' + (f" \u2192 {other}" if other else "")),
+             ("Status", _speed_text(cell["speed"]) if cell["up"] else "down"),
+             ("Connected", other or "nothing atlas can name")]
+    if link and link.get("bps") is not None:
+        load = f' ({link["load"] * 100:.0f}% of the link)' if link.get("load") is not None else ""
+        pairs.append(("Traffic now", traffic.text(link["bps"]) + load))
+    if link and (link.get("patch") or link.get("label")):
+        pairs.append(("Patch", f'{link.get("patch") or ""} {link.get("label") or ""}'.strip()))
+    if poe:
+        pairs.append(("PoE", _poe_text(poe)))
+    if info.get("vlan") or info.get("tagged"):
+        tagged = ", ".join(map(str, sorted(info.get("tagged") or [])))
+        pairs.append(("VLAN", f'{info["vlan"]} untagged' + (f", tagged {tagged}" if tagged else "") if info.get("vlan")
+                      else f"tagged {tagged}"))
+    if info.get("lag"):
+        pairs.append(("Bundle", f'part of {info["lag"]}'))
+    if info.get("stp") in IDLE and cell["up"]:
+        pairs.append(("Standby", "spanning tree keeps this cable idle so there is no loop"))
+    pairs += [("Problem", f'{issue["reason"]}: {issue["detail"]}') for issue in issues]
+
+    return pairs
 
 
 def _vlans(info):
@@ -522,6 +607,14 @@ def suggestion_banner(suggested):
     return (f'<p class="suggest">\U0001F511 {count} device{"s" * (count != 1)} on your network could show '
             f'{"their" if count != 1 else "its"} ports with a login: {_esc(names)}. '
             '<a href="/settings#switches">Add on the Setup tab \u2192</a></p>')
+
+
+def _summary(snapshot, raw):
+
+    boxes = len(_boxes(snapshot, raw))
+    problems = len(snapshot.get("health") or []) + len(snapshot["warnings"])
+    return (f"{boxes} switch{'es' * (boxes != 1)} · {len(snapshot['links'])} cables · "
+            + (f"{problems} to check" if problems else "nothing to check"))
 
 
 def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, suggested=(), history=None):
@@ -584,7 +677,12 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
         + suggestion_banner(suggested)
         + (f'<ul class="warn">{warnings}</ul>' if warnings else "")
         + (f'<ul class="notes">{notes}</ul>' if notes else "")
-        + '<section id="diagram"><h2>Wired topology</h2>'
+        + '<div class="cab-head"><span class="cab-sum">' + _esc(_summary(snapshot, latest.get("raw") or {})) + '</span>'
+        '<div class="views" role="group" aria-label="View"><button type="button" data-view="faceplates" '
+        'aria-pressed="true">Front panels</button><button type="button" data-view="diagram" aria-pressed="false">'
+        'Map</button></div></div>'
+        f'<section id="faceplates"><h2>Front panels</h2>{_faceplates(snapshot, latest.get("raw") or {}, faceplates)}</section>'
+        + '<section id="diagram" hidden><h2>Map</h2>'
         '<div class="legend"><span><i style="background:var(--muted)"></i>100M</span>'
         '<span><i style="background:var(--blue)"></i>1G</span><span><i style="background:var(--teal)"></i>2.5G</span>'
         '<span><i style="background:var(--purple)"></i>10G</span><span>thick orange = over half full, red = over 80%</span><span>dashed = down</span><span>dotted grey = standby</span>'
@@ -592,7 +690,6 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
         '<button class="cab-btn ghost" id="wiring-export" type="button">Export SVG</button></div>'
         f'<div class="frame"><svg id="wiring-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>'
         f'<script type="application/json" id="wiring-data">{data}</script></section>'
-        f'<section id="faceplates"><h2>Switch ports</h2>{_faceplates(snapshot, latest.get("raw") or {}, faceplates)}</section>'
         + _health(snapshot) +
         '<section id="portmap"><h2>Port map</h2><div class="cab-tools">'
         '<input id="portmap-filter" type="search" placeholder="Filter: device, port, label…" aria-label="Filter port map">'

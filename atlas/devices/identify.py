@@ -28,7 +28,7 @@ MAKERS = (
     (("roku", "tcl", "vizio", "hisense", "lg electronics", "sony", "gaoshengda"), "tv", "TV"),
     (("espressif", "tuya", "shelly", "itead", "sonoff", "wyze", "signify", "philips lighting", "lifx", "ecobee",
       "tp-link smart", "ring", "arlo", "wemo", "belkin", "chamberlain", "irobot", "nest", "intellirocks", "govee",
-      "sengled", "meross", "lumi", "aqara"), "iot", "smart device"),
+      "sengled", "meross", "lumi", "aqara", "sonos"), "iot", "smart device"),
     (("hewlett", "hp inc", "brother", "canon", "epson", "lexmark", "xerox", "kyocera"), "other", "printer"),
     (("synology", "qnap", "asustor", "western digital"), "server", "NAS"),
     (("super micro", "supermicro"), "server", "server"),
@@ -132,8 +132,23 @@ def maker(mac, table):
     return None if (found or "").strip().lower() in ("", "private") else found
 
 
+# Registered company -> the name people know it by (or what its chip usually sits in).
+ALIASES = (("intellirocks", "Govee"), ("gaoshengda", "Gaoshengda (TV Wi-Fi module)"), ("xiaomi", "Xiaomi"),
+           ("hon hai", "Foxconn (builds for many brands)"), ("fugui", "Foxconn (builds for many brands)"),
+           ("azurewave", "AzureWave (laptop Wi-Fi)"), ("liteon", "Lite-On (laptop Wi-Fi)"),
+           ("universal global scientific", "USI (Wi-Fi module)"), ("murata", "Murata (Wi-Fi module)"),
+           ("amazon technologies", "Amazon"), ("arcadyan", "Arcadyan (internet-provider router)"),
+           ("sagemcom", "Sagemcom (internet-provider router)"), ("technicolor", "Technicolor (internet-provider router)"),
+           ("ring llc", "Ring"), ("wyze", "Wyze"), ("sonos", "Sonos"), ("roku", "Roku"), ("nintendo", "Nintendo"))
+
+
 def short_maker(name):
-    """'Espressif Inc.' -> 'Espressif'; 'TP-LINK TECHNOLOGIES CO.,LTD.' -> 'TP-Link'."""
+    """'Espressif Inc.' -> 'Espressif'; 'TP-LINK TECHNOLOGIES CO.,LTD.' -> 'TP-Link'; known aliases first."""
+
+    lowered = (name or "").lower()
+    for word, alias in ALIASES:
+        if word in lowered:
+            return alias
 
     words = (name or "").replace(",", " ").split()
     keep = []

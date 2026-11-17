@@ -6,10 +6,12 @@ data into innerHTML.
 """
 
 import json
+from datetime import datetime
 from urllib.parse import quote, urlencode
 
 from atlas.devices.store import CONNECTIONS, KINDS, STATES
 from atlas.web.icons import icon
+from atlas.web.cabling_page import _ago
 from atlas.web.render import section_tabs, ask_chips, _esc, render_page
 
 
@@ -73,6 +75,18 @@ def _button(label, url, body=None, css="", **data):
             f"{extra}>{_esc(label)}</button>")
 
 
+def _when(iso, now=None):
+    """'2026-11-17T01:33:24.388' -> '5 min ago' (the exact time stays in the tooltip); '-' when never."""
+
+    if not iso:
+        return "-"
+    try:
+        seen = datetime.fromisoformat(str(iso).replace("Z", ""))
+    except ValueError:
+        return _esc(iso)
+    return f'<time datetime="{_esc(iso)}" title="{_esc(str(iso)[:16].replace("T", " "))} UTC">{_ago(seen, now or datetime.utcnow())}</time>'
+
+
 def _sources(device):
 
     return ", ".join(sorted({sighting["source"] for sighting in device["sightings"]}))
@@ -103,7 +117,7 @@ def render_triage_page(triage, hints=None):
         f"<tr><td><div class=\"attn-row\">{_name_and_kind(device, hints.get(device['id']))}"
         f"{_clues(device, hints.get(device['id']))}</div></td>"
         f"<td>{_esc(_sources(device))}</td>"
-        f"<td>{_esc(device['last_seen'] or '-')}</td><td>"
+        f"<td>{_when(device['last_seen'])}</td><td>"
         + _button("Keep", f"/api/devices/{device['id']}", {"state": "known"}, "primary", name_from=f"name-{device['id']}",
                   kind_from=f"kind-{device['id']}")
         + (_button(f"Merge into {device['suggested_merge_name']}", f"/api/devices/{device['id']}/merge",
@@ -236,7 +250,7 @@ def render_devices_page(devices, hints=None):
         + f' <a href="/devices/{d["id"]}">details</a>' + _clues(d, hints.get(d["id"])) + '</div>' for d in new)
     rows += "".join(
         f'<div class="attn-row" data-row><span class="ddot quiet"></span><a href="/devices/{d["id"]}">{_esc(d["name"])}</a>'
-        f'<span class="muted">gone quiet \u00b7 last seen {_esc(d["last_seen"] or "-")}</span>'
+        f'<span class="muted">gone quiet \u00b7 last seen {_when(d["last_seen"])}</span>'
         + _button("Ignore", f"/api/devices/{d['id']}", {"state": "ignored"}) + "</div>" for d in quiet)
     shown = 8   # the rest fold so the page doesn't start with a wall of IPs
     row_list = rows.split('<div class="attn-row"')[1:]
@@ -363,7 +377,7 @@ def render_device_page(device, devices, ports=None, wiring=None, suggestion=None
     sighting_rows = "".join(
         f"<tr><td>{_esc(sighting['source'])}</td><td>{_esc(sighting['external_id'])}</td>"
         f"<td>{_esc(sighting['ip'] or '-')}</td><td>{_esc(sighting['mac'] or '-')}</td>"
-        f"<td>{_esc(sighting['hostname'] or '-')}</td><td>{_esc(sighting['last_seen'] or '-')}</td><td>"
+        f"<td>{_esc(sighting['hostname'] or '-')}</td><td>{_when(sighting['last_seen'])}</td><td>"
         + (_button("Split out", f"/api/sightings/{sighting['id']}/split", {}, after="goto") if several else "")
         + "</td></tr>"
         for sighting in device["sightings"]
@@ -377,7 +391,7 @@ def render_device_page(device, devices, ports=None, wiring=None, suggestion=None
 
     body = (
         f"<p>{_status(device)} <span class=\"muted\">- {_esc(device['ip'] or 'no ip')} - last seen "
-        f"{_esc(device['last_seen'] or 'never')}</span></p>"
+        f"{_when(device['last_seen']) if device['last_seen'] else 'never'}</span></p>"
         + _wired(wiring_node(device, wiring)) + _login_hint(suggestion) +
         f"<div class=\"card\"><h2>Details</h2>{form}</div>"
         + _open_ports(ports) +
@@ -404,8 +418,8 @@ def render_coverage_page(coverage):
 
     source_rows = "".join(
         f"<tr><td>{_esc(source['source'])}</td><td>{'ok' if source['ok'] else 'FAILED'}</td>"
-        f"<td>{_esc(source['last_run'] or '-')}</td><td>{_esc(source['seen_count'])}</td>"
-        f"<td>{_esc(source['last_ok'] or 'never')}</td><td>{_esc(source['error'] or '')}</td></tr>"
+        f"<td>{_when(source['last_run'])}</td><td>{_esc(source['seen_count'])}</td>"
+        f"<td>{_when(source['last_ok']) if source['last_ok'] else 'never'}</td><td>{_esc(source['error'] or '')}</td></tr>"
         for source in coverage["sources"]
     )
 

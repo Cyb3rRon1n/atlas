@@ -19,6 +19,8 @@ def test_parse_maker_private_and_hostname_clues():
     table = identify.parse_oui(OUI)
     assert table["24:0A:C4"] == "Espressif Inc." and len(table) == 3
     assert identify.short_maker("Espressif Inc.") == "Espressif"
+    assert identify.short_maker("Shenzhen Intellirocks Tech. Co. Ltd.") == "Govee"
+    assert identify.guess({"open": [], "maker": "Govee", "private": False, "hostname": None}) == ("Govee smart device", "iot")
     assert identify.short_maker("TP-LINK TECHNOLOGIES CO.,LTD.") == "TP-Link"
     assert identify.private("fe:0a:b0:11:22:33") and not identify.private("24:0a:c4:11:22:33")
     assert not identify.private("bc:24:11:00:00:01")                         # Proxmox virtual NIC
@@ -66,3 +68,11 @@ def test_refresh_downloads_monthly_and_never_raises(tmp_path):
     assert identify.refresh(now, path, get=lambda *a, **k: Reply()) and len(identify.makers(path)) > 1000
     assert not identify.refresh(now, path, get=lambda *a, **k: 1 / 0)          # fresh: not fetched again
     assert not identify.refresh(now, tmp_path / "x.csv", get=lambda *a, **k: 1 / 0)   # offline: just no names
+
+
+def test_times_read_as_ago_with_exact_time_on_hover():
+    from atlas.web.devices_pages import _when
+
+    html = _when("2026-11-17T01:33:24.388437", now=datetime(2026, 11, 17, 1, 38))
+    assert ">4 min ago</time>" in html and 'title="2026-11-17 01:33 UTC"' in html
+    assert _when(None) == "-" and _when("garbage") == "garbage"

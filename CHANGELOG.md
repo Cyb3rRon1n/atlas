@@ -55,6 +55,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   `security.snmp_discovery` turns the probe off; `wiring.not_managed` lists dismissed addresses.
 
 ### Changed
+- The chat panel starts closed on every page (open it from *Chat* in the side menu; atlas remembers).
+  Devices, Triage and Coverage show times as *5 min ago*, with the exact time on hover. Makers known by
+  another name show that name (Shenzhen Intellirocks shows as Govee).
 - Line icons instead of emoji on Devices, Activity, Services, Visitors and Cabling, drawn in the theme's colours.
 - **Cabling** opens on the switches' front panels (all expanded), with a *Front panels / Map* switch at the top
   and a one-line summary (switches, cables, what to check). Clicking a port shows a panel beside it: what's

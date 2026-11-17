@@ -20,10 +20,9 @@ CHAT_STYLE = """
 """
 
 DRAWER_HTML = (
-    # Applies the remembered collapsed state before first paint (no flash of a full-screen panel on phones).
-    '<script>try { const v = localStorage.getItem("atlasChatCollapsed");'
-    ' if (v === "1" || (v === null && innerWidth < 900)) document.body.classList.add("chat-collapsed"); }'
-    ' catch (error) { if (innerWidth < 900) document.body.classList.add("chat-collapsed"); }</script>'
+    # Closed until someone opens it (then remembered), applied before first paint so the page never jumps.
+    '<script>try { if (localStorage.getItem("atlasChatCollapsed") !== "0") document.body.classList.add("chat-collapsed"); }'
+    ' catch (error) { document.body.classList.add("chat-collapsed"); }</script>'
     '<aside id="chat-drawer" aria-label="Chat with Atlas">'
     '<div class="drawer-head"><h2>Chat with Atlas</h2>'
     '<button id="chat-close" aria-label="Collapse chat" aria-controls="chat-drawer">&rsaquo;</button></div>'

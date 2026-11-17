@@ -143,7 +143,8 @@ def _hosts_tabs(current):
     return section_tabs("trends" if current == "/trends" else "hosts")
 
 
-def render_page(title, body_html, active="", tabs=None, drawer=True):
+def render_page(title, body_html, active="", tabs=None, drawer=True, heading=None):
+    """heading: the visible headline when it should say more than the tab title (Home's verdict)."""
 
     here = ' aria-current="page"'   # built outside the f-strings: backslashes in f-string expressions need 3.12
     tabs = tabs if tabs is not None else section_tabs(active)
@@ -175,7 +176,7 @@ def render_page(title, body_html, active="", tabs=None, drawer=True):
         + ('<form method="post" action="/logout"><button>Sign out</button></form>' if SIGN_OUT else "") +
         "</div></aside>"
         f"<div class=\"shell{' docked' if drawer else ''}\">"
-        f"<main class=\"page\"><h1>{_esc(title)}</h1>{body_html}</main>"
+        f"<main class=\"page\"><h1>{_esc(heading or title)}</h1>{body_html}</main>"
         f"{drawer_html}</div></div>"
         "</body></html>"
     )

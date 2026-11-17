@@ -55,7 +55,7 @@ def test_build_hosts_tolerates_missing_sources():
 
 def test_home_all_good_verdict_cards_and_links():
     html = render_home_page(POSTURE_OK, build_hosts({"host": "media-server"}, LOCAL, None), EVENTS)
-    assert "\u2713 All good" in html and "Needs attention" not in html
+    assert "Everything is healthy" in html and "Needs attention" not in html
     for href in ('href="/posture"', 'href="/overview"', 'href="/history"'):
         assert href in html
     assert "Security posture" in html and "Hosts health" in html and "Recent activity" in html
@@ -162,3 +162,21 @@ def test_getting_started_checklist_until_the_required_steps_are_done():
     assert [step[3] for step in done] == [True, True, False, False]
     assert "Getting started" not in render_home_page(None, hosts, [], steps=done)   # optional steps don't keep it up
     assert "Getting started" not in render_home_page(None, hosts, [])
+
+
+def test_home_headline_tiles_and_issue_table():
+    from atlas.web.home_page import build_stats
+
+    devices = [{"state": "known", "status": "seen"}, {"state": "new", "status": "seen"},
+               {"state": "known", "status": "quiet"}, {"state": "ignored", "status": "seen"}]
+    hosts = build_hosts(None, LOCAL, None)
+    ups = {"upses": {"rack": {"state": "battery", "charge": 80.0}}}
+    stats = build_stats(devices, hosts, None, POSTURE_OK, [99.95, 100.0], ups)
+    labels = [tile[0] for tile in stats]
+    assert labels == ["Devices", "Servers", "Uptime, 7 days", "Public routes", "Power"]
+    assert stats[0][1:3] == ("2 / 3", "online · 1 new") and stats[2][1] == "99.95%" and stats[4][1] == "On battery"
+    assert build_stats(uptime=[])[0][1:3] == ("–", "no checks yet - add one")
+
+    html = render_home_page({**POSTURE_OK, "state": "warn", "message": "VPN: down"}, hosts, EVENTS, stats=stats)
+    assert "<h1>1 thing needs a look - everything else is healthy</h1>" in html
+    assert 'class="kpis"' in html and "On battery" in html and 'class="sev problem"' in html and "VPN: down" in html

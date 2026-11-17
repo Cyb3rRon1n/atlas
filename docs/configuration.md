@@ -313,6 +313,25 @@ arrives if your alert service works without the internet (ntfy on your own netwo
 it's back always does, with how long it lasted. The outage list says whether the router kept answering - then
 the problem was on the provider's side.
 
+## `dns_filter`
+
+Pi-hole (version 6) or AdGuard Home, read with every `atlas scan` (or `atlas dns check`). Easiest from Setup →
+*Pi-hole or AdGuard Home*. Read-only: atlas never changes blocking or lists.
+
+| Key | Default | What it does |
+|---|---|---|
+| `enabled` | `false` | Turn the watch on |
+| `kind` | `pihole` | `pihole` or `adguard` |
+| `url` | `""` | Its web address, e.g. `http://192.168.1.53` |
+| `user` | `""` | AdGuard Home's username (Pi-hole has none) |
+| `verify_ssl` | `false` | Check the certificate on an `https://` address |
+| `timeout` | `5.0` | Seconds to wait |
+
+The password goes in the `ATLAS_DNS_PASSWORD` secret (Setup stores it for you). For Pi-hole, an *app password*
+(Settings → Web interface / API) works too and is the one to use with two-factor sign-in on. Atlas signs out of
+Pi-hole after every read, so it never uses up Pi-hole's session slots. Ad blocking off at two checks in a row
+sends one alert, and one more when it's back on - a short pause doesn't.
+
 ## `ups`
 
 Alerts on a power cut, a low battery, and when power is back, read from a NUT server (Network UPS Tools, TCP 3493). The computer the UPS's USB cable goes into usually runs one: `nut-server` on Linux, or the *network UPS server* option on Synology, QNAP, Unraid and TrueNAS (add atlas's address to its allowed list). Set it up on **Setup → UPS** or here. atlas-scan reads it once a minute; only `LIST` commands are sent, so no login is needed.

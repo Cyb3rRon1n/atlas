@@ -145,6 +145,13 @@ def lan_scan(
     result["notify_errors"] = deliver(store, settings.notify)
     from atlas.devices.notify import report_alerts
     report_alerts(store, store.devices(), datetime.utcnow())
+    if settings.dns_filter.enabled:
+        try:
+            from atlas.monitoring.dnsfilter import run as dns_run
+            from atlas.posture.store import PostureStore
+            dns_run(settings, PostureStore(), datetime.utcnow())
+        except Exception as error:                      # Pi-hole trouble never fails the LAN scan
+            console.print(f"[yellow]Pi-hole / AdGuard Home check failed: {error}[/yellow]")
 
     if result["new"] or result["offline"] or result["notify_errors"]:
         application.runtime.events.publish(
@@ -791,3 +798,37 @@ def notify_test():
 app.add_typer(
     notify_app
 )
+
+
+dns_app = typer.Typer(name="dns", help="Pi-hole or AdGuard Home: ad blocking on, queries, blocked, busiest devices")
+
+
+@dns_app.command("check")
+def dns_check(json_output: bool = typer.Option(False, "--json", help="Print the result as JSON")):
+    """
+    Reads Pi-hole (v6) or AdGuard Home from dns_filter: (Setup -> Pi-hole or AdGuard Home). `atlas scan` runs it
+    too; ad blocking off at two checks in a row sends one alert, and another when it's back on.
+    """
+
+    from datetime import datetime
+
+    from atlas.monitoring.dnsfilter import run
+    from atlas.posture.store import PostureStore
+
+    settings = load_config()
+    if not settings.dns_filter.enabled:
+        console.print("Pi-hole / AdGuard Home watch is off - turn it on in Setup or under dns_filter: in atlas.yaml.")
+        return
+    detail = run(settings, PostureStore(), datetime.utcnow())
+    if json_output:
+        print(json.dumps(detail))
+        return
+    if detail["error"]:
+        console.print(f"[red]{detail['error']}[/red]")
+    info = detail["info"]
+    if info:
+        console.print(f"{info['kind']}: ad blocking {'on' if info['blocking'] else 'OFF'}, "
+                      f"{info.get('queries')} queries, {info.get('blocked')} blocked ({info.get('percent')}%)")
+
+
+app.add_typer(dns_app)

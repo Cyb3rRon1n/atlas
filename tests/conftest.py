@@ -56,6 +56,15 @@ def temp_db(tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def chat_flag_reset(monkeypatch):
+    """The web server sets atlas.web.render.AI_ON per request; put it back so one test's server can't hide the
+    chat from the next test's pages."""
+
+    from atlas.web import render
+    monkeypatch.setattr(render, "AI_ON", True)
+
+
+@pytest.fixture(autouse=True)
 def no_network_lookups(monkeypatch):
     """Tests never ask the real LAN (mDNS / UPnP), never download the MAC maker list and never resolve a download
     server's name; the tests for those pieces call them with fakes."""

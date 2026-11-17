@@ -144,6 +144,7 @@ def section_tabs(page):
     return [(href, label, key == page) for href, label, key in SECTIONS.get(SECTION_OF.get(page), [])]
 
 SIGN_OUT = False    # set by run_server when atlas does its own sign-in (web.auth: builtin)
+AI_ON = True        # set per request by the server: no chat panel or "ask" chips while intelligence.provider is none
 
 def _hosts_tabs(current):
 
@@ -159,6 +160,8 @@ FAVICON = ('<link rel="icon" href="data:image/svg+xml,'
 
 def render_page(title, body_html, active="", tabs=None, drawer=True, heading=None):
     """heading: the visible headline when it should say more than the tab title (Home's verdict)."""
+
+    drawer = drawer and AI_ON
 
     here = ' aria-current="page"'   # built outside the f-strings: backslashes in f-string expressions need 3.12
     tabs = tabs if tabs is not None else section_tabs(active)
@@ -202,6 +205,8 @@ def ask_chips(questions):
     One-click questions that fill the docked chat (window.atlasAsk), or open /chat when there is no panel.
     """
 
+    if not AI_ON:
+        return ""
     return '<div class="chips" aria-label="Ask Atlas">' + "".join(
         f'<button data-ask="{_esc(q)}">{_esc(q)}</button>' for q in questions) + "</div>" + (
         # Delegated, so [data-ask] buttons rendered AFTER the chips (e.g. Access page "Investigate") work too.

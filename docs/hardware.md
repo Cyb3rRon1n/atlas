@@ -16,6 +16,7 @@ has already found is ticked for you.
 | **Managed switch** (Cisco SG/CBS, Netgear Smart, TP-Link JetStream, Zyxel GS1900, Aruba Instant On, MikroTik...) | SNMPv3, or v2c | Every port on the Cabling map: what's plugged in, speed, PoE, VLANs, spanning tree, cable health, traffic | Setup → Switches and routers |
 | **Router or firewall with SNMP** (OPNsense, pfSense, OpenWrt, MikroTik RouterOS) | SNMPv3, or v2c | Its ports, links and traffic on the map | Setup → Switches and routers |
 | **NAS** (Synology, QNAP, TrueNAS) | SNMPv3, or v2c | Its network ports and traffic on the map | Setup → Switches and routers |
+| **TrueNAS or Synology** (disk health) | TrueNAS: an API key (read-only admin). Synology: an admin account with no folder or app access | Pool or volume health and use; each disk's health and temperature; alerts | Setup → TrueNAS or Synology |
 | **UniFi** (gateway, switches, access points) | The console's local API, View Only account | UniFi ports and uplinks SNMP can't see, wired clients, port forwards | Setup → UniFi |
 | **Proxmox VE** | API token with the PVEAuditor role | VMs and containers, drawn under their host; ZFS pools and each disk's SMART health, wear and temperature | Setup → Proxmox |
 | **Docker** | A read-only socket proxy | Containers and the services they publish | `docker-compose.yml` |
@@ -39,8 +40,7 @@ the LAN scan.
 From our research into what homes and home labs actually run, roughly in this order:
 
 1. **Router details** - DHCP leases and Wi-Fi clients from OPNsense, OpenWrt, MikroTik and Fritz!Box.
-2. **NAS health** - disk SMART status, pool health and temperatures from TrueNAS and Synology (Proxmox hosts have it already).
-3. **Home Assistant** - one connection that covers many smart devices.
-4. **TP-Link Omada and Unraid**, and APC network management cards read over SNMP (for a UPS with no NUT server).
+2. **Home Assistant** - one connection that covers many smart devices.
+3. **TP-Link Omada and Unraid**, and APC network management cards read over SNMP (for a UPS with no NUT server).
 
 Something you own missing? Open an issue with the make and model.

@@ -33,17 +33,19 @@ def problems(disk, health, was_hot=False):
         found["hot"] = ("is running hot", f"{disk['temp']}°C (limit {limit}°C) - check the fans and airflow")
     if disk.get("life") is not None and disk.get("type") != "hdd" and disk["life"] <= health.disk_life_percent:
         found["worn"] = ("is nearly worn out", f"{disk['life']}% of its life left - plan a replacement")
+    elif disk.get("worn"):                                     # the NAS's own "life below its limit" flag
+        found["worn"] = ("is nearly worn out", "the NAS says its life left is below the limit - plan a replacement")
     return found
 
 
-def run(settings, store, now, nodes, host_names=None, *, send=None):
+def run(settings, store, now, nodes, host_names=None, *, source="disks", send=None):
     """Check every disk on every node. Status source 'disks' in the posture store; returns the saved detail."""
 
     from atlas import notify
     from atlas.alerts import allowed, issue, report
 
     health = settings.health
-    previous = ((store.statuses().get("disks") or {}).get("detail")) or {}
+    previous = ((store.statuses().get(source) or {}).get("detail")) or {}
     old = previous.get("disks") or {}
     seen, found, texts = {}, [], []
 
@@ -67,7 +69,7 @@ def run(settings, store, now, nodes, host_names=None, *, send=None):
                                   "current", f"disks:bad:{key}"))
             seen[key] = {"temp": disk.get("temp"), "bad": disk.get("bad"), "problems": sorted(now_problems)}
 
-    report("disks", found, now, store)
+    report(source, found, now, store)
     for text in texts:
         if allowed(store, text, now):
             if send:
@@ -76,7 +78,7 @@ def run(settings, store, now, nodes, host_names=None, *, send=None):
                 notify.send(settings.notify, text)
 
     detail = {"checked_at": now.isoformat(timespec="seconds"), "disks": seen}
-    store.set_status("disks", not found, detail, now)
+    store.set_status(source, not found, detail, now)
     return detail
 
 

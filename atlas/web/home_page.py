@@ -197,7 +197,7 @@ def parse_mdstat(text):
     return arrays
 
 
-def build_storage(arrays, usage, feeds, pve_scan, topology=None, health=None):
+def build_storage(arrays, usage, feeds, pve_scan, topology=None, health=None, nas=None):
     """
     Rows for the storage card. arrays: parse_mdstat() output; usage: {label:
     psutil.disk_usage() result} for configured storage_paths; feeds: status
@@ -231,13 +231,18 @@ def build_storage(arrays, usage, feeds, pve_scan, topology=None, health=None):
     pve_host = lan.get(((topology or {}).get("proxmox") or {}).get("host"))
     nodes = (pve_scan or {}).get("nodes", [])
 
-    for node in nodes:
-        host = pve_host if pve_host and len(nodes) == 1 else node["name"]
+    nas_nodes = [{"name": nas["name"], "zfs": (nas.get("info") or {}).get("pools") or [],
+                  "disks": (nas.get("info") or {}).get("disks") or []}] if nas and nas.get("name") else []
+    for node in nodes + nas_nodes:
+        host = pve_host if pve_host and len(nodes) == 1 and node in nodes else node["name"]
         for pool in node.get("zfs", []):
-            pct = round(pool["alloc"] / pool["size"] * 100) if pool.get("size") else 0
-            rows.append({"name": f"{host} {pool['name']}", "detail": f"{pool['health']} · {pct}% of {_size(pool['size'])}",
-                         "warn": pool["health"] != "ONLINE" or pct >= WARN_PERCENT})
+            pct = round((pool.get("alloc") or 0) / pool["size"] * 100) if pool.get("size") else 0
+            size = f" · {pct}% of {_size(pool['size'])}" if pool.get("size") else ""
+            rows.append({"name": f"{host} {pool['name']}", "detail": f"{pool['health']}{size}",
+                         "warn": pool["health"] not in ("ONLINE", "NORMAL") or pct >= WARN_PERCENT})
         rows.extend(_disk_rows(host, node.get("disks") or [], health))
+    if nas and nas.get("error"):
+        rows.append({"name": nas.get("name") or "NAS", "detail": "can't read it - see Setup", "warn": True})
 
     state = "unknown" if not rows else ("warn" if any(r["warn"] for r in rows) else "ok")
 

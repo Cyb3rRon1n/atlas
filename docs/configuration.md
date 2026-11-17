@@ -339,6 +339,27 @@ The password goes in the `ATLAS_DNS_PASSWORD` secret (Setup stores it for you). 
 Pi-hole after every read, so it never uses up Pi-hole's session slots. Ad blocking off at two checks in a row
 sends one alert, and one more when it's back on - a short pause doesn't.
 
+## `nas`
+
+TrueNAS or Synology disk and pool health, read with every `atlas scan` (and `atlas nas check`). Set it up in Setup → *TrueNAS or Synology*. Off by default.
+
+| Field | Default | Description |
+|---|---|---|
+| `enabled` | `false` | Turn it on |
+| `kind` | `truenas` | `truenas` or `synology` |
+| `url` | | The web address: `https://192.0.2.20` (TrueNAS, https only), `https://192.0.2.20:5001` (Synology) |
+| `user` | | TrueNAS: the user the API key belongs to. Synology: the account atlas signs in with |
+| `name` | | What to call it on Home and in alerts; the address's host name when empty |
+| `verify_ssl` | `false` | Check its certificate (leave off for the usual self-signed one) |
+| `timeout` | `10` | Seconds to wait |
+
+The API key (TrueNAS) or password (Synology) is the `ATLAS_NAS_PASSWORD` secret.
+
+- **TrueNAS** (24.10 and newer) is read over its JSON-RPC websocket API, the one that replaces the REST API TrueNAS is removing. Make an API key for a user with the read-only admin role. atlas only uses https: TrueNAS revokes a key sent without encryption.
+- **Synology** (DSM 7): DSM only lets administrators read storage, so make an admin account for atlas, deny it every shared folder and application, and leave two-factor off for it. atlas signs out after every read.
+
+Home's Storage & RAID card shows each pool or volume (health, how full) and the disks the same way as Proxmox ones (see *Disk health* under `health`). Alerts: one when a pool or volume isn't healthy and one when it is again; disk alerts use the same `health.disk_*` limits. Built from the vendors' API documentation and not yet checked against real hardware - if something reads wrong on yours, please open an issue.
+
 ## `ups`
 
 Alerts on a power cut, a low battery, and when power is back, read from a NUT server (Network UPS Tools, TCP 3493). The computer the UPS's USB cable goes into usually runs one: `nut-server` on Linux, or the *network UPS server* option on Synology, QNAP, Unraid and TrueNAS (add atlas's address to its allowed list). Set it up on **Setup → UPS** or here. atlas-scan reads it once a minute; only `LIST` commands are sent, so no login is needed.

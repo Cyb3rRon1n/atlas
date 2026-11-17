@@ -3,6 +3,15 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
+## Unreleased
+
+### Added
+- **TrueNAS and Synology** (Setup → *TrueNAS or Synology*, or *What's on your network?* → NAS): Home's Storage &
+  RAID card shows each pool or volume and every disk's health and temperature. Alerts when a pool isn't healthy,
+  and the same disk alerts as Proxmox (failing, hot, worn out). TrueNAS 24.10+ over its websocket API with an API
+  key; Synology DSM 7 with an admin account. Read-only. Built from the vendors' API docs and not yet checked
+  against real hardware.
+
 ## 0.10.0 - 2026-11-17
 
 ### Added

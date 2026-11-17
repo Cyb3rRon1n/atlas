@@ -71,11 +71,15 @@ def test_adguard_home_basic_auth_and_bad_addresses():
             assert auth == ("admin", "pw")
             if url.endswith("/control/status"):
                 return Reply(200, {"protection_enabled": False, "running": True})
+            if url.endswith("/control/filtering/status"):
+                return Reply(200, {"filters": [{"enabled": True, "rules_count": 190000},
+                                               {"enabled": False, "rules_count": 5000}]})
             return Reply(200, {"num_dns_queries": 1000, "num_blocked_filtering": 250,
                                "top_clients": [{"192.0.2.30": 600}, {"192.0.2.31": 400}]})
 
     info = dnsfilter.fetch(_config(kind="adguard", user="admin"), {"ATLAS_DNS_PASSWORD": "pw"}, FakeAdGuard())
     assert info["kind"] == "AdGuard Home" and info["blocking"] is False and info["percent"] == 25.0
+    assert info["blocklist"] == 190000                                           # enabled lists only
     assert info["clients"][0] == {"ip": "192.0.2.30", "name": "", "count": 600}
     with pytest.raises(dnsfilter.DnsFilterError, match="web address"):
         dnsfilter.fetch(DnsFilterConfig(url="192.0.2.53"), {}, FakeAdGuard())

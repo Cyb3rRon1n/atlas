@@ -10,6 +10,8 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   "No AI assistant set up". They come back as soon as an AI is set up in Setup or atlas.yaml.
 
 ### Fixed
+- **Smaller database**: routine discovery and plugin events (a copy of the system snapshot every scan, read by
+  nothing after the latest) are kept 7 days instead of 90 - on a live install they were over half the database.
 - **Browser tab icon**: pages now carry atlas's globe as their icon (inline), so tabs and bookmarks show it and
   browsers stop asking for a missing `/favicon.ico`.
 

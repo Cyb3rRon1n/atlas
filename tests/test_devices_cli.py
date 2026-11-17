@@ -2,7 +2,7 @@ import json
 
 from typer.testing import CliRunner
 
-import atlas.cli.main as cli_main
+import atlas.cli.watch as cli_main
 import atlas.devices.lan as lan
 from atlas.cli.main import app
 from atlas.devices import Sighting

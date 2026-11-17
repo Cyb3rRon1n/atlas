@@ -88,6 +88,15 @@ def safe_next(value):
     return value if value.startswith("/") and not value.startswith("//") and "\\" not in value else "/"
 
 
+
+def _notify_settings():
+    """notify: settings for the Alerts page's quiet hours, or None if atlas.yaml can't be read."""
+
+    try:
+        return load_config().notify
+    except Exception:
+        return None
+
 class AtlasWebHandler(BaseHTTPRequestHandler):
 
     auth = None     # an atlas.web.auth.Auth when web.auth is builtin; None = an auth proxy guards the host
@@ -302,7 +311,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         elif path == "/alerts":
             from atlas.web.alerts_page import render_alerts_page
             now = datetime.utcnow()
-            body = render_alerts_page(AlertStore().listing(now), now)
+            body = render_alerts_page(AlertStore().listing(now), now, _notify_settings())
         elif path == "/history":
             body = render_history_page(query.recent_events(300))
         elif path == "/uptime":

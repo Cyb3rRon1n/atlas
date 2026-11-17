@@ -323,7 +323,15 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             now = datetime.utcnow()
             body = render_alerts_page(AlertStore().listing(now), now, _notify_settings())
         elif path == "/history":
-            body = render_history_page(query.recent_events(300))
+            from atlas.web import changes_feed
+            window = (parse_qs(self.path.partition("?")[2]).get("changes") or ["24h"])[0]
+            window = window if window in changes_feed.WINDOWS else "24h"
+            events, now = query.recent_events(300), datetime.utcnow()
+            feed = changes_feed.collect(now, window, {
+                "alerts": lambda at, days: AlertStore().listing(at, days), "devices": InventoryStore().devices,
+                "changes": lambda since: [(at, kind, payload) for kind in changes_feed.CHANGE_EVENTS
+                                          for at, payload in query.events_since([kind], since)]})
+            body = render_history_page(events, changes=changes_feed.render(feed, now, window))
         elif path == "/uptime":
             from atlas.config import local
             from atlas.monitoring.uptime import UptimeStore

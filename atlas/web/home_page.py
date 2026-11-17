@@ -469,7 +469,7 @@ def _checklist(steps):
             + "</ol></section>")
 
 
-def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=None, ups=None):
+def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=None, ups=None, internet=None):
     """The number tiles along the top of Home: [(label, value, sub, href, tone)]; a source that's missing is left out.
     devices: InventoryStore().devices(); uptime: [7-day % per check]; ups: the UPS watch's saved detail."""
 
@@ -480,6 +480,10 @@ def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=Non
         new = sum(d["state"] == "new" for d in live)
         tiles.append(("Devices", f"{online} / {len(live)}", f"online · {new} new" if new else "online, all named",
                       "/devices", "warn" if new else ""))
+    if internet:                                  # (up, ms) from the newest internet check
+        up, ms = internet
+        tiles.append(("Internet", "Up" if up else "Down", f"{ms:.0f} ms" if up and ms is not None else
+                      "router or provider - see Uptime" if not up else "", "/uptime", "good" if up else "bad"))
     if hosts and hosts["rows"]:
         fine = sum(not row["problems"] for row in hosts["rows"])
         tiles.append(("Servers", f"{fine} / {len(hosts['rows'])}", "healthy" if fine == len(hosts["rows"]) else

@@ -246,6 +246,13 @@ class UptimeConfig(BaseModel):
     fail_after: int = 2                 # failures in a row before a check counts as down (1 a minute)
 
 
+class InternetConfig(BaseModel):
+    # Internet health, checked with the uptime checks once a minute: TCP connects to public DNS servers (no ping).
+    enabled: bool = True
+    targets: list[str] = ["1.1.1.1:443", "8.8.8.8:443", "9.9.9.9:443"]
+    timeout: float = 3.0
+
+
 class UpsConfig(BaseModel):
     # A NUT server (Network UPS Tools): nut-server on Linux, or a Synology/QNAP/Unraid/TrueNAS "network UPS server".
     enabled: bool = False
@@ -276,4 +283,5 @@ class AtlasConfig(BaseModel):
     security: SecurityConfig = SecurityConfig()
     wiring: WiringConfig = WiringConfig()
     uptime: UptimeConfig = UptimeConfig()
+    internet: InternetConfig = InternetConfig()
     ups: UpsConfig = UpsConfig()

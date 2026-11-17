@@ -168,14 +168,23 @@ def _store(owner):
 
 
 def allowed(owner, text, now=None):
-    """True when a message may go out: Text tagged as muted, or any message while paused, is held.
+    """True when a message may go out: Text tagged as muted, or any message while paused or in quiet hours, is held.
     Fails open - a broken alert database must never silence a real problem."""
 
+    from datetime import datetime
+
+    now = now or datetime.utcnow()
     try:
-        from datetime import datetime
+        from atlas.alerts.quiet import active
+        from atlas.config import load_config
+        notify = load_config().notify
+        if notify.quiet_hours and active(notify.quiet_hours, notify.timezone, now):
+            return False
+    except Exception:
+        pass                                     # a bad schedule never silences anything
+    try:
         store = _store(owner)
-        return store is None or store.allowed(getattr(text, "key", ""), getattr(text, "device_id", None),
-                                               now or datetime.utcnow())
+        return store is None or store.allowed(getattr(text, "key", ""), getattr(text, "device_id", None), now)
     except Exception:
         return True
 

@@ -222,6 +222,20 @@ How often the `atlas-scan` container loops `atlas scan; atlas discover; atlas pr
 
 `atlas scan` never pings and never opens a raw socket: it TCP-connects to port 9 on every address in scope, which makes the kernel ARP-resolve each live host, then reads `/proc/net/arp` for the resulting IP-to-MAC table (only complete entries count — an address nobody answered for isn't in it) and does a best-effort reverse DNS lookup for a hostname. This needs host networking (`network_mode: host`) but no extra capabilities. With `discover` on it also sends one mDNS question and one SSDP search to the LAN and reads each answering UPnP device's own description - read-only, and nothing leaves the network. The maker of each MAC address comes from the IEEE's public list (`inventory/oui.csv`, downloaded monthly; without internet it is skipped). A scan refuses to run over more than 1024 addresses at once — narrow `subnets` if your LAN is bigger than that.
 
+### Quiet hours
+
+A weekly schedule when no alert messages go out - the night, or the Sunday update window. Problems still show on the Alerts page; only the messages are held, the same as **Pause alerts**. Add them on the Alerts page (times in your browser's time zone, which is saved as `notify.timezone`) or in `atlas.yaml`:
+
+```yaml
+notify:
+  timezone: America/Detroit       # an IANA name; UTC when empty
+  quiet_hours:
+    - {start: "23:00", end: "07:00"}                 # every night (ends next morning)
+    - {start: "03:00", end: "06:00", days: [sun]}     # Sunday updates
+```
+
+A window that ends before it starts runs over midnight and belongs to the day it starts. A schedule atlas can't read never silences anything.
+
 ## Alerts page
 
 The web page's **Alerts** tab lists everything the checks below find: *Needs action* (problems: these also go to every `notify:` channel), *Watching* (shown on the page only) and *Resolved in the last 7 days*. Each item links to the page where you can investigate it, and resolves by itself once the check no longer sees it. One-off findings, such as a newly opened port, stay under *Needs action* for 7 days. Resolved items are kept for 30 days.

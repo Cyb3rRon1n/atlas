@@ -326,7 +326,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             store = UptimeStore()
             body = render_uptime_page(checks, store.summary([c.name for c in checks], now), now,
                                       settings.uptime.fail_after, suggestions(checks), local.locked(("uptime", "checks")),
-                                      power, internet_data(store, now, settings.uptime.fail_after)
+                                      power, internet_data(store, now, settings.uptime.fail_after, settings.internet)
                                       if settings.internet.enabled else None, self._beats(settings, now),
                                       local.locked(("uptime", "heartbeats")))
         elif path == "/trends":

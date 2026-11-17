@@ -19,7 +19,7 @@ No linter or formatter is configured. Match the style of the file you are editin
 
 | Path | What lives there |
 |---|---|
-| `atlas/cli/main.py` | Every CLI command (Typer + Rich) |
+| `atlas/cli/` | The CLI (Typer + Rich): `app.py` the shared app, `main.py` setup/status/web commands, `watch.py` what atlas-scan runs, `virt.py` Proxmox/libvirt/fleet, `containers.py` Docker, `ai.py` the AI model |
 | `atlas/web/` | `atlas web`: stdlib `http.server`, one `*_page.py` per page, `api.py` for the write routes |
 | `atlas/devices/` | Device inventory: LAN scan, sightings merged into devices, open-port watch, LAN (DHCP/ARP) watch |
 | `atlas/wiring/` | Cabling map: SNMP + UniFi collectors, `build.py` turns them into nodes and links, cable health |

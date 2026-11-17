@@ -236,6 +236,22 @@ notify:
 
 A window that ends before it starts runs over midnight and belongs to the day it starts. A schedule atlas can't read never silences anything.
 
+## Prometheus metrics
+
+`/metrics` serves what atlas already knows in Prometheus format, for Grafana or any Prometheus-compatible
+scraper: uptime checks (including Internet, Router and DNS) and their response times, device counts by state,
+open alerts, disk temperature / SMART / life left (Proxmox, TrueNAS, Synology), UPS charge and battery state,
+heartbeats, and Pi-hole / AdGuard Home totals. Nothing is measured on request; a source that isn't set up is
+left out. Sign in, or send the read-only API token (`atlas auth token`) as a Bearer token:
+
+```yaml
+scrape_configs:
+  - job_name: atlas
+    scrape_interval: 60s
+    authorization: {credentials: <atlas auth token>}
+    static_configs: [{targets: ["atlas.example:8420"]}]
+```
+
 ## Alerts page
 
 The web page's **Alerts** tab lists everything the checks below find: *Needs action* (problems: these also go to every `notify:` channel), *Watching* (shown on the page only) and *Resolved in the last 7 days*. Each item links to the page where you can investigate it, and resolves by itself once the check no longer sees it. One-off findings, such as a newly opened port, stay under *Needs action* for 7 days. Resolved items are kept for 30 days.

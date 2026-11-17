@@ -131,7 +131,7 @@ def _power(power):
     return "<h2>Power</h2>" + "".join(rows)
 
 
-def internet_data(store, now, fail_after=2):
+def internet_data(store, now, fail_after=2, config=None):
     """{"summary": UptimeStore.summary() for Internet and Router, "outages": [(start, end, router_ok)] 30 days}."""
 
     from datetime import timedelta
@@ -141,8 +141,16 @@ def internet_data(store, now, fail_after=2):
     since = now - timedelta(days=30)
     router = dict(store.history(internet.ROUTER, since))
     rows = [(at, ok, router.get(at)) for at, ok in store.history(internet.INTERNET, since)]
-    return {"summary": store.summary(internet.NAMES, now),
+    return {"summary": store.summary(internet.all_names(config) if config else internet.NAMES, now),
             "outages": list(reversed(internet.outages(rows, fail_after)))}
+
+
+def _what(name):
+    if name == "Internet":
+        return "public DNS servers"
+    if name == "Router":
+        return "your router"
+    return "this machine's name lookups" if name == "DNS" else "name lookups at " + name[4:]
 
 
 def _internet(data, now, fail_after):
@@ -157,7 +165,7 @@ def _internet(data, now, fail_after):
         state, label = _state(info, fail_after)
         last = info["last"]
         rows.append(f'<tr><td><span class="state {state}">{label}</span></td><td><strong>{_esc(name)}</strong>'
-                    f'<span class="target">{"public DNS servers" if name == "Internet" else "your router"}</span></td>'
+                    f'<span class="target">{_what(name)}</span></td>'
                     f'<td class="num">{f"{last[2]:.0f} ms" if last and last[2] is not None else ""}</td>'
                     f'<td>{_graph(info["points"])}</td>'
                     + "".join(f'<td class="num">{_pct(info["uptime"].get(w))}</td>' for w in ("24 h", "7 days", "30 days"))
@@ -305,7 +313,7 @@ def handle_post(path, body):
 
     if not name:
         return 400, {"error": "Give the check a name."}
-    if name.lower() in ("internet", "router"):
+    if name.lower() in ("internet", "router", "dns") or name.lower().startswith("dns "):
         return 400, {"error": f"{name} is the built-in internet check - pick another name."}
     if len(others) != len(saved):
         return 400, {"error": f"There is already a check called {name}."}

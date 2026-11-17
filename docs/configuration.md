@@ -347,6 +347,12 @@ privileges. Results show on Servers → Uptime and as a tile on Home.
 | `enabled` | `true` | `false` turns the check off |
 | `targets` | `["1.1.1.1:443", "8.8.8.8:443", "9.9.9.9:443"]` | `host:port` to reach; the internet is up when any answers |
 | `timeout` | `3.0` | Seconds to wait for each |
+| `dns_name` | `example.com` | Looked up each minute to check name lookups work; `""` turns that off |
+| `dns_servers` | `[]` | Ask these directly (your router, Pi-hole...), one row each; empty = this machine's own resolver |
+
+**Name lookups (DNS):** a working connection with a broken DNS server still means no websites. Atlas looks up
+`dns_name` once a minute and shows it under Internet. After `uptime.fail_after` failed minutes in a row - while
+the internet itself answers - you get one alert, and one when lookups work again.
 
 The internet counts as down after `uptime.fail_after` failed minutes in a row. The alert for the drop only
 arrives if your alert service works without the internet (ntfy on your own network, for example); the one when

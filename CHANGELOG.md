@@ -19,6 +19,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   again.
 - **Quiet hours** (Alerts page, or `notify.quiet_hours`): weekly windows, in your time zone, when no messages go
   out - problems still show on the Alerts page, like a scheduled Pause.
+- **DNS check** in internet health: a name is looked up each minute (this machine's resolver, or each of
+  `internet.dns_servers` - your router, Pi-hole) and shown under Internet on Servers → Uptime; one alert when
+  lookups fail while the internet answers, one when they work again.
 
 ## 0.10.0 - 2026-11-17
 

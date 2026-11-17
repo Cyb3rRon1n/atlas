@@ -225,3 +225,33 @@ def test_summary_posture_block():
     assert block == {"state": "review", "tunnel": "Tunnel up", "vpn": "Verified", "routes": 14, "blocked": "37",
                      "review_count": 1, "message": "sonarr reached EXAMPLE-NET (US)", "link": "/posture"}
     assert "posture" not in build_summary(None, (), None)
+
+
+def test_no_chat_panel_or_ask_chips_while_ai_is_off(monkeypatch):
+    from atlas.web import render
+
+    monkeypatch.setattr(render, "AI_ON", False)
+    html = render.render_page("Home", render.ask_chips(["What changed?"]))
+    assert 'id="chat-toggle"' not in html and "data-ask" not in html and "chat-drawer" not in html
+    monkeypatch.setattr(render, "AI_ON", True)
+    assert 'id="chat-toggle"' in render.render_page("Home", "") and "data-ask" in render.ask_chips(["x"])
+
+
+def test_server_turns_the_chat_off_with_the_setting(temp_db, isolated_cwd):
+    import threading
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+
+    from atlas.web.server import AtlasWebHandler
+
+    (isolated_cwd / "atlas.yaml").write_text("web:\n  auth: proxy\n")
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), AtlasWebHandler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        page = lambda: urllib.request.urlopen(f"http://127.0.0.1:{httpd.server_port}/alerts").read().decode()
+        assert 'id="chat-toggle"' not in page()                                     # provider: none (default)
+        (isolated_cwd / "atlas.yaml").write_text("web:\n  auth: proxy\nintelligence:\n  provider: ollama\n")
+        assert 'id="chat-toggle"' in page()
+    finally:
+        httpd.shutdown()
+        httpd.server_close()

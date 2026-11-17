@@ -5,6 +5,10 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 
 ## Unreleased
 
+### Changed
+- **No chat panel or "ask" chips while AI is off** (`intelligence.provider: none`, the default): they only led to
+  "No AI assistant set up". They come back as soon as an AI is set up in Setup or atlas.yaml.
+
 ### Fixed
 - **Browser tab icon**: pages now carry atlas's globe as their icon (inline), so tabs and bookmarks show it and
   browsers stop asking for a missing `/favicon.ico`.

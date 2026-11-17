@@ -19,6 +19,7 @@ from urllib.parse import parse_qs, quote, urlsplit
 import psutil
 
 from atlas.config.loader import load_config
+from atlas.web import render as web_render
 from atlas.alerts import AlertStore
 from atlas.devices import identify
 from atlas.devices.store import InventoryStore
@@ -296,6 +297,11 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
 
         if self.auth and not self._gate(path):
             return
+
+        try:                                           # no chat panel while no AI is set up
+            web_render.AI_ON = load_config().intelligence.provider != "none"
+        except Exception:
+            web_render.AI_ON = True
 
         query = KnowledgeQueries()
 

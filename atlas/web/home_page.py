@@ -40,7 +40,7 @@ HOME_STYLE = """
 .cards a.hcard.flagged.warn { box-shadow:0 0 0 2px var(--red); }
 .hcard .tag { margin-left:auto; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.05em; color:var(--warn-text); }
 .cards a.hcard { display:block; color:var(--text); text-decoration:none; background:var(--surface);
-                 border:1px solid var(--line); border-radius:14px; padding:16px; }
+                 border:1px solid var(--line); border-radius:10px; padding:16px; }
 .cards a.hcard:hover { border-color:var(--blue); }
 .hcard h2 { margin:0 0 10px; font-size:15px; border:0; padding:0; display:flex; gap:8px; align-items:center; }
 .hcard.warn { border-color:var(--red); } .hcard.review { border-color:var(--orange); }
@@ -61,6 +61,20 @@ HOME_STYLE = """
 .chart svg { width:100%; height:70px; display:block; }
 .chart .lbl { font-size:12px; margin-top:4px; }
 .sev-high, .sev-critical { color:var(--bad-text); } .sev-medium { color:var(--warn-text); }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(128px,1fr)); gap:12px; margin:0 0 24px; }
+.kpis a { display:block; border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:var(--surface);
+          color:var(--text); text-decoration:none; }
+.kpis a:hover { border-color:var(--blue); }
+.kpis .k { font-size:13px; color:var(--muted); }
+.kpis .v { display:block; font-size:24px; font-weight:600; margin:2px 0; font-variant-numeric:tabular-nums; }
+.kpis .s { font-size:13px; color:var(--muted); } .kpis .bad .v { color:var(--red); } .kpis .warn .v { color:var(--orange); } .kpis .good .v { color:var(--green); }
+.issues { border:1px solid var(--line); border-radius:10px; overflow-x:auto; background:var(--surface); margin:0 0 24px; }
+.issues table { margin:0; font-size:14px; } .issues td { vertical-align:top; } .issues tr:last-child td { border-bottom:0; }
+.sev { display:inline-flex; align-items:center; gap:6px; font-weight:600; font-size:13px; white-space:nowrap; }
+.sev i { width:8px; height:8px; border-radius:2px; display:block; }
+.sev.problem { color:var(--red); } .sev.problem i { background:var(--red); }
+.sev.review { color:var(--orange); } .sev.review i { background:var(--orange); }
+h2.sect { font-size:16px; border:0; padding:0; margin:0 0 10px; }
 </style>
 """
 
@@ -455,28 +469,94 @@ def _checklist(steps):
             + "</ol></section>")
 
 
+def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=None, ups=None):
+    """The number tiles along the top of Home: [(label, value, sub, href, tone)]; a source that's missing is left out.
+    devices: InventoryStore().devices(); uptime: [7-day % per check]; ups: the UPS watch's saved detail."""
+
+    tiles = []
+    if devices is not None:
+        live = [d for d in devices if d["state"] != "ignored"]
+        online = sum(d.get("status") != "quiet" for d in live)
+        new = sum(d["state"] == "new" for d in live)
+        tiles.append(("Devices", f"{online} / {len(live)}", f"online · {new} new" if new else "online, all named",
+                      "/devices", "warn" if new else ""))
+    if hosts and hosts["rows"]:
+        fine = sum(not row["problems"] for row in hosts["rows"])
+        tiles.append(("Servers", f"{fine} / {len(hosts['rows'])}", "healthy" if fine == len(hosts["rows"]) else
+                      "need a look", "/overview", "" if fine == len(hosts["rows"]) else "bad"))
+    if uptime is not None:
+        known = [u for u in uptime if u is not None]
+        tiles.append(("Uptime, 7 days", f"{min(known):g}%" if known else "–",
+                      f"{len(uptime)} check{'s' * (len(uptime) != 1)}" if uptime else "no checks yet - add one",
+                      "/uptime", "bad" if known and min(known) < 99 else ""))
+    if posture:
+        tiles.append(("Public routes", str(posture["routes"]), f"{posture['review_count']} to review"
+                      if posture.get("review_count") else "nothing to review", "/posture",
+                      "bad" if posture["state"] == "warn" else ""))
+    for name, info in ((ups or {}).get("upses") or {}).items():
+        on_battery = info.get("state") in ("battery", "low")
+        charge = f"{info['charge']:.0f}% charged" if info.get("charge") is not None else name
+        tiles.append(("Power", "On battery" if on_battery else "On mains", charge, "/uptime",
+                      "bad" if on_battery else "good"))
+        break
+    if storage and storage["rows"] and not ups:
+        bad = sum(bool(row["warn"]) for row in storage["rows"])
+        tiles.append(("Storage", "Problem" if bad else "Healthy", f"{len(storage['rows'])} checked", "/overview",
+                      "bad" if bad else "good"))
+
+    return tiles
+
+
+def _kpis(stats):
+
+    if not stats:
+        return ""
+    return ('<nav class="kpis" aria-label="At a glance">' + "".join(
+        f'<a class="{tone}" href="{href}"><span class="k">{_esc(label)}</span><span class="v">{_esc(value)}</span>'
+        f'<span class="s">{_esc(sub)}</span></a>' for label, value, sub, href, tone in stats) + "</nav>")
+
+
+def _headline(items):
+
+    if not items:
+        return "\u2713 Everything is healthy"
+    n = len(items)
+    return f"{n} thing{'s' * (n != 1)} need{'s' * (n == 1)} a look - everything else is healthy"
+
+
+def _issues(items):
+
+    rows = []
+    for card, what, why, href, action in items:
+        problem = card in ("hosts", "storage") or (card == "posture" and action == "Open")
+        sev = ('<span class="sev problem"><i></i>Problem</span>' if problem else
+               '<span class="sev review"><i></i>Review</span>')
+        rows.append(f'<tr><td>{sev}</td><td><b>{_esc(what)}</b></td><td>{_esc(why)}</td>'
+                    f'<td><a href="{href}">{_esc(action)} \u2192</a></td></tr>')
+
+    return ('<section aria-label="Needs attention"><h2 class="sect">Needs attention</h2><div class="issues"><table>'
+            '<thead><tr><th>Severity</th><th>Area</th><th>What</th><th></th></tr></thead><tbody>'
+            + "".join(rows) + "</tbody></table></div></section>")
+
+
 def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=(),
-                     steps=None, open_alerts=()):
+                     steps=None, open_alerts=(), stats=None):
     """
     posture: render._posture_block() output or None; hosts: build_hosts()
     output; events: interesting_events() pairs; storage: build_storage()
     output; trends: posture.model.build_trends() output or None; analysis:
-    KnowledgeQueries().latest_analysis() or None.
+    KnowledgeQueries().latest_analysis() or None; stats: build_stats() tiles.
     """
 
     storage = storage or {"rows": [], "state": "unknown"}
     items = attention_items(posture, hosts, storage, access_reviews, open_alerts)
     flagged = {card for card, *_ in items}
-    verdict = ('<p class="verdict ok">\u2713 All good</p>' if not items else
-               '<section class="attention" aria-label="Needs attention"><h2>Needs attention</h2><ul>' + "".join(
-                   f'<li><span class="dot review"></span><span class="what"><b>{_esc(what)}</b> \u2014 {_esc(why)}'
-                   f'</span><a href="{href}">{_esc(action)} \u2192</a></li>'
-                   for _, what, why, href, action in items) + "</ul></section>")
 
-    body = (HOME_STYLE + _checklist(steps) + verdict + ask_chips(ASK_SHORTCUTS) + '<div class="cards">'
+    body = (HOME_STYLE + _checklist(steps) + _kpis(stats) + (_issues(items) if items else "")
+            + ask_chips(ASK_SHORTCUTS) + '<div class="cards">'
             + _posture_card(posture, "posture" in flagged) + _hosts_card(hosts, "hosts" in flagged)
             + _storage_card(storage, "storage" in flagged)
             + _trends_card(trends) + _analysis_card(analysis, now or datetime.utcnow())
             + _activity_card(events) + "</div>")
 
-    return render_page("Home", body, active="home")
+    return render_page("Home", body, active="home", heading=_headline(items))

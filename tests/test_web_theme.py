@@ -21,4 +21,5 @@ def test_shell_has_side_menu_sub_pages_and_both_themes():
     assert '<aside class="side">' in html and 'href="/devices" aria-current="page">Network<' in html
     assert 'class="tabs"' in html and 'href="/cabling" aria-current="page">Cabling<' in html
     assert "prefers-color-scheme: dark" in html and ':root[data-theme="dark"]' in html and "atlasTheme()" in html
+    assert 'class="to-dark"' in html and "Light mode" in html and html.count('class="ic"') >= 2
     assert render_page("Setup", "", active="settings").count('class="tabs"') == 0    # no sub-pages, no list

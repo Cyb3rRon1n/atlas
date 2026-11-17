@@ -3,7 +3,7 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
-## Unreleased
+## 0.10.0 - 2026-11-17
 
 ### Added
 - **Internet health** on Servers → Uptime and a Home tile: once a minute atlas times a connection to public DNS

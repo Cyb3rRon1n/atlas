@@ -3,7 +3,7 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
-## Unreleased
+## 0.9.1 - 2026-11-17
 
 ### Fixed
 - Atlas's own downloads (the IP-owner table, the IP-location file and the MAC maker list) no longer show up on

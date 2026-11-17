@@ -381,7 +381,7 @@ def _event_category(event_type):
     return next(((cat, icon) for cat, icon, keys in EVENT_CATEGORIES if any(k in lowered for k in keys)), ("other", icon("info")))
 
 
-def render_history_page(events, today=None):
+def render_history_page(events, today=None, changes=""):
     """
     events is KnowledgeQueries().recent_events()'s return value - a
     list of EventRecord ORM objects, same as `atlas history` prints.
@@ -392,7 +392,7 @@ def render_history_page(events, today=None):
 
         return render_page(
             "Activity",
-            ask_chips(HISTORY_CHIPS) + "<p class=\"muted\">No historical events found.</p>",
+            changes + ask_chips(HISTORY_CHIPS) + "<p class=\"muted\">No historical events found.</p>",
             active="history"
         )
 
@@ -430,7 +430,7 @@ def render_history_page(events, today=None):
               " document.querySelectorAll('.day').forEach((d) => { d.hidden = !d.querySelector('.ev:not([hidden])'); });"
               " }));</script>")
 
-    body = (HISTORY_STYLE + ask_chips(HISTORY_CHIPS) + f'<div class="filters">{buttons}</div>'
+    body = (HISTORY_STYLE + changes + ask_chips(HISTORY_CHIPS) + f'<div class="filters">{buttons}</div>'
             + '<p class="muted">Routine scans (every 15 min) are hidden under Important - pick All or Scans to see them.</p>'
             + sections + script + "<script>document.querySelectorAll('.day').forEach((d) => {"
               " d.hidden = !d.querySelector('.ev:not([hidden])'); });</script>")

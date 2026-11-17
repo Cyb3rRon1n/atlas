@@ -70,7 +70,8 @@ def render(items, now, window):
     def when(at):
         return at.strftime("%H:%M") if at.date() == now.date() else at.strftime("%a %d %b %H:%M")
 
-    switch = "".join(f'<a href="/history?changes={key}"{" aria-current=\"page\"" if key == window else ""}>{label}</a>'
+    current = ' aria-current="page"'
+    switch = "".join(f'<a href="/history?changes={key}"{current if key == window else ""}>{label}</a>'
                      for key, label in (("24h", "Last 24 hours"), ("7d", "Last 7 days")))
     rows = "".join(f'<li><span class="time">{_esc(when(at))}</span><span>{mark}</span>'
                    f'<a href="{_esc(href)}">{_esc(text)}</a></li>' for at, mark, text, href in items[:60])

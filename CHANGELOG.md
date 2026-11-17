@@ -3,7 +3,7 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
-## Unreleased
+## 0.11.0 - 2026-11-17
 
 ### Added
 - **TrueNAS and Synology** (Setup → *TrueNAS or Synology*, or *What's on your network?* → NAS): Home's Storage &

@@ -5,6 +5,10 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 
 ## Unreleased
 
+### Added
+- **What changed** at the top of Alerts → Activity: the last 24 hours or 7 days in plain words - problems that
+  started or cleared, one-off findings, new devices, Proxmox guests added or removed, container limits crossed.
+
 ### Fixed
 - **Proxmox "changes detected" on every scan**: each scan reported the whole cluster (node and every guest) as
   newly added, because it compared against a saved state other atlas-scan commands overwrite. It now compares

@@ -12,7 +12,7 @@ CARD_STYLE = """
 .auth input { width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; font:inherit;
               border:1px solid var(--line); background:var(--surface2); color:var(--text); }
 .auth button { margin-top:20px; width:100%; padding:10px 12px; border-radius:8px; border:0; font:inherit;
-               font-weight:600; cursor:pointer; background:var(--blue); color:#06121f; }
+               font-weight:600; cursor:pointer; background:var(--blue); color:var(--on-accent); }
 .auth .error { margin:12px 0 0; color:var(--red); }
 .auth .hint { color:var(--muted); font-size:.85rem; margin:8px 0 0; }
 """

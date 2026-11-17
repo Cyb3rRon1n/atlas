@@ -10,11 +10,11 @@ CHAT_STYLE = """
 <style>
   #log { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; }
   .bubble { padding: 0.6rem 0.9rem; border-radius: 8px; max-width: 80ch; white-space: pre-wrap; }
-  .you { align-self: flex-end; background: #1f6feb33; border: 1px solid #1f6feb; }
-  .atlas { align-self: flex-start; background: #161b22; border: 1px solid #30363d; }
-  .step { margin: 0.4rem 0; padding: 0.4rem 0.6rem; border: 1px solid #30363d; border-radius: 6px; }
+  .you { align-self: flex-end; background: color-mix(in srgb, var(--accent) 20%, transparent); border: 1px solid var(--accent); }
+  .atlas { align-self: flex-start; background: var(--surface); border: 1px solid var(--line2); }
+  .step { margin: 0.4rem 0; padding: 0.4rem 0.6rem; border: 1px solid var(--line2); border-radius: 6px; }
   .step code { margin-right: 0.5rem; }
-  .ok { color: #3fb950; } .bad { color: #f85149; }
+  .ok { color: var(--green); } .bad { color: var(--red); }
   #ask { width: 100%; box-sizing: border-box; min-height: 4rem; }
 </style>
 """
@@ -39,15 +39,17 @@ DRAWER_STYLE = """
 <style>
 .shell.docked { display:grid; grid-template-columns:minmax(0,1fr) 380px; }
 @media (min-width: 901px) {
-  /* Desktop: the page scrolls inside <main>, so the chat column is always exactly the space under the topbar. */
+  /* Desktop: the page scrolls inside <main>, so the chat column always fills the window beside it. */
   body:has(.shell.docked) { height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  body:has(.shell.docked) .app { flex:1; min-height:0; }
+  body:has(.shell.docked) .side { overflow-y:auto; }
   .shell.docked { flex:1; min-height:0; }
   .shell.docked > main { overflow-y:auto; min-height:0; }
   .shell.docked #chat-drawer { position:static; height:auto; min-height:0; }
 }
 body.chat-collapsed .shell.docked { grid-template-columns:minmax(0,1fr) 44px; }
-#chat-drawer { position:sticky; top:0; height:100vh; box-sizing:border-box; background:#111821;
-  border-left:1px solid #222c38; padding:16px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+#chat-drawer { position:sticky; top:0; height:100vh; box-sizing:border-box; background:var(--surface);
+  border-left:1px solid var(--line); padding:16px; display:flex; flex-direction:column; gap:12px; min-width:0; }
 #chat-drawer .drawer-head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
 #chat-drawer .drawer-head h2 { margin:0; font-size:15px; border:0; }
 #chat-drawer #log { flex:1; overflow-y:auto; }

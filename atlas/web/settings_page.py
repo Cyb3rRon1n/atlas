@@ -626,20 +626,20 @@ STYLE = """<style>
 .setup form input[type=text], .setup form input[type=number], .setup form input[type=password],
 .setup form select, .setup form textarea { width:100%; box-sizing:border-box; }
 .setup .badge { font-size:.75rem; border-radius:999px; padding:1px 8px; margin-left:.4rem; vertical-align:middle;
-  border:1px solid #30363d; color:#8b949e; }
-.setup .badge.on { border-color:#238636; color:#3fb950; }
+  border:1px solid var(--line2); color:var(--muted); }
+.setup .badge.on { border-color:var(--ok-line); color:var(--green); }
 .setup .status { min-height:1.5em; margin:.6rem 0 .2rem; }
-.setup .status.ok { color:#3fb950; } .setup .status.bad { color:#f85149; }
-.setup .lock { font-size:.75rem; border:1px solid #30363d; border-radius:999px; padding:0 6px; margin-left:.3rem; }
+.setup .status.ok { color:var(--green); } .setup .status.bad { color:var(--red); }
+.setup .lock { font-size:.75rem; border:1px solid var(--line2); border-radius:999px; padding:0 6px; margin-left:.3rem; }
 .setup input:disabled, .setup select:disabled, .setup textarea:disabled { opacity:.55; cursor:not-allowed; }
 .setup .buttons { display:flex; gap:.5rem; flex-wrap:wrap; }
-.setup .found { border:1px dashed #30363d; border-radius:8px; padding:.4rem .8rem; margin-bottom:.6rem; }
+.setup .found { border:1px dashed var(--line2); border-radius:8px; padding:.4rem .8rem; margin-bottom:.6rem; }
 .gear-list { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:.5rem; margin:.6rem 0; }
-.gear-item { display:flex; gap:.6rem; align-items:flex-start; border:1px solid #30363d; border-radius:8px;
+.gear-item { display:flex; gap:.6rem; align-items:flex-start; border:1px solid var(--line2); border-radius:8px;
   padding:.55rem .7rem; cursor:pointer; }
-.gear-item:has(input:checked) { border-color:#1f6feb; background:color-mix(in srgb, #1f6feb 10%, transparent); }
-.gear-item input { margin-top:.25rem; } .gear-item small { display:block; color:#8b949e; }
-.gear-item em { font-style:normal; font-size:.7rem; color:#3fb950; border:1px solid #238636; border-radius:999px;
+.gear-item:has(input:checked) { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent); }
+.gear-item input { margin-top:.25rem; } .gear-item small { display:block; color:var(--muted); }
+.gear-item em { font-style:normal; font-size:.7rem; color:var(--green); border:1px solid var(--ok-line); border-radius:999px;
   padding:0 6px; margin-left:.4rem; }
 .gear { margin-bottom:1rem; }
 .setup .found ul { margin:.3rem 0; padding-left:1rem; } .setup .found li { margin:.3rem 0; }

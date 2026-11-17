@@ -23,28 +23,28 @@ INFRA = ("wan", "gateway", "switch", "ap")
 
 CABLING_STYLE = """
 <style>
-.suggest { margin:0 0 12px; padding:8px 12px; border:1px solid #30363d; border-radius:10px; }
+.suggest { margin:0 0 12px; padding:8px 12px; border:1px solid var(--line2); border-radius:10px; }
 .cab-head { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px; }
 .cab-head .when { color:var(--muted); font-size:14px; }
 .chip { font-size:12px; padding:2px 9px; border-radius:999px; border:1px solid var(--line); }
-.chip.ok { color:#7fdcb5; border-color:#2f6b55; } .chip.stale { color:#ffd08a; border-color:#6b5530; }
-.chip.error { color:#ff9b9b; border-color:#6b3030; }
-.cab-btn { background:#1f6feb; color:#fff; border:0; border-radius:6px; padding:6px 12px; cursor:pointer; font:inherit; }
+.chip.ok { color:var(--ok-text); border-color:var(--ok-line); } .chip.stale { color:var(--warn-text); border-color:var(--warn-line); }
+.chip.error { color:var(--bad-text); border-color:var(--bad-line); }
+.cab-btn { background:var(--accent); color:#fff; border:0; border-radius:6px; padding:6px 12px; cursor:pointer; font:inherit; }
 .cab-btn.ghost { background:transparent; border:1px solid var(--line); color:inherit; }
 .cab-btn[disabled] { opacity:.6; cursor:wait; }
-.warn { margin:6px 0 12px; padding:8px 12px 8px 28px; border:1px solid #6b5530; border-radius:8px; color:#ffd08a; font-size:14px; }
-#diagram .frame { overflow:auto; border:1px solid var(--line); border-radius:10px; background:#0b1016; max-height:78vh; }
+.warn { margin:6px 0 12px; padding:8px 12px 8px 28px; border:1px solid var(--warn-line); border-radius:8px; color:var(--warn-text); font-size:14px; }
+#diagram .frame { overflow:auto; border:1px solid var(--line); border-radius:10px; background:var(--deep); max-height:78vh; }
 #wiring-svg { display:block; min-width:100%; }
 .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); margin:6px 0; }
 .legend i { display:inline-block; width:22px; height:3px; vertical-align:middle; margin-right:5px; }
 .fp-wrap { overflow-x:auto; padding:8px 0 14px; }
 .fp { --pw:62px; --ph:44px; position:relative; }
-.fp span { position:absolute; width:56px; height:38px; box-sizing:border-box; border:1px solid #2f3b4c; border-radius:6px;
-           padding:2px 5px; font-size:11px; background:#111821; opacity:.55; }
+.fp span { position:absolute; width:56px; height:38px; box-sizing:border-box; border:1px solid var(--line2); border-radius:6px;
+           padding:2px 5px; font-size:11px; background:var(--surface); opacity:.55; }
 .fp span.up { opacity:1; }
-.fp span.poe-cap, .fp span.poe { border:2px dashed #d9b44a; }
+.fp span.poe-cap, .fp span.poe { border:2px dashed var(--yellow); }
 .fp span.poe { border-style:solid; }
-.fp span.poe-cap::after { content:"PoE"; position:absolute; right:3px; top:1px; font-size:11px; font-weight:700; color:#d9b44a; }
+.fp span.poe-cap::after { content:"PoE"; position:absolute; right:3px; top:1px; font-size:11px; font-weight:700; color:var(--yellow); }
 .fp span.poe::after { content:"⚡"; position:absolute; right:3px; top:1px; font-size:11px; }
 .fp span.h-bad { border:2px solid var(--red); box-shadow:0 0 0 2px color-mix(in srgb, var(--red) 30%, transparent); }
 .fp span.h-watch { border:2px solid var(--orange); }
@@ -54,22 +54,22 @@ CABLING_STYLE = """
 .fp span b { display:block; font-size:12px; }
 .fp span small { display:block; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .fp span.cage { border-style:dashed; background:transparent; }
-.fp span.standby { border:2px dashed #8b98a5; opacity:.7; }
-.fp span.standby::before { content:"standby"; position:absolute; left:4px; bottom:1px; font-size:8px; color:#8b98a5; }
+.fp span.standby { border:2px dashed var(--muted); opacity:.7; }
+.fp span.standby::before { content:"standby"; position:absolute; left:4px; bottom:1px; font-size:8px; color:var(--muted); }
 .fp span.vlan-off { opacity:.15; }
 .notes { margin:6px 0 12px; padding:6px 12px 6px 28px; color:var(--muted); font-size:14px; }
 .lag { border:1px solid var(--line); border-radius:6px; padding:1px 6px; margin-right:6px; }
-.fp .s100 { border-color:#8b98a5; } .fp .s1g { border-color:#5aa7f0; } .fp .s25 { border-color:#3ccfb4; } .fp .s10g { border-color:#b48cf2; }
+.fp .s100 { border-color:var(--muted); } .fp .s1g { border-color:var(--blue); } .fp .s25 { border-color:var(--teal); } .fp .s10g { border-color:var(--purple); }
 #faceplates details { border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:8px; }
 #faceplates summary { cursor:pointer; font-weight:600; }
 .portmap { width:100%; border-collapse:collapse; font-size:13px; }
-.portmap th, .portmap td { text-align:left; padding:4px 8px; border-bottom:1px solid #222c38; }
-.portmap td.down { color:#ff9b9b; }
+.portmap th, .portmap td { text-align:left; padding:4px 8px; border-bottom:1px solid var(--line); }
+.portmap td.down { color:var(--bad-text); }
 .cab-tools { display:flex; gap:8px; align-items:center; margin:8px 0; }
-.cab-tools input { background:#0d1117; color:inherit; border:1px solid var(--line); border-radius:6px; padding:5px 8px; min-width:240px; }
+.cab-tools input { background:var(--deep); color:inherit; border:1px solid var(--line); border-radius:6px; padding:5px 8px; min-width:240px; }
 #changes li { font-size:14px; }
-.spark { vertical-align:middle; margin-right:6px; } .spark polyline { fill:none; stroke:#5aa7f0; stroke-width:1.5; }
-.spark.busy polyline { stroke:#f0a35a; } .spark.hot polyline { stroke:#ff6b6b; }
+.spark { vertical-align:middle; margin-right:6px; } .spark polyline { fill:none; stroke:var(--blue); stroke-width:1.5; }
+.spark.busy polyline { stroke:var(--orange); } .spark.hot polyline { stroke:var(--red); }
 .portmap td.rate { white-space:nowrap; color:var(--muted); }
 </style>
 """
@@ -79,16 +79,16 @@ DIAGRAM_SCRIPT = r"""
 <script>
 (function () {
   var NS = "http://www.w3.org/2000/svg";
-  var SVG_CSS = ".node{fill:#151d27;stroke:#3a4a5e;stroke-width:1.5}.k-gateway{stroke:#f0a35a}.k-switch{stroke:#5aa7f0}"
-    + ".k-ap{stroke:#3ccfb4}.k-bridge{stroke:#e5c45a}.k-wan{stroke:#8b98a5;stroke-dasharray:4 3}.k-unknown{stroke-dasharray:3 3}"
-    + ".nm{fill:#e6edf3;font:600 13px system-ui,sans-serif}.sub{fill:#8b98a5;font:11px system-ui,sans-serif}"
-    + ".pt{fill:#3a4a5e}.pl{fill:#c9d1d9;font:10px ui-monospace,monospace}"
-    + ".edge{fill:none;stroke-width:2.5}.s100{stroke:#8b98a5}.s1g{stroke:#5aa7f0}.s25{stroke:#3ccfb4}.s10g{stroke:#b48cf2}"
-    + ".busy{stroke:#f0a35a;stroke-width:4}.hot{stroke:#ff6b6b;stroke-width:5}.down{stroke-dasharray:6 4;opacity:.6}.standby{stroke:#8b98a5;stroke-dasharray:2 4;opacity:.7}.bundle{stroke-width:4.5}.el{fill:#e6edf3;font:11px ui-monospace,monospace;paint-order:stroke;"
-    + "stroke:#0b1016;stroke-width:4px;stroke-linejoin:round}"
-    + ".fc{fill:#1b2430;stroke:#3a4a5e}.fc.up.s100{fill:#8b98a5}.fc.up.s1g{fill:#5aa7f0}.fc.up.s25{fill:#3ccfb4}"
-    + ".fc.up.s10g{fill:#b48cf2}.fc.used{stroke:#fff;stroke-width:1.6}.fc.cage{fill:none;stroke-dasharray:3 2}.fn{fill:#8b98a5;font:10px ui-monospace,monospace;"
-    + "text-anchor:middle}.fn.on{fill:#0b1016;font-weight:700}.stub{stroke:#e6edf3;stroke-width:1.5;opacity:.7}";
+  var SVG_CSS = ".node{fill:var(--surface);stroke:var(--line2);stroke-width:1.5}.k-gateway{stroke:var(--orange)}.k-switch{stroke:var(--blue)}"
+    + ".k-ap{stroke:var(--teal)}.k-bridge{stroke:var(--yellow)}.k-wan{stroke:var(--muted);stroke-dasharray:4 3}.k-unknown{stroke-dasharray:3 3}"
+    + ".nm{fill:var(--text);font:600 13px system-ui,sans-serif}.sub{fill:var(--muted);font:11px system-ui,sans-serif}"
+    + ".pt{fill:var(--line2)}.pl{fill:var(--text);font:10px ui-monospace,monospace}"
+    + ".edge{fill:none;stroke-width:2.5}.s100{stroke:var(--muted)}.s1g{stroke:var(--blue)}.s25{stroke:var(--teal)}.s10g{stroke:var(--purple)}"
+    + ".busy{stroke:var(--orange);stroke-width:4}.hot{stroke:var(--red);stroke-width:5}.down{stroke-dasharray:6 4;opacity:.6}.standby{stroke:var(--muted);stroke-dasharray:2 4;opacity:.7}.bundle{stroke-width:4.5}.el{fill:var(--text);font:11px ui-monospace,monospace;paint-order:stroke;"
+    + "stroke:var(--deep);stroke-width:4px;stroke-linejoin:round}"
+    + ".fc{fill:var(--surface2);stroke:var(--line2)}.fc.up.s100{fill:var(--muted)}.fc.up.s1g{fill:var(--blue)}.fc.up.s25{fill:var(--teal)}"
+    + ".fc.up.s10g{fill:var(--purple)}.fc.used{stroke:var(--text);stroke-width:1.6}.fc.cage{fill:none;stroke-dasharray:3 2}.fn{fill:var(--muted);font:10px ui-monospace,monospace;"
+    + "text-anchor:middle}.fn.on{fill:var(--deep);font-weight:700}.stub{stroke:var(--text);stroke-width:1.5;opacity:.7}";
   var holder = document.getElementById("wiring-data");
   var svg = document.getElementById("wiring-svg");
   var msg = document.getElementById("msg");
@@ -236,7 +236,10 @@ DIAGRAM_SCRIPT = r"""
   var exportBtn = document.getElementById("wiring-export");
   if (exportBtn) {
     exportBtn.addEventListener("click", function () {
-      var blob = new Blob([new XMLSerializer().serializeToString(svg)], {type: "image/svg+xml"});
+      var root = getComputedStyle(document.documentElement);
+      var text = new XMLSerializer().serializeToString(svg).replace(/var\((--[\w-]+)\)/g, function (m, name) {
+        return root.getPropertyValue(name).trim() || m; });
+      var blob = new Blob([text], {type: "image/svg+xml"});
       var a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = "cabling.svg";
@@ -582,9 +585,9 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
         + (f'<ul class="warn">{warnings}</ul>' if warnings else "")
         + (f'<ul class="notes">{notes}</ul>' if notes else "")
         + '<section id="diagram"><h2>Wired topology</h2>'
-        '<div class="legend"><span><i style="background:#8b98a5"></i>100M</span>'
-        '<span><i style="background:#5aa7f0"></i>1G</span><span><i style="background:#3ccfb4"></i>2.5G</span>'
-        '<span><i style="background:#b48cf2"></i>10G</span><span>thick orange = over half full, red = over 80%</span><span>dashed = down</span><span>dotted grey = standby</span>'
+        '<div class="legend"><span><i style="background:var(--muted)"></i>100M</span>'
+        '<span><i style="background:var(--blue)"></i>1G</span><span><i style="background:var(--teal)"></i>2.5G</span>'
+        '<span><i style="background:var(--purple)"></i>10G</span><span>thick orange = over half full, red = over 80%</span><span>dashed = down</span><span>dotted grey = standby</span>'
         '<span>click a box for its ports</span>'
         '<button class="cab-btn ghost" id="wiring-export" type="button">Export SVG</button></div>'
         f'<div class="frame"><svg id="wiring-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>'

@@ -5,7 +5,8 @@ devices ask the most. Read-only, checked with every `atlas scan` (and `atlas dns
   Pi-hole v6   POST /api/auth with the password or an app password -> a session id, sent as X-FTL-SID;
                the session is ended (DELETE /api/auth) after each read, so atlas never uses up Pi-hole's
                16 session slots. No password set = no login.
-  AdGuard Home basic auth on /control/status (protection on or off) and /control/stats.
+  AdGuard Home basic auth on /control/status (protection on or off), /control/stats and
+               /control/filtering/status (blocklist size).
 
 Ad blocking off at two checks in a row (so not a 5-minute pause) is one alert, and one more when it's back on.
 """
@@ -72,12 +73,17 @@ def _adguard(http, base, user, password, timeout, verify):
     get = lambda path, what: _json(http.get(f"{base}{path}", auth=auth, timeout=timeout, verify=verify), what)
     status = get("/control/status", "AdGuard Home status")
     stats = get("/control/stats", "AdGuard Home stats")
+    try:                                             # the blocklist size is extra: never fail the read over it
+        lists = get("/control/filtering/status", "AdGuard Home lists").get("filters") or []
+        blocklist = sum(f.get("rules_count") or 0 for f in lists if f.get("enabled")) or None
+    except DnsFilterError:
+        blocklist = None
     total, blocked = stats.get("num_dns_queries"), stats.get("num_blocked_filtering")
     clients = [{"ip": ip, "name": "", "count": count} for item in stats.get("top_clients") or []
                for ip, count in item.items()][:10]
     return {"kind": "AdGuard Home", "blocking": bool(status.get("protection_enabled")), "queries": total,
             "blocked": blocked, "percent": round(100 * blocked / total, 1) if total and blocked is not None else None,
-            "blocklist": None, "clients": clients}
+            "blocklist": blocklist, "clients": clients}
 
 
 def fetch(config, environ=None, http=None):

@@ -48,7 +48,8 @@ dependencies = [
     "requests",
     "sqlalchemy",
     "paramiko",
-    "maxminddb"
+    "maxminddb",
+    "websocket-client"          # TrueNAS: its API is JSON-RPC over a websocket
 ]
 
 [project.optional-dependencies]

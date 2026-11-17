@@ -82,6 +82,18 @@ CARDS = {
                 Field("host", "UPS server address", "text", ("ups", "host"), hint="192.168.1.20"),
                 Field("port", "Port", "number", ("ups", "port"), hint="3493"),
                 Field("name", "UPS name (blank = every UPS on that server)", "text", ("ups", "name"), hint="ups")]),
+    "nas": ("TrueNAS or Synology", "Shows each pool's health and how full it is, and each disk's health and "
+            "temperature; alerts when a pool isn't healthy or a disk fails, runs hot or wears out. TrueNAS: an API "
+            "key (top-right user menu > API Keys; give its user the read-only admin role) and the https address. "
+            "Synology: DSM only lets administrators read storage - make an admin account for atlas, deny it every "
+            "folder and app, and leave two-factor off for it. Read-only.", [
+                Field("kind", "Which one", "select", ("nas", "kind"), options=("truenas", "synology")),
+                Field("url", "Web address", "text", ("nas", "url"), hint="https://192.168.1.20 (Synology: ...:5001)"),
+                Field("user", "Username (the API key's user, or the Synology account)", "text", ("nas", "user"),
+                      hint="atlas"),
+                Field("password", "API key (TrueNAS) or password (Synology)", "secret", None, "ATLAS_NAS_PASSWORD"),
+                Field("name", "Call it (optional)", "text", ("nas", "name"), hint="nas"),
+                Field("verify_ssl", "Check its certificate (off for a self-signed one)", "bool", ("nas", "verify_ssl"))]),
     "dnsfilter": ("Pi-hole or AdGuard Home", "Shows whether ad blocking is on, how many DNS questions were asked "
                   "and blocked, and which devices ask the most; alerts when blocking stays off. Pi-hole 6: its "
                   "password, or an app password from Settings > Web interface / API. AdGuard Home: its username "
@@ -97,14 +109,15 @@ CARDS = {
 GEAR = [
     ("switch", "Managed switch", "Cisco, Netgear, TP-Link, Zyxel, MikroTik...", ("switches",)),
     ("router", "Router or firewall with SNMP", "OPNsense, pfSense, OpenWrt, MikroTik", ("switches",)),
-    ("nas", "NAS", "Synology, QNAP, TrueNAS - over SNMP", ("switches",)),
+    ("nas", "NAS", "Synology, QNAP, TrueNAS - ports over SNMP, disk health from TrueNAS or Synology",
+     ("switches", "nas")),
     ("unifi", "UniFi", "gateway, switches or access points", ("unifi",)),
     ("proxmox", "Proxmox server", "VMs and containers", ("proxmox",)),
     ("ups", "UPS", "battery backup, read through NUT", ("ups",)),
     ("dns", "Pi-hole or AdGuard Home", "network-wide ad blocking", ("dnsfilter",)),
     ("plain", "Only an internet-provider or store-bought router", "ASUS, Netgear, eero, Fritz!Box, Deco...", ()),
 ]
-HARDWARE_CARDS = ("switches", "unifi", "proxmox", "ups", "dnsfilter")
+HARDWARE_CARDS = ("switches", "unifi", "proxmox", "ups", "dnsfilter", "nas")
 SNMP_GEAR = {"Ubiquiti": "unifi", "Synology": "nas", "QNAP": "nas", "MikroTik": "router"}   # SNMPv3 discovery maker
 
 
@@ -116,6 +129,7 @@ def _detected(config):
     found |= {"proxmox"} if config.proxmox.enabled else set()
     found |= {"ups"} if config.ups.enabled else set()
     found |= {"dns"} if config.dns_filter.enabled else set()
+    found |= {"nas"} if config.nas.enabled else set()
     try:
         from atlas.posture.store import PostureStore
         snmp = ((PostureStore().statuses().get("ports") or {}).get("detail") or {}).get("snmp") or {}
@@ -145,7 +159,7 @@ def _gear_html(chosen, detected):
 
 
 ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "enabled")], "ups": [("ups", "enabled")],
-           "dnsfilter": [("dns_filter", "enabled")]}
+           "dnsfilter": [("dns_filter", "enabled")], "nas": [("nas", "enabled")]}
 WIRING_CARDS = ("switches", "unifi")
 
 ACTIONS = re.compile(r"^/api/settings/([a-z]+)/(test|save|off|dismiss)$")
@@ -416,6 +430,15 @@ def _test(card, body):
             return False, str(error)
         return True, (f"Connected: {info['kind']}, ad blocking {'on' if info['blocking'] else 'OFF'}, "
                       f"{info['queries'] or 0:,} DNS questions, {info['blocked'] or 0:,} blocked.")
+    if card == "nas":
+        from atlas.monitoring.nas import NasError, fetch
+        try:
+            info = fetch(config.nas, environ)
+        except NasError as error:
+            return False, str(error)
+        unhealthy = [p["name"] for p in info["pools"] if p["health"] not in ("ONLINE", "NORMAL")]
+        return True, (f"Connected: {info['kind']}, {len(info['pools'])} pool(s), {len(info['disks'])} disk(s)"
+                      + (f"; not healthy: {', '.join(unhealthy)}." if unhealthy else ", all pools healthy."))
     alerts = config.notify
     if card == "ntfy":
         if not (alerts.ntfy.url and alerts.ntfy.topic):
@@ -556,7 +579,7 @@ def _on(card, config):
             "email": bool(alerts.email.host and alerts.email.to),
             "ai": config.intelligence.provider != "none", "switches": bool(config.wiring.switches),
             "unifi": config.wiring.unifi.enabled, "proxmox": config.proxmox.enabled, "ups": config.ups.enabled,
-            "dnsfilter": config.dns_filter.enabled}[card]
+            "dnsfilter": config.dns_filter.enabled, "nas": config.nas.enabled}[card]
 
 
 SCRIPT = """
@@ -585,7 +608,7 @@ const showVersion = () => {
 if (snmpVersion) { snmpVersion.addEventListener("change", showVersion); showVersion(); }
 // "What's on your network?": show the hardware cards for what's ticked, save the ticks.
 const gearBoxes = [...document.querySelectorAll("#gear input[type=checkbox]")];
-const hardware = ["switches", "unifi", "proxmox", "ups", "dnsfilter"];
+const hardware = ["switches", "unifi", "proxmox", "ups", "dnsfilter", "nas"];
 const showGear = () => {
   const want = new Set(gearBoxes.filter((box) => box.checked).flatMap((box) => box.dataset.cards.split(" ")));
   for (const card of hardware) {

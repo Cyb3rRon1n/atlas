@@ -162,4 +162,4 @@ def test_discover_node_storage_maps_fields_and_degrades_per_lookup():
     client.nodes.return_value.disks.zfs.get.side_effect = RuntimeError("403 Permission check failed")
 
     assert discover_node_storage(client, "pve") == {
-        "storage": [{"storage": "bulk", "type": "zfspool", "used": 7, "total": 10, "active": 1}], "zfs": []}
+        "storage": [{"storage": "bulk", "type": "zfspool", "used": 7, "total": 10, "active": 1}], "zfs": [], "disks": []}

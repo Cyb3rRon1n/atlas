@@ -91,8 +91,34 @@ def test_cable_health_on_faceplate_and_list():
         {"device": "core-switch", "port": "gi6", "kind": "speed", "level": "watch",
          "reason": "Speed dropped", "detail": "links at 100 Mbit/s, ran at 1 Gbit/s before"}]
     page = render_cabling_page(latest, [], True, now=datetime(2026, 1, 1, 13))
-    assert '<span class="h-bad ' in page and '<span class="h-watch ' in page
+    assert 'class="port h-bad ' in page and 'class="port h-watch ' in page
     assert "Likely bad cable or jack: 520 CRC errors" in page
     assert page.index("Problem</span><b>core-switch gi5") < page.index("Watch</span><b>core-switch gi6")
     latest["snapshot"]["health"] = []
     assert "every connected port is clean" in render_cabling_page(latest, [], True)
+
+
+def test_front_panels_first_with_port_detail_and_map_toggle(tmp_path):
+    import html as html_lib
+    import re
+    import shutil
+    import subprocess
+
+    latest = _latest()
+    latest["snapshot"]["health"] = [{"device": "core-switch", "port": "gi5", "kind": "crc", "level": "bad",
+                                     "reason": "Likely bad cable or jack", "detail": "520 CRC errors"}]
+    page = render_cabling_page(latest, [], True, now=datetime(2026, 1, 1, 13))
+    assert ".pd dd" not in re.sub(r"<style>.*?</style>", "", page, flags=re.S)     # styles stay inside <style>
+    assert page.index('id="faceplates"') < page.index('id="diagram" hidden')
+    assert 'data-view="faceplates" aria-pressed="true"' in page and 'id="port-detail"' in page
+    assert "3 to check" in page and "<details open" in page and 'data-box="core-switch"' in page
+    cell = re.search(r'data-detail="([^"]*)"[^>]*title="gi5 ', page)
+    pairs = json.loads(html_lib.unescape(cell.group(1)))
+    assert pairs[0] == ["Port", "Port 5 → nas"] and ["Status", "1G"] in pairs
+    assert ["Problem", "Likely bad cable or jack: 520 CRC errors"] in pairs
+    if shutil.which("node"):
+        for i, script in enumerate(re.findall(r"<script>(.*?)</script>", page, re.S)):
+            path = tmp_path / f"cabling{i}.js"
+            path.write_text(script)
+            result = subprocess.run(["node", "--check", str(path)], capture_output=True, text=True)
+            assert result.returncode == 0, result.stderr[:300]

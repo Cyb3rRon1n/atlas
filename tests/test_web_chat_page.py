@@ -71,7 +71,7 @@ def test_chat_page_structure_and_prefill_escaping():
     page = render_chat_page('Tell me about <b>"tv"</b>')
 
     assert '<div id="log"' in page and '<textarea id="ask"' in page and 'id="send"' in page
-    assert "&lt;b&gt;&quot;tv&quot;&lt;/b&gt;" in page and "<b>" not in page.split("<script>")[0].split("<h1>")[1]
+    assert "&lt;b&gt;&quot;tv&quot;&lt;/b&gt;" in page and "<b>" not in page.split("<h1>")[1].split("<script>")[0]
     assert "/api/chat" in page and "/api/actions/execute" in page
     assert "innerHTML" not in CHAT_SCRIPT
     assert "<code>atlas chat</code>" in page and "<code>atlas-chat</code>" not in page

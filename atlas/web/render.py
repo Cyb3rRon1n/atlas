@@ -15,57 +15,101 @@ from atlas.health.alerts import container_state
 from atlas.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE, DRAWER_HTML, DRAWER_STYLE
 
 
-PAGE_STYLE = """
-  body { font-family: system-ui, sans-serif; background: #0d1117; color: #e6edf3;
-         margin: 0; padding: 2rem; line-height: 1.5; }
-  a { color: #58a6ff; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  h1 { margin-top: 0; }
-  h2 { border-bottom: 1px solid #30363d; padding-bottom: 0.3rem; }
-  table { border-collapse: collapse; width: 100%; margin: 0.75rem 0 1.5rem; }
-  th, td { text-align: left; padding: 0.4rem 0.8rem; border-bottom: 1px solid #21262d; }
-  th { color: #8b949e; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
-  .muted { color: #8b949e; }
-  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px;
-          padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
-  code, pre { background: #010409; border: 1px solid #30363d; border-radius: 4px;
-              padding: 0.15rem 0.4rem; font-size: 0.85rem; }
-  pre { padding: 0.75rem; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
-  button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px;
-           padding: 0.25rem 0.7rem; margin: 0 0.25rem 0.25rem 0; cursor: pointer; font: inherit; }
-  button:hover { border-color: #58a6ff; }
-  button.primary { background: #1f6feb; border-color: #1f6feb; }
-  input, select, textarea { background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
-           border-radius: 6px; padding: 0.25rem 0.5rem; font: inherit; }
-  textarea { width: 100%; min-height: 4rem; }
-  label { display: block; margin: 0.5rem 0 0.2rem; color: #8b949e; font-size: 0.85rem; }
-  .status-seen { color: #3fb950; } .status-quiet { color: #d29922; } .status-invisible { color: #8b949e; }
-  #msg { color: #f85149; min-height: 1.2rem; }
+# Colours are tokens: light by default, dark when the system asks for it or the viewer picks it (the sidebar's
+# Theme button, kept in localStorage). Pages use var(--...) only, never a raw colour.
+LIGHT = """--bg:#f6f7fb; --surface:#ffffff; --surface2:#f1f3f8; --deep:#eceff5; --line:#e3e6ee; --line2:#cdd2de;
+  --text:#0f1222; --muted:#535a6b; --blue:#2563eb; --accent:#4338ca; --on-accent:#ffffff;
+  --green:#15803d; --orange:#b45309; --red:#c42b2b; --purple:#7c3aed; --teal:#0f766e; --yellow:#a16207;
+  --ok-text:#166534; --ok-line:#86d6a4; --warn-text:#92400e; --warn-line:#f2c97a; --warn-bg:#fff7eb;
+  --bad-text:#991b1b; --bad-line:#f3a8a8; --bad-bg:#fef2f2; --lane:#c7cdf7;
+  --nav-bg:#1a1e3a; --nav-text:#c9cde3; --nav-muted:#9ba1c2; --nav-on:#2c3160; color-scheme:light;"""
+DARK = """--bg:#0e131a; --surface:#131a23; --surface2:#1b2430; --deep:#0b1016; --line:#232d3a; --line2:#2f3b4c;
+  --text:#e7edf3; --muted:#a3b0bd; --blue:#5aa7f0; --accent:#4f5bd5; --on-accent:#ffffff;
+  --green:#43c08f; --orange:#f0a23a; --red:#f47a5c; --purple:#b48cf2; --teal:#3ccfb4; --yellow:#d9b44a;
+  --ok-text:#7fdcb5; --ok-line:#2f6b55; --warn-text:#ffd08a; --warn-line:#6b5530; --warn-bg:#1d1810;
+  --bad-text:#ffb4a2; --bad-line:#6b3030; --bad-bg:#2a1d1a; --lane:#2c4560;
+  --nav-bg:#0a0e14; --nav-text:#c3cad4; --nav-muted:#8792a0; --nav-on:#1d2633; color-scheme:dark;"""
+
+PAGE_STYLE = f"""
+:root {{ {LIGHT} }}
+@media (prefers-color-scheme: dark) {{ :root:not([data-theme="light"]) {{ {DARK} }} }}
+:root[data-theme="dark"] {{ {DARK} }}
+""" + """
+  body { font-family: Inter, "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg);
+         color:var(--text); margin:0; line-height:1.5; }
+  a { color:var(--blue); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  h1 { margin:0 0 16px; font-size:24px; font-weight:600; }
+  h2 { font-size:17px; font-weight:600; border-bottom:1px solid var(--line); padding-bottom:0.3rem; }
+  table { border-collapse:collapse; width:100%; margin:0.75rem 0 1.5rem; }
+  th, td { text-align:left; padding:0.5rem 0.8rem; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.04em;
+       background:var(--surface2); }
+  .muted { color:var(--muted); }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:1rem 1.5rem;
+          margin-bottom:1.5rem; }
+  code, pre { font-family: ui-monospace, "IBM Plex Mono", Menlo, monospace; background:var(--deep);
+              border:1px solid var(--line); border-radius:4px; padding:0.15rem 0.4rem; font-size:0.85rem; }
+  pre { padding:0.75rem; overflow-x:auto; white-space:pre-wrap; word-break:break-word; }
+  button { background:var(--surface); color:var(--text); border:1px solid var(--line2); border-radius:6px;
+           padding:0.3rem 0.75rem; margin:0 0.25rem 0.25rem 0; cursor:pointer; font:inherit; }
+  button:hover { border-color:var(--blue); }
+  button.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  input, select, textarea { background:var(--surface); color:var(--text); border:1px solid var(--line2);
+           border-radius:6px; padding:0.3rem 0.5rem; font:inherit; }
+  textarea { width:100%; min-height:4rem; }
+  label { display:block; margin:0.5rem 0 0.2rem; color:var(--muted); font-size:0.85rem; }
+  :focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+  .status-seen { color:var(--green); } .status-quiet { color:var(--orange); } .status-invisible { color:var(--muted); }
+  #msg { color:var(--red); min-height:1.2rem; }
 """
 
 SHELL_STYLE = """
-:root { --bg:#0e131a; --surface:#151c25; --surface2:#1b2430; --line:#263140; --text:#e7edf3; --muted:#a3b0bd;
-        --blue:#5aa7f0; --green:#43c08f; --orange:#f0a23a; --red:#f47a5c; }
-body { margin:0; padding:0; background:var(--bg); color:var(--text);
-       font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
-.topbar { display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:12px 24px;
-          background:#111821; border-bottom:1px solid #222c38; }
-.topbar .brand { font-weight:600; letter-spacing:.14em; }
-.topbar nav.main { display:flex; flex-wrap:wrap; gap:4px; }
-.topbar .signout { margin:0; }
-.topbar .signout button { background:none; border:0; font:inherit; cursor:pointer; }
-.topbar nav.main a, .topbar .chat-link { padding:10px 14px; border-radius:8px; color:var(--muted); text-decoration:none; }
-.topbar nav.main a[aria-current="page"] { background:var(--surface2); color:var(--text); }
-.topbar .spacer { flex:1; }
-.page { padding:16px 24px 32px; }
-.tabs { display:flex; flex-wrap:wrap; gap:4px; margin:0 0 16px; border-bottom:1px solid var(--line); }
-.tabs a { padding:10px 14px; color:var(--muted); text-decoration:none; border-bottom:2px solid transparent; }
-.tabs a[aria-current="page"] { color:var(--text); border-bottom-color:var(--blue); }
+.app { display:flex; min-height:100vh; }
+.side { flex:0 0 224px; box-sizing:border-box; background:var(--nav-bg); padding:18px 12px; display:flex;
+        flex-direction:column; gap:2px; }
+.side a, .side button { display:block; width:100%; box-sizing:border-box; text-align:left; padding:8px 14px; margin:0;
+        border:0; border-radius:6px; background:none; color:var(--nav-text); font:inherit; font-size:14px;
+        text-decoration:none; cursor:pointer; }
+.side a:hover, .side button:hover { background:var(--nav-on); text-decoration:none; }
+.side .brand { display:flex; align-items:center; gap:10px; padding:4px 14px 18px; color:#fff; font-weight:700;
+        font-size:17px; }
+.side .brand:hover { background:none; }
+.side ul { list-style:none; margin:0; padding:0; }
+.side nav.main > ul > li > a[aria-current="page"] { background:var(--nav-on); color:#fff; font-weight:600; }
+.side .tabs a { padding:6px 14px 6px 30px; font-size:13px; color:var(--nav-muted); }
+.side .tabs a[aria-current="page"] { color:#fff; font-weight:600; box-shadow:inset 2px 0 0 #a5b4fc; background:none; }
+.side .foot { margin-top:auto; padding-top:16px; }
+.side .foot form { margin:0; }
+.page { padding:24px 32px 40px; min-width:0; }
+.shell { flex:1; min-width:0; }
 .chips { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px; }
 .chips button { font:inherit; font-size:13px; padding:6px 12px; border-radius:999px; margin:0; }
+@media (max-width: 900px) {
+  .app { display:block; }
+  .side { padding:10px 12px; flex-direction:row; flex-wrap:wrap; align-items:center; gap:4px; }
+  .side .brand { padding:6px 10px; }
+  .side nav.main { flex:1 1 100%; order:3; }
+  .side nav.main > ul { display:flex; flex-wrap:wrap; gap:2px; }
+  .side nav.main > ul > li { display:contents; }
+  .side a, .side button { width:auto; }
+  .side .tabs { flex:1 1 100%; order:5; display:flex; flex-wrap:wrap; }
+  .side .tabs a { padding:6px 12px; }
+  .side .foot { margin:0 0 0 auto; padding:0; display:flex; order:2; }
+  .page { padding:16px; }
+}
 """
 
 PAGE_STYLE += SHELL_STYLE
+
+# Runs before first paint so a chosen theme never flashes the other one.
+THEME_SCRIPT = """<script>try{var t=localStorage.getItem("atlas-theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}
+function atlasTheme(){var d=document.documentElement,dark=d.dataset.theme?d.dataset.theme==="dark":
+matchMedia("(prefers-color-scheme: dark)").matches;d.dataset.theme=dark?"light":"dark";
+try{localStorage.setItem("atlas-theme",d.dataset.theme);}catch(e){}}</script>"""
+
+LOGO = ('<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2" aria-hidden="true">'
+        '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>')
 
 
 def _esc(value):
@@ -102,16 +146,15 @@ def _hosts_tabs(current):
 def render_page(title, body_html, active="", tabs=None, drawer=True):
 
     here = ' aria-current="page"'   # built outside the f-strings: backslashes in f-string expressions need 3.12
-    links = "".join(
-        f'<a href="{href}"{here if key in (active, SECTION_OF.get(active)) else ""}>{_esc(label)}</a>'
-        for href, label, key in NAV
-    )
     tabs = tabs if tabs is not None else section_tabs(active)
-    tab_html = ""
+    sub = ""
     if tabs:
-        tab_html = '<nav class="tabs" aria-label="Section">' + "".join(
-            f'<a href="{href}"{here if current else ""}>{_esc(label)}</a>'
-            for href, label, current in tabs) + "</nav>"
+        sub = '<ul class="tabs" aria-label="Section">' + "".join(
+            f'<li><a href="{href}"{here if current else ""}>{_esc(label)}</a></li>' for href, label, current in tabs) + "</ul>"
+    items = []
+    for href, label, key in NAV:
+        on = key in (active, SECTION_OF.get(active))
+        items.append(f'<li><a href="{href}"{here if on else ""}>{_esc(label)}</a>{sub if on else ""}</li>')
 
     chat_link = (
         '<button id="chat-toggle" class="chat-link" aria-controls="chat-drawer">Chat</button>' if drawer
@@ -123,18 +166,17 @@ def render_page(title, body_html, active="", tabs=None, drawer=True):
         "<!doctype html>\n"
         "<html lang=\"en\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-        f"<title>Atlas - {_esc(title)}</title>"
-        f"<style>{PAGE_STYLE}</style></head><body>"
-        "<header class=\"topbar\"><span class=\"brand\">ATLAS</span>"
-        f"<nav class=\"main\" aria-label=\"Main\">{links}</nav>"
-        "<span class=\"spacer\"></span>"
-        f"{chat_link}"
-        + ('<form method="post" action="/logout" class="signout"><button class="chat-link">Sign out</button></form>'
-           if SIGN_OUT else "") +
-        "</header>"
+        f"<title>Atlas - {_esc(title)}</title>{THEME_SCRIPT}"
+        f"<style>{PAGE_STYLE}</style></head><body><div class=\"app\">"
+        f"<aside class=\"side\"><a class=\"brand\" href=\"/\">{LOGO}Atlas</a>"
+        f"<nav class=\"main\" aria-label=\"Main\"><ul>{''.join(items)}</ul></nav>"
+        f"<div class=\"foot\">{chat_link}"
+        "<button type=\"button\" onclick=\"atlasTheme()\" aria-label=\"Switch light or dark theme\">Theme</button>"
+        + ('<form method="post" action="/logout"><button>Sign out</button></form>' if SIGN_OUT else "") +
+        "</div></aside>"
         f"<div class=\"shell{' docked' if drawer else ''}\">"
-        f"<main class=\"page\"><h1>{_esc(title)}</h1>{tab_html}{body_html}</main>"
-        f"{drawer_html}</div>"
+        f"<main class=\"page\"><h1>{_esc(title)}</h1>{body_html}</main>"
+        f"{drawer_html}</div></div>"
         "</body></html>"
     )
 
@@ -393,19 +435,19 @@ def _count(number, word):
 
 def _status_color(ok):
 
-    return {True: "#3fb950", False: "#f85149"}.get(ok, "#8b949e")
+    return {True: "var(--green)", False: "var(--red)"}.get(ok, "var(--muted)")
 
 
 def _svg_box(x, y, width, height, title, subtitle, color, detail=""):
 
     return (
-        f'<rect x="{x}" y="{y}" width="{width}" height="{height}" rx="8" fill="#161b22" '
-        f'stroke="{color}" stroke-width="2"/>'
-        f'<text x="{x + width / 2}" y="{y + 22}" text-anchor="middle" fill="#e6edf3" '
+        f'<rect x="{x}" y="{y}" width="{width}" height="{height}" rx="8" style="fill:var(--surface);stroke:{color}" '
+        f'stroke-width="2"/>'
+        f'<text x="{x + width / 2}" y="{y + 22}" text-anchor="middle" style="fill:var(--text)" '
         f'font-size="14" font-weight="600">{_esc(title)[:24]}</text>'
-        f'<text x="{x + width / 2}" y="{y + 40}" text-anchor="middle" fill="#8b949e" '
+        f'<text x="{x + width / 2}" y="{y + 40}" text-anchor="middle" style="fill:var(--muted)" '
         f'font-size="11">{_esc(subtitle)[:30]}</text>'
-        + (f'<text x="{x + width / 2}" y="{y + 56}" text-anchor="middle" fill="{color}" '
+        + (f'<text x="{x + width / 2}" y="{y + 56}" text-anchor="middle" style="fill:{color}" '
            f'font-size="11">{_esc(detail)[:30]}</text>' if detail else "")
     )
 

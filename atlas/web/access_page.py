@@ -20,24 +20,24 @@ ACCESS_STYLE = """
 .windows { display:flex; gap:4px; margin:0 0 14px; } .windows a { padding:6px 12px; border-radius:8px; color:var(--muted); }
 .windows a[aria-current="page"] { background:var(--surface2); color:var(--text); }
 .astrip { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px; }
-.astrip > div { background:#111821; border:1px solid #222c38; border-radius:12px; padding:10px 14px; }
+.astrip > div { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; }
 .astrip .k { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
-.astrip .v { font-size:20px; font-weight:600; } .astrip .warn .v { color:#ffb4a2; }
-.mapbox { background:#0b1118; border:1px solid #222c38; border-radius:14px; padding:8px; margin-bottom:16px; }
+.astrip .v { font-size:20px; font-weight:600; } .astrip .warn .v { color:var(--bad-text); }
+.mapbox { background:var(--deep); border:1px solid var(--line); border-radius:14px; padding:8px; margin-bottom:16px; }
 .mapbox svg { width:100%; height:auto; display:block; }
-.mapbox .land { fill:#1b2430; stroke:#2c3a4c; stroke-width:.15; }
-.mapbox .vis { fill:#5aa7f0; fill-opacity:.55; stroke:#5aa7f0; stroke-width:.2; }
-.mapbox .vis.denied { fill:#f47a5c; stroke:#f47a5c; } .mapbox .user { fill:#43c08f; fill-opacity:.8; stroke:#0b1118; stroke-width:.3; }
+.mapbox .land { fill:var(--surface2); stroke:var(--line2); stroke-width:.15; }
+.mapbox .vis { fill:var(--blue); fill-opacity:.55; stroke:var(--blue); stroke-width:.2; }
+.mapbox .vis.denied { fill:var(--red); stroke:var(--red); } .mapbox .user { fill:var(--green); fill-opacity:.8; stroke:var(--deep); stroke-width:.3; }
 .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); padding:4px 6px 0; }
 .legend i { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
-.acard { background:#111821; border:1px solid #222c38; border-radius:14px; padding:14px 16px; margin-bottom:16px; }
+.acard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:16px; }
 .acard h2 { margin:0 0 4px; font-size:15px; border:0; padding:0; } .acard .why { margin:0 0 10px; font-size:13px; color:var(--muted); }
 .acard table { margin:0; font-size:14px; } .acard td, .acard th { padding:6px 8px; }
 .tag { font-size:11px; padding:1px 7px; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
-.tag.new { color:#ffd08a; border-color:#6b5530; } .tag.bad { color:#ffb4a2; border-color:#6b3a30; } .tag.home { color:#7fdcb5; border-color:#2f6b55; }
+.tag.new { color:var(--warn-text); border-color:var(--warn-line); } .tag.bad { color:var(--bad-text); border-color:var(--bad-line); } .tag.home { color:var(--ok-text); border-color:var(--ok-line); }
 .credit { font-size:12px; color:var(--muted); }
-.acard.attn { border-color:var(--orange); background:#1d1810; }
-.rv { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:8px 0; border-top:1px solid #3a2f1c; font-size:14px; }
+.acard.attn { border-color:var(--orange); background:var(--warn-bg); }
+.rv { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:8px 0; border-top:1px solid var(--warn-line); font-size:14px; }
 .rv:first-of-type { border-top:0; } .rv > div { flex:1 1 320px; } .rv button { margin:0; }
 details.acard > summary { cursor:pointer; font-weight:600; }
 </style>
@@ -152,9 +152,9 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
         + '<div class="astrip">' + "".join(f'<div class="{c}"><div class="k">{k}</div><div class="v">{v}</div></div>'
                                            for k, v, c in stats) + "</div>"
         + f'<div class="mapbox"><svg viewBox="0 0 360 180" role="img" aria-label="Where visitors came from">'
-          f'<path class="land" d="{LAND_PATH}"/>{dots}</svg><div class="legend"><span><i style="background:#43c08f"></i>'
-          'signed-in user</span><span><i style="background:#5aa7f0"></i>anonymous visitor (dot size = requests)</span>'
-          '<span><i style="background:#f47a5c"></i>mostly denied (login wall, CrowdSec, rate limit)</span>'
+          f'<path class="land" d="{LAND_PATH}"/>{dots}</svg><div class="legend"><span><i style="background:var(--green)"></i>'
+          'signed-in user</span><span><i style="background:var(--blue)"></i>anonymous visitor (dot size = requests)</span>'
+          '<span><i style="background:var(--red)"></i>mostly denied (login wall, CrowdSec, rate limit)</span>'
           f'<span>{len(visitors) - len(outside)} home/LAN IPs not drawn</span></div></div>'
         + '<section class="acard"><h2>Signed-in people</h2><p class="why">Sign-ins and failed attempts from the apps\' own '
           'logs (Authelia, Jellyfin, Audiobookshelf, Kavita), with where they came from.</p>'

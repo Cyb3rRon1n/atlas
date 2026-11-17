@@ -19,21 +19,21 @@ TRENDS_STYLE = """
 <style>
 .windows { display:flex; gap:4px; margin:0 0 14px; } .windows a { padding:6px 12px; border-radius:8px; color:var(--muted); }
 .windows a[aria-current="page"] { background:var(--surface2); color:var(--text); }
-.tcard { background:#111821; border:1px solid #222c38; border-radius:14px; padding:14px 16px; margin-bottom:16px; }
+.tcard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:16px; }
 .tcard > h2 { margin:0 0 10px; font-size:16px; border:0; padding:0; }
 .tgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
 .tgrid.small { grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); }
 .chart h3 { margin:0; font-size:13px; font-weight:600; display:flex; justify-content:space-between; gap:8px; }
 .chart h3 .now { font-variant-numeric:tabular-nums; } .chart svg { width:100%; height:70px; display:block; margin:4px 0 2px; }
 .chart .stats { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
-.chart .grow { font-size:12px; margin-top:2px; } .chart .grow.soon { color:#ffb4a2; }
+.chart .grow { font-size:12px; margin-top:2px; } .chart .grow.soon { color:var(--bad-text); }
 .chart .ln { fill:none; stroke-width:1.6; vector-effect:non-scaling-stroke; }
 .chart .area { opacity:.12; } .chart .th { stroke-width:1; stroke-dasharray:3 3; vector-effect:non-scaling-stroke; }
 .legend { font-size:12px; color:var(--muted); } .legend i { display:inline-block; width:10px; height:3px; margin:0 4px 2px 8px; }
 </style>
 """
 
-COLORS = ("#5aa7f0", "#43c08f", "#f0a23a", "#c58af9")
+COLORS = ("var(--blue)", "var(--green)", "var(--orange)", "var(--purple)")
 
 
 def _downsample(points):
@@ -61,12 +61,12 @@ def _chart(title, series, since, now, unit="%", ymax=100.0, thresholds=(75, 90),
         color = COLORS[i % len(COLORS)]
         if i == 0:
             first, last = xy(*pts[0]), xy(*pts[-1])
-            lines += f'<polygon class="area" fill="{color}" points="{first[0]},70 {coords} {last[0]},70"/>'
-        lines += f'<polyline class="ln" stroke="{color}" points="{coords}"><title>{_esc(label)}</title></polyline>'
+            lines += f'<polygon class="area" style="fill:{color}" points="{first[0]},70 {coords} {last[0]},70"/>'
+        lines += f'<polyline class="ln" style="stroke:{color}" points="{coords}"><title>{_esc(label)}</title></polyline>'
         lx, ly = xy(*pts[-1])   # latest value always visible, even with a single sample
-        lines += f'<ellipse cx="{lx}" cy="{ly}" rx="2.2" ry="3" fill="{color}"/>'
+        lines += f'<ellipse cx="{lx}" cy="{ly}" rx="2.2" ry="3" style="fill:{color}"/>'
     guides = "".join(f'<line class="th" x1="0" x2="300" y1="{xy(now, th)[1]}" y2="{xy(now, th)[1]}" '
-                     f'stroke="{"#f47a5c" if th >= 90 else "#f0a23a"}"/>' for th in thresholds if th < top)
+                     f'style="stroke:{"var(--red)" if th >= 90 else "var(--orange)"}"/>' for th in thresholds if th < top)
 
     values = [v for _, v in main]
     fmt = (lambda v: f"{v:.0f}{unit}") if unit else (lambda v: f"{v:.0f}")

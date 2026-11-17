@@ -14,18 +14,18 @@ from atlas.web.render import _esc, ask_chips, render_page
 
 HOME_STYLE = """
 <style>
-.steps { margin:0 0 16px; padding:12px 16px; border:1px solid #30363d; border-radius:12px; }
+.steps { margin:0 0 16px; padding:12px 16px; border:1px solid var(--line2); border-radius:12px; }
 .steps h2 { margin:0 0 6px; font-size:15px; border:0; padding:0; }
 .steps ol { list-style:none; margin:0; padding:0; }
 .steps li { display:flex; gap:10px; align-items:baseline; padding:4px 0; }
 .steps li .what { flex:1; } .steps li.done { opacity:.6; }
-.steps .tick { width:1em; color:#7fdcb5; }
+.steps .tick { width:1em; color:var(--ok-text); }
 .verdict { font-size:20px; font-weight:600; margin:0 0 16px; }
-.verdict.ok { color:#7fdcb5; }
-.attention { margin:0 0 16px; padding:12px 16px; border:1px solid var(--orange); border-radius:12px; background:#1d1810; }
-.attention h2 { margin:0 0 6px; font-size:15px; border:0; padding:0; color:#ffd08a; }
+.verdict.ok { color:var(--ok-text); }
+.attention { margin:0 0 16px; padding:12px 16px; border:1px solid var(--orange); border-radius:12px; background:var(--warn-bg); }
+.attention h2 { margin:0 0 6px; font-size:15px; border:0; padding:0; color:var(--warn-text); }
 .attention ul { list-style:none; margin:0; padding:0; }
-.attention li { display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px solid #3a2f1c; font-size:14px; }
+.attention li { display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px solid var(--warn-line); font-size:14px; }
 .attention li:first-child { border-top:0; }
 .attention li .what { flex:1; } .attention li .what b { font-weight:600; }
 .attention li a { white-space:nowrap; }
@@ -38,9 +38,9 @@ HOME_STYLE = """
 @media (max-width: 700px) { .cards { grid-template-columns:1fr; } .cards a.hcard.wide { grid-column:auto; } }
 .cards a.hcard.flagged { box-shadow:0 0 0 2px var(--orange); }
 .cards a.hcard.flagged.warn { box-shadow:0 0 0 2px var(--red); }
-.hcard .tag { margin-left:auto; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.05em; color:#ffd08a; }
-.cards a.hcard { display:block; color:var(--text); text-decoration:none; background:#111821;
-                 border:1px solid #222c38; border-radius:14px; padding:16px; }
+.hcard .tag { margin-left:auto; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.05em; color:var(--warn-text); }
+.cards a.hcard { display:block; color:var(--text); text-decoration:none; background:var(--surface);
+                 border:1px solid var(--line); border-radius:14px; padding:16px; }
 .cards a.hcard:hover { border-color:var(--blue); }
 .hcard h2 { margin:0 0 10px; font-size:15px; border:0; padding:0; display:flex; gap:8px; align-items:center; }
 .hcard.warn { border-color:var(--red); } .hcard.review { border-color:var(--orange); }
@@ -50,17 +50,17 @@ HOME_STYLE = """
 .hcard dt { color:var(--muted); }
 .hcard .host { padding:8px 0; border-top:1px solid var(--line); font-size:14px; }
 .hcard .host:first-of-type { border-top:0; }
-.hcard .bad { color:#ffb4a2; font-size:13px; }
+.hcard .bad { color:var(--bad-text); font-size:13px; }
 .hcard ul { list-style:none; margin:0; padding:0; font-size:13px; }
 .hcard li { padding:4px 0; border-top:1px solid var(--line); }
 .hcard li:first-child { border-top:0; }
 .hcard .row { display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-top:1px solid var(--line); font-size:14px; }
 .hcard .row:first-of-type { border-top:0; }
-.hcard .row.warn span:last-child { color:#ffb4a2; }
+.hcard .row.warn span:last-child { color:var(--bad-text); }
 .chart { margin:4px 0 12px; } .chart h3 { margin:0 0 4px; font-size:12px; font-weight:500; color:var(--muted); }
 .chart svg { width:100%; height:70px; display:block; }
 .chart .lbl { font-size:12px; margin-top:4px; }
-.sev-high, .sev-critical { color:#ffb4a2; } .sev-medium { color:#ffd08a; }
+.sev-high, .sev-critical { color:var(--bad-text); } .sev-medium { color:var(--warn-text); }
 </style>
 """
 
@@ -246,7 +246,7 @@ def _bars_svg(series, colors, labels, height=70):
             if h:
                 y -= h
                 bars.append(f'<rect x="{i * width + width * 0.12:.2f}" y="{y:.2f}" width="{width * 0.76:.2f}" '
-                            f'height="{h:.2f}" fill="{color}"><title>{_esc(label)}</title></rect>')
+                            f'height="{h:.2f}" style="fill:{color}"><title>{_esc(label)}</title></rect>')
 
     return (f'<svg viewBox="0 0 100 {height}" preserveAspectRatio="none" role="img" style="height:{height}px">'
             f'{"".join(bars)}</svg>')
@@ -264,8 +264,8 @@ def _trends_card(trends):
         f'<div class="lbl">{label} <span class="muted">peak {_size(max(h[key] for h in hours))}/h</span></div>'
         + _bars_svg([{key: h[key]} for h in hours], {key: color},
                     [f"{h['hour'][11:16]} UTC · {label} {_size(h[key])}" for h in hours], height=56)
-        for key, label, color in (("direct", "Direct", "#8b98a6"), ("vpn", "Via VPN", "#43c08f")))
-    new = _bars_svg([{"n": d["count"]} for d in days], {"n": "#f0a23a"},
+        for key, label, color in (("direct", "Direct", "var(--muted)"), ("vpn", "Via VPN", "var(--green)")))
+    new = _bars_svg([{"n": d["count"]} for d in days], {"n": "var(--orange)"},
                     [f"{d['day']}: {d['count']} new" for d in days], height=110)
     total_new = sum(d["count"] for d in days)
     inner = (

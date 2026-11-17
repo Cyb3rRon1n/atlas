@@ -90,7 +90,28 @@ def parse_unifi(devices, clients):
               "ip": c.get("ip", ""), "switch_mac": normalize_mac(c.get("sw_mac")), "switch_port": c.get("sw_port")}
              for c in clients if c.get("is_wired") and normalize_mac(c.get("mac"))]
 
-    return {"devices": parsed, "clients": wired}
+    names = {d["mac"]: d["name"] for d in parsed}
+    everyone = [{"mac": normalize_mac(c.get("mac")), "ip": c.get("ip") or None, "name": c.get("name") or "",
+                 "hostname": c.get("hostname") or "", "wired": bool(c.get("is_wired")),
+                 "network": c.get("network") or "", "guest": bool(c.get("is_guest")),
+                 "wifi": None if c.get("is_wired") else {
+                     "ssid": c.get("essid") or "", "ap": names.get(normalize_mac(c.get("ap_mac"))) or "",
+                     "signal": c.get("signal") if isinstance(c.get("signal"), int) else None,
+                     "band": {"ng": "2.4 GHz", "na": "5 GHz", "6e": "6 GHz"}.get(c.get("radio"), "")}}
+                for c in clients if normalize_mac(c.get("mac"))]
+
+    return {"devices": parsed, "clients": wired, "everyone": everyone}
+
+
+def sightings(unifi):
+    """Device-inventory sightings for every client UniFi knows: its own name for it (set in UniFi), the DHCP
+    hostname, and for Wi-Fi which network, access point and signal. Linked to devices by MAC."""
+
+    from atlas.devices import Sighting
+
+    return [Sighting("unifi", c["mac"], ip=c["ip"], mac=c["mac"], hostname=c["name"] or c["hostname"] or None,
+                     detail={"unifi": {k: c[k] for k in ("name", "hostname", "network", "guest", "wifi") if c[k]}})
+            for c in (unifi or {}).get("everyone") or []]
 
 
 def _default_opener(verify_ssl):

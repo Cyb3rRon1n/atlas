@@ -71,6 +71,13 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
             except WiringError as error:
                 raw["unifi"] = old_raw.get("unifi")
                 sources["unifi"] = {"ok": False, "error": str(error), "stale": raw["unifi"] is not None, "note": ""}
+            if sources["unifi"]["ok"]:
+                try:                               # UniFi's names and Wi-Fi details help identify devices
+                    from atlas.devices.store import InventoryStore
+                    from atlas.wiring.unifi import sightings
+                    InventoryStore(getattr(store, "engine", None)).record_run("unifi", sightings(raw["unifi"]))
+                except Exception:
+                    pass                           # the map never fails over the device list
 
         snapshot = build_wiring(list(raw["switches"].values()), raw["unifi"], devices,
                                 load_cabling(config.cabling_file))

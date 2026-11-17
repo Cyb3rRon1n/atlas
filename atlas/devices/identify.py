@@ -217,7 +217,10 @@ def clues(device, table, open_ports=(), place=None):
     mac = macs[0] if macs else None
     said = next((s["detail"]["announce"] for s in device.get("sightings", [])
                  if isinstance(s.get("detail"), dict) and s["detail"].get("announce")), {})
-    return {"announced": said.get("name"), "model": said.get("model"), "said_maker": said.get("maker"),
+    unifi = next((s["detail"]["unifi"] for s in device.get("sightings", [])
+                  if isinstance(s.get("detail"), dict) and s["detail"].get("unifi")), {})
+    return {"unifi_name": unifi.get("name"), "wifi": unifi.get("wifi"), "network": unifi.get("network"),
+            "guest": unifi.get("guest", False), "announced": said.get("name"), "model": said.get("model"), "said_maker": said.get("maker"),
             "services": list(dict.fromkeys(SERVICE_WORDS[s] for s in said.get("services") or () if s in SERVICE_WORDS)),
             "service_ids": list(said.get("services") or ()),"maker": short_maker(maker(mac, table)) if maker(mac, table) else None,
             "private": private(mac), "hostname": next((h for h in hostnames if h), None),
@@ -257,7 +260,9 @@ def guess(found):
                 break
     if not kind and found["private"]:
         kind, what = "phone", "phone, tablet or laptop"
-    if found.get("announced"):
+    if found.get("unifi_name"):                    # the name someone already gave it in UniFi
+        name = found["unifi_name"]
+    elif found.get("announced"):
         name = found["announced"]
     elif model and not hostname:
         who = found.get("said_maker") or brand

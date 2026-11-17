@@ -22,6 +22,8 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 - **DNS check** in internet health: a name is looked up each minute (this machine's resolver, or each of
   `internet.dns_servers` - your router, Pi-hole) and shown under Internet on Servers → Uptime; one alert when
   lookups fail while the internet answers, one when they work again.
+- **Prometheus `/metrics`**: uptime, internet, DNS, devices, alerts, disks, UPS, heartbeats and Pi-hole numbers
+  for Grafana; read with the existing read-only API token.
 
 ## 0.10.0 - 2026-11-17
 

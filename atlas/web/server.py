@@ -156,10 +156,12 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 self._send(200, "text/html; charset=utf-8", render_login_page(next_path=next_path))
             return False
 
-        if self._session_ok() or (path.startswith("/api/") and self._token_ok()):
+        if self._session_ok() or ((path.startswith("/api/") or path == "/metrics") and self._token_ok()):
             return True
 
-        if path.startswith("/api/"):
+        if path == "/metrics":
+            self._send(401, "text/plain; charset=utf-8", "sign in or send the API token (Authorization: Bearer ...)")
+        elif path.startswith("/api/"):
             self._send(401, "application/json", json.dumps({"error": "sign in or send the API token"}))
         else:
             self._redirect("/login?next=" + quote(safe_next(self.path), safe="/"))
@@ -282,6 +284,14 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
 
         if path.startswith("/ping/"):                  # heartbeats: the token in the address is the password
             self._ping(path)
+            return
+
+        if path == "/metrics":                         # Prometheus: signed in, or the API token as a Bearer
+            from atlas.web.metrics import collect, render
+            if self.auth and not self._gate(path):
+                return
+            self._send(200, "text/plain; version=0.0.4; charset=utf-8",
+                       render(collect(load_config(), datetime.utcnow())))
             return
 
         if self.auth and not self._gate(path):

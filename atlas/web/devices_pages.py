@@ -21,6 +21,7 @@ document.addEventListener("click", async (event) => {
   const message = document.getElementById("msg");
   const body = JSON.parse(button.dataset.body || "{}");
   if (button.dataset.nameFrom) body.name = document.getElementById(button.dataset.nameFrom).value;
+  if (button.dataset.kindFrom) body.kind = document.getElementById(button.dataset.kindFrom).value;
   if (button.dataset.intoFrom) body.into = parseInt(document.getElementById(button.dataset.intoFrom).value, 10);
   if (button.dataset.form) {
     const formEl = document.getElementById(button.dataset.form);
@@ -91,17 +92,20 @@ def _page(title, body, tabs=None):
     return render_page(title, f'<p id="msg"></p>{body}{ACTIONS_SCRIPT}', active="devices", tabs=tabs)
 
 
-def render_triage_page(triage):
+def render_triage_page(triage, hints=None):
 
     if not triage["new"] and not triage["quiet"]:
         return _page("Triage", '<p class="muted">Nothing to triage - every device is known or ignored.</p>',
                       device_tabs("triage"))
 
+    hints = hints or {}
     new_rows = "".join(
-        f"<tr><td><input id=\"name-{device['id']}\" value=\"{_esc(device['name'])}\"></td>"
-        f"<td>{_esc(device['ip'] or '-')}</td><td>{_esc(_sources(device))}</td>"
+        f"<tr><td><div class=\"attn-row\">{_name_and_kind(device, hints.get(device['id']))}"
+        f"{_clues(device, hints.get(device['id']))}</div></td>"
+        f"<td>{_esc(_sources(device))}</td>"
         f"<td>{_esc(device['last_seen'] or '-')}</td><td>"
-        + _button("Keep", f"/api/devices/{device['id']}", {"state": "known"}, "primary", name_from=f"name-{device['id']}")
+        + _button("Keep", f"/api/devices/{device['id']}", {"state": "known"}, "primary", name_from=f"name-{device['id']}",
+                  kind_from=f"kind-{device['id']}")
         + (_button(f"Merge into {device['suggested_merge_name']}", f"/api/devices/{device['id']}/merge",
                    {"into": device["suggested_merge_id"]}) if device.get("suggested_merge_name") else "")
         + _button("Ignore", f"/api/devices/{device['id']}", {"state": "ignored"})
@@ -120,7 +124,7 @@ def render_triage_page(triage):
 
     if new_rows:
         body += ("<div class=\"card\"><h2>New devices</h2><p class=\"muted\">Name it and Keep, merge it into "
-                 "the device it duplicates, or Ignore it.</p><table><thead><tr><th>name</th><th>ip</th>"
+                 "the device it duplicates, or Ignore it.</p><table><thead><tr><th>name and clues</th>"
                  f"<th>seen by</th><th>last seen</th><th></th></tr></thead><tbody>{new_rows}</tbody></table></div>")
 
     if quiet_rows:
@@ -139,6 +143,10 @@ KIND_LABELS = {"server": ("server", "Servers"), "container-host": ("server", "Se
                "tv": ("tv", "TVs & streaming"), "iot": ("bulb", "Smart home"), "network": ("antenna", "Network gear"),
                "other": ("help", "Other")}
 
+KIND_NAMES = {"server": "Server", "vm": "Virtual machine", "lxc": "Container (LXC)", "container-host": "Container host",
+              "workstation": "Computer", "phone": "Phone or tablet", "tv": "TV or streamer", "iot": "Smart home",
+              "network": "Network gear", "other": "Other"}
+
 DEVICES_STYLE = """
 <style>
 .dsum { font-size:15px; margin:0 0 14px; } .dsum b { font-weight:600; }
@@ -155,6 +163,9 @@ DEVICES_STYLE = """
 .ddot.seen { background:var(--green); } .ddot.quiet { background:var(--orange); }
 .attn-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:6px 0; border-top:1px solid var(--warn-line); }
 .attn-row:first-of-type { border-top:0; } .attn-row input { width:180px; }
+.attn-row select { max-width:170px; }
+.clues { flex-basis:100%; margin:-2px 0 2px 18px; font-size:13px; color:var(--muted); }
+.clues b { color:var(--text); font-weight:600; }
 </style>
 """
 
@@ -166,20 +177,58 @@ def _tile(device):
             f'<span class="t"><div>{_esc(device["name"])}</div><div class="sub">{_esc(sub or "-")}</div></span></a>')
 
 
-def render_devices_page(devices):
+def _name_and_kind(device, hint):
+    """The name box (filled with the suggestion while the name is still just the IP) and a kind picker."""
+
+    name = device["name"]
+    if hint and hint["name"] and name in (device.get("ip"), "", None):
+        name = hint["name"]
+    kind = (hint or {}).get("kind") or device["kind"]
+    options = "".join(f'<option value="{k}"{" selected" if k == kind else ""}>{_esc(KIND_NAMES.get(k, k))}</option>'
+                      for k in KINDS)
+    label = _esc(device["ip"] or device["name"])
+    return (f'<input id="name-{device["id"]}" value="{_esc(name)}" aria-label="Name for {label}">'
+            f'<select id="kind-{device["id"]}" aria-label="Kind of device for {label}">{options}</select>')
+
+
+def _clues(device, hint):
+    """One muted line: what atlas knows that helps say what this device is."""
+
+    parts = []
+    found = (hint or {}).get("clues") or {}
+    if found.get("maker"):
+        parts.append(f'made by <b>{_esc(found["maker"])}</b>')
+    elif found.get("private"):
+        parts.append("<b>private Wi-Fi address</b> (phones, tablets and laptops hide their maker this way)")
+    if found.get("hostname") and found["hostname"] != device["name"]:
+        parts.append(f'calls itself <b>{_esc(found["hostname"])}</b>')
+    if found.get("place"):
+        parts.append(f'on <b>{_esc(found["place"])}</b>')
+    if found.get("ports"):
+        parts.append("open: " + _esc(", ".join(found["ports"][:4])))
+    parts.append(_esc(device["ip"] or "no IP"))
+    first = min((s["first_seen"] for s in device["sightings"] if s.get("first_seen")), default=None)
+    if first:
+        parts.append(f"first seen {_esc(first[:10])}")
+    return '<div class="clues">' + " \u00b7 ".join(parts) + "</div>"
+
+
+def render_devices_page(devices, hints=None):
+    """hints: atlas.devices.identify.for_devices() - suggested names, kinds and clues for the new devices."""
 
     new = [d for d in devices if d["state"] == "new"]
     quiet = [d for d in devices if d["state"] == "known" and d["status"] == "quiet"]
     ignored = [d for d in devices if d["state"] == "ignored"]
     known = [d for d in devices if d["state"] == "known"]
 
+    hints = hints or {}
     rows = "".join(
         f'<div class="attn-row" data-row><span class="ddot {_esc(d["status"])}"></span>'
-        f'<input id="name-{d["id"]}" value="{_esc(d["name"])}" aria-label="Name for {_esc(d["ip"] or d["name"])}">'
-        f'<span class="muted">{_esc(d["ip"] or "-")} \u00b7 {_esc(_sources(d))}</span>'
-        + _button("Keep", f"/api/devices/{d['id']}", {"state": "known"}, "primary", name_from=f"name-{d['id']}")
+        + _name_and_kind(d, hints.get(d["id"]))
+        + _button("Keep", f"/api/devices/{d['id']}", {"state": "known"}, "primary", name_from=f"name-{d['id']}",
+                  kind_from=f"kind-{d['id']}")
         + _button("Ignore", f"/api/devices/{d['id']}", {"state": "ignored"})
-        + f' <a href="/devices/{d["id"]}">details</a></div>' for d in new)
+        + f' <a href="/devices/{d["id"]}">details</a>' + _clues(d, hints.get(d["id"])) + '</div>' for d in new)
     rows += "".join(
         f'<div class="attn-row" data-row><span class="ddot quiet"></span><a href="/devices/{d["id"]}">{_esc(d["name"])}</a>'
         f'<span class="muted">gone quiet \u00b7 last seen {_esc(d["last_seen"] or "-")}</span>'

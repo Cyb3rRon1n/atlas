@@ -1603,6 +1603,7 @@ def lan_scan(
     for important devices gone quiet. Run by the atlas-scan container.
     """
 
+    from datetime import datetime
     from atlas.devices import lan
     from atlas.devices.notify import deliver
     from atlas.devices.store import InventoryStore
@@ -1626,9 +1627,10 @@ def lan_scan(
 
     result = store.record_run("lan", sightings)
     result["subnets"] = subnets
+    from atlas.devices import identify
+    identify.refresh(datetime.utcnow())     # the maker list for naming new devices; monthly, skipped offline
     result["offline"] = store.queue_offline()
     result["notify_errors"] = deliver(store, settings.notify)
-    from datetime import datetime
     from atlas.devices.notify import report_alerts
     report_alerts(store, store.devices(), datetime.utcnow())
 

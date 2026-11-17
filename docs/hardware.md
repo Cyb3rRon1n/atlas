@@ -35,7 +35,8 @@ the LAN scan.
 
 From our research into what homes and home labs actually run, roughly in this order:
 
-1. **Device identification without logins** - maker from the MAC address, plus the names and models devices
+1. **Device identification without logins** - the maker from the MAC address, private Wi-Fi addresses, where
+   it is plugged in and a suggested name are already shown for new devices. Next: the names and models devices
    announce themselves (mDNS/Bonjour, UPnP), so a printer shows as "HP LaserJet" instead of an IP address.
 2. **Internet health** - latency, packet loss and outage history for your connection, so you can show your ISP
    when it dropped.

@@ -15,7 +15,11 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   whether ad blocking is on, how many DNS questions were asked and blocked, and the devices that ask the most,
   named from your device list. One alert when blocking stays off (two checks in a row) and one when it's back.
   Pi-hole 6 (password or app password; atlas signs out after every read) and AdGuard Home (username +
-  password). Read-only.
+  password). Read-only. Checked against real Pi-hole 6 and AdGuard Home v0.107.
+- **Disk health from Proxmox**: every Proxmox scan reads each disk's SMART result, life left, temperature and
+  bad-sector count. Home's Storage & RAID card sums them per host and lists any disk with a problem. Alerts when
+  a disk fails SMART, runs hot (two scans in a row), is nearly worn out, or gains bad sectors; limits under
+  `health.disk_*`. Works with the existing PVEAuditor token.
 
 ## 0.9.1 - 2026-11-17
 

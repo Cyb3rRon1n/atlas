@@ -157,6 +157,9 @@ Markdown is searched section by section; scripts whole (they document themselves
 | `temp_margin_c` | `5.0` | Alert when a sensor is this close to its own "high" limit, two samples in a row |
 | `memory_percent` | `90` | Alert when memory use reaches this |
 | `disk_percent` | `90` | Alert when the root disk or any `storage_paths` entry reaches this |
+| `disk_hot_hdd_c` | `55` | Proxmox disk health: a spinning disk this hot (°C) at two scans in a row |
+| `disk_hot_ssd_c` | `70` | The same for SSDs and NVMe drives |
+| `disk_life_percent` | `10` | Alert when an SSD has this much of its life left, or less |
 
 ### Host health alerts
 
@@ -168,6 +171,10 @@ Every atlas-scan pass (`atlas sample`) checks the machine atlas runs on and send
 - a `status_urls` feed whose `state` is anything but `ok` (for example a RAID-card watchdog saying `warn`).
 
 **Containers that sleep on purpose are not problems.** One that stopped cleanly (exit code 0), such as a game room an idle timer shuts down, shows as *Asleep* on the home page and never alerts. For an app that sleeps but exits with an error code, add the label `atlas.on-demand=true`. The `/api/summary` tile data counts them as `containers_asleep`.
+
+### Disk health (Proxmox)
+
+With Proxmox set up, every `atlas proxmox scan` (every 15 minutes in atlas-scan) also reads each node's disks: the SMART result, how much life an SSD has left, its temperature and its bad-sector count (reallocated, pending and uncorrectable sectors; media errors on NVMe). Home's Storage & RAID card gets one line per node (*13 disks · all healthy · warmest 48°C · lowest life left 92%*) and a line for each disk with a problem. One alert when a disk fails its SMART check, runs hot, or is nearly worn out, and one when that clears. Bad sectors alert each time the count goes **up**; a disk that has carried a few for years without change is fine. Needs nothing beyond the PVEAuditor token.
 
 A status feed only reachable from Docker's network can be read as a file instead: mount its directory read-only and use a `file://` URL (`raid card: file:///run/raid-watchdog/status.json`).
 

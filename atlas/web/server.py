@@ -230,7 +230,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         posture = safe("posture", lambda: _posture_block(build_posture(PostureStore(), now, "24h")))
         storage = build_storage(safe("mdstat", lambda: parse_mdstat(Path("/proc/mdstat").read_text())) or [],
                                 (safe("storage paths", usage) if health_settings else None) or {},
-                                (local or {}).get("status_feeds"), pve_scan, topology)
+                                (local or {}).get("status_feeds"), pve_scan, topology, health_settings)
 
         from atlas.monitoring.uptime import UptimeStore
 

@@ -17,7 +17,7 @@ has already found is ticked for you.
 | **Router or firewall with SNMP** (OPNsense, pfSense, OpenWrt, MikroTik RouterOS) | SNMPv3, or v2c | Its ports, links and traffic on the map | Setup → Switches and routers |
 | **NAS** (Synology, QNAP, TrueNAS) | SNMPv3, or v2c | Its network ports and traffic on the map | Setup → Switches and routers |
 | **UniFi** (gateway, switches, access points) | The console's local API, View Only account | UniFi ports and uplinks SNMP can't see, wired clients, port forwards | Setup → UniFi |
-| **Proxmox VE** | API token with the PVEAuditor role | VMs and containers, drawn under their host | Setup → Proxmox |
+| **Proxmox VE** | API token with the PVEAuditor role | VMs and containers, drawn under their host; ZFS pools and each disk's SMART health, wear and temperature | Setup → Proxmox |
 | **Docker** | A read-only socket proxy | Containers and the services they publish | `docker-compose.yml` |
 | **UPS** (APC, CyberPower, Eaton... plugged into a computer or NAS) | NUT (Network UPS Tools), port 3493, read-only | Alerts on a power cut, low battery and power back; charge, time left and load | Setup → UPS |
 | **Any device** (phones, TVs, speakers, printers, smart plugs...) | MAC maker list, mDNS/Bonjour, SSDP/UPnP - nothing to set up | What new devices are: maker, the name and model they announce, where they're plugged in, a suggested name | Network → Devices |
@@ -39,7 +39,7 @@ the LAN scan.
 From our research into what homes and home labs actually run, roughly in this order:
 
 1. **Router details** - DHCP leases and Wi-Fi clients from OPNsense, OpenWrt, MikroTik and Fritz!Box.
-2. **NAS health** - disk SMART status, pool health and temperatures from TrueNAS and Synology.
+2. **NAS health** - disk SMART status, pool health and temperatures from TrueNAS and Synology (Proxmox hosts have it already).
 3. **Home Assistant** - one connection that covers many smart devices.
 4. **TP-Link Omada and Unraid**, and APC network management cards read over SNMP (for a UPS with no NUT server).
 

@@ -609,14 +609,20 @@ def uptime_check(json_output: bool = typer.Option(False, "--json", help="Print t
 
     from datetime import datetime
 
+    from atlas.monitoring import internet
     from atlas.monitoring.uptime import UptimeStore, run
 
-    results = run(load_config(), UptimeStore(), datetime.utcnow())
+    settings, store, now = load_config(), UptimeStore(), datetime.utcnow()
+    results = run(settings, store, now)
+    try:
+        results = {**internet.run(settings, store, now), **results}
+    except Exception as error:                         # the internet check never stops the uptime checks
+        console.print(f"[yellow]Internet check failed: {error}[/yellow]")
 
     if json_output:
         print(json.dumps({name: {"ok": ok, "ms": ms, "detail": detail} for name, (ok, ms, detail) in results.items()}))
         return
-    if not results:
+    if not settings.uptime.checks:
         console.print("No uptime checks yet - add them on the web page (Servers > Uptime) or under uptime.checks.")
     for name, (ok, ms, detail) in results.items():
         timing = f" {ms:.0f} ms" if ms is not None else ""

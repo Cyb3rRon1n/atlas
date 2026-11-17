@@ -70,3 +70,6 @@ def no_network_lookups(monkeypatch):
     monkeypatch.setattr(discover, "ssdp", lambda timeout=2.5, fetch=None: {})
     monkeypatch.setattr(identify, "GET", offline)
     monkeypatch.setattr(asn, "RESOLVE", offline)
+    from atlas.monitoring import internet
+    monkeypatch.setattr(internet, "_connect", lambda host, port, timeout: (5.0, False))
+    monkeypatch.setattr(internet, "_gateway", lambda: None)

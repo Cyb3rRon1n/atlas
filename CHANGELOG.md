@@ -10,7 +10,7 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   MAC address (the IEEE's public list, downloaded monthly into `inventory/oui.csv`; without internet it is
   just left out), a private (randomised) Wi-Fi address, the name it gives itself, where the cabling map saw
   it (switch port, or behind which access point), what it announces about itself over mDNS/Bonjour and
-  UPnP ("Garage - Chromecast", "32in TCL Roku TV", AirPlay, printing, HomeKit; `scan.discover`, on by
+  UPnP ("Living Room TV - Chromecast", "HP LaserJet M404", AirPlay, printing, HomeKit; `scan.discover`, on by
   default), its open ports and when it first appeared. Atlas fills
   in a suggested name and kind - *Espressif smart device*, *Nintendo game console*, *Phone, tablet or
   laptop* - and Keep saves both; change either before keeping.

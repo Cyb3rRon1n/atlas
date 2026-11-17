@@ -183,7 +183,11 @@ class InventoryStore:
                     session.add(row)
 
                 row.ip, row.mac, row.hostname = new.ip, new.mac, new.hostname
-                row.detail, row.last_seen = json.dumps(new.detail), now
+                old = json.loads(row.detail or "{}")
+                detail = dict(new.detail)
+                if "announce" in old and "announce" not in detail:   # a device that slept through this scan's
+                    detail["announce"] = old["announce"]              # mDNS/UPnP question keeps what it said before
+                row.detail, row.last_seen = json.dumps(detail), now
                 session.flush()
 
             session.commit()

@@ -102,6 +102,8 @@ class ScanConfig(BaseModel):
     enabled: bool = True
     subnets: list[str] = []
     timeout: float = 0.5
+    # Ask devices their own name and model (mDNS/Bonjour + SSDP/UPnP, a few seconds per scan).
+    discover: bool = True
 
 
 class SignalNotifyConfig(BaseModel):

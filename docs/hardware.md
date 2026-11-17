@@ -17,7 +17,7 @@ has already found is ticked for you.
 | **Router or firewall with SNMP** (OPNsense, pfSense, OpenWrt, MikroTik RouterOS) | SNMPv3, or v2c | Its ports, links and traffic on the map | Setup → Switches and routers |
 | **NAS** (Synology, QNAP, TrueNAS) | SNMPv3, or v2c | Its network ports and traffic on the map | Setup → Switches and routers |
 | **TrueNAS or Synology** (disk health) | TrueNAS: an API key (read-only admin). Synology: an admin account with no folder or app access | Pool or volume health and use; each disk's health and temperature; alerts | Setup → TrueNAS or Synology |
-| **UniFi** (gateway, switches, access points) | The console's local API, View Only account | UniFi ports and uplinks SNMP can't see, wired clients, port forwards | Setup → UniFi |
+| **UniFi** (gateway, switches, access points) | The console's local API, View Only account | UniFi ports and uplinks SNMP can't see, wired clients, port forwards; every client's UniFi name, Wi-Fi network, access point and signal on Devices | Setup → UniFi |
 | **Proxmox VE** | API token with the PVEAuditor role | VMs and containers, drawn under their host; ZFS pools and each disk's SMART health, wear and temperature | Setup → Proxmox |
 | **Docker** | A read-only socket proxy | Containers and the services they publish | `docker-compose.yml` |
 | **UPS** (APC, CyberPower, Eaton... plugged into a computer or NAS) | NUT (Network UPS Tools), port 3493, read-only | Alerts on a power cut, low battery and power back; charge, time left and load | Setup → UPS |
@@ -39,7 +39,7 @@ the LAN scan.
 
 From our research into what homes and home labs actually run, roughly in this order:
 
-1. **Router details** - DHCP leases and Wi-Fi clients from OPNsense, OpenWrt, MikroTik and Fritz!Box.
+1. **Router details** - DHCP leases and Wi-Fi clients from OPNsense, OpenWrt, MikroTik and Fritz!Box (UniFi has it already).
 2. **Home Assistant** - one connection that covers many smart devices.
 3. **TP-Link Omada and Unraid**, and APC network management cards read over SNMP (for a UPS with no NUT server).
 

@@ -219,7 +219,16 @@ def _clues(device, hint):
         parts.append(f"says it is <b>{_esc(said)}</b>")
     if found.get("services"):
         parts.append("offers " + _esc(", ".join(found["services"][:4])))
-    if found.get("hostname") and found["hostname"] != device["name"]:
+    if found.get("unifi_name") and found["unifi_name"] != device["name"]:
+        parts.append(f'UniFi calls it <b>{_esc(found["unifi_name"])}</b>')
+    wifi = found.get("wifi") or {}
+    if wifi:
+        how = ", ".join(filter(None, (wifi.get("band"), f'{wifi["signal"]} dBm' if wifi.get("signal") else None)))
+        parts.append("on Wi-Fi" + (f' <b>{_esc(wifi["ssid"])}</b>' if wifi.get("ssid") else "")
+                     + (f' via {_esc(wifi["ap"])}' if wifi.get("ap") else "") + (f" ({_esc(how)})" if how else ""))
+    if found.get("guest"):
+        parts.append("<b>guest network</b>")
+    if found.get("hostname") and found["hostname"] not in (device["name"], found.get("unifi_name")):
         parts.append(f'calls itself <b>{_esc(found["hostname"])}</b>')
     if found.get("place"):
         parts.append(f'on <b>{_esc(found["place"])}</b>')

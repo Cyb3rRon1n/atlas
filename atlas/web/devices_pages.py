@@ -9,6 +9,7 @@ import json
 from urllib.parse import quote, urlencode
 
 from atlas.devices.store import CONNECTIONS, KINDS, STATES
+from atlas.web.icons import icon
 from atlas.web.render import section_tabs, ask_chips, _esc, render_page
 
 
@@ -133,10 +134,10 @@ def render_triage_page(triage):
 DEVICES_CHIPS = ("Which devices are new or unknown on my network?", "Is anything on the LAN acting suspicious?",
                  "Which devices went quiet and might be offline?", "Help me name the unnamed devices.")
 
-KIND_LABELS = {"server": "\U0001F5A5\ufe0f Servers", "container-host": "\U0001F5A5\ufe0f Servers", "vm": "\U0001F4BB Virtual machines",
-               "lxc": "\U0001F4BB Virtual machines", "workstation": "\U0001F4BB Computers", "phone": "\U0001F4F1 Phones & tablets",
-               "tv": "\U0001F4FA TVs & streaming", "iot": "\U0001F4A1 Smart home", "network": "\U0001F4E1 Network gear",
-               "other": "\u2754 Other"}
+KIND_LABELS = {"server": ("server", "Servers"), "container-host": ("server", "Servers"), "vm": ("laptop", "Virtual machines"),
+               "lxc": ("laptop", "Virtual machines"), "workstation": ("laptop", "Computers"), "phone": ("phone", "Phones & tablets"),
+               "tv": ("tv", "TVs & streaming"), "iot": ("bulb", "Smart home"), "network": ("antenna", "Network gear"),
+               "other": ("help", "Other")}
 
 DEVICES_STYLE = """
 <style>
@@ -196,7 +197,7 @@ def render_devices_page(devices):
     groups = {}
     for d in known:
         groups.setdefault(KIND_LABELS.get(d["kind"], KIND_LABELS["other"]), []).append(d)
-    grouped = "".join(f'<section class="dcard"><h2>{_esc(label)} ({len(items)})</h2><div class="tiles">'
+    grouped = "".join(f'<section class="dcard"><h2>{icon(label[0])}{_esc(label[1])} ({len(items)})</h2><div class="tiles">'
                       + "".join(_tile(d) for d in sorted(items, key=lambda d: d["name"].lower())) + "</div></section>"
                       for label, items in sorted(groups.items(), key=lambda kv: -len(kv[1])))
     hidden = (f'<details class="dcard"><summary>Ignored ({len(ignored)})</summary><div class="tiles" style="margin-top:10px">'

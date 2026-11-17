@@ -13,6 +13,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 - **Proxmox "changes detected" on every scan**: each scan reported the whole cluster (node and every guest) as
   newly added, because it compared against a saved state other atlas-scan commands overwrite. It now compares
   against the previous Proxmox scan, so Activity shows real changes only.
+- **Servers → Overview and the AI check-up often saw an empty picture**: each atlas-scan command saves only its
+  own part (the map, the Proxmox scan...), and the newest save was read alone. The newest state now fills each
+  missing part from the most recent save that has it (container change detection gets the same fix).
 
 ## 0.11.0 - 2026-11-17
 

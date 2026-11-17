@@ -100,25 +100,25 @@ class KnowledgeQueries:
 
 
     def latest_environment(self):
+        """
+        The newest picture of the environment. Each atlas-scan command saves only its own part (the map: topology;
+        a Proxmox scan: virtualization) and leaves the rest empty, so a part the newest row lacks is taken from
+        the most recent row that has it. Stored rows stay as saved - the trends read them one by one.
+        """
 
-        initialize_database(engine)
+        rows = self.environment_history(limit=200)
 
-        with Session(engine) as session:
+        if not rows:
+            return None
 
-            record = (
-                session.query(EnvironmentRecord)
-                .order_by(
-                    EnvironmentRecord.created_at.desc()
-                )
-                .first()
-            )
+        latest = dict(rows[0]["data"])
 
-            if not record:
-                return None
+        for row in rows[1:]:
+            for key, value in row["data"].items():
+                if key != "timestamp" and latest.get(key) in (None, {}, []) and value not in (None, {}, []):
+                    latest[key] = value
 
-            return json.loads(
-                record.data
-            )
+        return latest
 
 
     def latest_analysis(self):

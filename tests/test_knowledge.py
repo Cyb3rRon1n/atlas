@@ -229,3 +229,21 @@ def test_initialize_database_creates_parent_directory_for_default_engine(
     assert fresh_path.parent.exists()
 
     fresh_engine.dispose()
+
+
+def test_latest_environment_fills_parts_the_newest_save_left_empty(temp_db):
+    """Each atlas-scan command saves only its own part; the newest row alone used to look nearly empty."""
+
+    store = KnowledgeStore()
+    for part in ({"system": {"hostname": "homelab"}, "containers": {"web": 1}}, {"system": {"hostname": "newer"}},
+                 {"topology": {"lan": []}}):
+        environment = AtlasEnvironmentContext()
+        for key, value in part.items():
+            environment.update(key, value)                             # what the commands do
+        store.save_environment(environment)
+
+    latest = KnowledgeQueries().latest_environment()
+    assert latest["topology"] == {"lan": []}
+    assert latest["system"] == {"hostname": "newer"}                  # the most recent one that has it
+    assert latest["containers"] == {"web": 1}
+    assert KnowledgeQueries().environment_history(1)[0]["data"]["system"] in (None, {}, [])   # rows stay as saved

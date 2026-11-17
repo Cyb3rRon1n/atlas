@@ -82,6 +82,16 @@ CARDS = {
                 Field("host", "UPS server address", "text", ("ups", "host"), hint="192.168.1.20"),
                 Field("port", "Port", "number", ("ups", "port"), hint="3493"),
                 Field("name", "UPS name (blank = every UPS on that server)", "text", ("ups", "name"), hint="ups")]),
+    "dnsfilter": ("Pi-hole or AdGuard Home", "Shows whether ad blocking is on, how many DNS questions were asked "
+                  "and blocked, and which devices ask the most; alerts when blocking stays off. Pi-hole 6: its "
+                  "password, or an app password from Settings > Web interface / API. AdGuard Home: its username "
+                  "and password. Read-only.", [
+                      Field("kind", "Which one", "select", ("dns_filter", "kind"), options=("pihole", "adguard")),
+                      Field("url", "Web address", "text", ("dns_filter", "url"), hint="http://192.168.1.53"),
+                      Field("user", "Username (AdGuard Home only)", "text", ("dns_filter", "user"), hint="admin"),
+                      Field("password", "Password or app password", "secret", None, "ATLAS_DNS_PASSWORD"),
+                      Field("verify_ssl", "Check its certificate (off for a self-signed one)", "bool",
+                            ("dns_filter", "verify_ssl"))]),
 }
 # "What's on your network?" - each tick shows the Setup cards that gear uses. Alert and AI cards always show.
 GEAR = [
@@ -91,9 +101,10 @@ GEAR = [
     ("unifi", "UniFi", "gateway, switches or access points", ("unifi",)),
     ("proxmox", "Proxmox server", "VMs and containers", ("proxmox",)),
     ("ups", "UPS", "battery backup, read through NUT", ("ups",)),
+    ("dns", "Pi-hole or AdGuard Home", "network-wide ad blocking", ("dnsfilter",)),
     ("plain", "Only an internet-provider or store-bought router", "ASUS, Netgear, eero, Fritz!Box, Deco...", ()),
 ]
-HARDWARE_CARDS = ("switches", "unifi", "proxmox", "ups")
+HARDWARE_CARDS = ("switches", "unifi", "proxmox", "ups", "dnsfilter")
 SNMP_GEAR = {"Ubiquiti": "unifi", "Synology": "nas", "QNAP": "nas", "MikroTik": "router"}   # SNMPv3 discovery maker
 
 
@@ -104,6 +115,7 @@ def _detected(config):
     found |= {"unifi"} if config.wiring.unifi.enabled else set()
     found |= {"proxmox"} if config.proxmox.enabled else set()
     found |= {"ups"} if config.ups.enabled else set()
+    found |= {"dns"} if config.dns_filter.enabled else set()
     try:
         from atlas.posture.store import PostureStore
         snmp = ((PostureStore().statuses().get("ports") or {}).get("detail") or {}).get("snmp") or {}
@@ -132,7 +144,8 @@ def _gear_html(chosen, detected):
             'under <a href="/uptime">Servers → Uptime</a>.</p></section>')
 
 
-ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "enabled")], "ups": [("ups", "enabled")]}
+ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "enabled")], "ups": [("ups", "enabled")],
+           "dnsfilter": [("dns_filter", "enabled")]}
 WIRING_CARDS = ("switches", "unifi")
 
 ACTIONS = re.compile(r"^/api/settings/([a-z]+)/(test|save|off|dismiss)$")
@@ -395,6 +408,14 @@ def _test(card, body):
         return True, "Connected: " + "; ".join(
             f"{name} {STATES[info['state']]}" + (f", {info['charge']:.0f}% charged" if info["charge"] is not None else "")
             for name, info in ((name, summarize(v)) for name, v in upses.items())) + "."
+    if card == "dnsfilter":
+        from atlas.monitoring.dnsfilter import DnsFilterError, fetch
+        try:
+            info = fetch(config.dns_filter, environ)
+        except DnsFilterError as error:
+            return False, str(error)
+        return True, (f"Connected: {info['kind']}, ad blocking {'on' if info['blocking'] else 'OFF'}, "
+                      f"{info['queries'] or 0:,} DNS questions, {info['blocked'] or 0:,} blocked.")
     alerts = config.notify
     if card == "ntfy":
         if not (alerts.ntfy.url and alerts.ntfy.topic):
@@ -534,7 +555,8 @@ def _on(card, config):
     return {"ntfy": bool(alerts.ntfy.url and alerts.ntfy.topic), "webhooks": bool(alerts.webhooks),
             "email": bool(alerts.email.host and alerts.email.to),
             "ai": config.intelligence.provider != "none", "switches": bool(config.wiring.switches),
-            "unifi": config.wiring.unifi.enabled, "proxmox": config.proxmox.enabled, "ups": config.ups.enabled}[card]
+            "unifi": config.wiring.unifi.enabled, "proxmox": config.proxmox.enabled, "ups": config.ups.enabled,
+            "dnsfilter": config.dns_filter.enabled}[card]
 
 
 SCRIPT = """
@@ -563,7 +585,7 @@ const showVersion = () => {
 if (snmpVersion) { snmpVersion.addEventListener("change", showVersion); showVersion(); }
 // "What's on your network?": show the hardware cards for what's ticked, save the ticks.
 const gearBoxes = [...document.querySelectorAll("#gear input[type=checkbox]")];
-const hardware = ["switches", "unifi", "proxmox", "ups"];
+const hardware = ["switches", "unifi", "proxmox", "ups", "dnsfilter"];
 const showGear = () => {
   const want = new Set(gearBoxes.filter((box) => box.checked).flatMap((box) => box.dataset.cards.split(" ")));
   for (const card of hardware) {

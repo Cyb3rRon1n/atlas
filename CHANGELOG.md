@@ -3,7 +3,10 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
-## Unreleased
+## 0.9.0 - 2026-11-16
+
+A new look (side menu, light and dark, Home and Cabling redesigned), clues that say what each new device is,
+uptime checks, UPS power alerts, per-port traffic, one alert per outage, and a Setup tab that asks what you own.
 
 ### Added
 - **Clues for new devices** on Devices and Triage, so you can tell what an IP address is: the maker from its
@@ -67,8 +70,8 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   numbers - devices online, servers healthy, uptime over 7 days, public routes, power or storage - each
   linking to its page, and a *Needs attention* table with how serious each item is and where to fix it.
 - **New look**: a side menu with each section's pages listed under it (no second row of tabs), and a light
-  theme by default that follows your system's dark mode. The *Theme* button in the side menu picks one and
-  remembers it. Every page now draws its colours from one set of theme tokens; the exported cabling SVG
+  theme by default that follows your system's dark mode. A sun / moon button in the side menu switches it and
+  remembers your choice. Every page draws its colours from one set of theme tokens; the exported cabling SVG
   keeps the colours you see.
 - Clearer errors from the Setup tab's tests and the cabling scan: a switch that doesn't answer, an unknown
   SNMPv3 user, a wrong passphrase or privacy type, and a Proxmox host that's down or refuses the token are each

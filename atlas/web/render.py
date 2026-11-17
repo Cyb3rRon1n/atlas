@@ -82,6 +82,11 @@ SHELL_STYLE = """
 .side .tabs a { padding:6px 14px 6px 30px; font-size:13px; color:var(--nav-muted); }
 .side .tabs a[aria-current="page"] { color:#fff; font-weight:600; box-shadow:inset 2px 0 0 #a5b4fc; background:none; }
 .side .foot { margin-top:auto; padding-top:16px; }
+.theme-btn .to-light { display:none; }
+:root[data-theme="dark"] .theme-btn .to-light { display:inline; } :root[data-theme="dark"] .theme-btn .to-dark { display:none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-btn .to-light { display:inline; }
+  :root:not([data-theme="light"]) .theme-btn .to-dark { display:none; } }
 .side .foot form { margin:0; }
 .page { padding:24px 32px 40px; min-width:0; }
 .shell { flex:1; min-width:0; }
@@ -174,7 +179,8 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
         f"<aside class=\"side\"><a class=\"brand\" href=\"/\">{LOGO}Atlas</a>"
         f"<nav class=\"main\" aria-label=\"Main\"><ul>{''.join(items)}</ul></nav>"
         f"<div class=\"foot\">{chat_link}"
-        "<button type=\"button\" onclick=\"atlasTheme()\" aria-label=\"Switch light or dark theme\">Theme</button>"
+        "<button type=\"button\" class=\"theme-btn\" onclick=\"atlasTheme()\" aria-label=\"Switch between light and dark\">"
+        f"<span class=\"to-dark\">{icon('moon')}Dark mode</span><span class=\"to-light\">{icon('sun')}Light mode</span></button>"
         + ('<form method="post" action="/logout"><button>Sign out</button></form>' if SIGN_OUT else "") +
         "</div></aside>"
         f"<div class=\"shell{' docked' if drawer else ''}\">"

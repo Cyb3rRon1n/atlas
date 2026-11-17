@@ -30,6 +30,11 @@ STYLE = """<style>
 .alerts .bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:10px 12px; border:1px solid var(--line2);
   border-radius:10px; }
 .alerts .bar.paused { border-color:var(--orange); }
+.alerts .quiet { margin:.6rem 0; } .alerts .quiet ul { margin:.3rem 0; padding-left:18px; }
+.alerts .quiet li { display:list-item; border:0; padding:2px 0; }
+.alerts .quiet-form { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:13px; }
+.alerts .quiet-form label { display:inline-flex; gap:3px; align-items:center; }
+.alerts .quiet button { font-size:12px; }
 @media (max-width: 640px) { .alerts li { flex-wrap:wrap; } .alerts .acts { width:100%; justify-content:flex-start; } }
 </style>"""
 
@@ -49,9 +54,21 @@ document.addEventListener("click", async (event) => {
          alertError.textContent = data.error || ("Failed: " + response.status); }
 });
 const alertError = document.getElementById("alert-error");
+document.getElementById("quiet-form")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.target;
+  const body = {start: form.start.value, end: form.end.value,
+                days: [...form.querySelectorAll("input[name=day]:checked")].map((box) => box.value),
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || ""};
+  const response = await fetch("/api/alerts/quiet-hours/add", {method: "POST", credentials: "same-origin",
+    headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  if (response.ok) location.reload();
+  else { const data = await response.json().catch(() => ({})); alertError.textContent = data.error || ("Failed: " + response.status); }
+});
 </script>"""
 
 ACTION = re.compile(r"^/api/alerts/(?:(\d+)/(ack|mute)|(pause|resume)|quiet/(\d+)/remove)$")
+QUIET_REMOVE = re.compile(r"^/api/alerts/quiet-hours/(\d+)/remove$")
 
 
 def _row(alert, now, kind):
@@ -89,7 +106,36 @@ def _clock(moment, now):
     return moment.strftime("%H:%M UTC") if moment.date() == now.date() else moment.strftime("%b %d %H:%M UTC")
 
 
-def _controls(listing, now):
+def _quiet_hours(notify, now):
+    """The weekly quiet-hours list and a small form to add one (times in the browser's time zone)."""
+
+    from atlas.alerts.quiet import DAYS, active, describe
+
+    if notify is None:
+        return ""
+    from atlas.config import local
+    locked = local.locked(("notify", "quiet_hours"))
+    windows = notify.quiet_hours
+    zone = notify.timezone or "UTC"
+    on = windows and active(windows, notify.timezone, now)
+    items = "".join(
+        f'<li>{_esc(describe(w))}' + ("" if locked else
+                                      f' <button data-post="/api/alerts/quiet-hours/{i}/remove">Remove</button>')
+        + "</li>" for i, w in enumerate(windows))
+    boxes = "".join(f'<label><input type="checkbox" name="day" value="{d}" checked>{d.capitalize()}</label>'
+                    for d in DAYS)
+    form = ("" if locked else
+            f'<form id="quiet-form" class="quiet-form">{boxes}<input name="start" type="time" value="23:00" '
+            'aria-label="From" required> to <input name="end" type="time" value="07:00" aria-label="Until" required>'
+            '<button type="submit">Add quiet hours</button></form>')
+    return (f'<details class="quiet"{" open" if windows else ""}><summary>Quiet hours'
+            + (f" - on now" if on else f" ({len(windows)})" if windows else "") + '</summary>'
+            '<p class="muted">No messages go out in these windows (problems still show here), e.g. while the '
+            f'Sunday updates run. Times are {_esc(zone)}.</p>'
+            + (f"<ul>{items}</ul>" if items else "") + form + "</details>")
+
+
+def _controls(listing, now, notify=None):
 
     paused = listing.get("paused_until")
     if paused:
@@ -106,7 +152,7 @@ def _controls(listing, now):
         f'<div class="acts"><button data-post="/api/alerts/quiet/{rule["id"]}/remove">Unmute</button></div></li>'
         for rule in rules)
 
-    return bar + '<p id="alert-error" class="bad" role="status"></p>' + (
+    return bar + _quiet_hours(notify, now) + '<p id="alert-error" class="bad" role="status"></p>' + (
         f'<details><summary>Muted ({len(rules)})</summary><ul>{muted}</ul></details>' if rules else "")
 
 
@@ -115,6 +161,8 @@ def handle_post(path, body):
 
     from atlas.alerts import AlertStore
 
+    if path == "/api/alerts/quiet-hours/add" or QUIET_REMOVE.match(path):
+        return _quiet_post(path, body if isinstance(body, dict) else {})
     match = ACTION.match(path)
     if not match:
         return None
@@ -142,15 +190,54 @@ def handle_post(path, body):
     return (200, {"ok": True}) if store.mute(int(alert_id), days, now) else (404, {"error": "no such alert"})
 
 
-def render_alerts_page(listing, now):
+def render_alerts_page(listing, now, notify=None):
 
     body = (STYLE + '<div class="alerts"><p class="muted">Everything atlas\'s checks found, in one place. Problems '
             'also send an alert to your channels; watched items only show here. An item resolves by itself when '
             'the check stops seeing it. <b>Acknowledge</b> says you\'ve seen it; <b>Mute</b> stops messages about '
-            'it (or its device) but keeps it listed.</p>' + _controls(listing, now)
+            'it (or its device) but keeps it listed.</p>' + _controls(listing, now, notify)
             + _section("Needs action", listing["open"], now, "problem", "Nothing needs you right now.")
             + _section("Watching", listing["watch"], now, "watch", "Nothing being watched.")
             + _section("Resolved in the last 7 days", listing["resolved"], now, "resolved", "Nothing resolved recently.")
             + "</div>" + SCRIPT)
 
     return render_page("Alerts", body, active="alerts")
+
+
+def _quiet_post(path, body):
+
+    from atlas.alerts.quiet import DAYS, minutes
+    from atlas.config import local
+
+    if local.locked(("notify", "quiet_hours")):
+        return 400, {"error": "Quiet hours are set in atlas.yaml - edit them there."}
+    saved = list(((local.read_settings().get("notify") or {}).get("quiet_hours")) or [])
+    removing = QUIET_REMOVE.match(path)
+    if removing:
+        index = int(removing.group(1))
+        if index >= len(saved):
+            return 404, {"error": "No such quiet hours."}
+        del saved[index]
+        local.save_settings({"notify": {"quiet_hours": saved or None}})
+        return 200, {"ok": True}
+    start, end = str(body.get("start") or ""), str(body.get("end") or "")
+    try:
+        minutes(start), minutes(end)
+    except (ValueError, TypeError):
+        return 400, {"error": "Enter a start and end time, like 23:00 and 07:00."}
+    if start == end:
+        return 400, {"error": "Start and end are the same time."}
+    days = [d for d in DAYS if d in (body.get("days") or [])]
+    if not days:
+        return 400, {"error": "Pick at least one day."}
+    patch = {"quiet_hours": saved + [{"start": start, "end": end, "days": [] if len(days) == 7 else days}]}
+    zone = str(body.get("timezone") or "")
+    if zone and not local.locked(("notify", "timezone")):
+        from zoneinfo import ZoneInfo
+        try:
+            ZoneInfo(zone)
+            patch["timezone"] = zone
+        except Exception:
+            pass
+    local.save_settings({"notify": patch})
+    return 200, {"ok": True}

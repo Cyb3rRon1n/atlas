@@ -134,6 +134,12 @@ class EmailNotifyConfig(BaseModel):
     to: list[str] = []
 
 
+class QuietHours(BaseModel):
+    start: str                      # "23:00" in notify.timezone
+    end: str                        # "07:00" - before start means over midnight
+    days: list[Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]] = []    # empty = every day
+
+
 class NotifyConfig(BaseModel):
     # Every channel that is set gets each alert; see docs: Configuration > Alerts.
     signal: SignalNotifyConfig = SignalNotifyConfig()
@@ -141,6 +147,8 @@ class NotifyConfig(BaseModel):
     webhooks: list[str] = []   # Discord / Slack webhook URLs, or any URL that takes JSON
     email: EmailNotifyConfig = EmailNotifyConfig()
     apprise: list[str] = []    # Apprise URLs (tgram://, pover://, matrix://, ...) - needs the apprise package
+    quiet_hours: list[QuietHours] = []   # no messages in these weekly windows (atlas.alerts.quiet)
+    timezone: str = ""                   # for quiet_hours: an IANA name like America/Detroit; UTC when empty
 
 
 class AccessConfig(BaseModel):

@@ -17,6 +17,8 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 - **Heartbeats** (Servers → Uptime): a backup or cron job pings its own secret address when it finishes
   (`/fail` when it failed). One alert when it doesn't check in on time or reports a failure, one when it's fine
   again.
+- **Quiet hours** (Alerts page, or `notify.quiet_hours`): weekly windows, in your time zone, when no messages go
+  out - problems still show on the Alerts page, like a scheduled Pause.
 
 ## 0.10.0 - 2026-11-17
 

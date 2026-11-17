@@ -200,6 +200,11 @@ def _clues(device, hint):
         parts.append(f'made by <b>{_esc(found["maker"])}</b>')
     elif found.get("private"):
         parts.append("<b>private Wi-Fi address</b> (phones, tablets and laptops hide their maker this way)")
+    said = " ".join(filter(None, (found.get("announced"), f'({found["model"]})' if found.get("model") else None)))
+    if said:
+        parts.append(f"says it is <b>{_esc(said)}</b>")
+    if found.get("services"):
+        parts.append("offers " + _esc(", ".join(found["services"][:4])))
     if found.get("hostname") and found["hostname"] != device["name"]:
         parts.append(f'calls itself <b>{_esc(found["hostname"])}</b>')
     if found.get("place"):

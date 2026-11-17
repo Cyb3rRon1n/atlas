@@ -46,6 +46,22 @@ HOSTNAMES = ((("iphone", "ipad", "android", "galaxy", "pixel"), "phone"), (("rok
              (("desktop", "laptop", "macbook", "imac", "pc"), "workstation"), (("printer", "laserjet", "officejet"), "other"),
              (("esp", "shelly", "tasmota", "wled"), "iot"), (("nas", "pve", "proxmox", "server", "pi"), "server"))
 GENERIC = {"wlan0", "eth0", "localhost", "unknown", "android", "espressif"}
+# mDNS service -> (kind, what it tells); first match in this order wins
+SERVICE_KINDS = (("_googlecast._tcp", "tv", "Chromecast or Google TV"), ("_amzn-wplay._tcp", "tv", "Fire TV"),
+                 ("_androidtvremote2._tcp", "tv", "Android TV"), ("_airplay._tcp", "tv", "AirPlay device"),
+                 ("_ipp._tcp", "other", "printer"), ("_ipps._tcp", "other", "printer"), ("_printer._tcp", "other", "printer"),
+                 ("_pdl-datastream._tcp", "other", "printer"), ("_sonos._tcp", "iot", "Sonos speaker"),
+                 ("_spotify-connect._tcp", "iot", "speaker"), ("_raop._tcp", "iot", "AirPlay speaker"),
+                 ("_hap._tcp", "iot", "HomeKit device"), ("_matter._tcp", "iot", "Matter device"),
+                 ("_esphomelib._tcp", "iot", "ESPHome device"), ("_hue._tcp", "iot", "Hue bridge"),
+                 ("_shelly._tcp", "iot", "Shelly device"), ("_miio._udp", "iot", "Xiaomi device"),
+                 ("_companion-link._tcp", "phone", "Apple device"), ("_workstation._tcp", "workstation", "computer"),
+                 ("_smb._tcp", "workstation", "computer with file sharing"))
+SERVICE_WORDS = {"_googlecast._tcp": "Chromecast", "_airplay._tcp": "AirPlay", "_raop._tcp": "AirPlay audio",
+                 "_ipp._tcp": "printing", "_ipps._tcp": "printing", "_printer._tcp": "printing",
+                 "_hap._tcp": "HomeKit", "_matter._tcp": "Matter", "_esphomelib._tcp": "ESPHome",
+                 "_spotify-connect._tcp": "Spotify", "_sonos._tcp": "Sonos", "_smb._tcp": "file sharing",
+                 "_amzn-wplay._tcp": "Fire TV", "_hue._tcp": "Hue", "_companion-link._tcp": "Apple"}
 # open port -> (kind, what it tells)
 PORTS = {631: ("other", "printer"), 9100: ("other", "printer"), 8009: ("tv", "Chromecast or Google TV"),
          7000: ("tv", "AirPlay receiver"), 554: ("iot", "camera"), 3389: ("workstation", "Windows PC"),
@@ -176,7 +192,11 @@ def clues(device, table, open_ports=(), place=None):
     macs = [s["mac"] for s in device.get("sightings", []) if s.get("mac")]
     hostnames = [clean_hostname(s.get("hostname")) for s in device.get("sightings", []) if s.get("hostname")]
     mac = macs[0] if macs else None
-    return {"maker": short_maker(maker(mac, table)) if maker(mac, table) else None,
+    said = next((s["detail"]["announce"] for s in device.get("sightings", [])
+                 if isinstance(s.get("detail"), dict) and s["detail"].get("announce")), {})
+    return {"announced": said.get("name"), "model": said.get("model"), "said_maker": said.get("maker"),
+            "services": list(dict.fromkeys(SERVICE_WORDS[s] for s in said.get("services") or () if s in SERVICE_WORDS)),
+            "service_ids": list(said.get("services") or ()),"maker": short_maker(maker(mac, table)) if maker(mac, table) else None,
             "private": private(mac), "hostname": next((h for h in hostnames if h), None),
             "place": place, "ports": [f"{COMMON_PORTS[port]} ({port})" if port in COMMON_PORTS else str(port) for port in sorted(open_ports)],
             "open": sorted(open_ports)}
@@ -186,7 +206,15 @@ def guess(found):
     """(suggested name, kind or None) from clues()."""
 
     kind, what = None, None
-    for port in found["open"]:
+    services = set(found.get("service_ids") or ())
+    model = found.get("model") or ""
+    for service, service_kind, service_what in SERVICE_KINDS:
+        if service in services:
+            kind, what = service_kind, service_what
+            if service == "_companion-link._tcp":
+                kind = "workstation" if model.lower().startswith(("mac", "imac")) else "phone"
+            break
+    for port in found["open"] if not kind else ():
         if port in PORTS:
             kind, what = PORTS[port]
             break
@@ -206,7 +234,12 @@ def guess(found):
                 break
     if not kind and found["private"]:
         kind, what = "phone", "phone, tablet or laptop"
-    if hostname:
+    if found.get("announced"):
+        name = found["announced"]
+    elif model and not hostname:
+        who = found.get("said_maker") or brand
+        name = model if not who or model.lower().startswith(who.lower()) else f"{who} {model}"
+    elif hostname:
         name = hostname
     elif what:
         name = f"{brand} {what}".strip() if brand and brand.lower() not in what.lower() else what.capitalize()

@@ -19,13 +19,13 @@ POSTURE_STYLE = """
 #strip .chip .k { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
 #strip .chip .v { font-size:20px; font-weight:600; margin-top:4px; }
 #strip .chip .d { font-size:13px; color:var(--muted); }
-#strip .chip.ok .v { color:#7fdcb5; } #strip .chip.warn { border-color:var(--red); } #strip .chip.warn .v { color:#ffb4a2; }
-#strip .chip.review { border-color:var(--orange); background:#2b2213; } #strip .chip.review .v { color:#ffd08a; }
+#strip .chip.ok .v { color:var(--ok-text); } #strip .chip.warn { border-color:var(--red); } #strip .chip.warn .v { color:var(--bad-text); }
+#strip .chip.review { border-color:var(--orange); background:var(--warn-bg); } #strip .chip.review .v { color:var(--warn-text); }
 #strip .chip.unknown .v { color:var(--muted); }
 .posture { display:flex; flex-wrap:wrap; gap:20px; }
-.posture .mapcard { flex:999 1 720px; min-width:0; background:#111821; border:1px solid #222c38; border-radius:14px; padding:16px; }
+.posture .mapcard { flex:999 1 720px; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; }
 .posture aside { flex:1 1 320px; min-width:0; display:flex; flex-direction:column; gap:16px; }
-.posture aside .pcard { background:#111821; border:1px solid #222c38; border-radius:14px; padding:16px; }
+.posture aside .pcard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; }
 .ptabs { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--line); }
 .ptabs button { font:inherit; font-size:13px; padding:8px 10px; border:0; margin:0; border-radius:0; background:transparent;
                 color:var(--muted); border-bottom:2px solid transparent; cursor:pointer; }
@@ -40,33 +40,33 @@ POSTURE_STYLE = """
 .legend { margin-left:auto; display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); }
 .legend i { display:inline-block; width:18px; height:3px; margin-right:6px; vertical-align:middle; }
 #posture-map { display:flex; flex-direction:column; gap:12px; }
-.lane { border:1px dashed #2c4560; border-radius:10px; padding:10px 12px; background:rgba(90,167,240,.04); }
+.lane { border:1px dashed var(--lane); border-radius:10px; padding:10px 12px; background:color-mix(in srgb, var(--blue) 4%, transparent); }
 .lane.stale { border-color:var(--red); }
 .lane h3 { margin:0 0 8px; font-size:12px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
 .lane .cols { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
 .lane .col { display:flex; flex-direction:column; gap:6px; min-width:0; }
 .lane .col.list { flex:1 1 220px; }
 .lane .arrow { color:var(--muted); font-size:18px; }
-.lane.inbound .arrow { color:#5aa7f0; } .lane.vpn .arrow { color:#43c08f; }
+.lane.inbound .arrow { color:var(--blue); } .lane.vpn .arrow { color:var(--green); }
 #posture-map .box { position:relative; display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 8px; text-align:left; font:inherit;
-       font-size:14px; padding:7px 10px; margin:0; background:#1b2430; border:1px solid #2f3b4c; border-radius:8px;
+       font-size:14px; padding:7px 10px; margin:0; background:var(--surface2); border:1px solid var(--line2); border-radius:8px;
        color:var(--text); cursor:pointer; overflow:hidden; }   /* #id beats chat.css's global .ok/.bad colours */
 .box .sub { color:var(--muted); font-size:12px; }
-.box .bar { position:absolute; left:0; bottom:0; height:3px; background:#8b98a6; }
-.box.review { border-color:#f0a23a; background:#2b2213; } .box.review .bar { background:#f0a23a; }
-.box.warn { border-color:#f47a5c; background:#2a1d1a; } .box.unknown { border-style:dashed; color:var(--muted); }
+.box .bar { position:absolute; left:0; bottom:0; height:3px; background:var(--muted); }
+.box.review { border-color:var(--orange); background:var(--warn-bg); } .box.review .bar { background:var(--orange); }
+.box.warn { border-color:var(--red); background:var(--bad-bg); } .box.unknown { border-style:dashed; color:var(--muted); }
 .box.selected { outline:2px solid var(--blue); }
-.box .badge { margin-left:auto; font-size:11px; color:#ffd08a; text-transform:uppercase; letter-spacing:.05em; }
+.box .badge { margin-left:auto; font-size:11px; color:var(--warn-text); text-transform:uppercase; letter-spacing:.05em; }
 #exposure li { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
-.prot-authelia { color:#7fdcb5; } .prot-public { color:#ffd08a; } .cert-soon { color:#d9b44a; } .cert-bad { color:#ff8f8f; font-weight:600; }
+.prot-authelia { color:var(--ok-text); } .prot-public { color:var(--warn-text); } .cert-soon { color:var(--yellow); } .cert-bad { color:var(--bad-text); font-weight:600; }
 @media (max-width: 900px) { #strip { grid-template-columns:repeat(2,minmax(0,1fr)); }  }
 #posture-panel dl { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:13px; }
 #posture-panel dt { color:var(--muted); }
 #posture-panel .big { font-size:18px; margin:4px 0 12px; }
-.review-label { color:#ffd08a; font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+.review-label { color:var(--warn-text); font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
 #posture-panel button { margin:8px 8px 0 0; }
 #posture-off { padding:12px 16px; margin-bottom:16px; border:1px solid var(--orange); border-radius:12px;
-               background:#2b2213; color:#ffd08a; }
+               background:var(--warn-bg); color:var(--warn-text); }
 #review { list-style:none; margin:0; padding:0; }
 #review li { padding:8px 0; border-top:1px solid var(--line); font-size:13px; }
 #review li:first-child { border-top:0; }
@@ -339,10 +339,10 @@ def render_posture_page():
         + '<button data-window="live" aria-pressed="false">This hour</button>'
         + '<button data-window="1h" aria-pressed="false">1 h</button>'
         + '<button data-window="24h" aria-pressed="true">24 h</button></div>'
-        + '<div class="legend"><span><i style="background:#5aa7f0"></i>Inbound</span>'
-        + '<span><i style="background:#8b98a6"></i>Outbound</span>'
-        + '<span><i style="background:#43c08f"></i>Via VPN</span>'
-        + '<span><i style="background:#f0a23a"></i>New / unreviewed</span></div></div>'
+        + '<div class="legend"><span><i style="background:var(--blue)"></i>Inbound</span>'
+        + '<span><i style="background:var(--muted)"></i>Outbound</span>'
+        + '<span><i style="background:var(--green)"></i>Via VPN</span>'
+        + '<span><i style="background:var(--orange)"></i>New / unreviewed</span></div></div>'
         + '<div id="posture-map" aria-label="Inbound, outbound and VPN traffic"></div>'
         + '<p class="muted" id="posture-msg">Click a destination for details. Bars = share of traffic; orange = '
           'a network this container never used before.</p></section>'

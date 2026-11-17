@@ -47,6 +47,10 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   `security.snmp_discovery` turns the probe off; `wiring.not_managed` lists dismissed addresses.
 
 ### Changed
+- **New look**: a side menu with each section's pages listed under it (no second row of tabs), and a light
+  theme by default that follows your system's dark mode. The *Theme* button in the side menu picks one and
+  remembers it. Every page now draws its colours from one set of theme tokens; the exported cabling SVG
+  keeps the colours you see.
 - Clearer errors from the Setup tab's tests and the cabling scan: a switch that doesn't answer, an unknown
   SNMPv3 user, a wrong passphrase or privacy type, and a Proxmox host that's down or refuses the token are each
   explained in plain words instead of net-snmp's or the HTTP library's raw message.

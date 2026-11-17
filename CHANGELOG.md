@@ -47,6 +47,10 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
   `security.snmp_discovery` turns the probe off; `wiring.not_managed` lists dismissed addresses.
 
 ### Changed
+- **Cabling** opens on the switches' front panels (all expanded), with a *Front panels / Map* switch at the top
+  and a one-line summary (switches, cables, what to check). Clicking a port shows a panel beside it: what's
+  plugged in, speed, traffic now, PoE, VLANs, bundle or standby, and any cable problem in words. Clicking a
+  box on the map jumps to its front panel.
 - **Home** opens with one plain sentence (*Everything is healthy*, or how many things need a look), a row of
   numbers - devices online, servers healthy, uptime over 7 days, public routes, power or storage - each
   linking to its page, and a *Needs attention* table with how serious each item is and where to fix it.

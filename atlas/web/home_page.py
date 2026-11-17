@@ -349,7 +349,7 @@ def attention_items(posture, hosts, storage, access_reviews=(), open_alerts=()):
 
     if posture and posture.get("review_count"):
         n = posture["review_count"]
-        items.append(("posture", "Security posture", f"{n} new outbound destination{'s' if n != 1 else ''} need review",
+        items.append(("posture", "Security posture", f"{n} new outbound destination{'s' if n != 1 else ''} need{'' if n != 1 else 's'} review",
                       "/posture#review", "Review"))
 
     for row in hosts["rows"]:

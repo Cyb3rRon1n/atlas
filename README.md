@@ -21,13 +21,14 @@ Atlas is a self-hosted monitor for homelabs. It finds every machine on your LAN,
 It never changes anything on its own. Restarting a container or a VM is only ever *suggested*, and every action asks you first.
 
 <p align="center">
-  <img src="docs/images/screenshots/devices.png" alt="Atlas devices page: two new devices waiting for a name, the rest grouped as servers, network gear and computers" width="90%">
-  <br><sub>The devices page, shown with example data.</sub>
+  <img src="docs/images/screenshots/home.png" alt="Atlas home page: one sentence saying two things need a look, number tiles for devices, servers, uptime, public routes and power, and a Needs attention table" width="90%">
+  <br><img src="docs/images/screenshots/devices.png" alt="Atlas devices page: new devices with their maker, what they announce, where they are plugged in and a suggested name and type" width="90%">
+  <br><sub>Home and the devices page, shown with example data.</sub>
 </p>
 
 ## What it does
 
-- **Device inventory**: every device on the LAN, found without installing anything on them. New ones wait for you to name them; important ones alert you when they drop off.
+- **Device inventory**: every device on the LAN, found without installing anything on them. New ones come with clues - the maker, the name and model they announce, where they're plugged in - and a suggested name; important ones alert you when they drop off.
 - **Network and cabling map**: a wired view from the internet down to every switch port, read over SNMP and (optionally) your UniFi console, with your patch panels added by hand.
 - **Containers and VMs**: Docker containers, Proxmox and libvirt guests: what's running, what's unhealthy, and restart/stop/resize when you approve it.
 - **Alerts where you already look**: ntfy, Discord, Slack, email, any webhook, Signal, or 100+ more services through Apprise.
@@ -35,8 +36,8 @@ It never changes anything on its own. Restarting a container or a VM is only eve
 - **Chat with your homelab**: "why did Jellyfin stop transcoding?" gets answered from live logs, status and your own notes, using Ollama on your hardware or Claude.
 
 <p align="center">
-  <img src="docs/images/screenshots/cabling-map.png" alt="Atlas cabling map: internet, gateway, a 28-port switch and the hosts on each port, with link speeds and patch-panel labels" width="90%">
-  <br><img src="docs/images/screenshots/cabling-ports.png" alt="Switch front panels: which device is on each port, a standby backup cable, and a gateway port powering an access point over PoE" width="90%">
+  <img src="docs/images/screenshots/cabling-map.png" alt="Atlas cabling map: internet, gateway, a switch, an access point and a Wi-Fi bridge, with port-to-port labels and link speeds" width="90%">
+  <br><img src="docs/images/screenshots/cabling-ports.png" alt="Switch front panels: which device is on each port, with a panel explaining the selected port" width="90%">
   <br><sub>The cabling map and switch front panels, shown with example data.</sub>
 </p>
 
@@ -64,7 +65,7 @@ No Docker? `pip install` works as well; see [Getting started](https://cyb3rron1n
 Prefer files? Everything on the Setup tab can also go in `~/atlas/atlas.yaml`, and anything set there wins; [Configuration](https://cyb3rron1n.github.io/atlas/configuration/) has copy-paste examples. Signal and Apprise alerts are set there.
 
 <p align="center">
-  <img src="docs/images/screenshots/setup.png" alt="The Setup tab: cards for ntfy, webhooks, email, the AI model, managed switches and a UniFi console, each with Test and Save buttons" width="80%">
+  <img src="docs/images/screenshots/setup.png" alt="The Setup tab: What is on your network? with a managed switch and a UPS ticked, then cards for ntfy and webhooks" width="80%">
   <br><sub>The Setup tab, shown with example data.</sub>
 </p>
 

@@ -3,6 +3,12 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
+## Unreleased
+
+### Fixed
+- **Browser tab icon**: pages now carry atlas's globe as their icon (inline), so tabs and bookmarks show it and
+  browsers stop asking for a missing `/favicon.ico`.
+
 ## 0.11.1 - 2026-11-17
 
 ### Added

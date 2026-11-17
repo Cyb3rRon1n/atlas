@@ -23,3 +23,9 @@ def test_shell_has_side_menu_sub_pages_and_both_themes():
     assert "prefers-color-scheme: dark" in html and ':root[data-theme="dark"]' in html and "atlasTheme()" in html
     assert 'class="to-dark"' in html and "Light mode" in html and html.count('class="ic"') >= 2
     assert render_page("Setup", "", active="settings").count('class="tabs"') == 0    # no sub-pages, no list
+
+
+def test_pages_have_an_inline_icon():
+    from atlas.web.login_page import _page
+    for html in (render_page("Home", ""), _page("Sign in", "")):
+        assert "<link rel=\"icon\" href=\"data:image/svg+xml," in html

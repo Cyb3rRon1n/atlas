@@ -271,6 +271,10 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             self._send(200, "text/plain; charset=utf-8", "ok")
             return
 
+        if path.startswith("/ping/"):                  # heartbeats: the token in the address is the password
+            self._ping(path)
+            return
+
         if self.auth and not self._gate(path):
             return
 
@@ -314,7 +318,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             body = render_uptime_page(checks, store.summary([c.name for c in checks], now), now,
                                       settings.uptime.fail_after, suggestions(checks), local.locked(("uptime", "checks")),
                                       power, internet_data(store, now, settings.uptime.fail_after)
-                                      if settings.internet.enabled else None)
+                                      if settings.internet.enabled else None, self._beats(settings, now),
+                                      local.locked(("uptime", "heartbeats")))
         elif path == "/trends":
             from datetime import timedelta
             window = (parse_qs(self.path.partition("?")[2]).get("window") or ["24h"])[0]
@@ -515,6 +520,32 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             self._send(404, "application/json", json.dumps({"error": "not found"}))
         else:
             self._send(result[0], "application/json", json.dumps(result[1]))
+
+    def _beats(self, settings, now):
+
+        from atlas.monitoring.heartbeat import _key, state, token
+
+        if not settings.uptime.heartbeats:
+            return []
+        statuses, key = PostureStore().statuses(), _key()
+        return [(hb, {"state": state(hb, last, now), "at": (last or {}).get("at")}, token(hb.name, key))
+                for hb in settings.uptime.heartbeats
+                for last in [(statuses.get(f"ping:{hb.name}") or {}).get("detail")]]
+
+    def _ping(self, path):
+
+        from atlas.monitoring.heartbeat import find, ping
+        from atlas.posture.store import PostureStore
+
+        parts = path[len("/ping/"):].split("/")
+        failed = parts[1:] == ["fail"]
+        beat = find(parts[0], load_config().uptime.heartbeats) if len(parts) in (1, 2) and (len(parts) == 1 or failed) \
+            else None
+        if beat is None:
+            self._send(404, "text/plain; charset=utf-8", "no such heartbeat")
+            return
+        ping(PostureStore(), beat.name, datetime.utcnow(), failed=failed)
+        self._send(200, "text/plain; charset=utf-8", "ok")
 
     def _send(self, status, content_type, body):
 

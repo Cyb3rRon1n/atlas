@@ -633,6 +633,15 @@ def uptime_check(json_output: bool = typer.Option(False, "--json", help="Print t
         results = {**internet.run(settings, store, now), **results}
     except Exception as error:                         # the internet check never stops the uptime checks
         console.print(f"[yellow]Internet check failed: {error}[/yellow]")
+    if settings.uptime.heartbeats:
+        try:
+            from atlas.monitoring.heartbeat import run as heartbeat_run
+            from atlas.posture.store import PostureStore
+            for name, beat in heartbeat_run(settings, PostureStore(), now).items():
+                if not json_output:
+                    console.print(f"heartbeat {name}: {beat['state']}" + (f" (last ping {beat['at']})" if beat["at"] else ""))
+        except Exception as error:
+            console.print(f"[yellow]Heartbeat check failed: {error}[/yellow]")
 
     if json_output:
         print(json.dumps({name: {"ok": ok, "ms": ms, "detail": detail} for name, (ok, ms, detail) in results.items()}))

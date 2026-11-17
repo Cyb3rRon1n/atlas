@@ -245,8 +245,15 @@ class UptimeCheck(BaseModel):
     timeout: float = 10.0
 
 
+class Heartbeat(BaseModel):
+    name: str
+    every_minutes: int = 1440       # how often the job runs (a nightly backup: 1440)
+    grace_minutes: int = 60         # how late it may be before atlas says so
+
+
 class UptimeConfig(BaseModel):
     checks: list[UptimeCheck] = []      # also added from the web Servers > Uptime page
+    heartbeats: list[Heartbeat] = []    # jobs that ping atlas when they finish (atlas.monitoring.heartbeat)
     fail_after: int = 2                 # failures in a row before a check counts as down (1 a minute)
 
 

@@ -4,6 +4,7 @@
 already knows. Checks added here are saved to the web settings; a list in atlas.yaml wins and locks the form.
 """
 
+from datetime import datetime
 import re
 
 from atlas.config import local
@@ -49,7 +50,17 @@ document.getElementById("up-form")?.addEventListener("submit", (event) => {
   const form = event.target;
   upPost("/api/uptime/add", {name: form.name.value, target: form.target.value});
 });
+document.querySelectorAll("code.ping").forEach((el) => {
+  el.textContent = "curl -fsS -m 10 " + location.origin + el.dataset.ping;
+});
+document.getElementById("beat-form")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const form = event.target;
+  upPost("/api/uptime/heartbeat/add", {name: form.name.value, every: Number(form.every.value)});
+});
 document.addEventListener("click", (event) => {
+  const beat = event.target.closest("[data-beat-remove]");
+  if (beat) { beat.disabled = true; upPost("/api/uptime/heartbeat/remove", {name: beat.dataset.beatRemove}); return; }
   const remove = event.target.closest("[data-remove]");
   if (remove) { remove.disabled = true; upPost("/api/uptime/remove", {name: remove.dataset.remove}); return; }
   const fill = event.target.closest("[data-fill]");
@@ -169,7 +180,43 @@ def _minutes(span):
     return f"{minutes} min" if minutes < 120 else f"{minutes // 60} h {minutes % 60} min"
 
 
-def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locked=False, power=None, internet=None):
+EVERY = (("every hour", 60), ("every day", 1440), ("every week", 10080))
+BEAT_LABELS = {"ok": ("up", "On time"), "late": ("down", "Late"), "failed": ("down", "Failed"),
+               "waiting": ("waiting", "Waiting for first ping")}
+
+
+def _every(minutes):
+    return next((label for label, value in EVERY if value == minutes), f"every {minutes} min")
+
+
+def _heartbeats(beats, now, locked):
+    """beats: [(heartbeat, {"state", "at"}, token)]."""
+
+    rows = "".join(
+        f'<tr><td><span class="state {BEAT_LABELS[st["state"]][0]}">{BEAT_LABELS[st["state"]][1]}</span></td>'
+        f'<td><strong>{_esc(hb.name)}</strong><span class="target">{_every(hb.every_minutes)}, '
+        f'{hb.grace_minutes} min grace</span></td>'
+        f'<td>{_esc(_ago(datetime.fromisoformat(st["at"]), now)) if st.get("at") else "never"}</td>'
+        f'<td><code class="ping" data-ping="/ping/{_esc(token)}">curl -fsS -m 10 /ping/{_esc(token)}</code></td>'
+        f'<td>{"" if locked else f"""<button class="up-btn ghost" type="button" data-beat-remove="{_esc(hb.name)}">Remove</button>"""}</td></tr>'
+        for hb, st, token in beats)
+    table = ('<table class="uptime"><thead><tr><th>Status</th><th>Job</th><th>Last ping</th><th>Ping it with</th>'
+             f'<th></th></tr></thead><tbody>{rows}</tbody></table>' if rows else "")
+    options = "".join(f'<option value="{value}"{" selected" if value == 1440 else ""}>{label}</option>'
+                      for label, value in EVERY)
+    add = ("" if locked else
+           '<form id="beat-form" class="up-add"><input name="name" placeholder="Name, e.g. Nightly backup" '
+           f'aria-label="Name" required><select name="every" aria-label="How often">{options}</select>'
+           '<button class="up-btn" type="submit">Add heartbeat</button></form>')
+    return ('<h2>Heartbeats</h2><p class="up-intro">For jobs atlas can\'t check from outside - a nightly backup, a '
+            'cron job. Add one, then have the job run the line shown when it finishes (add <code>/fail</code> to '
+            'the address when it fails). If it doesn\'t check in on time you get one alert, and another when it '
+            'does. If atlas sits behind a sign-in page, use its address on your network instead.</p>'
+            + table + add)
+
+
+def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locked=False, power=None, internet=None,
+                       beats=(), beats_locked=False):
 
     rows = []
     for check in checks:
@@ -213,7 +260,8 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
               f'a connection. After {fail_after} failures in a row it is <strong>down</strong>: you get one alert, and '
               'another when it is back.</p>'
             + _internet(internet, now, fail_after) + _power(power)
-            + ("<h2>Services</h2>" if power or internet else "") + table + add + SCRIPT)
+            + ("<h2>Services</h2>" if power or internet else "") + table + add
+            + _heartbeats(beats, now, beats_locked) + SCRIPT)
 
     return render_page("Uptime", body, active="uptime")
 
@@ -238,6 +286,8 @@ def handle_post(path, body):
 
     from atlas.monitoring.uptime import valid_target
 
+    if path in ("/api/uptime/heartbeat/add", "/api/uptime/heartbeat/remove"):
+        return _beat_post(path, body)
     if path not in ("/api/uptime/add", "/api/uptime/remove"):
         return None
     if local.locked(("uptime", "checks")):
@@ -265,4 +315,29 @@ def handle_post(path, body):
         return 400, {"error": str(error)}
     local.save_settings({"uptime": {"checks": others + [{"name": name, "target": target}]}})
 
+    return 200, {"ok": True}
+
+
+def _beat_post(path, body):
+
+    if local.locked(("uptime", "heartbeats")):
+        return 400, {"error": "The heartbeats are set in atlas.yaml - edit them there."}
+    body = body if isinstance(body, dict) else {}
+    name = re.sub(r"\s+", " ", str(body.get("name") or "")).strip()[:60]
+    saved = ((local.read_settings().get("uptime") or {}).get("heartbeats")) or []
+    others = [beat for beat in saved if beat.get("name") != name]
+    if path.endswith("/remove"):
+        if len(others) == len(saved):
+            return 404, {"error": "No such heartbeat."}
+        local.save_settings({"uptime": {"heartbeats": others or None}})
+        return 200, {"ok": True}
+    if not name or "/" in name:
+        return 400, {"error": "Give the heartbeat a name (no slashes)."}
+    if len(others) != len(saved):
+        return 400, {"error": f"There is already a heartbeat called {name}."}
+    every = body.get("every")
+    if every not in [value for _, value in EVERY]:
+        return 400, {"error": "Pick how often the job runs."}
+    local.save_settings({"uptime": {"heartbeats": others + [
+        {"name": name, "every_minutes": every, "grace_minutes": 15 if every <= 60 else 60}]}})
     return 200, {"ok": True}

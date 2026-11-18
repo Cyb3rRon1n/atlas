@@ -52,7 +52,8 @@ def test_fresh_install_upgrade_and_uninstall(sandbox):
     assert "c0ffee12" in result.stdout
 
     env = (target / ".env").read_text()
-    assert "LANXANG_BIND=0.0.0.0" in env and "LANXANG_PORT=8420" in env and "LANXANG_TAG=latest" in env
+    assert "LANXANG_BIND=0.0.0.0" in env and "LANXANG_PORT=8420" in env and "LANXANG_TAG=latest" and "LANXANG_CONFIG=lanxang.yaml" in env
+    assert "LANXANG_TAG=latest" in env
     assert oct((target / ".env").stat().st_mode & 0o777) == "0o600"
     config = AtlasConfig(**yaml.safe_load((target / "lanxang.yaml").read_text()))
     assert config.intelligence.provider == "ollama" and config.intelligence.ollama_host == "http://10.1.2.3:11434"

@@ -1,7 +1,8 @@
 name: Image
 
 # Publishes ghcr.io/cyb3rron1n/lanxang so stacks can pull Lanxang instead of
-# building it (the old ghcr.io/cyb3rron1n/atlas name is published too, until 1.2): `latest` + `sha-<short>` from main, `X.Y.Z` / `X.Y` from v* tags.
+# building it (the old ghcr.io/cyb3rron1n/atlas name is published too, until 1.2):
+# `latest` + `sha-<short>` from main, `X.Y.Z` / `X.Y` from v* tags.
 on:
   push:
     branches: [main]

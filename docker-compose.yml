@@ -5,7 +5,8 @@ name: atlas
 # Easiest: the installer writes this folder for you (see README):
 #   curl -fsSL https://raw.githubusercontent.com/Cyb3rRon1n/lanxang/main/install.sh | bash
 # By hand:
-#   cp lanxang.yaml.example lanxang.yaml   # edit: Proxmox/Prometheus/AI config
+#   cp lanxang.yaml.example atlas.yaml   # edit: Proxmox/Prometheus/AI config (the file is atlas.yaml until 1.2;
+#                                        # LANXANG_CONFIG=lanxang.yaml in .env switches to the new name)
 #   docker compose up -d               # pulls ghcr.io/cyb3rron1n/lanxang (or builds it)
 #   docker compose logs atlas          # first run: the setup code for the admin password
 #
@@ -24,8 +25,9 @@ x-lanxang: &lanxang
     - path: .env
       required: false
   volumes:
-    # LANXANG_CONFIG=atlas.yaml in .env keeps an install that still has the old file name working
-    - ./${LANXANG_CONFIG:-lanxang.yaml}:/data/${LANXANG_CONFIG:-lanxang.yaml}:ro
+    # The config file's name: atlas.yaml until 1.2, so a clone that only has atlas.yaml (and never runs
+    # install.sh) keeps working. LANXANG_CONFIG=lanxang.yaml in .env switches to the new name.
+    - ./${LANXANG_CONFIG:-${ATLAS_CONFIG:-atlas.yaml}}:/data/${LANXANG_CONFIG:-${ATLAS_CONFIG:-atlas.yaml}}:ro
     - data:/data/inventory
     - reports:/data/reports
     - logs:/data/logs
@@ -76,7 +78,6 @@ services:
     depends_on: [docker-proxy]
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      LANXANG_SCAN_MINUTES: ${LANXANG_SCAN_MINUTES:-${ATLAS_SCAN_MINUTES:-15}}
       DOCKER_HOST: tcp://127.0.0.1:${LANXANG_DOCKER_PROXY_PORT:-${ATLAS_DOCKER_PROXY_PORT:-23750}}
     healthcheck:
       disable: true
@@ -103,7 +104,7 @@ services:
           if [ "$$(cat /data/logs/.analyzed 2>/dev/null)" != "$$day" ] && lanxang analyze --json >/dev/null 2>&1; then
             echo "$$day" > /data/logs/.analyzed; echo "$$(date -u +%FT%TZ) AI check-up saved"
           fi
-          sleep "$${LANXANG_SCAN_MINUTES:-15}m"
+          sleep "$${LANXANG_SCAN_MINUTES:-$${ATLAS_SCAN_MINUTES:-15}}m"
         done
 
 volumes:

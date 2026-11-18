@@ -28,7 +28,7 @@ _APPLIED = set()     # environment keys this process set from secrets.json (so a
 def config_file():
     """lanxang.yaml, or an existing install's atlas.yaml when only that exists (read until 1.2)."""
 
-    return OLD_CONFIG if OLD_CONFIG.exists() and not NEW_CONFIG.exists() else NEW_CONFIG
+    return OLD_CONFIG if OLD_CONFIG.is_file() and not NEW_CONFIG.is_file() else NEW_CONFIG
 
 
 def _read_yaml(path):

@@ -73,3 +73,36 @@ def test_service_names_and_old_env_names_survive_the_rename():
     web = data["services"]["atlas"]
     assert web["image"] == "ghcr.io/cyb3rron1n/lanxang:${LANXANG_TAG:-${ATLAS_TAG:-latest}}"
     assert "${LANXANG_PORT:-${ATLAS_PORT:-8420}}" in web["ports"][0]
+
+
+def _mount_sources(tmp_path, env_text):
+    import json
+    import shutil
+    import subprocess
+    import pytest
+    if not shutil.which("docker"):
+        pytest.skip("needs docker")
+    shutil.copy("docker-compose.yml", tmp_path / "docker-compose.yml")
+    (tmp_path / ".env").write_text(env_text)
+    out = subprocess.run(["docker", "compose", "config", "--format", "json"], cwd=tmp_path, capture_output=True,
+                         text=True, check=True).stdout
+    return {v["source"].rsplit("/", 1)[1] for v in json.loads(out)["services"]["atlas"]["volumes"]
+            if v.get("type") == "bind"}
+
+
+def test_clone_with_only_atlas_yaml_mounts_it(tmp_path):
+    # a git clone that never runs install.sh: old .env names, no config variable
+    (tmp_path / "atlas.yaml").write_text("name: mine\n")
+    sources = _mount_sources(tmp_path, "ATLAS_PORT=8420\n")
+    assert "atlas.yaml" in sources and "lanxang.yaml" not in sources
+
+
+def test_config_variable_switches_the_mounted_file(tmp_path):
+    assert "lanxang.yaml" in _mount_sources(tmp_path, "LANXANG_CONFIG=lanxang.yaml\n")
+
+
+def test_an_atlas_scan_minutes_override_is_not_shadowed():
+    import yaml
+    scan = yaml.safe_load(open("docker-compose.yml"))["services"]["atlas-scan"]
+    assert not any("SCAN_MINUTES" in k for k in scan["environment"])
+    assert "${LANXANG_SCAN_MINUTES:-$${ATLAS_SCAN_MINUTES:-15}}" in "\n".join(scan["command"])

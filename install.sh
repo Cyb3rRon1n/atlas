@@ -122,8 +122,8 @@ set_env() {   # set_env KEY VALUE - replace or append one line in .env
 if [ "$UPGRADE" = 1 ]; then
     say "Upgrade: keeping your .env and config file"
     set_env LANXANG_TAG "$TAG"
-    # an install that still has atlas.yaml keeps using it; the compose file mounts whichever name this says
-    if [ ! -f "$DIR/lanxang.yaml" ] && [ -f "$DIR/atlas.yaml" ]; then set_env LANXANG_CONFIG atlas.yaml; fi
+    # the compose file mounts whichever file this names; an install that only has atlas.yaml keeps it
+    if [ -f "$DIR/lanxang.yaml" ]; then set_env LANXANG_CONFIG lanxang.yaml; else set_env LANXANG_CONFIG atlas.yaml; fi
 else
     port=$(ask "Port for the web page" "${LANXANG_PORT:-${ATLAS_PORT:-8420}}")
     case "$port" in ''|*[!0-9]*) die "port must be a number" ;; esac
@@ -137,6 +137,7 @@ else
     set_env LANXANG_TAG "$TAG"
     set_env LANXANG_PORT "$port"
     set_env LANXANG_BIND "$bind"
+    set_env LANXANG_CONFIG lanxang.yaml
 
     provider=none model="" ollama=http://localhost:11434
     case "$ai" in
@@ -175,13 +176,20 @@ EOF
     fi
 fi
 
+envval() {   # envval PORT - the LANXANG_ value from .env, else the old ATLAS_ one
+    local v
+    v=$(sed -n "s/^LANXANG_$1=//p" "$DIR/.env" | head -n1)
+    [ -n "$v" ] || v=$(sed -n "s/^ATLAS_$1=//p" "$DIR/.env" | head -n1)
+    printf '%s\n' "$v"
+}
+
 # --- start ------------------------------------------------------------------
 
 say "Pulling and starting Lanxang"
 compose pull --quiet || say "Couldn't pull the image - starting with the copy already on this machine, if any"
 compose up -d
 
-port=$(sed -n 's/^LANXANG_PORT=//p;s/^ATLAS_PORT=//p' "$DIR/.env" | head -n1)
+port=$(envval PORT)
 port="${port:-8420}"
 for _ in $(seq 1 30); do
     curl -fsS "http://127.0.0.1:$port/healthz" >/dev/null 2>&1 && break
@@ -205,7 +213,7 @@ code=$(compose exec -T atlas lanxang auth setup-code 2>/dev/null | tail -n1 || t
 
 echo
 host=localhost
-if [ "$(sed -n 's/^LANXANG_BIND=//p;s/^ATLAS_BIND=//p' "$DIR/.env" | head -n1)" = 0.0.0.0 ]; then
+if [ "$(envval BIND)" = 0.0.0.0 ]; then
     host=$(hostname -I 2>/dev/null | awk '{print $1}')
     host="${host:-localhost}"
 fi

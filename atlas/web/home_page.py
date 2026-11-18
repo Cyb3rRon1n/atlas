@@ -370,6 +370,9 @@ def _card(href, title, state, inner, wide=False, flagged=False):
             f"{inner}</a>")
 
 
+STORAGE_SOURCES = {"nas", "nas-disks", "disks"}     # alerts the Storage & RAID card already shows
+
+
 def attention_items(posture, hosts, storage, access_reviews=(), open_alerts=()):
     """
     One plain-words line per problem behind the verdict: (card, what, why, href, action).
@@ -389,11 +392,14 @@ def attention_items(posture, hosts, storage, access_reviews=(), open_alerts=()):
         if row["problems"]:
             items.append(("hosts", "Hosts", f"{row['name']}: {', '.join(row['problems'][:3])}", "/overview", "Details"))
 
+    covered = {"lan", "host"}        # already listed above through posture / hosts
+    storage_alerts = [a for a in open_alerts if a["source"] in STORAGE_SOURCES and not a.get("acked_at")]
     for row in storage["rows"]:
         if row["warn"]:
-            items.append(("storage", "Storage", f"{row['name']}: {row['detail']}", "/overview", "Details"))
+            covered |= STORAGE_SOURCES   # the Storage line says it: one problem, one line
+            href = "/alerts" if storage_alerts else "/overview"   # the alert says what to do; a full pool has none
+            items.append(("storage", "Storage", f"{row['name']}: {row['detail']}", href, "Details"))
 
-    covered = {"lan", "host"}        # already listed above through posture / hosts
     others = [alert for alert in open_alerts if alert["source"] not in covered and not alert.get("acked_at")]
     if others:
         first = others[0]["title"]

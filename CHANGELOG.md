@@ -3,7 +3,7 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
-## Unreleased
+## 0.12.1 - 2026-11-18
 
 ### Fixed
 - **One problem, one line on Home**: a degraded pool or failing disk was listed twice under *Needs attention*

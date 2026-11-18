@@ -3,6 +3,7 @@
 import json
 
 import typer
+from lanxang.config.local import config_name
 from lanxang.config import load_config
 from lanxang.proxmox import (
     connect,
@@ -22,7 +23,7 @@ def network_map(
     json_output: bool = typer.Option(False, "--json", help="Print the map as JSON")
 ):
     """
-    Build the network map (atlas web /map): containers by network with
+    Build the network map (lanxang web /map): containers by network with
     their public hostnames, Proxmox guests, configured LAN hosts'
     reachability, the AI endpoint - and what atlas may act on. Saved so
     the web view can render it; run it on a schedule to keep
@@ -84,7 +85,7 @@ def network_map(
 
     docker_networks = topology["docker"]["networks"]
 
-    console.print("[bold blue]Atlas Network Map[/bold blue]\n")
+    console.print("[bold blue]Lanxang Network Map[/bold blue]\n")
     console.print(f"{topology['host']}: {sum(len(m) for m in docker_networks.values())} containers on {len(docker_networks)} networks")
 
     if settings.proxmox.enabled:
@@ -95,7 +96,7 @@ def network_map(
         mark = "[green]✓[/green]" if host["reachable"] else "[red]✗[/red]"
         console.print(f"{mark} {host['name']} ({host['address']}) {host['role']}")
 
-    console.print("\nSaved - view it at /map in atlas web.")
+    console.print("\nSaved - view it at /map in lanxang web.")
 
 
 @app.command(name="scan")
@@ -117,7 +118,7 @@ def lan_scan(
     settings = load_config()
 
     if not settings.scan.enabled:
-        console.print("LAN scanning is off (scan.enabled: false in atlas.yaml).")
+        console.print(f"LAN scanning is off (scan.enabled: false in {config_name()}).")
         return
 
     store = InventoryStore()
@@ -210,7 +211,7 @@ def lan_scan(
 def devices(
     json_output: bool = typer.Option(False, "--json", help="Print the inventory as JSON")
 ):
-    """The device inventory: every device atlas knows, its status and where it was seen."""
+    """The device inventory: every device Lanxang knows, its status and where it was seen."""
 
     from lanxang.devices.store import InventoryStore
 
@@ -237,13 +238,13 @@ def trends(
     )
 ):
     """
-    Show resource-usage trends from saved atlas monitor snapshots.
+    Show resource-usage trends from saved lanxang monitor snapshots.
     """
 
     if not json_output:
 
         console.print(
-            "[bold blue]Atlas Trends[/bold blue]\n"
+            "[bold blue]Lanxang Trends[/bold blue]\n"
         )
 
     payload = build_trends_payload(limit)
@@ -260,7 +261,7 @@ def trends(
             )
 
             console.print(
-                "Run: atlas monitor and/or atlas proxmox scan "
+                "Run: lanxang monitor and/or lanxang proxmox scan "
                 "(a few times, to build history)"
             )
 
@@ -322,7 +323,7 @@ def posture_watch(
     settings = load_config()
 
     if not settings.posture.enabled:
-        console.print("Posture collection is off (posture.enabled: false in atlas.yaml).")
+        console.print(f"Posture collection is off (posture.enabled: false in {config_name()}).")
         if once:
             return
         # Idle instead of exiting: atlas-scan restarts this command in a loop, and exiting
@@ -452,7 +453,7 @@ def access_collect(
     settings = load_config()
 
     if not settings.access.enabled:
-        console.print("[yellow]access.enabled is false in atlas.yaml - nothing to do.[/yellow]")
+        console.print(f"[yellow]access.enabled is false in {config_name()} — nothing to do.[/yellow]")
         return
 
     from lanxang.docker.manager import get_client
@@ -494,7 +495,7 @@ def wiring_scan(
     settings = load_config()
 
     if not settings.wiring.enabled:
-        console.print("[yellow]wiring.enabled is false in atlas.yaml - nothing to do.[/yellow]")
+        console.print(f"[yellow]wiring.enabled is false in {config_name()} — nothing to do.[/yellow]")
         return
 
     store = WiringStore()
@@ -556,7 +557,7 @@ def ports_check(
     settings = load_config()
 
     if not settings.security.port_watch:
-        console.print("[yellow]security.port_watch is false in atlas.yaml - nothing to do.[/yellow]")
+        console.print(f"[yellow]security.port_watch is false in {config_name()} — nothing to do.[/yellow]")
         return
 
     texts, state = run(settings, PostureStore(), InventoryStore().devices(), utcnow())
@@ -610,7 +611,7 @@ def certs_check(
     settings = load_config()
 
     if not settings.security.cert_watch:
-        console.print("[yellow]security.cert_watch is false in atlas.yaml - nothing to do.[/yellow]")
+        console.print(f"[yellow]security.cert_watch is false in {config_name()} — nothing to do.[/yellow]")
         return
 
     texts, detail = run(settings, PostureStore(), utcnow(), force=force)
@@ -700,7 +701,7 @@ def ups_check(json_output: bool = typer.Option(False, "--json", help="Print the 
 
     settings = load_config()
     if not settings.ups.enabled:
-        console.print("UPS watch is off - turn it on in Setup (UPS) or under ups: in atlas.yaml.")
+        console.print(f"UPS watch is off — turn it on in Setup (UPS) or under ups: in {config_name()}.")
         return
     detail = run(settings, PostureStore(), utcnow())
     if json_output:
@@ -793,7 +794,7 @@ def vpn_check():
     settings = load_config()
 
     if not settings.vpn.clients:
-        console.print("[yellow]vpn.clients is empty in atlas.yaml - nothing to do.[/yellow]")
+        console.print(f"[yellow]vpn.clients is empty in {config_name()} — nothing to do.[/yellow]")
         return
 
     send = (lambda text: notify.send(settings.notify, text)) if notify.configured(settings.notify) else None
@@ -809,7 +810,7 @@ app.add_typer(
 
 notify_app = typer.Typer(
     name="notify",
-    help="Alert channels (notify: in atlas.yaml)."
+    help="Alert channels (notify: in the config file)."
 )
 
 
@@ -823,10 +824,10 @@ def notify_test():
     from lanxang import notify
 
     results = notify.send_each(load_config().notify,
-                               "**✅ Atlas test alert**\nIf you can read this, atlas alerts reach you here.")
+                               "**✅ Test alert from Lanxang**\nIf you can read this, alerts reach you here.")
 
     if not results:
-        console.print("[yellow]No alert channels set - add one under notify: in atlas.yaml "
+        console.print(f"[yellow]No alert channels set — add one under notify: in {config_name()} "
                       "(signal, ntfy, webhooks, email or apprise).[/yellow]")
         raise typer.Exit(1)
 
@@ -848,7 +849,7 @@ dns_app = typer.Typer(name="dns", help="Pi-hole or AdGuard Home: ad blocking on,
 @dns_app.command("check")
 def dns_check(json_output: bool = typer.Option(False, "--json", help="Print the result as JSON")):
     """
-    Reads Pi-hole (v6) or AdGuard Home from dns_filter: (Setup -> Pi-hole or AdGuard Home). `atlas scan` runs it
+    Reads Pi-hole (v6) or AdGuard Home from dns_filter: (Setup -> Pi-hole or AdGuard Home). `lanxang scan` runs it
     too; ad blocking off at two checks in a row sends one alert, and another when it's back on.
     """
 
@@ -859,7 +860,7 @@ def dns_check(json_output: bool = typer.Option(False, "--json", help="Print the 
 
     settings = load_config()
     if not settings.dns_filter.enabled:
-        console.print("Pi-hole / AdGuard Home watch is off - turn it on in Setup or under dns_filter: in atlas.yaml.")
+        console.print(f"Pi-hole / AdGuard Home watch is off — turn it on in Setup or under dns_filter: in {config_name()}.")
         return
     detail = run(settings, PostureStore(), utcnow())
     if json_output:
@@ -882,7 +883,7 @@ nas_app = typer.Typer(name="nas", help="TrueNAS or Synology: pool health, disk h
 @nas_app.command("check")
 def nas_check(json_output: bool = typer.Option(False, "--json", help="Print the result as JSON")):
     """
-    Reads TrueNAS or Synology from nas: (Setup -> TrueNAS or Synology). `atlas scan` runs it too; a pool that
+    Reads TrueNAS or Synology from nas: (Setup -> TrueNAS or Synology). `lanxang scan` runs it too; a pool that
     isn't healthy, or a disk that fails, runs hot or wears out, sends one alert, and another when it's fine.
     """
 
@@ -893,7 +894,7 @@ def nas_check(json_output: bool = typer.Option(False, "--json", help="Print the 
 
     settings = load_config()
     if not settings.nas.enabled:
-        console.print("NAS watch is off - turn it on in Setup or under nas: in atlas.yaml.")
+        console.print(f"NAS watch is off — turn it on in Setup or under nas: in {config_name()}.")
         return
     detail = run(settings, PostureStore(), utcnow())
     if json_output:
@@ -917,7 +918,7 @@ ha_app = typer.Typer(name="ha", help="Home Assistant: is it up, offline smart de
 @ha_app.command("check")
 def ha_check(json_output: bool = typer.Option(False, "--json", help="Print the result as JSON")):
     """
-    Reads Home Assistant from homeassistant: (Setup -> Home Assistant). `atlas scan` runs it too; HA not
+    Reads Home Assistant from homeassistant: (Setup -> Home Assistant). `lanxang scan` runs it too; HA not
     answering, a device dropping out or a low battery sends one alert, and another when it's fine.
     """
 
@@ -926,7 +927,7 @@ def ha_check(json_output: bool = typer.Option(False, "--json", help="Print the r
 
     settings = load_config()
     if not settings.homeassistant.enabled:
-        console.print("Home Assistant watch is off - turn it on in Setup or under homeassistant: in atlas.yaml.")
+        console.print(f"Home Assistant watch is off — turn it on in Setup or under homeassistant: in {config_name()}.")
         return
     detail = run(settings, PostureStore(), utcnow())
     if json_output:

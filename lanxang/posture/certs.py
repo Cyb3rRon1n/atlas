@@ -1,5 +1,5 @@
 """
-Certificate watch (atlas certs check -> Posture page, Public exposure tab): once a day, opens a
+Certificate watch (lanxang certs check -> Posture page, Public exposure tab): once a day, opens a
 TLS connection to every public hostname - the Traefik routes atlas already reads plus
 security.cert_hosts - the way a browser would, and reads the certificate's expiry date.
 
@@ -84,11 +84,11 @@ def _text(host, entry):
 
     days = entry["days"]
     if entry["level"] == "invalid":
-        return f"**🔒 Certificate not trusted: {host}**\n• {entry['error'][len('invalid: '):]}\n\nSee Atlas → Security."
+        return f"**🔒 Certificate not trusted: {host}**\n• {entry['error'][len('invalid: '):]}\n\nSee Lanxang → Security."
     when = "expired" if days < 0 else "expires today" if days == 0 else f"expires in {days} day{'s' * (days != 1)}"
     icon = "🔴" if entry["level"] == "urgent" else "🟡"
     return (f"**{icon} Certificate {when}: {host}**\n• {entry['expires'][:10]}"
-            + (f", issued by {entry['issuer']}" if entry["issuer"] else "") + "\n\nSee Atlas → Security.")
+            + (f", issued by {entry['issuer']}" if entry["issuer"] else "") + "\n\nSee Lanxang → Security.")
 
 
 def assess(previous, results, now, warn_days, urgent_days):

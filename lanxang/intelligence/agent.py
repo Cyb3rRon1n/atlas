@@ -7,9 +7,9 @@ from lanxang.intelligence.tools import build_tools, execute_tool
 class AtlasAgent:
     """
     Runs a multi-turn conversation through an AI provider's tool-use
-    loop, backing atlas chat. Plays the same orchestration role
-    AtlasAnalyzer plays for atlas analyze's single-shot flow, but for
-    an ongoing session that has no guaranteed prior atlas discover.
+    loop, backing lanxang chat. Plays the same orchestration role
+    AtlasAnalyzer plays for lanxang analyze's single-shot flow, but for
+    an ongoing session that has no guaranteed prior lanxang discover.
     """
 
     def __init__(self, provider: AIProvider, config: AtlasConfig):
@@ -112,8 +112,8 @@ class AtlasAgent:
     def _live_environment(self) -> dict:
         """
         A minimal, freshly-queried stand-in for the saved environment
-        snapshot atlas analyze grounds suggested actions against.
-        Chat has no guaranteed prior atlas discover to read a
+        snapshot lanxang analyze grounds suggested actions against.
+        Chat has no guaranteed prior lanxang discover to read a
         snapshot from, so it grounds against current live state
         instead - the same read paths the get_containers/
         get_proxmox_status tools already use, not a second copy of
@@ -150,7 +150,7 @@ class AtlasAgent:
 
         if libvirt.get("available"):
 
-            # Plugin-keyed, same shape atlas discover's LibvirtPlugin already
+            # Plugin-keyed, same shape lanxang discover's LibvirtPlugin already
             # writes - known_libvirt_guest_names() reads this directly, and
             # known_guest_ids()'s own flat "guests" read (set just above, for
             # Proxmox) is unaffected since that's a different dict key.

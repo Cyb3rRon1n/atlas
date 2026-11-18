@@ -1,5 +1,5 @@
 """
-Torrent VPN watch (atlas vpn check). Each qBittorrent runs inside gluetun
+Torrent VPN watch (lanxang vpn check). Each qBittorrent runs inside gluetun
 (network_mode: service:gluetun), so its Web API answers only while the tunnel
 container is up, and it reports whether peers can reach it. A client is a
 problem when it is unreachable, disconnected, or firewalled while torrents are

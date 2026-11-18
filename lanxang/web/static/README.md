@@ -1,6 +1,6 @@
 # Vendored front-end libraries
 
-Served by `atlas web` at `/static/<name>` (allow-listed in `atlas/web/server.py`), so the map
+Served by `lanxang web` at `/static/<name>` (allow-listed in `lanxang/web/server.py`), so the map
 works with no internet access. Do not edit these files - replace them with a new pinned release.
 
 | File | Package | Version | sha256 | License |

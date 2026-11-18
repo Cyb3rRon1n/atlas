@@ -6,6 +6,7 @@ being watched, and what resolved in the last week. Each row links to the page to
 import re
 from datetime import datetime
 
+from lanxang.config.local import config_name
 from lanxang.web.cabling_page import _ago
 from lanxang.web.render import _esc, render_page
 from lanxang.clock import utcnow
@@ -193,7 +194,7 @@ def handle_post(path, body):
 
 def render_alerts_page(listing, now, notify=None):
 
-    body = (STYLE + '<div class="alerts"><p class="muted">Everything atlas\'s checks found, in one place. Problems '
+    body = (STYLE + '<div class="alerts"><p class="muted">Everything Lanxang\'s checks found, in one place. Problems '
             'also send an alert to your channels; watched items only show here. An item resolves by itself when '
             'the check stops seeing it. <b>Acknowledge</b> says you\'ve seen it; <b>Mute</b> stops messages about '
             'it (or its device) but keeps it listed.</p>' + _controls(listing, now, notify)
@@ -211,7 +212,7 @@ def _quiet_post(path, body):
     from lanxang.config import local
 
     if local.locked(("notify", "quiet_hours")):
-        return 400, {"error": "Quiet hours are set in atlas.yaml - edit them there."}
+        return 400, {"error": f"Quiet hours are set in {config_name()} — edit them there."}
     saved = list(((local.read_settings().get("notify") or {}).get("quiet_hours")) or [])
     removing = QUIET_REMOVE.match(path)
     if removing:

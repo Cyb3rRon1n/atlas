@@ -3,7 +3,7 @@ from lanxang.core.runtime import AtlasRuntime
 
 class AtlasApplication:
     """
-    Main Atlas application container.
+    Main Lanxang application container.
     """
 
     def __init__(self):

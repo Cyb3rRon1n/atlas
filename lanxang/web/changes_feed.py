@@ -78,7 +78,7 @@ def render(items, now, window):
     more = f'<p class="muted">and {len(items) - 60} more</p>' if len(items) > 60 else ""
     return (STYLE + f'<section class="changes"><h2>What changed <span class="switch">{switch}</span></h2>'
             + (f"<ul>{rows}</ul>{more}" if rows else '<p class="muted">Nothing changed - all quiet.</p>')
-            + "<p class=\"muted\">Times are UTC. Everything atlas recorded is below.</p></section>")
+            + "<p class=\"muted\">Times are UTC. Everything Lanxang recorded is below.</p></section>")
 
 
 STYLE = """<style>

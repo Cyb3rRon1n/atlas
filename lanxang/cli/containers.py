@@ -3,6 +3,7 @@
 import json
 
 import typer
+from lanxang.config.local import config_name
 from lanxang.config import load_config
 from lanxang.docker import collect_containers, get_container_info, resize_container, restart_container, stop_container
 from lanxang.services import detect_services
@@ -31,7 +32,7 @@ def monitor(
     if not json_output:
 
         console.print(
-            "[bold blue]Atlas Monitoring[/bold blue]\n"
+            "[bold blue]Lanxang Monitoring[/bold blue]\n"
         )
 
     settings = load_config()
@@ -52,7 +53,7 @@ def monitor(
             )
 
             console.print(
-                "Enable it in atlas.yaml"
+                f"Enable it in {config_name()}"
             )
 
         return
@@ -373,7 +374,7 @@ def restart(
     """
 
     console.print(
-        "[bold blue]Atlas Restart[/bold blue]\n"
+        "[bold blue]Lanxang Restart[/bold blue]\n"
     )
 
     fleet_node, error = _resolve_fleet_node(node)
@@ -459,7 +460,7 @@ def stop(
     """
 
     console.print(
-        "[bold blue]Atlas Stop[/bold blue]\n"
+        "[bold blue]Lanxang Stop[/bold blue]\n"
     )
 
     fleet_node, error = _resolve_fleet_node(node)
@@ -491,7 +492,7 @@ def stop(
 
     console.print(
         "This will stop the container. It will not be removed - "
-        f"restart it anytime with atlas restart {name}.\n"
+        f"restart it anytime with lanxang restart {name}.\n"
     )
 
     if not typer.confirm("Proceed?"):
@@ -546,7 +547,7 @@ def resize(
     """
 
     console.print(
-        "[bold blue]Atlas Resize[/bold blue]\n"
+        "[bold blue]Lanxang Resize[/bold blue]\n"
     )
 
     if cpus is None and memory is None:
@@ -662,7 +663,7 @@ def services():
 
 
     console.print(
-        "[bold blue]Atlas Services[/bold blue]\n"
+        "[bold blue]Lanxang Services[/bold blue]\n"
     )
 
 

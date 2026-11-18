@@ -180,7 +180,7 @@ async function sendText(message, useTools = true) {
   bubble(message, "you");
   sendButton.disabled = true;
   newChat.disabled = true;  // a reset mid-flight must not let this reply's setSession() overwrite the new session
-  status.textContent = "atlas is thinking... (a local model can take up to a minute)";
+  status.textContent = "Lanxang is thinking... (a local model can take up to a minute)";
   try {
     const {response, data} = await post("/api/chat", {message, session: getSession(), tools: useTools});
     if (!response.ok || !data) { bubble(failureText(response, data), "atlas"); return; }

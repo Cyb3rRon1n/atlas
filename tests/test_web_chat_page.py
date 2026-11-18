@@ -74,7 +74,7 @@ def test_chat_page_structure_and_prefill_escaping():
     assert "&lt;b&gt;&quot;tv&quot;&lt;/b&gt;" in page and "<b>" not in page.split("<h1>")[1].split("<script>")[0]
     assert "/api/chat" in page and "/api/actions/execute" in page
     assert "innerHTML" not in CHAT_SCRIPT
-    assert "<code>atlas chat</code>" in page and "<code>atlas-chat</code>" not in page
+    assert "<code>lanxang chat</code>" in page and "<code>atlas-chat</code>" not in page
     assert "whatever integrations are configured, plus your notes" in page
     assert "a local model can take up to a minute" in CHAT_SCRIPT
     assert "10-30 seconds" not in CHAT_SCRIPT
@@ -142,9 +142,9 @@ global.fetch = async (url, options) => {
         plan: {
           summary: "fix it",
           steps: [
-            {action: {type: "restart_container", target: "a", command: "atlas restart a"}, rationale: "r1"},
-            {action: {type: "restart_container", target: "b", command: "atlas restart b"}, rationale: "r2"},
-            {action: {type: "restart_container", target: "c", command: "atlas restart c"}, rationale: "r3"},
+            {action: {type: "restart_container", target: "a", command: "lanxang restart a"}, rationale: "r1"},
+            {action: {type: "restart_container", target: "b", command: "lanxang restart b"}, rationale: "r2"},
+            {action: {type: "restart_container", target: "c", command: "lanxang restart c"}, rationale: "r3"},
           ],
         },
       }),

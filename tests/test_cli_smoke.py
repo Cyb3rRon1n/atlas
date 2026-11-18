@@ -24,7 +24,7 @@ def test_status():
     result = runner.invoke(app, ["status"])
 
     assert result.exit_code == 0
-    assert "Atlas Status" in result.output
+    assert "Lanxang Status" in result.output
 
 
 def test_config_shows_defaults(isolated_cwd):
@@ -209,7 +209,7 @@ def test_doctor(isolated_cwd):
         result = runner.invoke(app, ["doctor"])
 
     assert result.exit_code == 1
-    assert "Atlas Doctor" in result.output
+    assert "Lanxang Doctor" in result.output
 
 
 def test_doctor_json_reports_healthy_and_exits_zero(isolated_cwd):
@@ -272,7 +272,7 @@ def test_analyze_with_no_environment_short_circuits_without_api_call(
 
     assert result.exit_code == 0
     assert "No environment data found." in result.output
-    assert "Run: atlas discover" in result.output
+    assert "Run: lanxang discover" in result.output
 
 
 def test_analyze_json_with_no_environment_prints_null(isolated_cwd, temp_db):
@@ -497,8 +497,8 @@ def test_analyze_prints_suggested_action_for_known_container_only(
         result = runner.invoke(app, ["analyze"])
 
     assert result.exit_code == 0
-    assert "Suggested: atlas restart plex" in result.output
-    assert "atlas restart ghost" not in result.output
+    assert "Suggested: lanxang restart plex" in result.output
+    assert "lanxang restart ghost" not in result.output
 
 
 def test_analyze_prints_suggested_stop_command_for_known_container(
@@ -549,7 +549,7 @@ def test_analyze_prints_suggested_stop_command_for_known_container(
         result = runner.invoke(app, ["analyze"])
 
     assert result.exit_code == 0
-    assert "Suggested: atlas stop plex" in result.output
+    assert "Suggested: lanxang stop plex" in result.output
 
 
 def test_analyze_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db):
@@ -612,15 +612,15 @@ def test_analyze_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db
 
     assert result.exit_code == 0
     assert "Suggested plan: Recover the media stack" in result.output
-    assert "1. atlas stop sonarr" in result.output
+    assert "1. lanxang stop sonarr" in result.output
     assert "(sonarr is holding a lock radarr needs)" in result.output
-    assert "2. atlas restart radarr" in result.output
+    assert "2. lanxang restart radarr" in result.output
     assert "Each step runs one at a time, with its own confirmation." in result.output
 
 
 def _analyze_with_plan(monkeypatch_input, sonarr_status="running"):
     """
-    Shared setup for the atlas analyze plan-execution tests below:
+    Shared setup for the lanxang analyze plan-execution tests below:
     a grounded two-step plan (stop sonarr, restart radarr) via a fake
     provider, invoked with the given scripted input.
     """
@@ -712,8 +712,8 @@ def test_analyze_confirms_plan_then_declines_second_step_stops_early(
     result, mock_stop, mock_restart = _analyze_with_plan("y\ny\nn\n")
 
     assert result.exit_code == 0
-    assert "Step 1: atlas stop sonarr" in result.output
-    assert "Step 2: atlas restart radarr" in result.output
+    assert "Step 1: lanxang stop sonarr" in result.output
+    assert "Step 2: lanxang restart radarr" in result.output
     assert "Stopped - remaining steps not run." in result.output
     mock_stop.assert_called_once_with("sonarr")
     mock_restart.assert_not_called()
@@ -846,7 +846,7 @@ def test_chat_prints_reply_and_suggested_action(isolated_cwd, temp_db):
 
     assert result.exit_code == 0
     assert "Plex is using a lot of CPU right now." in result.output
-    assert "Suggested: atlas stop plex" in result.output
+    assert "Suggested: lanxang stop plex" in result.output
 
 
 def test_chat_drops_suggested_action_for_hallucinated_container(
@@ -940,8 +940,8 @@ def test_chat_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db):
 
     assert result.exit_code == 0
     assert "Suggested plan: Recover the media stack" in result.output
-    assert "1. atlas stop sonarr" in result.output
-    assert "2. atlas restart radarr" in result.output
+    assert "1. lanxang stop sonarr" in result.output
+    assert "2. lanxang restart radarr" in result.output
     assert "Each step runs one at a time, with its own confirmation." in result.output
 
 
@@ -1201,7 +1201,7 @@ def test_trends_when_no_monitoring_history_prints_hint(isolated_cwd, temp_db):
 
     assert result.exit_code == 0
     assert "No monitoring history found." in result.output
-    assert "Run: atlas monitor" in result.output
+    assert "Run: lanxang monitor" in result.output
 
 
 def test_trends_prints_host_and_container_summaries(isolated_cwd, temp_db):
@@ -1284,7 +1284,7 @@ def test_trends_shows_guest_section_from_proxmox_scan_only_history(
     isolated_cwd, temp_db
 ):
     """
-    A host that's only ever run atlas proxmox scan (no atlas monitor
+    A host that's only ever run lanxang proxmox scan (no lanxang monitor
     at all) should still get a real trends report - this was a real
     pre-existing gap the "no monitoring history" early-return check
     had before it also considered virtualization data.
@@ -1492,7 +1492,7 @@ def test_proxmox_scan_ignores_other_commands_saving_an_empty_virtualization(isol
     ):
         runner.invoke(app, ["proxmox", "scan"])
         application.runtime.environment.update("virtualization", {})
-        KnowledgeStore().save_environment(application.runtime.environment)      # what `atlas map` etc. do
+        KnowledgeStore().save_environment(application.runtime.environment)      # what `lanxang map` etc. do
         second = runner.invoke(app, ["proxmox", "scan"])
 
     assert second.exit_code == 0
@@ -2111,7 +2111,7 @@ def test_monitor_publishes_changes_detected_event_when_metric_crosses_since_last
 
 def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
     """
-    atlas discover now runs built-in discovery and plugin discovery in
+    lanxang discover now runs built-in discovery and plugin discovery in
     one pass. This checks both halves land in the same saved
     environment snapshot, not just that the command exits cleanly -
     the whole point of merging discover-plugins into discover was that

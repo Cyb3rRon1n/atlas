@@ -13,9 +13,9 @@ def render_chat_page(prefill=""):
 
     body = (
         CHAT_STYLE
-        + "<p class=\"muted\">Same assistant as <code>atlas chat</code>: it can look at containers, logs and "
+        + "<p class=\"muted\">Same assistant as <code>lanxang chat</code>: it can look at containers, logs and "
           "whatever integrations are configured, plus your notes. Anything it suggests runs only when you press "
-          "Approve, one step at a time, after atlas re-checks the target still exists.</p>"
+          "Approve, one step at a time, after Lanxang re-checks the target still exists.</p>"
         + "<div id=\"log\"></div>"
         + f"<textarea id=\"ask\" placeholder=\"Ask about your network...\">{_esc(prefill)}</textarea>"
         + "<p><button class=\"primary\" id=\"send\">Send</button> <button id=\"new-chat\">New conversation</button> "

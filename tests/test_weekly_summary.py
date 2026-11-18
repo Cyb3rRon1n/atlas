@@ -23,7 +23,7 @@ def test_the_week_in_short_lines():
     settings = AtlasConfig(uptime={"checks": [{"name": "Media", "target": "https://m.example.org"},
                                               {"name": "Photos", "target": "https://p.example.org"}]})
     text = summary.build(settings, SUNDAY_EVENING, _sources(SUNDAY_EVENING))
-    assert text.startswith("**📋 Atlas: your week**")
+    assert text.startswith("**📋 Lanxang: your week**")
     for part in ("Internet: 1 outage, 3 min in all", "Services: 1 of 2 up all week; Media 99.5%",
                  "Devices: 2, 1 new this week (Den TV); 1 waiting", "Alerts: 1 problem open (Printer is offline), 1 to watch",
                  "Heartbeats: 1 of 2 on time; not: Pull", "Disks: 1, all healthy, warmest 41°C"):

@@ -1,6 +1,6 @@
 """
 The weekly summary: one message on Sunday evening (notify.timezone) with how the week went - internet outages,
-service uptime, new devices, open alerts, heartbeats, disks. Sent from `atlas scan` once its time has come, so it
+service uptime, new devices, open alerts, heartbeats, disks. Sent from `lanxang scan` once its time has come, so it
 also tells you atlas itself is alive. Off with notify.weekly_summary: false. Quiet hours hold it like any alert.
 """
 
@@ -112,7 +112,7 @@ def build(settings, now, sources):
         charge = f", {ups['charge']:.0f}% charged" if ups.get("charge") is not None else ""
         lines.append(f"🔋 UPS {name}: {ups.get('state', '?')}{charge}")
 
-    return "**📋 Atlas: your week**\n" + "\n".join(f"• {line}" for line in lines or ["nothing to report yet"])
+    return "**📋 Lanxang: your week**\n" + "\n".join(f"• {line}" for line in lines or ["nothing to report yet"])
 
 
 def _sources():

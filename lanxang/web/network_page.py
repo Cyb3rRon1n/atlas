@@ -159,7 +159,7 @@ def _tree(graph):
 def render_network_page(topology, routes, graph):
 
     if not topology:
-        body = '<p class="muted">No network snapshot yet - atlas-scan refreshes it every 15 minutes (<code>atlas map</code>).</p>'
+        body = '<p class="muted">No network snapshot yet - atlas-scan refreshes it every 15 minutes (<code>lanxang map</code>).</p>'
         return render_page("Services", body, active="lan")
 
     lanes = classify(topology, routes)

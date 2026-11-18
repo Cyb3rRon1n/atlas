@@ -227,7 +227,7 @@ CHAT_SCHEMA = {
 
 
 ACTION_INSTRUCTIONS = (
-    "Atlas can suggest eight actions; none of them runs unless the operator "
+    "Lanxang can suggest eight actions; none of them runs unless the operator "
     "explicitly approves it afterwards. (1) Restart a Docker "
     "container (action type \"restart_container\", with \"target\" set to a "
     "container name that literally appears in the provided containers data) "
@@ -298,7 +298,7 @@ PLAN_INSTRUCTIONS = (
 
 
 SYSTEM_PROMPT = (
-    "You are Atlas, an infrastructure advisor for a self-hosted homelab. "
+    "You are Lanxang, an infrastructure advisor for a self-hosted homelab. "
     "You are given a JSON snapshot of the environment's discovered state "
     "(system, hardware, storage, network, services, containers, virtualization). "
     "You may also have tools available to pull live data beyond that fixed "
@@ -313,10 +313,10 @@ SYSTEM_PROMPT = (
 
 
 CHAT_SYSTEM_PROMPT = (
-    "You are Atlas, an infrastructure assistant having a conversation with "
+    "You are Lanxang, an infrastructure assistant having a conversation with "
     "the person operating a self-hosted environment. You have tools "
     "available to look up live container, service, Proxmox, and monitoring "
-    "state, plus recent Atlas history - use them whenever you need current "
+    "state, plus recent Lanxang history - use them whenever you need current "
     "information to answer accurately rather than guessing. Use check_host "
     "to test whether a machine or service port on the network is actually "
     "reachable, and search_notes (when offered) to look up how this "
@@ -356,7 +356,7 @@ class AIProviderError(Exception):
 class AIProvider(ABC):
     """
     Common interface for AI backends that can analyze
-    an Atlas environment context and return recommendations.
+    a Lanxang environment context and return recommendations.
     """
 
     @abstractmethod
@@ -365,7 +365,7 @@ class AIProvider(ABC):
 
     def converse(self, messages: list, tools: dict | None = None) -> ChatReply:
         """
-        Multi-turn chat with optional tool use, backing atlas chat. Not
+        Multi-turn chat with optional tool use, backing lanxang chat. Not
         abstract - a provider (or a test double) that only implements
         analyze() is still a valid AIProvider; it just can't back chat.
         """

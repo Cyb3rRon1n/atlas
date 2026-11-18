@@ -8,7 +8,7 @@ from lanxang.config.models import AtlasConfig
 
 
 # ${NAME} / ${NAME:-default} - lets a stack keep secrets in its .env and
-# out of atlas.yaml. Only the braced form, so a literal "$" in a value
+# out of the config file. Only the braced form, so a literal "$" in a value
 # (passwords) is never touched.
 ENV_REFERENCE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}")
 
@@ -43,7 +43,7 @@ def _expand_values(value, environ=None):
 
 
 def read_user_config():
-    """atlas.yaml as written by the user (unexpanded), or {}."""
+    """The config file as written by the user (unexpanded), or {}."""
 
     path = local.config_file()
     if not path.exists():
@@ -53,18 +53,18 @@ def read_user_config():
 
 
 def build_config(web_settings, environ=None):
-    """The config atlas.yaml plus these web settings would give - the Setup page tests and validates with it."""
+    """The config that the config file plus these web settings would give - the Setup page tests and validates with it."""
 
     return AtlasConfig(**_expand_values(local.layered(read_user_config(), web_settings), environ))
 
 
 def load_config():
-    """atlas.yaml, with settings saved from the web Setup page filling in what it leaves out (lanxang.config.local)."""
+    """The config file, with settings saved from the web Setup page filling in what it leaves out (lanxang.config.local)."""
 
     local.apply_secrets()
     if local.config_file() == local.OLD_CONFIG and not getattr(load_config, "_noticed", False):
         import logging
-        logging.getLogger("lanxang").info("Reading atlas.yaml - rename it to lanxang.yaml before 1.2")
+        logging.getLogger("lanxang").info("Reading atlas.yaml — rename it to lanxang.yaml before 1.2")
         load_config._noticed = True
 
     return build_config(local.read_settings())

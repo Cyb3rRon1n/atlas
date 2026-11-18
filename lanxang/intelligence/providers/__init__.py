@@ -1,3 +1,4 @@
+from lanxang.config.local import config_name
 from lanxang.intelligence.providers.base import (
     AIProvider,
     AIProviderError,
@@ -13,7 +14,7 @@ def get_provider(config) -> AIProvider:
     """
 
     if config.provider == "none":
-        raise AIProviderError("No AI assistant set up - set intelligence.provider in atlas.yaml to ollama or anthropic")
+        raise AIProviderError(f"No AI assistant set up — set intelligence.provider in {config_name()} to ollama or anthropic")
 
     if config.provider == "anthropic":
 

@@ -4,7 +4,7 @@ from lanxang.knowledge.store import KnowledgeStore
 
 class DatabaseListener:
     """
-    Saves Atlas events into persistent storage.
+    Saves Lanxang events into persistent storage.
     """
 
     def __init__(self):

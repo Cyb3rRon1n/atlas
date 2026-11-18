@@ -193,8 +193,8 @@ def build_tools(config: AtlasConfig) -> dict[str, ToolDefinition]:
     Read-only tools an AI provider can call mid-request to pull live
     data beyond whatever fixed snapshot it was handed. Deliberately
     observation-only - no mutating action is ever exposed here, those
-    stay behind their own approval-gated CLI commands (atlas restart/
-    stop/proxmox restart), same separation atlas analyze's suggested
+    stay behind their own approval-gated CLI commands (lanxang restart/
+    stop/proxmox restart), same separation lanxang analyze's suggested
     actions already keep from execution.
     """
 
@@ -220,7 +220,7 @@ def build_tools(config: AtlasConfig) -> dict[str, ToolDefinition]:
         "get_recent_events": ToolDefinition(
             name="get_recent_events",
             description=(
-                "Get recently recorded Atlas operational events "
+                "Get recently recorded Lanxang operational events "
                 "(discoveries, scans, actions taken)."
             ),
             input_schema=EMPTY_SCHEMA,

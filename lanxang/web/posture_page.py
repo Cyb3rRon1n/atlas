@@ -4,6 +4,7 @@ outbound via VPN), details panel and public exposure. Markup only here; data
 comes from /api/posture via POSTURE_SCRIPT (Task 10).
 """
 
+from lanxang.config.local import config_name
 from lanxang.web.render import ask_chips, render_page
 
 
@@ -94,7 +95,7 @@ const msg = document.getElementById("posture-msg");
 const reviewList = document.getElementById("review");
 const off = document.getElementById("posture-off");
 const DEFAULT_MSG = msg.textContent;
-const OFF_TEXT = "Posture collection is off - set posture.enabled: true in atlas.yaml and run `atlas posture watch` (atlas-scan does this).";
+const OFF_TEXT = "Posture collection is off — set posture.enabled: true in __CONFIG__ and run `lanxang posture watch` (atlas-scan does this).";
 off.textContent = OFF_TEXT;
 let windowName = "24h", timer = null;
 
@@ -356,7 +357,7 @@ def render_posture_page():
           'style="list-style:none;margin:0;padding:0"></ul></section>'
         + '<section id="review-tab" role="tabpanel" hidden><ul id="review"></ul></section>'
         + '</div></aside></div>'
-        + POSTURE_SCRIPT
+        + POSTURE_SCRIPT.replace("__CONFIG__", config_name())
     )
 
     return render_page("Exposure", body, active="posture")

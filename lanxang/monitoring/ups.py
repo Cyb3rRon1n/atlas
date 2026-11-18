@@ -1,5 +1,5 @@
 """
-UPS watch (atlas ups check, once a minute in atlas-scan): reads a NUT server (Network UPS Tools, TCP 3493) - the
+UPS watch (lanxang ups check, once a minute in atlas-scan): reads a NUT server (Network UPS Tools, TCP 3493) - the
 standard most UPSes are monitored through. A Linux box running nut-server, or a Synology / QNAP / Unraid / TrueNAS
 with "network UPS server" switched on, all speak it. Only LIST and GET are sent: read-only, no login needed.
 

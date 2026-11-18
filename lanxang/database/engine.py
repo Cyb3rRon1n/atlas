@@ -21,7 +21,7 @@ engine = create_engine(
 
 def enable_wal(target_engine):
     """
-    WAL + a 5s busy timeout on every new connection: the atlas web container
+    WAL + a 5s busy timeout on every new connection: the lanxang web container
     and the atlas-scan container write the same SQLite file, and the default
     rollback journal would make one of them fail with "database is locked".
     """

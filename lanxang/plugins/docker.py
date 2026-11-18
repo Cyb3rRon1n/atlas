@@ -4,7 +4,7 @@ from lanxang.docker import collect_containers
 
 class DockerPlugin(AtlasPlugin):
     """
-    Atlas Docker Plugin
+    Lanxang Docker Plugin
     """
 
     name = "Docker"

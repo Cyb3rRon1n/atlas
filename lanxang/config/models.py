@@ -76,12 +76,12 @@ class HealthConfig(BaseModel):
     status_urls: dict[str, str] = {}
     # label -> path inside the container whose usage the home page's storage card shows (e.g. a ro media mount)
     storage_paths: dict[str, str] = {}
-    # Host health alerts (atlas sample, every atlas-scan pass): once per new problem and once when it clears.
+    # Host health alerts (lanxang sample, every atlas-scan pass): once per new problem and once when it clears.
     alerts: bool = True
     temp_margin_c: float = 5.0      # alert this close to a sensor's own "high" limit (two samples in a row)
     memory_percent: float = 90.0
     disk_percent: float = 90.0      # root disk and every storage_paths entry
-    # Disk health from Proxmox (atlas proxmox scan): too hot at two scans in a row, nearly worn out.
+    # Disk health from Proxmox (lanxang proxmox scan): too hot at two scans in a row, nearly worn out.
     disk_hot_hdd_c: int = 55
     disk_hot_ssd_c: int = 70        # SSDs and NVMe drives
     disk_life_percent: int = 10     # warn when an SSD has this much life (or less) left
@@ -153,7 +153,7 @@ class NotifyConfig(BaseModel):
 
 
 class AccessConfig(BaseModel):
-    """Who reaches the public services, from where (atlas access collect -> web /access). Off unless enabled."""
+    """Who reaches the public services, from where (lanxang access collect -> web /access). Off unless enabled."""
     enabled: bool = False
     traefik_log: str = "/traefik-logs/access.log"
     geo_path: str = "inventory/dbip-city-lite.mmdb"
@@ -165,7 +165,7 @@ class AccessConfig(BaseModel):
 
 
 class PostureConfig(BaseModel):
-    """Egress/posture collector (atlas posture watch). Off unless enabled."""
+    """Egress/posture collector (lanxang posture watch). Off unless enabled."""
     enabled: bool = False
     interval: int = 30
     retention_days: int = 30
@@ -193,7 +193,7 @@ class TorrentClientConfig(BaseModel):
 
 
 class VpnWatchConfig(BaseModel):
-    """qBittorrent instances that must stay behind gluetun (atlas vpn check). Empty = off."""
+    """qBittorrent instances that must stay behind gluetun (lanxang vpn check). Empty = off."""
     clients: list[TorrentClientConfig] = []
 
 
@@ -216,7 +216,7 @@ class WiringUnifi(BaseModel):
 
 
 class WiringConfig(BaseModel):
-    """Port-level wired map (atlas wiring scan -> web /cabling). Off unless enabled."""
+    """Port-level wired map (lanxang wiring scan -> web /cabling). Off unless enabled."""
     enabled: bool = False
     timeout: int = 10
     keep_snapshots: int = 30
@@ -227,15 +227,15 @@ class WiringConfig(BaseModel):
 
 
 class SecurityConfig(BaseModel):
-    """LAN watch (atlas lan check -> Posture page): rogue DHCP servers and gateway ARP spoofing."""
+    """LAN watch (lanxang lan check -> Posture page): rogue DHCP servers and gateway ARP spoofing."""
     dhcp_probe: bool = True          # one DHCP discover per run; never takes an address
     dhcp_timeout: float = 3.0
     dhcp_servers: list[str] = []     # DHCP servers besides the default gateway (Pi-hole, a second router)
-    port_watch: bool = True          # atlas ports check: new open ports on LAN devices, this host, the router
+    port_watch: bool = True          # lanxang ports check: new open ports on LAN devices, this host, the router
     port_timeout: float = 0.5
     snmp_discovery: bool = True      # SNMPv3 engine discovery (no user, no password) finds switches to suggest
     extra_ports: list[int] = []      # watched besides the ~25 common service ports
-    cert_watch: bool = True          # atlas certs check: daily TLS expiry check of public hostnames
+    cert_watch: bool = True          # lanxang certs check: daily TLS expiry check of public hostnames
     cert_hosts: list[str] = []       # checked besides the hostnames in the Traefik routes
     cert_warn_days: int = 14
     cert_urgent_days: int = 3

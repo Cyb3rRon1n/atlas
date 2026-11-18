@@ -7,7 +7,7 @@ from lanxang.clock import utcnow
 @dataclass
 class AtlasEvent:
     """
-    Represents an event occurring within Atlas.
+    Represents an event occurring within Lanxang.
     """
 
     event_type: str

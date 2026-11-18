@@ -1,12 +1,13 @@
 """
 /uptime (Servers > Uptime): one row per uptime check - up/down, response time, uptime over 24 h / 7 days /
 30 days, a 24 h graph - plus a form to add a check and one-click suggestions from the public hostnames atlas
-already knows. Checks added here are saved to the web settings; a list in atlas.yaml wins and locks the form.
+already knows. Checks added here are saved to the web settings; a list in the config file wins and locks the form.
 """
 
 from datetime import datetime
 import re
 
+from lanxang.config.local import config_name
 from lanxang.config import local
 from lanxang.web.cabling_page import _ago
 from lanxang.web.render import _esc, render_page
@@ -216,10 +217,10 @@ def _heartbeats(beats, now, locked):
            '<form id="beat-form" class="up-add"><input name="name" placeholder="Name, e.g. Nightly backup" '
            f'aria-label="Name" required><select name="every" aria-label="How often">{options}</select>'
            '<button class="up-btn" type="submit">Add heartbeat</button></form>')
-    return ('<h2>Heartbeats</h2><p class="up-intro">For jobs atlas can\'t check from outside - a nightly backup, a '
+    return ('<h2>Heartbeats</h2><p class="up-intro">For jobs Lanxang can\'t check from outside - a nightly backup, a '
             'cron job. Add one, then have the job run the line shown when it finishes (add <code>/fail</code> to '
             'the address when it fails). If it doesn\'t check in on time you get one alert, and another when it '
-            'does. If atlas sits behind a sign-in page, use its address on your network instead.</p>'
+            'does. If Lanxang sits behind a sign-in page, use its address on your network instead.</p>'
             + table + add)
 
 
@@ -247,11 +248,11 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
              '<th>24 h</th><th>7 days</th><th>30 days</th><th>Last problem</th><th></th></tr></thead>'
              f'<tbody>{"".join(rows)}</tbody></table>' if rows else
              '<p class="up-intro"><strong>No checks yet.</strong> Add the services you care about below - '
-             'atlas tries each one every minute.</p>')
+             'Lanxang tries each one every minute.</p>')
 
     if locked:
-        add = ('<section class="up-add"><p class="up-intro">These checks are set in atlas.yaml '
-               '(<code>uptime.checks</code>) - edit them there.</p></section>')
+        add = (f'<section class="up-add"><p class="up-intro">These checks are set in {config_name()} '
+               '(<code>uptime.checks</code>) — edit them there.</p></section>')
     else:
         chips = "".join(f'<button class="up-btn ghost" type="button" data-name="{_esc(name)}" data-fill="{_esc(target)}">'
                         f'{_esc(name)}</button>' for name, target in suggestions)
@@ -299,7 +300,7 @@ def handle_post(path, body):
     if path not in ("/api/uptime/add", "/api/uptime/remove"):
         return None
     if local.locked(("uptime", "checks")):
-        return 400, {"error": "The checks are set in atlas.yaml - edit them there."}
+        return 400, {"error": f"The checks are set in {config_name()} — edit them there."}
     body = body if isinstance(body, dict) else {}
     name = re.sub(r"\s+", " ", str(body.get("name") or "")).strip()[:60]
     saved = ((local.read_settings().get("uptime") or {}).get("checks")) or []
@@ -329,7 +330,7 @@ def handle_post(path, body):
 def _beat_post(path, body):
 
     if local.locked(("uptime", "heartbeats")):
-        return 400, {"error": "The heartbeats are set in atlas.yaml - edit them there."}
+        return 400, {"error": f"The heartbeats are set in {config_name()} — edit them there."}
     body = body if isinstance(body, dict) else {}
     name = re.sub(r"\s+", " ", str(body.get("name") or "")).strip()[:60]
     saved = ((local.read_settings().get("uptime") or {}).get("heartbeats")) or []

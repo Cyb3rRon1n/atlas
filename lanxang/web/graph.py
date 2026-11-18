@@ -1,5 +1,5 @@
 """
-Cytoscape elements for the interactive map (atlas web /map): one node per
+Cytoscape elements for the interactive map (lanxang web /map): one node per
 inventory device, Proxmox guests nested inside their host, this host's
 Docker networks nested inside the atlas host, all hanging off Internet ->
 (router or LAN).

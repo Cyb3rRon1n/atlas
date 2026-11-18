@@ -46,7 +46,7 @@ class Collector:
             if fetched or not self.asn_table:
                 self.asn_table = load_table(self.settings.asn_path)
             if fetched:
-                remember_download(self.settings.asn_url, "atlas: IP-owner table download", self.asn_table, self.store)
+                remember_download(self.settings.asn_url, "Lanxang: IP-owner table download", self.asn_table, self.store)
             self._status("asn", {"ok": len(self.asn_table) > 0, "ranges": len(self.asn_table)}, now)
         except Exception as error:
             if not self.asn_table:

@@ -1,5 +1,5 @@
 """
-The inventory's JSON API for atlas web: plain (status, payload) results,
+The inventory's JSON API for lanxang web: plain (status, payload) results,
 so the HTTP layer (server.py) owns sockets and headers and this module
 owns only routing, validation mapping and events. Writes go through
 InventoryStore, and every successful one is published as an event, the
@@ -12,6 +12,7 @@ from datetime import datetime
 from urllib.parse import unquote
 
 import lanxang.web.chat as chat_module
+from lanxang.config.local import config_name
 from lanxang.config import load_config
 from lanxang.core.application import application
 from lanxang.devices.store import InventoryStore
@@ -229,7 +230,7 @@ def handle(method, path, body=None):
 
 
 def _wiring_refresh():
-    """The /cabling Refresh button: one synchronous wiring scan (seconds), same code as `atlas wiring scan`."""
+    """The /cabling Refresh button: one synchronous wiring scan (seconds), same code as `lanxang wiring scan`."""
 
     from lanxang.wiring.scan import WiringBusy, run_scan
     from lanxang.wiring.store import WiringStore
@@ -237,7 +238,7 @@ def _wiring_refresh():
     settings = load_config()
 
     if not settings.wiring.enabled:
-        return 400, {"error": "wiring is not enabled in atlas.yaml"}
+        return 400, {"error": f"wiring is not enabled in {config_name()}"}
 
     try:
         result = run_scan(settings, WiringStore(), InventoryStore().devices())

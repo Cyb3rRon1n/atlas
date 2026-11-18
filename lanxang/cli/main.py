@@ -1,6 +1,7 @@
 import json
 
 import typer
+from lanxang.config.local import config_name
 from lanxang.discovery import run_discovery
 from lanxang.inventory import save_inventory
 from lanxang.inventory import load_inventory
@@ -22,26 +23,26 @@ from lanxang.cli.app import app, console
 @app.command()
 def version():
     """
-    Display Atlas version.
+    Display Lanxang version.
     """
 
     console.print(
-        f"[bold blue]Atlas[/bold blue] version {__version__}"
+        f"[bold blue]Lanxang[/bold blue] version {__version__}"
     )
 
 
 @app.command()
 def status():
     """
-    Display current Atlas status.
+    Display current Lanxang status.
     """
 
     console.print(
-        "[bold green]Atlas Status[/bold green]"
+        "[bold green]Lanxang Status[/bold green]"
     )
 
     console.print(
-        "✓ Atlas CLI operational"
+        "✓ Lanxang CLI operational"
     )
 
     console.print(
@@ -57,7 +58,7 @@ def doctor(
     )
 ):
     """
-    Run Atlas health checks.
+    Run Lanxang health checks.
     """
 
     results = run_checks()
@@ -76,7 +77,7 @@ def doctor(
     else:
 
         console.print(
-            "[bold cyan]Atlas Doctor[/bold cyan]\n"
+            "[bold cyan]Lanxang Doctor[/bold cyan]\n"
         )
 
         for check in results:
@@ -99,11 +100,11 @@ def doctor(
 @app.command()
 def init():
     """
-    Interactively generate atlas.yaml.
+    Interactively generate the config file (lanxang.yaml).
     """
 
     console.print(
-        "[bold cyan]Atlas Init[/bold cyan]\n"
+        "[bold cyan]Lanxang Init[/bold cyan]\n"
     )
 
     if config_file().exists():
@@ -120,10 +121,10 @@ def init():
 
             return
 
-    log_lines = ["Atlas init started"]
+    log_lines = ["Lanxang init started"]
 
     name = typer.prompt(
-        "Instance name (just a label for this Atlas install)",
+        "Instance name (just a label for this Lanxang install)",
         default="atlas-node"
     )
 
@@ -135,7 +136,7 @@ def init():
 
     console.print(
         "[dim]Proxmox: connects to a Proxmox server you already have "
-        "running - Atlas does not install Proxmox itself.[/dim]"
+        "running - Lanxang does not install Proxmox itself.[/dim]"
     )
 
     if typer.confirm("Configure Proxmox integration?"):
@@ -205,7 +206,7 @@ def init():
         "[dim]AI provider: Anthropic uses an API key from an Anthropic "
         "account you already have (nothing is installed by this step). "
         "Ollama needs Ollama already installed and running somewhere "
-        "Atlas can reach.[/dim]"
+        "Lanxang can reach.[/dim]"
     )
 
     while True:
@@ -246,7 +247,7 @@ def init():
 
         console.print(
             "\n[yellow]Remember to set the ANTHROPIC_API_KEY environment "
-            "variable[/yellow] - it is never stored in atlas.yaml."
+            f"variable[/yellow] — it is never stored in {config_name()}."
         )
 
     intelligence = IntelligenceConfig(
@@ -263,7 +264,7 @@ def init():
 
     console.print(
         "[dim]Monitoring: connects to a Prometheus server you already "
-        "have running - Atlas does not install Prometheus.[/dim]"
+        "have running - Lanxang does not install Prometheus.[/dim]"
     )
 
     monitoring = MonitoringConfig()
@@ -351,7 +352,7 @@ def init():
     write_config(config)
 
     log_lines.append(f"{config_file()} written")
-    log_lines.append("Atlas init completed")
+    log_lines.append("Lanxang init completed")
 
     log_path = write_setup_log(log_lines)
 
@@ -364,7 +365,7 @@ def init():
     )
 
     console.print(
-        "Run: atlas doctor"
+        "Run: lanxang doctor"
     )
 
 
@@ -375,7 +376,7 @@ def discover():
     """
 
     console.print(
-        "[bold purple]Atlas Discovery[/bold purple]"
+        "[bold purple]Lanxang Discovery[/bold purple]"
     )
 
     data = run_discovery()
@@ -449,13 +450,13 @@ def discover():
 @app.command()
 def config():
     """
-    Display Atlas configuration.
+    Display Lanxang configuration.
     """
 
     settings = load_config()
 
     console.print(
-        "[bold cyan]Atlas Configuration[/bold cyan]"
+        "[bold cyan]Lanxang Configuration[/bold cyan]"
     )
 
     console.print(
@@ -471,7 +472,7 @@ def report(
     )
 ):
     """
-    Generate Atlas infrastructure report.
+    Generate Lanxang infrastructure report.
     """
 
     inventory = load_inventory()
@@ -486,7 +487,7 @@ def report(
         )
 
         console.print(
-            "Run: atlas discover"
+            "Run: lanxang discover"
         )
 
         return
@@ -508,21 +509,21 @@ def report(
 @app.command()
 def runtime():
     """
-    Display Atlas runtime information.
+    Display Lanxang runtime information.
     """
 
     runtime = application.runtime
 
     ctx = runtime.get_context()
 
-    console.print("[bold blue]Atlas Runtime[/bold blue]\n")
+    console.print("[bold blue]Lanxang Runtime[/bold blue]\n")
 
     console.print(ctx)
 
 @app.command()
 def plugins():
     """
-    Display registered Atlas plugins.
+    Display registered Lanxang plugins.
     """
 
     runtime = application.runtime
@@ -534,7 +535,7 @@ def plugins():
     manager.initialize(runtime)
 
     console.print(
-        "[bold blue]Atlas Plugins[/bold blue]\n"
+        "[bold blue]Lanxang Plugins[/bold blue]\n"
     )
 
     for plugin in manager.get_plugins():
@@ -547,11 +548,11 @@ def history(
     limit: int = 10
 ):
     """
-    Display Atlas historical events.
+    Display Lanxang historical events.
     """
 
     console.print(
-        "[bold blue]Atlas History[/bold blue]\n"
+        "[bold blue]Lanxang History[/bold blue]\n"
     )
 
     query = KnowledgeQueries()
@@ -593,17 +594,17 @@ def web(
     port: int = 8420
 ):
     """
-    Serve a local web view over Atlas's existing data (overview, triage,
+    Serve a local web view over Lanxang's existing data (overview, triage,
     devices, map, coverage, history, trends) — read-only except the
     device inventory's edit/merge/split, which are same-origin-gated JSON
-    POSTs. Sign-in is atlas's own (web.auth: builtin) unless web.auth: proxy.
+    POSTs. Sign-in is Lanxang's own (web.auth: builtin) unless web.auth: proxy.
     """
 
     from lanxang.web.auth import Auth
     from lanxang.web.server import run_server
 
     console.print(
-        "[bold blue]Atlas Web[/bold blue]\n"
+        "[bold blue]Lanxang Web[/bold blue]\n"
     )
 
     auth = Auth() if load_config().web.auth == "builtin" else None
@@ -621,7 +622,7 @@ def web(
             "\n[yellow]Stopped.[/yellow]"
         )
 
-auth_app = typer.Typer(help="Sign-in for atlas web (web.auth: builtin).")
+auth_app = typer.Typer(help="Sign-in for lanxang web (web.auth: builtin).")
 app.add_typer(auth_app, name="auth")
 
 
@@ -635,7 +636,7 @@ def auth_password():
     from lanxang.web.auth import Auth
 
     if sys.stdin.isatty():
-        password = getpass.getpass("New atlas password: ")
+        password = getpass.getpass("New Lanxang password: ")
         if getpass.getpass("Again: ") != password:
             console.print("[red]The passwords don't match.[/red]")
             raise typer.Exit(1)
@@ -657,7 +658,7 @@ def auth_setup_code():
 
     auth = Auth()
     if auth.configured():
-        console.print("A password is already set - use `atlas auth password` to change it.")
+        console.print("A password is already set - use `lanxang auth password` to change it.")
         return
     print(auth.setup_code())
 

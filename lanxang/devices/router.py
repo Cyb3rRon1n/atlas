@@ -1,6 +1,6 @@
 """
 Router details: the names your router's DHCP server knows (and on OpenWrt, who is on which Wi-Fi), recorded as
-device sightings so they link to devices by MAC and show as clues on Devices. Read with every `atlas scan`.
+device sightings so they link to devices by MAC and show as clues on Devices. Read with every `lanxang scan`.
 
   OpenWrt  its web API (ubus over HTTP, what LuCI uses): session login with the router's user and password,
            luci-rpc getDHCPLeases, and for Wi-Fi luci-rpc getWirelessDevices + iwinfo assoclist per interface;

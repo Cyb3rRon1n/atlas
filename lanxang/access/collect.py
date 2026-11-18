@@ -1,5 +1,5 @@
 """
-One collection pass (atlas access collect, run by atlas-scan every 15 min):
+One collection pass (lanxang access collect, run by atlas-scan every 15 min):
 new Traefik access-log lines -> hourly hits + geolocated IPs; new Jellyfin
 sign-ins / failed attempts from its activity log; monthly geo DB refresh.
 """
@@ -143,7 +143,7 @@ class AccessCollector:
             return 0
         lines = "\n".join(f"\u2022 **{p['user']}** \u2192 {p['app']} from {p['label']} ({p['ip']})" for p in pending[:10])
         text = (f"\U0001F30D **New sign-in place{'s' if len(pending) > 1 else ''}**\n\n{lines}\n\n"
-                "\u2705 Expected? Confirm it on Atlas \u2192 Access.")
+                "\u2705 Expected? Confirm it on Lanxang \u2192 Access.")
         ok, _ = (self.send or notify.send)(self.notify, text)
         if ok:
             self.store.mark_alerted([p["id"] for p in pending])
@@ -157,7 +157,7 @@ class AccessCollector:
             result["geo_refreshed"] = geo.refresh(s.geo_path, now, get=self.get)
             if result["geo_refreshed"]:
                 from lanxang.posture.collectors.asn import remember_download
-                remember_download(geo.URL, "atlas: IP-location file download", asn_path=self.posture.asn_path)
+                remember_download(geo.URL, "Lanxang: IP-location file download", asn_path=self.posture.asn_path)
         except Exception as error:
             result["geo_error"] = str(error)[:200]
         self._geo = geo.GeoDB(s.geo_path)

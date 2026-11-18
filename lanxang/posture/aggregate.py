@@ -2,7 +2,7 @@
 Turns conntrack snapshots into per-poll deltas. conntrack byte counters are
 cumulative per connection, so the Accountant remembers the last counters per
 connection key and emits only the growth; a connection seen for the first time
-counts in full (including after an atlas restart - a bounded over-count that is
+counts in full (including after a Lanxang restart - a bounded over-count that is
 documented rather than worked around). Only outbound flows to public addresses
 are kept: source = the container that owns the original source IP (or "host"),
 band = "vpn" for containers routed through gluetun, else "direct".

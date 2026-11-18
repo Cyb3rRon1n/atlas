@@ -13,6 +13,7 @@ import io
 import json
 from datetime import datetime
 
+from lanxang.config.local import config_name
 from lanxang.web.icons import icon
 from lanxang.web.render import _esc, render_page
 from lanxang.wiring import traffic
@@ -538,7 +539,7 @@ def _port_detail(cell, other, link, poe, info, issues):
         return [("Port", f'{cell["name"]} SFP cage'), ("Shares", f'{cell["name"]} with the RJ45 port (combo)')]
     pairs = [("Port", f'Port {cell["label"]}' + (f" \u2192 {other}" if other else "")),
              ("Status", _speed_text(cell["speed"]) if cell["up"] else "down"),
-             ("Connected", other or "nothing atlas can name")]
+             ("Connected", other or "nothing Lanxang can name")]
     if link and link.get("bps") is not None:
         load = f' ({link["load"] * 100:.0f}% of the link)' if link.get("load") is not None else ""
         pairs.append(("Traffic now", traffic.text(link["bps"]) + load))
@@ -625,7 +626,7 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
 
     if not enabled:
         body = ('<p class="muted">The cabling map is off. Add a managed switch or a UniFi console on the '
-                '<a href="/settings#switches">Setup tab</a> (or a <code>wiring:</code> section in atlas.yaml), '
+                f'<a href="/settings#switches">Setup tab</a> (or a <code>wiring:</code> section in {config_name()}), '
                 'and copy cabling.example.yaml to cabling.yaml for patch panels.</p>' + suggestion_banner(suggested))
         return render_page("Cabling", CABLING_STYLE + body, active="cabling")
 
@@ -633,7 +634,7 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
 
     if not latest:
         body = (f'<div class="cab-head">{refresh}</div><p id="msg"></p>'
-                '<p class="muted">No wiring scan yet - press Refresh map (or run <code>atlas wiring scan</code>).</p>')
+                '<p class="muted">No wiring scan yet - press Refresh map (or run <code>lanxang wiring scan</code>).</p>')
         return render_page("Cabling", CABLING_STYLE + body + DIAGRAM_SCRIPT, active="cabling")
 
     now = now or utcnow()

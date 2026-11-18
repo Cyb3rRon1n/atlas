@@ -1,5 +1,5 @@
 """
-Ask the LAN what each device calls itself (atlas scan, needs host networking - atlas-scan has it). Two standard,
+Ask the LAN what each device calls itself (lanxang scan, needs host networking - atlas-scan has it). Two standard,
 read-only questions, a few seconds each:
 
   mDNS / Bonjour   one query for the common service types (Chromecast, AirPlay, printers, HomeKit, ESPHome...),

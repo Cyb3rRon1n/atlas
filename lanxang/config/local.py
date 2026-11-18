@@ -1,9 +1,9 @@
 """
 Settings saved from the web Setup page, kept beside the database (inventory/, the Docker data volume).
 
-atlas.yaml stays the user's file: it is never rewritten, and any value it sets wins over a web-saved one.
-settings.yaml only fills in what atlas.yaml leaves out. Secrets live apart in secrets.json (mode 600), keyed
-by the environment variable names atlas already reads (LANXANG_UNIFI_PASS, LANXANG_SNMP_<NAME>_AUTH, ...).
+The config file stays the user's file: it is never rewritten, and any value it sets wins over a web-saved one.
+settings.yaml only fills in what the config file leaves out. Secrets live apart in secrets.json (mode 600), keyed
+by the environment variable names Lanxang already reads (LANXANG_UNIFI_PASS, LANXANG_SNMP_<NAME>_AUTH, ...).
 load_config() puts them into the environment unless the real environment (.env) already sets them, so
 settings.yaml can reference them as ${NAME} and secret values never appear in a settings file or a page.
 """
@@ -29,6 +29,12 @@ def config_file():
     """lanxang.yaml, or an existing install's atlas.yaml when only that exists (read until 1.2)."""
 
     return OLD_CONFIG if OLD_CONFIG.is_file() and not NEW_CONFIG.is_file() else NEW_CONFIG
+
+
+def config_name():
+    """The config file's name for messages: lanxang.yaml, or atlas.yaml on an install that still has only that."""
+
+    return config_file().name
 
 
 def _read_yaml(path):
@@ -69,7 +75,7 @@ def _merge(base, patch):
 
 
 def layered(user, web):
-    """The effective settings: web values only where the user's atlas.yaml has none."""
+    """The effective settings: web values only where the user's config file has none."""
 
     out = dict(web)
     for key, value in user.items():
@@ -89,7 +95,7 @@ def save_settings(patch):
 
 
 def locked(path):
-    """True when atlas.yaml sets this setting (a tuple of keys), so the Setup page shows it read-only."""
+    """True when the config file sets this setting (a tuple of keys), so the Setup page shows it read-only."""
 
     node = _read_yaml(config_file())
     for key in path:

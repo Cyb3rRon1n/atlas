@@ -220,7 +220,7 @@ def check_monitoring(config):
 def check_environment():
     """
     Informational, always healthy: reports virtualization/orchestration
-    backends Atlas detects beyond Docker/Proxmox, so a libvirt/KVM or
+    backends Lanxang detects beyond Docker/Proxmox, so a libvirt/KVM or
     Kubernetes host sees itself acknowledged by doctor rather than
     silently ignored.
     """
@@ -228,14 +228,14 @@ def check_environment():
     detected = []
 
     if shutil.which("virsh") or Path("/var/run/libvirt/libvirt-sock").exists():
-        detected.append("libvirt/KVM (discoverable via atlas discover, no actions yet)")
+        detected.append("libvirt/KVM (discoverable via lanxang discover, no actions yet)")
 
     if (
         os.environ.get("KUBERNETES_SERVICE_HOST")
         or shutil.which("kubectl")
         or (Path.home() / ".kube" / "config").exists()
     ):
-        detected.append("Kubernetes (not managed by Atlas)")
+        detected.append("Kubernetes (not managed by Lanxang)")
 
     return {
         "name": "Environment",

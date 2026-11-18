@@ -87,7 +87,7 @@ def test_known_libvirt_guest_names_flattens_across_plugins():
 
 def test_known_libvirt_guest_names_ignores_proxmox_scan_shape():
     """
-    atlas proxmox scan saves virtualization as a flat
+    lanxang proxmox scan saves virtualization as a flat
     {"nodes": [...], "guests": [...]} - values() on that yields lists,
     not plugin dicts. Confirms the isinstance() guard skips it rather
     than crashing.
@@ -121,7 +121,7 @@ def test_restart_container_action_wired_correctly():
     definition = ACTIONS["restart_container"]
 
     action = SuggestedAction(type="restart_container", target="plex")
-    assert definition.command_template(action) == "atlas restart plex"
+    assert definition.command_template(action) == "lanxang restart plex"
     assert definition.known_targets is known_container_names
 
 
@@ -130,7 +130,7 @@ def test_restart_guest_action_wired_correctly():
     definition = ACTIONS["restart_guest"]
 
     action = SuggestedAction(type="restart_guest", target="100")
-    assert definition.command_template(action) == "atlas proxmox restart 100"
+    assert definition.command_template(action) == "lanxang proxmox restart 100"
     assert definition.known_targets is known_guest_ids
 
 
@@ -139,7 +139,7 @@ def test_stop_container_action_wired_correctly():
     definition = ACTIONS["stop_container"]
 
     action = SuggestedAction(type="stop_container", target="plex")
-    assert definition.command_template(action) == "atlas stop plex"
+    assert definition.command_template(action) == "lanxang stop plex"
     assert definition.known_targets is known_container_names
 
 
@@ -158,7 +158,7 @@ def test_resize_container_command_template_with_cpus_only():
         type="resize_container", target="plex", cpus="1.5", memory=None
     )
 
-    assert definition.command_template(action) == "atlas resize plex --cpus 1.5"
+    assert definition.command_template(action) == "lanxang resize plex --cpus 1.5"
 
 
 def test_resize_container_command_template_with_memory_only():
@@ -169,7 +169,7 @@ def test_resize_container_command_template_with_memory_only():
         type="resize_container", target="plex", cpus=None, memory="512m"
     )
 
-    assert definition.command_template(action) == "atlas resize plex --memory 512m"
+    assert definition.command_template(action) == "lanxang resize plex --memory 512m"
 
 
 def test_resize_container_command_template_with_both():
@@ -182,14 +182,14 @@ def test_resize_container_command_template_with_both():
 
     assert (
         definition.command_template(action)
-        == "atlas resize plex --cpus 1.5 --memory 512m"
+        == "lanxang resize plex --cpus 1.5 --memory 512m"
     )
 
 
 def test_resize_container_command_template_with_neither():
     """
     A malformed suggestion (both null) still renders to something -
-    atlas resize's own CLI validation is the safety net that catches
+    lanxang resize's own CLI validation is the safety net that catches
     a genuinely empty resize, not this template.
     """
 
@@ -199,7 +199,7 @@ def test_resize_container_command_template_with_neither():
         type="resize_container", target="plex", cpus=None, memory=None
     )
 
-    assert definition.command_template(action) == "atlas resize plex"
+    assert definition.command_template(action) == "lanxang resize plex"
 
 
 def test_stop_guest_action_wired_correctly():
@@ -207,7 +207,7 @@ def test_stop_guest_action_wired_correctly():
     definition = ACTIONS["stop_guest"]
 
     action = SuggestedAction(type="stop_guest", target="100")
-    assert definition.command_template(action) == "atlas proxmox stop 100"
+    assert definition.command_template(action) == "lanxang proxmox stop 100"
     assert definition.known_targets is known_guest_ids
 
 
@@ -228,7 +228,7 @@ def test_resize_guest_command_template_with_both():
 
     assert (
         definition.command_template(action)
-        == "atlas proxmox resize 100 --cpus 1.5 --memory 512m"
+        == "lanxang proxmox resize 100 --cpus 1.5 --memory 512m"
     )
 
 
@@ -237,7 +237,7 @@ def test_restart_libvirt_guest_action_wired_correctly():
     definition = ACTIONS["restart_libvirt_guest"]
 
     action = SuggestedAction(type="restart_libvirt_guest", target="test-vm")
-    assert definition.command_template(action) == "atlas libvirt restart test-vm"
+    assert definition.command_template(action) == "lanxang libvirt restart test-vm"
     assert definition.known_targets is known_libvirt_guest_names
 
 
@@ -261,7 +261,7 @@ def test_stop_libvirt_guest_action_wired_correctly():
     definition = ACTIONS["stop_libvirt_guest"]
 
     action = SuggestedAction(type="stop_libvirt_guest", target="test-vm")
-    assert definition.command_template(action) == "atlas libvirt stop test-vm"
+    assert definition.command_template(action) == "lanxang libvirt stop test-vm"
     assert definition.known_targets is known_libvirt_guest_names
 
 
@@ -284,7 +284,7 @@ def test_resize_libvirt_guest_is_not_in_actions_registry():
     """
     Deliberately CLI-only - virsh's setvcpus takes an integer vCPU
     count, a different concept from the fractional core limit every
-    other resize_*'s "cpus" field means. See atlas libvirt resize.
+    other resize_*'s "cpus" field means. See lanxang libvirt resize.
     """
 
     assert "resize_libvirt_guest" not in ACTIONS

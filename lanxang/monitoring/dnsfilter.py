@@ -1,6 +1,6 @@
 """
 Pi-hole (v6) or AdGuard Home: is ad blocking on, how many DNS questions were asked and blocked, and which
-devices ask the most. Read-only, checked with every `atlas scan` (and `atlas dns check`).
+devices ask the most. Read-only, checked with every `lanxang scan` (and `lanxang dns check`).
 
   Pi-hole v6   POST /api/auth with the password or an app password -> a session id, sent as X-FTL-SID;
                the session is ended (DELETE /api/auth) after each read, so atlas never uses up Pi-hole's

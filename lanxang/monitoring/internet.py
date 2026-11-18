@@ -1,5 +1,5 @@
 """
-Internet health (part of `atlas uptime check`, once a minute in atlas-scan): is the connection up, how fast does
+Internet health (part of `lanxang uptime check`, once a minute in atlas-scan): is the connection up, how fast does
 it answer, and when it drops, is it the router or the internet provider?
 
   internet   a TCP connect to a few public DNS servers (Cloudflare, Google, Quad9 by default, port 443). Up when
@@ -187,12 +187,12 @@ def run(settings, store, now, *, internet=None, router=None, gateway=None, dns=N
         found.append(issue("down", INTERNET, "The internet connection is down", side or results[INTERNET][2],
                            href="/uptime"))
     if down and not was_down:
-        texts.append(Text(f"**🌐 Internet is down**\n• {side or results[INTERNET][2]}\n• atlas keeps checking every"
+        texts.append(Text(f"**🌐 Internet is down**\n• {side or results[INTERNET][2]}\n• Lanxang keeps checking every"
                           " minute and tells you when it's back", "internet:down"))
     elif was_down and not down:
         since = store.outage_start(INTERNET, now)
         lasted = f"\n• it was down for about {_minutes(now - since)}" if since else ""
-        texts.append(Text(f"**✅ Internet is back**{lasted}\n• see Atlas → Servers → Uptime for the outage list",
+        texts.append(Text(f"**✅ Internet is back**{lasted}\n• see Lanxang → Servers → Uptime for the outage list",
                           "internet:down"))
     for row in dns_rows:                         # name lookups: only worth a word while the internet itself is up
         dns_down = _down(store, fail_after, row) and not down

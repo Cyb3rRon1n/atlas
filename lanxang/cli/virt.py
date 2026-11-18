@@ -3,6 +3,7 @@
 import json
 
 import typer
+from lanxang.config.local import config_name
 from lanxang.config import load_config
 from lanxang.libvirt import (
     get_guest_info as get_libvirt_guest_info,
@@ -44,7 +45,7 @@ def scan():
     """
 
     console.print(
-        "[bold blue]Atlas Proxmox Scan[/bold blue]\n"
+        "[bold blue]Lanxang Proxmox Scan[/bold blue]\n"
     )
 
     settings = load_config()
@@ -59,7 +60,7 @@ def scan():
         )
 
         console.print(
-            "Enable it in atlas.yaml"
+            f"Enable it in {config_name()}"
         )
 
         return
@@ -204,7 +205,7 @@ def restart_guest_command(vmid: int):
     """
 
     console.print(
-        "[bold blue]Atlas Proxmox Restart[/bold blue]\n"
+        "[bold blue]Lanxang Proxmox Restart[/bold blue]\n"
     )
 
     settings = load_config()
@@ -218,7 +219,7 @@ def restart_guest_command(vmid: int):
         )
 
         console.print(
-            "Enable it in atlas.yaml"
+            f"Enable it in {config_name()}"
         )
 
         return
@@ -308,7 +309,7 @@ def stop_guest_command(vmid: int):
     """
 
     console.print(
-        "[bold blue]Atlas Proxmox Stop[/bold blue]\n"
+        "[bold blue]Lanxang Proxmox Stop[/bold blue]\n"
     )
 
     settings = load_config()
@@ -322,7 +323,7 @@ def stop_guest_command(vmid: int):
         )
 
         console.print(
-            "Enable it in atlas.yaml"
+            f"Enable it in {config_name()}"
         )
 
         return
@@ -417,7 +418,7 @@ def resize_guest_command(
     """
 
     console.print(
-        "[bold blue]Atlas Proxmox Resize[/bold blue]\n"
+        "[bold blue]Lanxang Proxmox Resize[/bold blue]\n"
     )
 
     if cpus is None and memory is None:
@@ -439,7 +440,7 @@ def resize_guest_command(
         )
 
         console.print(
-            "Enable it in atlas.yaml"
+            f"Enable it in {config_name()}"
         )
 
         return
@@ -559,7 +560,7 @@ def restart_libvirt_guest_command(
     """
 
     console.print(
-        "[bold blue]Atlas Libvirt Restart[/bold blue]\n"
+        "[bold blue]Lanxang Libvirt Restart[/bold blue]\n"
     )
 
     fleet_node, error = _resolve_fleet_node(node)
@@ -645,7 +646,7 @@ def stop_libvirt_guest_command(
     """
 
     console.print(
-        "[bold blue]Atlas Libvirt Stop[/bold blue]\n"
+        "[bold blue]Lanxang Libvirt Stop[/bold blue]\n"
     )
 
     fleet_node, error = _resolve_fleet_node(node)
@@ -735,7 +736,7 @@ def resize_libvirt_guest_command(
     """
 
     console.print(
-        "[bold blue]Atlas Libvirt Resize[/bold blue]\n"
+        "[bold blue]Lanxang Libvirt Resize[/bold blue]\n"
     )
 
     if vcpus is None and memory is None:
@@ -824,7 +825,7 @@ def resize_libvirt_guest_command(
 
 fleet_app = typer.Typer(
     name="fleet",
-    help="Aggregate views across multiple Atlas nodes."
+    help="Aggregate views across multiple Lanxang nodes."
 )
 
 
@@ -836,7 +837,7 @@ def fleet_doctor(
     )
 ):
     """
-    Run atlas doctor on every configured fleet node over SSH and
+    Run lanxang doctor on every configured fleet node over SSH and
     aggregate the results.
     """
 
@@ -862,7 +863,7 @@ def fleet_doctor(
             )
 
             console.print(
-                "Add nodes under fleet.nodes in atlas.yaml"
+                f"Add nodes under fleet.nodes in {config_name()}"
             )
 
         return
@@ -870,7 +871,7 @@ def fleet_doctor(
     if not json_output:
 
         console.print(
-            "[bold cyan]Atlas Fleet Doctor[/bold cyan]\n"
+            "[bold cyan]Lanxang Fleet Doctor[/bold cyan]\n"
         )
 
     results = []
@@ -945,9 +946,9 @@ def fleet_trends(
     )
 ):
     """
-    Run atlas trends on every configured fleet node over SSH and
+    Run lanxang trends on every configured fleet node over SSH and
     aggregate the results. Unlike fleet doctor, there is no fleet-wide
-    "healthy" concept - atlas trends itself has no health/threshold
+    "healthy" concept - lanxang trends itself has no health/threshold
     concept to signal - so the exit code reflects reachability only.
     """
 
@@ -973,7 +974,7 @@ def fleet_trends(
             )
 
             console.print(
-                "Add nodes under fleet.nodes in atlas.yaml"
+                f"Add nodes under fleet.nodes in {config_name()}"
             )
 
         return
@@ -981,7 +982,7 @@ def fleet_trends(
     if not json_output:
 
         console.print(
-            "[bold cyan]Atlas Fleet Trends[/bold cyan]\n"
+            "[bold cyan]Lanxang Fleet Trends[/bold cyan]\n"
         )
 
     results = []
@@ -1071,9 +1072,9 @@ def fleet_report(
     )
 ):
     """
-    Run atlas report on every configured fleet node over SSH and
+    Run lanxang report on every configured fleet node over SSH and
     aggregate the results. No fleet-wide "healthy" concept - the exit
-    code reflects reachability only, same as atlas fleet trends.
+    code reflects reachability only, same as lanxang fleet trends.
     """
 
     settings = load_config()
@@ -1098,7 +1099,7 @@ def fleet_report(
             )
 
             console.print(
-                "Add nodes under fleet.nodes in atlas.yaml"
+                f"Add nodes under fleet.nodes in {config_name()}"
             )
 
         return
@@ -1106,7 +1107,7 @@ def fleet_report(
     if not json_output:
 
         console.print(
-            "[bold cyan]Atlas Fleet Report[/bold cyan]\n"
+            "[bold cyan]Lanxang Fleet Report[/bold cyan]\n"
         )
 
     results = []
@@ -1153,7 +1154,7 @@ def fleet_report(
             if "inventory" in result and result["inventory"] is None:
 
                 console.print(
-                    "  [yellow]No inventory found - run atlas discover "
+                    "  [yellow]No inventory found - run lanxang discover "
                     "on that node.[/yellow]\n"
                 )
 

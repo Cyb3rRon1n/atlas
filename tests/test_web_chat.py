@@ -51,8 +51,8 @@ def test_reply_to_dict_adds_commands_and_is_json_plain():
 
     assert data["text"] == "Sonarr is stuck."
     assert data["action"] == {"type": "restart_container", "target": "sonarr", "cpus": None, "memory": None,
-                              "command": "atlas restart sonarr"}
-    assert data["plan"]["steps"][0]["action"]["command"] == "atlas restart sonarr"
+                              "command": "lanxang restart sonarr"}
+    assert data["plan"]["steps"][0]["action"]["command"] == "lanxang restart sonarr"
     assert data["plan"]["steps"][0]["rationale"] == "unstick"
     assert reply_to_dict(ChatReply(text="hi")) == {"text": "hi", "action": None, "plan": None}
 

@@ -12,6 +12,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from lanxang.config.local import config_name
 from lanxang.devices import Sighting
 
 
@@ -121,7 +122,7 @@ def sweep(subnets, timeout=0.5):
     hosts = [str(host) for subnet in subnets for host in ipaddress.IPv4Network(subnet, strict=False).hosts()]
 
     if len(hosts) > MAX_HOSTS:
-        raise ValueError(f"{len(hosts)} addresses - atlas scans at most {MAX_HOSTS}; narrow scan.subnets")
+        raise ValueError(f"{len(hosts)} addresses — Lanxang scans at most {MAX_HOSTS}; narrow scan.subnets")
 
     with ThreadPoolExecutor(max_workers=64) as pool:
         list(pool.map(lambda ip: _poke(ip, timeout), hosts))
@@ -158,7 +159,7 @@ def scan(subnets=None, timeout=0.5):
     subnets = list(subnets or parse_route(route))
 
     if not subnets:
-        raise RuntimeError("no subnet to scan - set scan.subnets in atlas.yaml")
+        raise RuntimeError(f"no subnet to scan — set scan.subnets in {config_name()}")
 
     sweep(subnets, timeout)
 

@@ -21,7 +21,7 @@ from lanxang.cli.app import app, console
 @app.command()
 def intelligence():
     """
-    Display Atlas intelligence context.
+    Display Lanxang intelligence context.
     """
 
     query = KnowledgeQueries()
@@ -29,7 +29,7 @@ def intelligence():
     environment = query.latest_environment()
 
     console.print(
-        "[bold blue]Atlas Intelligence[/bold blue]\n"
+        "[bold blue]Lanxang Intelligence[/bold blue]\n"
     )
 
     if not environment:
@@ -39,7 +39,7 @@ def intelligence():
         )
 
         console.print(
-            "Run: atlas discover"
+            "Run: lanxang discover"
         )
 
         return
@@ -64,7 +64,7 @@ def analyze(
     if not json_output:
 
         console.print(
-            "[bold blue]Atlas Analysis[/bold blue]\n"
+            "[bold blue]Lanxang Analysis[/bold blue]\n"
         )
 
     query = KnowledgeQueries()
@@ -84,7 +84,7 @@ def analyze(
             )
 
             console.print(
-                "Run: atlas discover"
+                "Run: lanxang discover"
             )
 
         return
@@ -284,14 +284,14 @@ def analyze(
 @app.command()
 def chat():
     """
-    Interactive chat with Atlas about your infrastructure. Atlas can
+    Interactive chat with Lanxang about your infrastructure. Lanxang can
     look up live container/Proxmox/monitoring state and recent
-    history as needed - unlike atlas analyze, no prior atlas discover
+    history as needed - unlike lanxang analyze, no prior lanxang discover
     is required. Type 'exit' or 'quit' to end the session.
     """
 
     console.print(
-        "[bold blue]Atlas Chat[/bold blue]\n"
+        "[bold blue]Lanxang Chat[/bold blue]\n"
     )
 
     settings = load_config()
@@ -364,7 +364,7 @@ def chat():
         })
 
         console.print(
-            f"\n[bold]Atlas:[/bold] {reply.text}\n"
+            f"\n[bold]Lanxang:[/bold] {reply.text}\n"
         )
 
         if reply.action:

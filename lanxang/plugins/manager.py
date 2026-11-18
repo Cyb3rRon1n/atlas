@@ -5,7 +5,7 @@ from lanxang.events import AtlasEvent
 
 class PluginManager:
     """
-    Registers and manages Atlas plugins.
+    Registers and manages Lanxang plugins.
     """
 
     def __init__(self):

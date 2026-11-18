@@ -15,7 +15,7 @@ def generate_report(inventory):
     report = []
 
     report.append(
-        "# Atlas Infrastructure Report\n"
+        "# Lanxang Infrastructure Report\n"
     )
 
     report.append(

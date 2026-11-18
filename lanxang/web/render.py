@@ -1,5 +1,5 @@
 """
-Pure HTML-rendering functions for the web view (`atlas web`).
+Pure HTML-rendering functions for the web view (`lanxang web`).
 Every function here takes already-fetched data (from KnowledgeQueries/
 data) and returns a plain HTML string - no I/O, no
 database access, so these are unit-testable the same way format_change()/
@@ -255,7 +255,7 @@ def _list_of_dicts_table(items):
 def render_overview_page(environment, analysis, summary=""):
     """
     environment is KnowledgeQueries().latest_environment()'s return
-    value (or None if atlas discover has never run); analysis is
+    value (or None if lanxang discover has never run); analysis is
     KnowledgeQueries().latest_analysis()'s (or None).
     """
 
@@ -265,7 +265,7 @@ def render_overview_page(environment, analysis, summary=""):
 
         return render_page(
             "Overview",
-            summary + "<p class=\"muted\">No inventory found. Run <code>atlas discover</code> first.</p>",
+            summary + "<p class=\"muted\">No inventory found. Run <code>lanxang discover</code> first.</p>",
             active="hosts", tabs=overview_tabs
         )
 
@@ -283,7 +283,7 @@ def render_overview_page(environment, analysis, summary=""):
         # other category here. _kv_table() unconditionally called .items()
         # on whatever it was given, so this crashed the whole page with an
         # AttributeError on any real host with any storage at all (found by
-        # actually running `atlas discover` + `atlas web` together, not by
+        # actually running `lanxang discover` + `lanxang web` together, not by
         # a unit test - the existing render tests seed data without a real
         # `storage` key).
         table = _list_of_dicts_table(data) if isinstance(data, list) else _kv_table(data)
@@ -292,7 +292,7 @@ def render_overview_page(environment, analysis, summary=""):
             f"<div class=\"card\"><h2>{_esc(title)}</h2>{table}</div>"
         )
 
-    # atlas discover's containers/virtualization categories are each
+    # lanxang discover's containers/virtualization categories are each
     # keyed by plugin name (see lanxang.plugins.AtlasPlugin.category and
     # the per-category merge in lanxang.cli.main.discover()) - every
     # entry is {"available": bool, "containers"/"guests": [...]}, not
@@ -317,7 +317,7 @@ def render_overview_page(environment, analysis, summary=""):
 
     if isinstance(virtualization.get("guests"), list):
 
-        # atlas proxmox scan's shape - {"nodes": [...], "guests": [...]}
+        # lanxang proxmox scan's shape - {"nodes": [...], "guests": [...]}
         # - not plugin-sourced, so no "plugin" column to add.
         guests = virtualization["guests"]
 
@@ -403,7 +403,7 @@ def _event_category(event_type):
 def render_history_page(events, today=None, changes=""):
     """
     events is KnowledgeQueries().recent_events()'s return value - a
-    list of EventRecord ORM objects, same as `atlas history` prints.
+    list of EventRecord ORM objects, same as `lanxang history` prints.
     A timeline: grouped by day, repeats of one event type folded, filterable.
     """
 
@@ -517,7 +517,7 @@ def build_summary(topology, devices=(), posture=None):
     posture_extra = {"posture": _posture_block(posture)} if posture else {}
 
     if not topology:
-        return {"status": "no map yet - run atlas map", **counts, **posture_extra}
+        return {"status": "no map yet - run lanxang map", **counts, **posture_extra}
 
     containers = [c for members in ((topology.get("docker") or {}).get("networks") or {}).values() for c in members]
     guests = [g for g in (topology.get("proxmox") or {}).get("guests", []) if not g.get("template")]

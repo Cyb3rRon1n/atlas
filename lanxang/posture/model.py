@@ -16,7 +16,7 @@ WINDOWS = {"live": timedelta(0), "1h": timedelta(hours=1), "24h": timedelta(hour
 NEW_FOR = timedelta(days=7)
 BASELINE = timedelta(hours=24)   # posture_seen's first day is learning, not "new"
 STALE_AFTER = timedelta(minutes=5)
-LAN_STALE_AFTER = timedelta(hours=2)   # atlas lan check runs with each atlas-scan pass (15 min default)
+LAN_STALE_AFTER = timedelta(hours=2)   # lanxang lan check runs with each atlas-scan pass (15 min default)
 MAX_SOURCES, MAX_DESTS, MAX_BUSIEST = 8, 10, 6   # dest boxes: 6 busiest, then unreviewed ones
 COL, ROW = 200, 64
 BANDS = {"inbound": 40, "direct": 220, "vpn": 0}   # vpn y is computed after direct's height
@@ -62,7 +62,7 @@ def _strip(statuses, routes, review, now):
 
     lan = statuses.get("lan")
     if not lan or now - lan["updated_at"] > LAN_STALE_AFTER:
-        lan_state = ("unknown", "No data", "atlas lan check has not run")
+        lan_state = ("unknown", "No data", "lanxang lan check has not run")
     else:
         issues = lan["detail"].get("issues") or []
         bad = [i for i in issues if i["level"] == "bad"]
@@ -213,7 +213,7 @@ def build_posture(store, now, window="24h"):
 
 
 def _router(statuses):
-    """Port forwards / UPnP and the latest new open ports, from atlas ports check (None before its first run)."""
+    """Port forwards / UPnP and the latest new open ports, from lanxang ports check (None before its first run)."""
 
     detail = (statuses.get("ports") or {}).get("detail")
     if not detail:

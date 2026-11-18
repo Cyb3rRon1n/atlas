@@ -164,7 +164,7 @@ def assess(*, offers, probe_error, gateway_ip, arp, clients, allowed, state):
             also = f"; that MAC is also {', '.join(others)}" if others else ""
             add("gateway_mac", "bad", gateway_ip,
                 f"{gateway_ip} now answers from {gateway_mac}, was {learned}{also}. A new router? "
-                "Run `atlas lan check --trust-gateway`. Otherwise something on the LAN is impersonating it.")
+                "Run `lanxang lan check --trust-gateway`. Otherwise something on the LAN is impersonating it.")
         elif others:
             add("shared_mac", "watch", gateway_ip, f"{gateway_mac} answers for {gateway_ip} and {', '.join(others)}")
         state.setdefault("gateway_mac", gateway_mac)
@@ -191,7 +191,7 @@ def alerts(previous_issues, issues):
     new = {key(i): i for i in issues if i["level"] == "bad"}
     from lanxang.alerts import Text
     tag = lambda k: f"lan:{k[0]}:{k[1]}"
-    texts = [Text(f"**🛡️ {i['reason']}**\n• {i['detail']}\n\nSee Atlas → Security.", tag(k))
+    texts = [Text(f"**🛡️ {i['reason']}**\n• {i['detail']}\n\nSee Lanxang → Security.", tag(k))
              for k, i in new.items() if k not in old]
     texts += [Text(f"**✅ Resolved: {i['reason'].lower()}**\n• {i['subject']}", tag(k)) for k, i in old.items() if k not in new]
 

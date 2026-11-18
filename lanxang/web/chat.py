@@ -1,5 +1,5 @@
 """
-The web chat: the same AtlasAgent as `atlas chat`, behind /api/chat, with
+The web chat: the same AtlasAgent as `lanxang chat`, behind /api/chat, with
 in-memory per-browser sessions, plus Approve, which executes exactly one
 suggested step after re-grounding it against live state. Pure of HTTP:
 callers pass factories, so tests never touch an LLM or Docker.
@@ -32,7 +32,7 @@ def _publish(event_type, payload):
         application.runtime.events.publish(AtlasEvent(event_type=event_type, source="AtlasWeb", payload=payload))
 
     except Exception as error:  # the action/answer already happened; a logging failure must not hide it
-        print(f"atlas web: could not record {event_type}: {error}")
+        print(f"lanxang web: could not record {event_type}: {error}")
 
 
 class ChatSessions:

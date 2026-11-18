@@ -1,6 +1,6 @@
 """
-Devices that could show their ports if atlas had a login: they answer SNMPv3 discovery (atlas ports check)
-or a mapped switch hears them announce themselves as a bridge/router/AP over LLDP. Atlas only suggests -
+Devices that could show their ports if atlas had a login: they answer SNMPv3 discovery (lanxang ports check)
+or a mapped switch hears them announce themselves as a bridge/router/AP over LLDP. Lanxang only suggests -
 the Setup tab's Switches card asks for the SNMPv3 user and passphrases, tests them, then saves.
 """
 

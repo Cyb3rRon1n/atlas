@@ -36,7 +36,7 @@ def receiver():
 
 def test_nothing_configured():
     assert not notify.configured(NotifyConfig())
-    assert notify.send(NotifyConfig(), TEXT) == (False, "no alert channels set (notify: in atlas.yaml)")
+    assert notify.send(NotifyConfig(), TEXT) == (False, "no alert channels set (notify: in lanxang.yaml)")
 
 
 def test_ntfy_gets_title_markdown_and_token_from_env(receiver, monkeypatch):
@@ -109,7 +109,7 @@ def test_email_over_a_real_smtp_conversation(monkeypatch):
 
     assert notify.send(config, TEXT) == (True, "")
     assert received["auth"].startswith("AUTH PLAIN")
-    assert "Subject: Atlas: =?utf-8?" in received["data"] or "Subject: Atlas:" in received["data"]
+    assert "Subject: Lanxang: =?utf-8?" in received["data"] or "Subject: Lanxang:" in received["data"]
     assert "To: me@example.com" in received["data"] and "**" not in received["data"]
     server.close()
 
@@ -133,7 +133,7 @@ def test_cli_notify_test(receiver, isolated_cwd):
     open("atlas.yaml", "w").write(f"notify:\n  webhooks: ['{base}/ok', '{base}/fail']\n")
     result = runner.invoke(app, ["notify", "test"])
     assert result.exit_code == 1 and "✓ webhook" in result.output and "✗ webhook" in result.output
-    assert got[0]["body"]["title"] == "✅ Atlas test alert"
+    assert got[0]["body"]["title"] == "✅ Test alert from Lanxang"
 
 
 def test_apprise_delivers_through_a_real_apprise(receiver):

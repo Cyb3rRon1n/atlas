@@ -88,7 +88,7 @@ def _pct(used, total):
 
 def build_hosts(topology, local_health, pve_scan, host_issues=None):
     """
-    Rows for the hosts card: the host Atlas runs on (live psutil numbers from
+    Rows for the hosts card: the host Lanxang runs on (live psutil numbers from
     get_host_health() + containers from the latest topology) and each Proxmox
     node from the latest scan event (guests from the topology).
     """

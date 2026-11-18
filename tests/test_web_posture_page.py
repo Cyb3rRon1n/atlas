@@ -76,7 +76,7 @@ def test_posture_page_review_list_banner_and_live_label():
     script = POSTURE_SCRIPT
     assert 'id="review"' in html and "Needs review" in html
     assert "renderReview(data.review)" in script and "data.enabled" in script
-    assert "atlas posture watch" in script and "posture.enabled: true" in script
+    assert "lanxang posture watch" in script and "posture.enabled: true" in script
     assert ">This hour<" in html and 'data-window="live"' in html and ">Live<" not in html
     assert "removeClass(\"dim\")" not in script
     assert "msg.textContent = DEFAULT_MSG" in script

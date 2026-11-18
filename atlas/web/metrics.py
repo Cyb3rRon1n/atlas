@@ -19,6 +19,10 @@ HELP = {
     "atlas_ups_charge_percent": ("gauge", "UPS battery charge"),
     "atlas_ups_on_battery": ("gauge", "1 while the UPS runs on battery"),
     "atlas_heartbeat_ok": ("gauge", "Heartbeat on time (1), late or failed (0); waiting ones are left out"),
+    "atlas_ha_up": ("gauge", "Home Assistant answering (1) or not (0)"),
+    "atlas_ha_devices_offline": ("gauge", "Home Assistant devices whose entities are all unavailable"),
+    "atlas_ha_low_batteries": ("gauge", "Home Assistant batteries at or under the low mark"),
+    "atlas_ha_updates": ("gauge", "Home Assistant updates waiting"),
     "atlas_dns_blocking": ("gauge", "Pi-hole / AdGuard Home ad blocking on (1) or off (0)"),
     "atlas_dns_queries": ("gauge", "DNS queries Pi-hole / AdGuard Home counted (its own window, usually 24 h)"),
     "atlas_dns_blocked": ("gauge", "DNS queries blocked (same window)"),
@@ -90,6 +94,15 @@ def collect(settings, now, sources=None):
     for name, beat in (((statuses.get("heartbeats") or {}).get("detail")) or {}).items():
         if beat.get("state") in ("ok", "late", "failed"):
             found["atlas_heartbeat_ok"].append(({"name": name}, int(beat["state"] == "ok")))
+
+    home = ((statuses.get("homeassistant") or {}).get("detail")) or {}
+    if home and settings.homeassistant.enabled:
+        info = home.get("info") or {}
+        found["atlas_ha_up"].append(({}, int(not home.get("error"))))
+        if info:
+            found["atlas_ha_devices_offline"].append(({}, len(info.get("offline") or [])))
+            found["atlas_ha_low_batteries"].append(({}, len(info.get("batteries") or [])))
+            found["atlas_ha_updates"].append(({}, len(info.get("updates") or [])))
 
     dns = (((statuses.get("dns") or {}).get("detail")) or {}).get("info") or {}
     if dns and settings.dns_filter.enabled:

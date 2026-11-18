@@ -3,6 +3,15 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
+## Unreleased
+
+### Added
+- **Home Assistant** (Setup → *Home Assistant*): a *Smart home* tile and card on Home with the devices that
+  dropped out (all their sensors, switches, locks... unavailable for hours - TVs and players that are just off
+  don't count), low batteries and updates waiting. Alerts when Home Assistant stops answering, a device drops out
+  or a battery runs low, and when each is fine again. Also in the weekly summary and `/metrics`. Read-only, with a
+  long-lived access token.
+
 ## 0.11.2 - 2026-11-18
 
 ### Changed

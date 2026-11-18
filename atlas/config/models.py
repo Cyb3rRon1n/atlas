@@ -286,6 +286,17 @@ class DnsFilterConfig(BaseModel):
     timeout: float = 5.0
 
 
+class HomeAssistantConfig(BaseModel):
+    # Home Assistant, read with each scan through its REST API. The long-lived access token is the
+    # ATLAS_HA_TOKEN secret (HA: your profile > Security > Long-lived access tokens).
+    enabled: bool = False
+    url: str = ""                   # http://homeassistant.local:8123
+    verify_ssl: bool = False
+    timeout: float = 15.0
+    offline_hours: int = 6          # a device all of whose sensors/switches... are unavailable this long
+    battery_percent: int = 20       # a battery at or under this is low
+
+
 class NasConfig(BaseModel):
     # TrueNAS (an API key) or Synology (an administrator account), read with each scan. The key or password is
     # the ATLAS_NAS_PASSWORD secret; user is the TrueNAS user the key belongs to, or the Synology account.
@@ -331,4 +342,5 @@ class AtlasConfig(BaseModel):
     internet: InternetConfig = InternetConfig()
     dns_filter: DnsFilterConfig = DnsFilterConfig()
     nas: NasConfig = NasConfig()
+    homeassistant: HomeAssistantConfig = HomeAssistantConfig()
     ups: UpsConfig = UpsConfig()

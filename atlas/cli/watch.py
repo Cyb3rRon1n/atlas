@@ -162,6 +162,14 @@ def lan_scan(
         except Exception as error:                      # NAS trouble never fails the LAN scan
             console.print(f"[yellow]NAS check failed: {error}[/yellow]")
 
+    if settings.homeassistant.enabled:
+        try:
+            from atlas.monitoring.homeassistant import run as ha_run
+            from atlas.posture.store import PostureStore
+            ha_run(settings, PostureStore(), utcnow())
+        except Exception as error:                      # Home Assistant trouble never fails the LAN scan
+            console.print(f"[yellow]Home Assistant check failed: {error}[/yellow]")
+
     try:                                                # Sunday evening: how the week went
         from atlas.monitoring.summary import run as summary_run
         from atlas.posture.store import PostureStore
@@ -893,3 +901,38 @@ def nas_check(json_output: bool = typer.Option(False, "--json", help="Print the 
 
 
 app.add_typer(nas_app)
+
+
+ha_app = typer.Typer(name="ha", help="Home Assistant: is it up, offline smart devices, low batteries, updates")
+
+
+@ha_app.command("check")
+def ha_check(json_output: bool = typer.Option(False, "--json", help="Print the result as JSON")):
+    """
+    Reads Home Assistant from homeassistant: (Setup -> Home Assistant). `atlas scan` runs it too; HA not
+    answering, a device dropping out or a low battery sends one alert, and another when it's fine.
+    """
+
+    from atlas.monitoring.homeassistant import run
+    from atlas.posture.store import PostureStore
+
+    settings = load_config()
+    if not settings.homeassistant.enabled:
+        console.print("Home Assistant watch is off - turn it on in Setup or under homeassistant: in atlas.yaml.")
+        return
+    detail = run(settings, PostureStore(), utcnow())
+    if json_output:
+        print(json.dumps(detail))
+        return
+    if detail["error"]:
+        console.print(f"[red]{detail['error']}[/red]")
+    info = detail["info"] or {}
+    console.print(f"Home Assistant {info.get('version') or '?'}: {len(info.get('offline') or [])} devices offline, "
+                  f"{len(info.get('batteries') or [])} low batteries, {len(info.get('updates') or [])} updates waiting")
+    for device in info.get("offline") or []:
+        console.print(f"  offline {device['hours']} h: {device['name']} ({', '.join(device['kinds'])})")
+    for battery in info.get("batteries") or []:
+        console.print(f"  battery: {battery['name']} {battery['level'] if battery['level'] is not None else 'low'}")
+
+
+app.add_typer(ha_app)

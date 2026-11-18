@@ -82,6 +82,15 @@ CARDS = {
                 Field("host", "UPS server address", "text", ("ups", "host"), hint="192.168.1.20"),
                 Field("port", "Port", "number", ("ups", "port"), hint="3493"),
                 Field("name", "UPS name (blank = every UPS on that server)", "text", ("ups", "name"), hint="ups")]),
+    "homeassistant": ("Home Assistant", "Watches Home Assistant itself and the smart home it runs: devices that "
+                      "dropped out (all their sensors, switches, locks... unavailable for hours - TVs and players "
+                      "that are just off don't count), low batteries, and updates waiting. Make a long-lived access "
+                      "token in Home Assistant (your profile > Security). Read-only.", [
+                          Field("url", "Address", "text", ("homeassistant", "url"),
+                                hint="http://homeassistant.local:8123"),
+                          Field("token", "Long-lived access token", "secret", None, "ATLAS_HA_TOKEN"),
+                          Field("verify_ssl", "Check its certificate (off for a self-signed one)", "bool",
+                                ("homeassistant", "verify_ssl"))]),
     "nas": ("TrueNAS or Synology", "Shows each pool's health and how full it is, and each disk's health and "
             "temperature; alerts when a pool isn't healthy or a disk fails, runs hot or wears out. TrueNAS: an API "
             "key (top-right user menu > API Keys; give its user the read-only admin role) and the https address. "
@@ -115,9 +124,10 @@ GEAR = [
     ("proxmox", "Proxmox server", "VMs and containers", ("proxmox",)),
     ("ups", "UPS", "battery backup, read through NUT", ("ups",)),
     ("dns", "Pi-hole or AdGuard Home", "network-wide ad blocking", ("dnsfilter",)),
+    ("homeassistant", "Home Assistant", "smart home: offline devices, batteries, updates", ("homeassistant",)),
     ("plain", "Only an internet-provider or store-bought router", "ASUS, Netgear, eero, Fritz!Box, Deco...", ()),
 ]
-HARDWARE_CARDS = ("switches", "unifi", "proxmox", "ups", "dnsfilter", "nas")
+HARDWARE_CARDS = ("switches", "unifi", "proxmox", "ups", "dnsfilter", "nas", "homeassistant")
 SNMP_GEAR = {"Ubiquiti": "unifi", "Synology": "nas", "QNAP": "nas", "MikroTik": "router"}   # SNMPv3 discovery maker
 
 
@@ -130,6 +140,7 @@ def _detected(config):
     found |= {"ups"} if config.ups.enabled else set()
     found |= {"dns"} if config.dns_filter.enabled else set()
     found |= {"nas"} if config.nas.enabled else set()
+    found |= {"homeassistant"} if config.homeassistant.enabled else set()
     try:
         from atlas.posture.store import PostureStore
         snmp = ((PostureStore().statuses().get("ports") or {}).get("detail") or {}).get("snmp") or {}
@@ -159,7 +170,8 @@ def _gear_html(chosen, detected):
 
 
 ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "enabled")], "ups": [("ups", "enabled")],
-           "dnsfilter": [("dns_filter", "enabled")], "nas": [("nas", "enabled")]}
+           "dnsfilter": [("dns_filter", "enabled")], "nas": [("nas", "enabled")],
+           "homeassistant": [("homeassistant", "enabled")]}
 WIRING_CARDS = ("switches", "unifi")
 
 ACTIONS = re.compile(r"^/api/settings/([a-z]+)/(test|save|off|dismiss)$")
@@ -430,6 +442,14 @@ def _test(card, body):
             return False, str(error)
         return True, (f"Connected: {info['kind']}, ad blocking {'on' if info['blocking'] else 'OFF'}, "
                       f"{info['queries'] or 0:,} DNS questions, {info['blocked'] or 0:,} blocked.")
+    if card == "homeassistant":
+        from atlas.monitoring.homeassistant import HomeAssistantError, fetch
+        try:
+            info = fetch(config.homeassistant, environ)
+        except HomeAssistantError as error:
+            return False, str(error)
+        return True, (f"Connected: Home Assistant {info['version']}, {len(info['offline'])} device(s) offline, "
+                      f"{len(info['batteries'])} low batteries, {len(info['updates'])} updates waiting.")
     if card == "nas":
         from atlas.monitoring.nas import NasError, fetch
         try:
@@ -579,7 +599,8 @@ def _on(card, config):
             "email": bool(alerts.email.host and alerts.email.to),
             "ai": config.intelligence.provider != "none", "switches": bool(config.wiring.switches),
             "unifi": config.wiring.unifi.enabled, "proxmox": config.proxmox.enabled, "ups": config.ups.enabled,
-            "dnsfilter": config.dns_filter.enabled, "nas": config.nas.enabled}[card]
+            "dnsfilter": config.dns_filter.enabled, "nas": config.nas.enabled,
+            "homeassistant": config.homeassistant.enabled}[card]
 
 
 SCRIPT = """
@@ -608,7 +629,7 @@ const showVersion = () => {
 if (snmpVersion) { snmpVersion.addEventListener("change", showVersion); showVersion(); }
 // "What's on your network?": show the hardware cards for what's ticked, save the ticks.
 const gearBoxes = [...document.querySelectorAll("#gear input[type=checkbox]")];
-const hardware = ["switches", "unifi", "proxmox", "ups", "dnsfilter", "nas"];
+const hardware = ["switches", "unifi", "proxmox", "ups", "dnsfilter", "nas", "homeassistant"];
 const showGear = () => {
   const want = new Set(gearBoxes.filter((box) => box.checked).flatMap((box) => box.dataset.cards.split(" ")));
   for (const card of hardware) {

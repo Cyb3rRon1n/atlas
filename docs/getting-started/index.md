@@ -47,7 +47,7 @@ lanxang version
 
 ## First run
 
-Generate `lanxang.yaml` interactively — prompts for the Proxmox/AI provider/Prometheus settings you actually need, skips anything you don't, and never writes `ANTHROPIC_API_KEY` to disk. Every run is logged to `logs/atlas-init-<timestamp>.log` (secrets redacted) for troubleshooting:
+Generate `lanxang.yaml` interactively — prompts for the Proxmox/AI provider/Prometheus settings you actually need, skips anything you don't, and never writes `ANTHROPIC_API_KEY` to disk. Every run is logged to `logs/lanxang-init-<timestamp>.log` (secrets redacted) for troubleshooting:
 
 ```bash
 lanxang init

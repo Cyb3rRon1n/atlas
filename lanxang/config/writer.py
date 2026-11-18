@@ -29,7 +29,7 @@ def write_setup_log(lines: list[str], directory: Path = Path("logs")) -> Path:
     )
 
     log_path = directory / (
-        "atlas-init-"
+        "lanxang-init-"
         f"{utcnow().strftime('%Y%m%d-%H%M%S')}.log"
     )
 

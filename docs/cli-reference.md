@@ -8,7 +8,7 @@ All 35 current Lanxang commands. Run `lanxang <command> --help` for any command-
 |---|---|
 | `lanxang version` | Display the Lanxang version. |
 | `lanxang status` | Display current Lanxang status. |
-| `lanxang init` | Interactively generate `lanxang.yaml` — prompts only for Proxmox/AI provider/Prometheus settings, skips whatever you decline, never writes `ANTHROPIC_API_KEY` to disk. Logs the session to `logs/atlas-init-<timestamp>.log` (secrets redacted) for troubleshooting and records. Optional — Lanxang runs on safe defaults without an `lanxang.yaml` at all. |
+| `lanxang init` | Interactively generate `lanxang.yaml` — prompts only for Proxmox/AI provider/Prometheus settings, skips whatever you decline, never writes `ANTHROPIC_API_KEY` to disk. Logs the session to `logs/lanxang-init-<timestamp>.log` (secrets redacted) for troubleshooting and records. Optional — Lanxang runs on safe defaults without an `lanxang.yaml` at all. |
 | `lanxang doctor` | Run Lanxang health checks (Python, memory, storage, Docker, inventory, other virtualization/orchestration backends detected on the host) plus live reachability checks for the optional integrations you've configured (Proxmox, AI provider — Anthropic stays config-only to avoid a billed call, Ollama is checked live — Prometheus), each bounded by a short timeout so a dead endpoint can't hang the run. `--json` prints `{"checks": [...], "healthy": bool}` instead. Exits 1 if any check is unhealthy, in either output mode - safe to check `$?` from cron without `--json`. |
 | `lanxang config` | Display the active Lanxang configuration. |
 | `lanxang runtime` | Display Lanxang runtime information. |

@@ -61,7 +61,7 @@ def test_ntfy_test_sends_without_saving_then_save_and_turn_off(env, receiver, is
     assert stat.S_IMODE((isolated_cwd / "inventory" / "secrets.json").stat().st_mode) == 0o600
 
     page = render_settings_page()
-    assert "tk_secret" not in page and "saved - leave blank to keep it" in page and 'class="badge on"' in page
+    assert "tk_secret" not in page and "saved — leave blank to keep it" in page and 'class="badge on"' in page
 
     assert handle_post("/api/settings/ntfy/save", {"url": url, "topic": "renamed", "token": ""})[0] == 200
     assert load_config().notify.ntfy.token == "tk_secret"                         # blank keeps the secret
@@ -180,7 +180,7 @@ def test_switches_in_atlas_yaml_lock_the_card(env, isolated_cwd):
     status, data = handle_post("/api/settings/switches/save", SWITCH)
     assert status == 400 and "atlas.yaml" in data["error"] and local.read_settings() == {}
     assert "(from atlas.yaml)" in render_settings_page()
-    assert "No switch named core switch - names: core" in handle_post("/api/settings/switches/test", SWITCH)[1]["error"]
+    assert "No switch named core switch — names: core" in handle_post("/api/settings/switches/test", SWITCH)[1]["error"]
 
 
 def test_switch_test_makes_one_read_only_snmp_request(env, monkeypatch):
@@ -272,7 +272,7 @@ def test_network_test_errors_are_plain_words(env, monkeypatch):
     monkeypatch.setattr(client, "connect", lambda *a, **k: api)
     body = {"host": "192.0.2.1", "user": "atlas@pve", "token_name": "t", "token_value": "x"}
     status, data = handle_post("/api/settings/proxmox/test", body)
-    assert status == 400 and data["error"] == "No answer from Proxmox at 192.0.2.1:8006 - check the host and that it's on."
+    assert status == 400 and data["error"] == "No answer from Proxmox at 192.0.2.1:8006 — check the host and that it's on."
 
 
 def test_snmp_v2c_switch_saves_a_community_and_drops_v3_secrets(env, isolated_cwd):
@@ -331,7 +331,7 @@ def test_setup_manages_an_old_atlas_keyed_install(env, receiver, isolated_cwd):
     assert load_config().notify.webhooks == [f"{url}/one", f"{url}/two"]
     assert local.secret_names() == {"LANXANG_WEBHOOK_1", "LANXANG_WEBHOOK_2", "LANXANG_NTFY_TOKEN"}
     page = render_settings_page()
-    assert "set in .env" not in page and "saved - leave blank to keep it" in page      # saved, not from environment
+    assert "set in .env" not in page and "saved — leave blank to keep it" in page      # saved, not from environment
 
     handle_post("/api/settings/webhooks/save", {"urls": f"{url}/three"})
     stored = json.loads((isolated_cwd / "inventory" / "secrets.json").read_text())

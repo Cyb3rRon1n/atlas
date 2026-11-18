@@ -3,6 +3,13 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
+## Unreleased
+
+### Fixed
+- First start on a fresh data volume no longer fails when the web and scan containers create the database tables at the same moment (`table events already exists`); the loser now retries.
+- The setup log from `lanxang init` is written to `logs/lanxang-init-<timestamp>.log` (older `atlas-init-*` logs are left alone).
+- Setup page text uses em dashes instead of spaced hyphens.
+
 ## 1.0.0 - 2026-11-18
 
 ### Changed

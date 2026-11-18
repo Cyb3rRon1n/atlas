@@ -1,3 +1,5 @@
+import time
+
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import OperationalError
 
@@ -20,6 +22,7 @@ ALERT_COLUMN_MIGRATIONS = {
 # Images built from main between the rename and 1.0 wrote lanxang.* event types; stored names stay atlas.*.
 # A range (not LIKE, which is case-insensitive) so the check reads ix_events_type_time and takes no write lock.
 LANXANG_EVENTS = "event_type >= 'lanxang.' AND event_type < 'lanxang/'"
+CREATE_ATTEMPTS = 10  # create_all retries when another process is creating the same tables
 _HEALED = set()     # database URLs checked by this process: every store read calls initialize_database()
 
 
@@ -86,9 +89,23 @@ def initialize_database(engine=None):
             exist_ok=True
         )
 
-    Base.metadata.create_all(
-        engine
-    )
+    # atlas-web and atlas-scan start together on a fresh volume; create_all checks then creates, one
+    # table at a time, so the loser can hit a table the winner just made - and again on the next one
+    # while the winner is still going. Retry until it sees them all; anything but "already exists" is real.
+    for attempt in range(CREATE_ATTEMPTS):
+
+        try:
+            Base.metadata.create_all(
+                engine
+            )
+            break
+
+        except OperationalError as error:
+
+            if "already exists" not in str(error).lower() or attempt == CREATE_ATTEMPTS - 1:
+                raise
+
+            time.sleep(0.05)
 
     _migrate_table(engine, "devices", DEVICE_COLUMN_MIGRATIONS)
     _migrate_table(engine, "alerts", ALERT_COLUMN_MIGRATIONS)

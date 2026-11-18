@@ -18,7 +18,7 @@ def _entity(entity_id, state, changed=LONG_AGO, **attributes):
 
 STATES = [
     _entity("camera.porch", "unavailable"), _entity("binary_sensor.porch_motion", "unavailable"),   # all down: offline
-    _entity("sensor.garage_temp", "unavailable"), _entity("sensor.garage_humidity", "21"),         # one still answers
+    _entity("sensor.shed_temp", "unavailable"), _entity("sensor.shed_humidity", "21"),         # one still answers
     _entity("light.hall", "unavailable", JUST_NOW),                                                # down, but 1 h only
     _entity("media_player.living_room_tv", "unavailable"),                                         # TVs don't count
     _entity("sensor.door_lock_battery", "12", device_class="battery", unit_of_measurement="%"),
@@ -28,7 +28,7 @@ STATES = [
             latest_version="2026.11.2"),
     _entity("update.mushroom", "off", title="Mushroom")]
 DEVICES = {"camera.porch": "Porch camera", "binary_sensor.porch_motion": "Porch camera",
-           "sensor.garage_temp": "Garage sensor", "sensor.garage_humidity": "Garage sensor",
+           "sensor.shed_temp": "Shed sensor", "sensor.shed_humidity": "Shed sensor",
            "sensor.door_lock_battery": "Front door lock", "binary_sensor.leak_battery_low": "Leak sensor"}
 
 

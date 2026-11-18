@@ -33,6 +33,6 @@ def test_write_setup_log_creates_directory_and_file(isolated_cwd):
     log_path = write_setup_log(["line one", "line two"])
 
     assert log_path.parent.resolve() == isolated_cwd / "logs"
-    assert log_path.name.startswith("atlas-init-")
+    assert log_path.name.startswith("lanxang-init-")
     assert log_path.name.endswith(".log")
     assert log_path.read_text() == "line one\nline two\n"

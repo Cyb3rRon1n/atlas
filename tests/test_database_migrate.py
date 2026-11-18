@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.exc import OperationalError
 
 import lanxang.database as database_module
 from lanxang.database import initialize_database
@@ -141,3 +142,38 @@ def test_event_heal_never_writes_when_nothing_matches_and_runs_once(tmp_path, mo
     finally:
         writer.rollback()
         writer.close()
+
+
+def test_initialize_database_tolerates_a_concurrent_create_all(tmp_path, monkeypatch):
+    """
+    On a fresh data volume the web and scan containers both call
+    initialize_database() at once; create_all() is check-then-create, so the
+    loser's CREATE TABLE can hit "table events already exists". That means
+    the other process made it - initialization has to retry, not crash.
+    """
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'fresh.db'}")
+    real_create_all = database_module.Base.metadata.create_all
+    calls = []
+
+    def racing_create_all(bind, *args, **kwargs):
+
+        calls.append(1)
+
+        if len(calls) == 1:
+            real_create_all(bind)     # the "winner" gets there first
+
+        if len(calls) <= 2:           # and is still creating tables when the retry runs
+            raise OperationalError("CREATE TABLE events (...)", {}, Exception("table events already exists"))
+
+        return real_create_all(bind, *args, **kwargs)
+
+    monkeypatch.setattr(database_module.Base.metadata, "create_all", racing_create_all)
+
+    initialize_database(engine)
+
+    assert len(calls) == 3
+    assert "events" in inspect(engine).get_table_names()
+
+    with engine.begin() as connection:
+        assert connection.execute(text("SELECT count(*) FROM events")).scalar() == 0

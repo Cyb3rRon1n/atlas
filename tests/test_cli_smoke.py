@@ -51,7 +51,7 @@ def test_init_declining_every_integration_writes_minimal_config(isolated_cwd):
     assert "name: homelab" in written
     assert "enabled: false" in written
 
-    log_files = list((isolated_cwd / "logs").glob("atlas-init-*.log"))
+    log_files = list((isolated_cwd / "logs").glob("lanxang-init-*.log"))
 
     assert len(log_files) == 1
     assert "name: homelab" in log_files[0].read_text()
@@ -83,7 +83,7 @@ def test_init_with_proxmox_token_auth_redacts_secret_from_log(isolated_cwd):
     assert "11 characters entered" in result.output
 
     log_text = (
-        list((isolated_cwd / "logs").glob("atlas-init-*.log"))[0].read_text()
+        list((isolated_cwd / "logs").glob("lanxang-init-*.log"))[0].read_text()
     )
 
     assert "supersecret" not in log_text

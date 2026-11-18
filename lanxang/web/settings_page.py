@@ -24,7 +24,7 @@ from lanxang.web.render import _esc, render_page
 Field = namedtuple("Field", "key label kind path secret hint options", defaults=(None, None, "", ()))
 
 CARDS = {
-    "ntfy": ("ntfy - phone push", "The quickest way to get alerts on your phone: install the ntfy app, pick a "
+    "ntfy": ("ntfy — phone push", "The quickest way to get alerts on your phone: install the ntfy app, pick a "
              "hard-to-guess topic name and subscribe to it.", [
                  Field("url", "Server", "text", ("notify", "ntfy", "url"), hint="https://ntfy.sh, or your own"),
                  Field("topic", "Topic", "text", ("notify", "ntfy", "topic")),
@@ -52,7 +52,7 @@ CARDS = {
     "switches": ("Switches and routers (SNMP)", "Draws every port on the Cabling page. Works with managed switches "
                  "and with routers, firewalls and NAS boxes that speak SNMP (OPNsense, pfSense, OpenWrt, MikroTik, "
                  "Synology, QNAP...). Prefer SNMPv3 (a read-only user, SHA + AES); use v2c with a read-only "
-                 "community only when the device offers nothing else - it travels unencrypted. Saving a name that "
+                 "community only when the device offers nothing else — it travels unencrypted. Saving a name that "
                  "exists updates it.", [
                      Field("name", "Name", "text", hint="core-switch"),
                      Field("host", "Address", "text", hint="192.168.1.2"),
@@ -85,14 +85,14 @@ CARDS = {
                 Field("name", "UPS name (blank = every UPS on that server)", "text", ("ups", "name"), hint="ups")]),
     "router": ("OpenWrt router", "Reads the names your router's DHCP server gave each device, and who is on which "
                "Wi-Fi, so Devices can tell you what an unknown address is. Uses the router's web interface (the one "
-               "LuCI uses) with its login - a separate read-only user works too. Read-only.", [
+               "LuCI uses) with its login — a separate read-only user works too. Read-only.", [
                    Field("url", "Router address", "text", ("router", "url"), hint="http://192.168.1.1"),
                    Field("user", "User", "text", ("router", "user"), hint="root"),
                    Field("password", "Password", "secret", None, "LANXANG_ROUTER_PASSWORD"),
                    Field("verify_ssl", "Check its certificate (off for a self-signed one)", "bool",
                          ("router", "verify_ssl"))]),
     "homeassistant": ("Home Assistant", "Watches Home Assistant itself and the smart home it runs: devices that "
-                      "dropped out (all their sensors, switches, locks... unavailable for hours - TVs and players "
+                      "dropped out (all their sensors, switches, locks... unavailable for hours — TVs and players "
                       "that are just off don't count), low batteries, and updates waiting. Make a long-lived access "
                       "token in Home Assistant (your profile > Security). Read-only.", [
                           Field("url", "Address", "text", ("homeassistant", "url"),
@@ -103,7 +103,7 @@ CARDS = {
     "nas": ("TrueNAS or Synology", "Shows each pool's health and how full it is, and each disk's health and "
             "temperature; alerts when a pool isn't healthy or a disk fails, runs hot or wears out. TrueNAS: an API "
             "key (top-right user menu > API Keys; give its user the read-only admin role) and the https address. "
-            "Synology: DSM only lets administrators read storage - make an admin account for Lanxang, deny it every "
+            "Synology: DSM only lets administrators read storage — make an admin account for Lanxang, deny it every "
             "folder and app, and leave two-factor off for it. Read-only.", [
                 Field("kind", "Which one", "select", ("nas", "kind"), options=("truenas", "synology")),
                 Field("url", "Web address", "text", ("nas", "url"), hint="https://192.168.1.20 (Synology: ...:5001)"),
@@ -126,9 +126,9 @@ CARDS = {
 # "What's on your network?" - each tick shows the Setup cards that gear uses. Alert and AI cards always show.
 GEAR = [
     ("switch", "Managed switch", "Cisco, Netgear, TP-Link, Zyxel, MikroTik...", ("switches",)),
-    ("router", "Router or firewall", "OPNsense, pfSense, OpenWrt, MikroTik - SNMP; OpenWrt also its DHCP names",
+    ("router", "Router or firewall", "OPNsense, pfSense, OpenWrt, MikroTik — SNMP; OpenWrt also its DHCP names",
      ("switches", "router")),
-    ("nas", "NAS", "Synology, QNAP, TrueNAS - ports over SNMP, disk health from TrueNAS or Synology",
+    ("nas", "NAS", "Synology, QNAP, TrueNAS — ports over SNMP, disk health from TrueNAS or Synology",
      ("switches", "nas")),
     ("unifi", "UniFi", "gateway, switches or access points", ("unifi",)),
     ("proxmox", "Proxmox server", "VMs and containers", ("proxmox",)),
@@ -173,7 +173,7 @@ def _gear_html(chosen, detected):
         for key, label, hint, cards in GEAR)
 
     return ('<section class="card gear" id="gear"><h2>What\'s on your network?</h2><p class="muted">Lanxang finds '
-            'every device by itself. Tick what you have and Setup shows the matching cards - each one adds detail, '
+            'every device by itself. Tick what you have and Setup shows the matching cards — each one adds detail, '
             'like switch ports or your VMs. Nothing here is required.</p>'
             f'<div class="gear-list">{boxes}</div><p class="muted gear-plain" hidden>Nothing more to connect: '
             'Lanxang maps your network from its own scan. Turn on alerts below, and add the services you care about '
@@ -347,13 +347,13 @@ def _test_ai(config, environ):
 
     intelligence = config.intelligence
     if intelligence.provider == "none":
-        return False, "No AI selected - choose ollama or anthropic first."
+        return False, "No AI selected — choose ollama or anthropic first."
     if intelligence.provider == "ollama":
         url = intelligence.ollama_host.rstrip("/") + "/api/tags"
         with urllib.request.urlopen(url, timeout=8) as response:
             models = [m.get("name", "") for m in json.load(response).get("models", [])]
         if not models:
-            return False, "Ollama answered but has no models - run: ollama pull qwen3:8b"
+            return False, "Ollama answered but has no models — run: ollama pull qwen3:8b"
         if intelligence.model not in models and f"{intelligence.model}:latest" not in models:
             return False, f"Ollama is reachable, but {intelligence.model or 'no model'} isn't installed. " \
                           f"It has: {', '.join(models[:8])}"
@@ -367,7 +367,7 @@ def _test_ai(config, environ):
     try:
         ids = [model.id for model in anthropic.Anthropic(api_key=key).models.list(limit=100, timeout=10).data]
     except anthropic.AuthenticationError:
-        return False, "Anthropic refused the key - check it, or create a new one in the Anthropic Console."
+        return False, "Anthropic refused the key — check it, or create a new one in the Anthropic Console."
     if intelligence.model and intelligence.model not in ids:
         return False, f"The key works, but model {intelligence.model} isn't available to it. " \
                       f"Available: {', '.join(ids[:6])}"
@@ -384,7 +384,7 @@ def _test_network(card, body, config, environ):
             name = str(body.get("name") or "").strip()
             switch = next((s for s in config.wiring.switches if s.name == name), None)
             if switch is None:
-                return False, f"No switch named {name or '(blank)'} - names: " \
+                return False, f"No switch named {name or '(blank)'} — names: " \
                               f"{', '.join(s.name for s in config.wiring.switches) or 'none yet'}"
             sys_name, description = probe_switch(switch, environ, config.wiring.timeout)
             return True, f"Connected to {sys_name or switch.host}" + (f": {description[:90]}" if description else ".")
@@ -409,19 +409,19 @@ def _test_network(card, body, config, environ):
     api = connect(proxmox.host, proxmox.user, token_name=proxmox.token_name, token_value=proxmox.token_value,
                   verify_ssl=proxmox.verify_ssl)
     if api is None:
-        return False, "Couldn't set up the Proxmox connection - check the host."
+        return False, "Couldn't set up the Proxmox connection — check the host."
     try:
         version = api.version.get().get("version", "?")
         nodes = api.nodes.get()
     except (AuthenticationError, ResourceException) as error:
         if getattr(error, "status_code", 401) in (401, 403):
-            return False, "Proxmox refused the token - check the user, token ID and secret, and that the token " \
+            return False, "Proxmox refused the token — check the user, token ID and secret, and that the token " \
                           "has the PVEAuditor role."
         return False, f"Proxmox answered with an error: {error}"
     except RequestException as error:
         if "SSL" in type(error).__name__ or "certificate" in str(error).lower():
-            return False, f"Proxmox's certificate isn't trusted - untick the certificate check for its self-signed one."
-        return False, f"No answer from Proxmox at {proxmox.host}:8006 - check the host and that it's on."
+            return False, f"Proxmox's certificate isn't trusted — untick the certificate check for its self-signed one."
+        return False, f"No answer from Proxmox at {proxmox.host}:8006 — check the host and that it's on."
     return True, f"Connected: Proxmox VE {version}, {len(nodes)} node{'s' * (len(nodes) != 1)}."
 
 
@@ -442,7 +442,7 @@ def _test(card, body):
         try:
             upses = fetch(config.ups.host, config.ups.port, config.ups.timeout, config.ups.name)
         except OSError as error:
-            return False, (f"No answer from {config.ups.host}:{config.ups.port} - check the address, that the "
+            return False, (f"No answer from {config.ups.host}:{config.ups.port} — check the address, that the "
                            f"network UPS server is on and allows this machine ({error}).")
         return True, "Connected: " + "; ".join(
             f"{name} {STATES[info['state']]}" + (f", {info['charge']:.0f}% charged" if info["charge"] is not None else "")
@@ -486,7 +486,7 @@ def _test(card, body):
         if not (alerts.ntfy.url and alerts.ntfy.topic):
             return False, "Enter the server and topic."
         notify.send_ntfy(alerts.ntfy, TEST_TEXT)
-        return True, f"Sent - it should appear on every device subscribed to {alerts.ntfy.topic}."
+        return True, f"Sent — it should appear on every device subscribed to {alerts.ntfy.topic}."
     if card == "webhooks":
         if not alerts.webhooks:
             return False, "Enter at least one webhook URL."
@@ -497,7 +497,7 @@ def _test(card, body):
         if not (alerts.email.host and alerts.email.to):
             return False, "Enter the SMTP server and at least one address to send to."
         notify.send_email(alerts.email, TEST_TEXT)
-        return True, f"Sent to {', '.join(alerts.email.to)} - check the inbox (and spam)."
+        return True, f"Sent to {', '.join(alerts.email.to)} — check the inbox (and spam)."
 
     return _test_ai(config, environ)
 
@@ -573,7 +573,7 @@ def _found_html(suggested):
         f'<button data-dismiss="{_esc(entry["ip"])}">Don\'t ask</button></li>'
         for entry in suggested)
 
-    return f'<div class="found"><p><b>Found on your network</b> - these could show their ports with a login:</p><ul>{rows}</ul></div>'
+    return f'<div class="found"><p><b>Found on your network</b> — these could show their ports with a login:</p><ul>{rows}</ul></div>'
 
 
 def _field_html(card, field, config):
@@ -590,13 +590,13 @@ def _field_html(card, field, config):
     if field.kind == "secret":
         env = _from_env(field.secret)
         saved = field.secret in local.secret_names() or env or (locked and value)
-        placeholder = "set in .env" if env else "saved - leave blank to keep it" if saved else "not set"
+        placeholder = "set in .env" if env else "saved — leave blank to keep it" if saved else "not set"
         return (f'<label for="{name}">{_esc(field.label)}{note}</label>'
                 f'<input id="{name}" name="{field.key}" type="password" autocomplete="new-password" '
                 f'placeholder="{_esc(placeholder)}"{" disabled" if env or locked else ""}>')
     if field.kind == "lines":
         count = len(value or [])
-        placeholder = (f"{count} saved - paste new ones to replace them" if count else "https://discord.com/api/webhooks/...")
+        placeholder = (f"{count} saved — paste new ones to replace them" if count else "https://discord.com/api/webhooks/...")
         return (f'<label for="{name}">{_esc(field.label)}{note}</label>'
                 f'<textarea id="{name}" name="{field.key}" placeholder="{_esc(placeholder)}"{disabled}></textarea>')
     if field.kind == "bool":
@@ -752,7 +752,7 @@ def render_settings_page():
         if card == "switches" and config.wiring.switches:
             where = f" (from {config_name()})" if local.locked(("wiring", "switches")) else ""
             saved += '<ul class="saved">' + "".join(
-                f"<li><b>{_esc(s.name)}</b> {_esc(s.host)} - "
+                f"<li><b>{_esc(s.name)}</b> {_esc(s.host)} — "
                 + (f"SNMPv2c (community){where}</li>" if s.version == "2c" else f"user {_esc(s.snmp_user)}, {s.priv}{where}</li>")
                 for s in config.wiring.switches) + "</ul>"
         cards.append(

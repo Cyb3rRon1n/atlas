@@ -1,7 +1,7 @@
-from atlas.config.models import AtlasConfig
-from atlas.intelligence.agent import AtlasAgent
-from atlas.intelligence.providers import ChatReply
-from atlas.knowledge.notes import search_notes
+from lanxang.config.models import AtlasConfig
+from lanxang.intelligence.agent import AtlasAgent
+from lanxang.intelligence.providers import ChatReply
+from lanxang.knowledge.notes import search_notes
 
 
 class _Capture:

@@ -2,8 +2,8 @@ import time
 
 import pytest
 
-import atlas.devices.lan as lan
-from atlas.devices import Sighting
+import lanxang.devices.lan as lan
+from lanxang.devices import Sighting
 
 
 ROUTE = """Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT

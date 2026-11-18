@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
-from atlas.config.models import AtlasConfig, HealthConfig
-from atlas.monitoring import disks
-from atlas.proxmox.discovery import discover_node_storage, smart_numbers
-from atlas.web.home_page import build_storage
+from lanxang.config.models import AtlasConfig, HealthConfig
+from lanxang.monitoring import disks
+from lanxang.proxmox.discovery import discover_node_storage, smart_numbers
+from lanxang.web.home_page import build_storage
 
 
 def test_smart_numbers_from_ata_attributes_and_nvme_text():
@@ -58,7 +58,7 @@ def _disk(**kw):
 
 
 def test_alerts_once_per_problem_and_once_when_it_clears(temp_db):
-    from atlas.posture.store import PostureStore
+    from lanxang.posture.store import PostureStore
 
     store, sent = PostureStore(temp_db), []
     settings = AtlasConfig()

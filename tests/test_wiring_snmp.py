@@ -2,9 +2,9 @@ import subprocess
 
 import pytest
 
-from atlas.config.models import WiringSwitch
-from atlas.wiring import WiringError
-from atlas.wiring.snmp import OIDS, OPTIONAL, collect_switch, parse_switch, parse_walk, walk_switch
+from lanxang.config.models import WiringSwitch
+from lanxang.wiring import WiringError
+from lanxang.wiring.snmp import OIDS, OPTIONAL, collect_switch, parse_switch, parse_walk, walk_switch
 
 ALL = {**OIDS, **OPTIONAL}
 

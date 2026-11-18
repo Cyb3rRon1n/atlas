@@ -1,5 +1,5 @@
-from atlas.wiring.build import build_wiring
-from atlas.wiring.unifi import parse_unifi
+from lanxang.wiring.build import build_wiring
+from lanxang.wiring.unifi import parse_unifi
 
 DEVICES = [  # same shapes as tests/test_wiring_unifi.py
     {"mac": "02:00:00:00:00:01", "name": "gateway", "model": "UCGF", "type": "udm", "ip": "192.0.2.1",

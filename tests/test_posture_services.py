@@ -1,6 +1,6 @@
 import requests
 
-from atlas.posture.collectors.services import (container_ip, container_ips, crowdsec_bans, gluetun_status,
+from lanxang.posture.collectors.services import (container_ip, container_ips, crowdsec_bans, gluetun_status,
                                                public_ip, vpn_members)
 from posture_fakes import Response, make_client
 

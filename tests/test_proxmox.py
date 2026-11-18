@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
-from atlas.proxmox.client import connect
-from atlas.proxmox.discovery import discover_nodes, discover_resources
+from lanxang.proxmox.client import connect
+from lanxang.proxmox.discovery import discover_nodes, discover_resources
 
 
 def test_connect_returns_client_on_success():
@@ -9,7 +9,7 @@ def test_connect_returns_client_on_success():
     fake_client = MagicMock()
 
     with patch(
-        "atlas.proxmox.client.ProxmoxAPI",
+        "lanxang.proxmox.client.ProxmoxAPI",
         return_value=fake_client
     ) as mock_api:
 
@@ -31,7 +31,7 @@ def test_connect_returns_client_on_success():
 def test_connect_returns_none_on_failure():
 
     with patch(
-        "atlas.proxmox.client.ProxmoxAPI",
+        "lanxang.proxmox.client.ProxmoxAPI",
         side_effect=RuntimeError("connection refused")
     ):
 
@@ -49,7 +49,7 @@ def test_connect_prefers_token_auth_when_configured():
     fake_client = MagicMock()
 
     with patch(
-        "atlas.proxmox.client.ProxmoxAPI",
+        "lanxang.proxmox.client.ProxmoxAPI",
         return_value=fake_client
     ) as mock_api:
 
@@ -154,7 +154,7 @@ def test_discover_resources_maps_vm_and_container_fields():
 
 def test_discover_node_storage_maps_fields_and_degrades_per_lookup():
 
-    from atlas.proxmox.discovery import discover_node_storage
+    from lanxang.proxmox.discovery import discover_node_storage
 
     client = MagicMock()
     client.nodes.return_value.storage.get.return_value = [

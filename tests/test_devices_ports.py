@@ -4,13 +4,13 @@ import xml.etree.ElementTree as ElementTree
 from datetime import datetime
 from types import SimpleNamespace
 
-from atlas.config.models import AtlasConfig
-from atlas.devices import ports as ports_module
-from atlas.devices.ports import assess, host_listeners, port_label, probe, run, upnp_mappings
-from atlas.posture.model import build_posture
-from atlas.posture.store import PostureStore
-from atlas.web.devices_pages import _open_ports
-from atlas.wiring.unifi import parse_exposure
+from lanxang.config.models import AtlasConfig
+from lanxang.devices import ports as ports_module
+from lanxang.devices.ports import assess, host_listeners, port_label, probe, run, upnp_mappings
+from lanxang.posture.model import build_posture
+from lanxang.posture.store import PostureStore
+from lanxang.web.devices_pages import _open_ports
+from lanxang.wiring.unifi import parse_exposure
 
 GW = "192.0.2.1"
 NOW = datetime(2026, 11, 15, 12, 0)

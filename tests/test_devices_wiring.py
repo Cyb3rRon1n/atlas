@@ -1,4 +1,4 @@
-from atlas.devices.wiring import effective_connection
+from lanxang.devices.wiring import effective_connection
 
 
 def device(connection="unknown", kind="other", name="device", sightings=None):

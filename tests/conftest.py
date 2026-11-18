@@ -1,14 +1,14 @@
-import atlas.alerts as alerts_module
+import lanxang.alerts as alerts_module
 import pytest
 from sqlalchemy import create_engine
 
-import atlas.devices.store as devices_store_module
-import atlas.knowledge.queries as queries_module
-import atlas.knowledge.store as store_module
-import atlas.monitoring.uptime as uptime_module
-import atlas.posture.store as posture_store_module
-import atlas.wiring.store as wiring_store_module
-from atlas.database.models import Base
+import lanxang.devices.store as devices_store_module
+import lanxang.knowledge.queries as queries_module
+import lanxang.knowledge.store as store_module
+import lanxang.monitoring.uptime as uptime_module
+import lanxang.posture.store as posture_store_module
+import lanxang.wiring.store as wiring_store_module
+from lanxang.database.models import Base
 
 
 @pytest.fixture
@@ -29,9 +29,9 @@ def temp_db(tmp_path, monkeypatch):
     Point KnowledgeStore/KnowledgeQueries at a throwaway SQLite file
     instead of the committed inventory/atlas.db.
 
-    store.py and queries.py each did `from atlas.database.engine import
+    store.py and queries.py each did `from lanxang.database.engine import
     engine`, binding the name locally - patching
-    atlas.database.engine.engine would not affect those already-bound
+    lanxang.database.engine.engine would not affect those already-bound
     references, so the importing modules' attributes are patched
     directly instead.
     """
@@ -57,10 +57,10 @@ def temp_db(tmp_path, monkeypatch):
 
 @pytest.fixture(autouse=True)
 def chat_flag_reset(monkeypatch):
-    """The web server sets atlas.web.render.AI_ON per request; put it back so one test's server can't hide the
+    """The web server sets lanxang.web.render.AI_ON per request; put it back so one test's server can't hide the
     chat from the next test's pages."""
 
-    from atlas.web import render
+    from lanxang.web import render
     monkeypatch.setattr(render, "AI_ON", True)
 
 
@@ -69,8 +69,8 @@ def no_network_lookups(monkeypatch):
     """Tests never ask the real LAN (mDNS / UPnP), never download the MAC maker list and never resolve a download
     server's name; the tests for those pieces call them with fakes."""
 
-    from atlas.devices import discover, identify
-    from atlas.posture.collectors import asn
+    from lanxang.devices import discover, identify
+    from lanxang.posture.collectors import asn
 
     def offline(*args, **kwargs):
         raise OSError("tests are offline")
@@ -79,7 +79,7 @@ def no_network_lookups(monkeypatch):
     monkeypatch.setattr(discover, "ssdp", lambda timeout=2.5, fetch=None: {})
     monkeypatch.setattr(identify, "GET", offline)
     monkeypatch.setattr(asn, "RESOLVE", offline)
-    from atlas.monitoring import internet
+    from lanxang.monitoring import internet
     monkeypatch.setattr(internet, "_connect", lambda host, port, timeout: (5.0, False))
     monkeypatch.setattr(internet, "_gateway", lambda: None)
     monkeypatch.setattr(internet, "_ask", lambda server, name, timeout: 5.0)

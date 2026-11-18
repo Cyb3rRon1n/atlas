@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from atlas.config.models import AtlasConfig
+from lanxang.config.models import AtlasConfig
 
 REPO = Path(__file__).resolve().parent.parent
 

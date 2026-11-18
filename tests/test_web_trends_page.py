@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from atlas.web.trends_page import _growth, render_trends_page
+from lanxang.web.trends_page import _growth, render_trends_page
 
 NOW = datetime(2026, 10, 11, 12)
 

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from atlas.web.chat_page import CHAT_SCRIPT, render_chat_page
+from lanxang.web.chat_page import CHAT_SCRIPT, render_chat_page
 
 
 BATCH_ASSERTIONS = """

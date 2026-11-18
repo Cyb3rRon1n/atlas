@@ -4,11 +4,11 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from atlas.alerts import AlertStore
-from atlas.config.models import AtlasConfig
-from atlas.monitoring import ups
-from atlas.posture.store import PostureStore
-from atlas.web.uptime_page import render_uptime_page
+from lanxang.alerts import AlertStore
+from lanxang.config.models import AtlasConfig
+from lanxang.monitoring import ups
+from lanxang.posture.store import PostureStore
+from lanxang.web.uptime_page import render_uptime_page
 
 STATE = {"status": "OL", "charge": "100", "runtime": "2400"}
 
@@ -95,7 +95,7 @@ def test_a_blip_reading_the_server_is_not_a_power_change(nut, temp_db):
 
 def test_setup_card_tests_the_ups_server(nut, isolated_cwd, monkeypatch):
 
-    from atlas.web.settings_page import handle_post
+    from lanxang.web.settings_page import handle_post
     status, body = handle_post("/api/settings/ups/test", {"host": "127.0.0.1", "port": nut, "name": ""})
     assert status == 200 and body["message"].startswith("Connected: rack on mains power, 100% charged")
     status, body = handle_post("/api/settings/ups/test", {"host": "", "port": nut})

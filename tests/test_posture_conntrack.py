@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from atlas.posture.collectors.conntrack import Flow, parse_conntrack, read_conntrack
+from lanxang.posture.collectors.conntrack import Flow, parse_conntrack, read_conntrack
 
 
 SAMPLE = (Path(__file__).parent / "fixtures" / "posture" / "conntrack.txt").read_text()

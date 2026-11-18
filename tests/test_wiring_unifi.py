@@ -3,9 +3,9 @@ import json
 
 import pytest
 
-from atlas.config.models import WiringUnifi
-from atlas.wiring import WiringError
-from atlas.wiring.unifi import fetch_unifi, parse_unifi
+from lanxang.config.models import WiringUnifi
+from lanxang.wiring import WiringError
+from lanxang.wiring.unifi import fetch_unifi, parse_unifi
 
 DEVICES = [
     {"mac": "02:00:00:00:00:01", "name": "gateway", "model": "UCGF", "type": "udm", "ip": "192.0.2.1",

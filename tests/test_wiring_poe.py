@@ -1,11 +1,11 @@
 import copy
 from datetime import datetime
 
-from atlas.web.cabling_page import render_cabling_page
-from atlas.wiring.health import alerts, assess, poe_ports
-from atlas.wiring.snmp import parse_switch
-from atlas.wiring.store import diff_snapshots
-from atlas.wiring.unifi import parse_unifi
+from lanxang.web.cabling_page import render_cabling_page
+from lanxang.wiring.health import alerts, assess, poe_ports
+from lanxang.wiring.snmp import parse_switch
+from lanxang.wiring.store import diff_snapshots
+from lanxang.wiring.unifi import parse_unifi
 from tests.test_web_cabling import _latest
 from tests.test_wiring_snmp import WALKS
 

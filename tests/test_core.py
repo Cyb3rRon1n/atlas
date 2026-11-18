@@ -1,8 +1,8 @@
-from atlas.core.context import AtlasContext
-from atlas.core.registry import ModuleRegistry
-from atlas.core.runtime import AtlasRuntime
-from atlas.events import EventBus
-from atlas.intelligence.context import AtlasEnvironmentContext
+from lanxang.core.context import AtlasContext
+from lanxang.core.registry import ModuleRegistry
+from lanxang.core.runtime import AtlasRuntime
+from lanxang.events import EventBus
+from lanxang.intelligence.context import AtlasEnvironmentContext
 
 
 def test_atlas_context_defaults_are_empty_dicts():

@@ -1,4 +1,4 @@
-from atlas.posture.collectors.traefik import collect_routes, routes_from_files, routes_from_labels
+from lanxang.posture.collectors.traefik import collect_routes, routes_from_files, routes_from_labels
 
 
 CONTAINERS = [

@@ -1,9 +1,9 @@
 import socket
 from unittest.mock import MagicMock
 
-from atlas.config.models import AtlasConfig, MapHost
-from atlas.discovery.topology import collect_topology
-from atlas.web.network_page import classify, render_network_page
+from lanxang.config.models import AtlasConfig, MapHost
+from lanxang.discovery.topology import collect_topology
+from lanxang.web.network_page import classify, render_network_page
 
 
 def _container(name, networks=None, mode="bridge", labels=None, status="running", health=None, cid=None, ports=None):
@@ -76,9 +76,9 @@ def test_topology_without_docker_or_proxmox():
 
 def test_latest_topology_skips_rows_other_commands_saved(temp_db):
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.knowledge.queries import KnowledgeQueries
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.knowledge.queries import KnowledgeQueries
+    from lanxang.knowledge.store import KnowledgeStore
 
     with_map = AtlasEnvironmentContext()
     with_map.update("topology", {"host": "media-server"})

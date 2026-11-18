@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
-from atlas.cli.main import app
-from atlas.knowledge.queries import KnowledgeQueries
+from lanxang.cli.main import app
+from lanxang.knowledge.queries import KnowledgeQueries
 
 
 runner = CliRunner()
@@ -203,7 +203,7 @@ def test_doctor(isolated_cwd):
     """
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         side_effect=RuntimeError("no docker socket")
     ):
         result = runner.invoke(app, ["doctor"])
@@ -219,7 +219,7 @@ def test_doctor_json_reports_healthy_and_exits_zero(isolated_cwd):
         {"name": "Docker", "status": True, "details": "4 containers"},
     ]
 
-    with patch("atlas.cli.main.run_checks", return_value=fake_checks):
+    with patch("lanxang.cli.main.run_checks", return_value=fake_checks):
 
         result = runner.invoke(app, ["doctor", "--json"])
 
@@ -237,7 +237,7 @@ def test_doctor_json_reports_unhealthy_and_exits_one(isolated_cwd):
         {"name": "Docker", "status": False, "details": "unavailable"},
     ]
 
-    with patch("atlas.cli.main.run_checks", return_value=fake_checks):
+    with patch("lanxang.cli.main.run_checks", return_value=fake_checks):
 
         result = runner.invoke(app, ["doctor", "--json"])
 
@@ -285,14 +285,14 @@ def test_analyze_json_with_no_environment_prints_null(isolated_cwd, temp_db):
 
 def test_analyze_json_prints_result_and_exits_zero(isolated_cwd, temp_db):
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.intelligence.providers.base import (
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.intelligence.providers.base import (
         AIProvider,
         AnalysisResult,
         Recommendation,
         SuggestedAction,
     )
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.knowledge.store import KnowledgeStore
 
     environment = AtlasEnvironmentContext()
 
@@ -322,7 +322,7 @@ def test_analyze_json_prints_result_and_exits_zero(isolated_cwd, temp_db):
             )
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ):
 
@@ -340,10 +340,10 @@ def test_analyze_json_prints_result_and_exits_zero(isolated_cwd, temp_db):
 
 def test_analyze_json_with_ai_provider_error_exits_one(isolated_cwd, temp_db):
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.intelligence.providers.base import AIProvider
-    from atlas.intelligence.providers import AIProviderError
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.intelligence.providers.base import AIProvider
+    from lanxang.intelligence.providers import AIProviderError
+    from lanxang.knowledge.store import KnowledgeStore
 
     environment = AtlasEnvironmentContext()
     KnowledgeStore().save_environment(environment)
@@ -354,7 +354,7 @@ def test_analyze_json_with_ai_provider_error_exits_one(isolated_cwd, temp_db):
             raise AIProviderError("no API key configured")
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FailingProvider()
     ):
 
@@ -371,16 +371,16 @@ def test_analyze_json_with_plan_reports_it_without_running_it(isolated_cwd, temp
     plan is reported in the payload; nothing gets executed.
     """
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.intelligence.providers.base import (
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.intelligence.providers.base import (
         AIProvider,
         AnalysisResult,
         PlanStep,
         SuggestedAction,
         SuggestedPlan,
     )
-    from atlas.knowledge.store import KnowledgeStore
-    from atlas.knowledge.queries import KnowledgeQueries
+    from lanxang.knowledge.store import KnowledgeStore
+    from lanxang.knowledge.queries import KnowledgeQueries
 
     environment = AtlasEnvironmentContext()
 
@@ -416,9 +416,9 @@ def test_analyze_json_with_plan_reports_it_without_running_it(isolated_cwd, temp
             )
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
-    ), patch("atlas.cli.ai.execute_action") as mock_execute:
+    ), patch("lanxang.cli.ai.execute_action") as mock_execute:
 
         result = runner.invoke(app, ["analyze", "--json"])
 
@@ -431,7 +431,7 @@ def test_analyze_json_with_plan_reports_it_without_running_it(isolated_cwd, temp
 
     event_types = [e.event_type for e in KnowledgeQueries().recent_events()]
 
-    assert "atlas.action.container_stopped" not in event_types
+    assert "lanxang.action.container_stopped" not in event_types
 
 
 def test_analyze_prints_suggested_action_for_known_container_only(
@@ -445,14 +445,14 @@ def test_analyze_prints_suggested_action_for_known_container_only(
     exercises the real AtlasAnalyzer cross-check, not a mocked one.
     """
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.intelligence.providers.base import (
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.intelligence.providers.base import (
         AIProvider,
         AnalysisResult,
         Recommendation,
         SuggestedAction,
     )
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.knowledge.store import KnowledgeStore
 
     environment = AtlasEnvironmentContext()
 
@@ -490,7 +490,7 @@ def test_analyze_prints_suggested_action_for_known_container_only(
             )
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ):
 
@@ -505,14 +505,14 @@ def test_analyze_prints_suggested_stop_command_for_known_container(
     isolated_cwd, temp_db
 ):
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.intelligence.providers.base import (
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.intelligence.providers.base import (
         AIProvider,
         AnalysisResult,
         Recommendation,
         SuggestedAction,
     )
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.knowledge.store import KnowledgeStore
 
     environment = AtlasEnvironmentContext()
 
@@ -542,7 +542,7 @@ def test_analyze_prints_suggested_stop_command_for_known_container(
             )
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ):
 
@@ -554,15 +554,15 @@ def test_analyze_prints_suggested_stop_command_for_known_container(
 
 def test_analyze_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db):
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.intelligence.providers.base import (
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.intelligence.providers.base import (
         AIProvider,
         AnalysisResult,
         PlanStep,
         SuggestedAction,
         SuggestedPlan,
     )
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.knowledge.store import KnowledgeStore
 
     environment = AtlasEnvironmentContext()
 
@@ -604,7 +604,7 @@ def test_analyze_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db
             )
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ):
 
@@ -625,15 +625,15 @@ def _analyze_with_plan(monkeypatch_input, sonarr_status="running"):
     provider, invoked with the given scripted input.
     """
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.intelligence.providers.base import (
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.intelligence.providers.base import (
         AIProvider,
         AnalysisResult,
         PlanStep,
         SuggestedAction,
         SuggestedPlan,
     )
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.knowledge.store import KnowledgeStore
 
     environment = AtlasEnvironmentContext()
 
@@ -678,13 +678,13 @@ def _analyze_with_plan(monkeypatch_input, sonarr_status="running"):
             )
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
-        "atlas.actions.registry.stop_container",
+        "lanxang.actions.registry.stop_container",
         return_value={"success": True, "previous_status": "running"}
     ) as mock_stop, patch(
-        "atlas.actions.registry.restart_container",
+        "lanxang.actions.registry.restart_container",
         return_value={"success": True, "previous_status": "running"}
     ) as mock_restart:
 
@@ -737,22 +737,22 @@ def test_analyze_confirms_plan_executes_all_steps_and_logs_events(
     plan_events = [e for e in events if e.source == "PlanStep"]
     assert len(plan_events) == 2
     assert {e.event_type for e in plan_events} == {
-        "atlas.action.container_stopped",
-        "atlas.action.container_restarted",
+        "lanxang.action.container_stopped",
+        "lanxang.action.container_restarted",
     }
 
 
 def test_analyze_plan_step_failure_stops_remaining_steps(isolated_cwd, temp_db):
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.intelligence.providers.base import (
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.intelligence.providers.base import (
         AIProvider,
         AnalysisResult,
         PlanStep,
         SuggestedAction,
         SuggestedPlan,
     )
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.knowledge.store import KnowledgeStore
 
     environment = AtlasEnvironmentContext()
 
@@ -797,13 +797,13 @@ def test_analyze_plan_step_failure_stops_remaining_steps(isolated_cwd, temp_db):
             )
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
-        "atlas.actions.registry.stop_container",
+        "lanxang.actions.registry.stop_container",
         return_value={"success": False, "error": "container is locked"}
     ), patch(
-        "atlas.actions.registry.restart_container"
+        "lanxang.actions.registry.restart_container"
     ) as mock_restart:
 
         result = runner.invoke(app, ["analyze"], input="y\ny\n")
@@ -816,7 +816,7 @@ def test_analyze_plan_step_failure_stops_remaining_steps(isolated_cwd, temp_db):
 
 def test_chat_prints_reply_and_suggested_action(isolated_cwd, temp_db):
 
-    from atlas.intelligence.providers.base import (
+    from lanxang.intelligence.providers.base import (
         AIProvider,
         ChatReply,
         SuggestedAction,
@@ -835,10 +835,10 @@ def test_chat_prints_reply_and_suggested_action(isolated_cwd, temp_db):
             )
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
-        "atlas.docker.collect_containers",
+        "lanxang.docker.collect_containers",
         return_value={"available": True, "containers": [{"name": "plex"}]}
     ):
 
@@ -853,7 +853,7 @@ def test_chat_drops_suggested_action_for_hallucinated_container(
     isolated_cwd, temp_db
 ):
 
-    from atlas.intelligence.providers.base import (
+    from lanxang.intelligence.providers.base import (
         AIProvider,
         ChatReply,
         SuggestedAction,
@@ -872,10 +872,10 @@ def test_chat_drops_suggested_action_for_hallucinated_container(
             )
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
-        "atlas.docker.collect_containers",
+        "lanxang.docker.collect_containers",
         return_value={"available": True, "containers": [{"name": "plex"}]}
     ):
 
@@ -887,7 +887,7 @@ def test_chat_drops_suggested_action_for_hallucinated_container(
 
 def test_chat_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db):
 
-    from atlas.intelligence.providers.base import (
+    from lanxang.intelligence.providers.base import (
         AIProvider,
         ChatReply,
         PlanStep,
@@ -924,10 +924,10 @@ def test_chat_prints_suggested_plan_with_numbered_steps(isolated_cwd, temp_db):
             )
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
-        "atlas.docker.collect_containers",
+        "lanxang.docker.collect_containers",
         return_value={
             "available": True,
             "containers": [{"name": "sonarr"}, {"name": "radarr"}]
@@ -949,7 +949,7 @@ def test_chat_confirms_plan_executes_all_steps_and_logs_events(
     isolated_cwd, temp_db
 ):
 
-    from atlas.intelligence.providers.base import (
+    from lanxang.intelligence.providers.base import (
         AIProvider,
         ChatReply,
         PlanStep,
@@ -986,19 +986,19 @@ def test_chat_confirms_plan_executes_all_steps_and_logs_events(
             )
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
-        "atlas.docker.collect_containers",
+        "lanxang.docker.collect_containers",
         return_value={
             "available": True,
             "containers": [{"name": "sonarr"}, {"name": "radarr"}]
         }
     ), patch(
-        "atlas.actions.registry.stop_container",
+        "lanxang.actions.registry.stop_container",
         return_value={"success": True, "previous_status": "running"}
     ) as mock_stop, patch(
-        "atlas.actions.registry.restart_container",
+        "lanxang.actions.registry.restart_container",
         return_value={"success": True, "previous_status": "running"}
     ) as mock_restart:
 
@@ -1021,7 +1021,7 @@ def test_chat_confirms_plan_executes_all_steps_and_logs_events(
 
 def test_chat_saves_transcript_as_a_single_event_on_exit(isolated_cwd, temp_db):
 
-    from atlas.intelligence.providers.base import AIProvider, ChatReply
+    from lanxang.intelligence.providers.base import AIProvider, ChatReply
 
     class FakeProvider(AIProvider):
 
@@ -1033,10 +1033,10 @@ def test_chat_saves_transcript_as_a_single_event_on_exit(isolated_cwd, temp_db):
             return ChatReply(text="All quiet on the media stack.")
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ), patch(
-        "atlas.docker.collect_containers",
+        "lanxang.docker.collect_containers",
         return_value={"available": True, "containers": []}
     ):
 
@@ -1049,7 +1049,7 @@ def test_chat_saves_transcript_as_a_single_event_on_exit(isolated_cwd, temp_db):
     events = KnowledgeQueries().recent_events(10)
     transcript_events = [
         event for event in events
-        if event.event_type == "atlas.chat.transcript_saved"
+        if event.event_type == "lanxang.chat.transcript_saved"
     ]
 
     assert len(transcript_events) == 1
@@ -1068,7 +1068,7 @@ def test_chat_exiting_immediately_does_not_save_a_transcript(
     isolated_cwd, temp_db
 ):
 
-    from atlas.intelligence.providers.base import AIProvider, ChatReply
+    from lanxang.intelligence.providers.base import AIProvider, ChatReply
 
     class FakeProvider(AIProvider):
 
@@ -1079,7 +1079,7 @@ def test_chat_exiting_immediately_does_not_save_a_transcript(
             raise AssertionError("should never be called")
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=FakeProvider()
     ):
 
@@ -1090,7 +1090,7 @@ def test_chat_exiting_immediately_does_not_save_a_transcript(
     events = KnowledgeQueries().recent_events(10)
     transcript_events = [
         event for event in events
-        if event.event_type == "atlas.chat.transcript_saved"
+        if event.event_type == "lanxang.chat.transcript_saved"
     ]
 
     assert transcript_events == []
@@ -1104,10 +1104,10 @@ def test_chat_keeps_assistant_reply_in_messages_when_notes_are_configured(
     (e.g. _with_notes() copies before the provider appends its own
     assistant turn to that copy) - the CLI's own messages list must
     still carry the assistant turn itself, the same "append it
-    ourselves" approach atlas/web/chat.py's chat_turn() already uses.
+    ourselves" approach lanxang/web/chat.py's chat_turn() already uses.
     """
 
-    from atlas.intelligence.providers.base import ChatReply
+    from lanxang.intelligence.providers.base import ChatReply
 
     class FakeAgent:
 
@@ -1130,10 +1130,10 @@ def test_chat_keeps_assistant_reply_in_messages_when_notes_are_configured(
     fake_agent = FakeAgent()
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=MagicMock()
     ), patch(
-        "atlas.cli.ai.AtlasAgent",
+        "lanxang.cli.ai.AtlasAgent",
         return_value=fake_agent
     ):
 
@@ -1154,8 +1154,8 @@ def test_chat_drops_failed_question_from_messages_on_provider_error(
     isolated_cwd, temp_db
 ):
 
-    from atlas.intelligence.providers import AIProviderError
-    from atlas.intelligence.providers.base import ChatReply
+    from lanxang.intelligence.providers import AIProviderError
+    from lanxang.intelligence.providers.base import ChatReply
 
     class FlakyAgent:
 
@@ -1177,10 +1177,10 @@ def test_chat_drops_failed_question_from_messages_on_provider_error(
     fake_agent = FlakyAgent()
 
     with patch(
-        "atlas.cli.ai.get_provider",
+        "lanxang.cli.ai.get_provider",
         return_value=MagicMock()
     ), patch(
-        "atlas.cli.ai.AtlasAgent",
+        "lanxang.cli.ai.AtlasAgent",
         return_value=fake_agent
     ):
 
@@ -1206,8 +1206,8 @@ def test_trends_when_no_monitoring_history_prints_hint(isolated_cwd, temp_db):
 
 def test_trends_prints_host_and_container_summaries(isolated_cwd, temp_db):
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.knowledge.store import KnowledgeStore
 
     store = KnowledgeStore()
 
@@ -1247,8 +1247,8 @@ def test_trends_json_when_no_monitoring_history(isolated_cwd, temp_db):
 
 def test_trends_json_reports_host_and_container_summaries(isolated_cwd, temp_db):
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.knowledge.store import KnowledgeStore
 
     store = KnowledgeStore()
 
@@ -1290,8 +1290,8 @@ def test_trends_shows_guest_section_from_proxmox_scan_only_history(
     had before it also considered virtualization data.
     """
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.knowledge.store import KnowledgeStore
 
     store = KnowledgeStore()
 
@@ -1328,8 +1328,8 @@ def test_trends_shows_guest_section_from_proxmox_scan_only_history(
 
 def test_trends_json_reports_guest_summaries(isolated_cwd, temp_db):
 
-    from atlas.intelligence.context import AtlasEnvironmentContext
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.intelligence.context import AtlasEnvironmentContext
+    from lanxang.knowledge.store import KnowledgeStore
 
     store = KnowledgeStore()
 
@@ -1399,13 +1399,13 @@ def test_proxmox_scan_first_run_prints_no_changes_section(isolated_cwd, temp_db)
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.virt.connect", return_value=MagicMock()),
+        patch("lanxang.cli.virt.connect", return_value=MagicMock()),
         patch(
-            "atlas.cli.virt.discover_nodes",
+            "lanxang.cli.virt.discover_nodes",
             return_value=[{"name": "pve1", "status": "online"}]
         ),
         patch(
-            "atlas.cli.virt.discover_resources",
+            "lanxang.cli.virt.discover_resources",
             return_value=[
                 {
                     "vmid": 100, "name": "plex", "node": "pve1", "type": "qemu",
@@ -1444,13 +1444,13 @@ def test_proxmox_scan_second_run_reports_changes(isolated_cwd, temp_db):
     ]
 
     with (
-        patch("atlas.cli.virt.connect", return_value=MagicMock()),
+        patch("lanxang.cli.virt.connect", return_value=MagicMock()),
         patch(
-            "atlas.cli.virt.discover_nodes",
+            "lanxang.cli.virt.discover_nodes",
             return_value=[{"name": "pve1", "status": "online"}]
         ),
         patch(
-            "atlas.cli.virt.discover_resources",
+            "lanxang.cli.virt.discover_resources",
             side_effect=[first_guests, second_guests]
         )
     ):
@@ -1471,24 +1471,24 @@ def test_proxmox_scan_second_run_reports_changes(isolated_cwd, temp_db):
         event.event_type for event in KnowledgeQueries().recent_events()
     ]
 
-    assert "atlas.proxmox.changes_detected" in event_types
+    assert "lanxang.proxmox.changes_detected" in event_types
 
 
 def test_proxmox_scan_ignores_other_commands_saving_an_empty_virtualization(isolated_cwd, temp_db):
     """atlas-scan's other commands save the environment with virtualization = {} between Proxmox scans; that
     used to make every scan report the whole cluster as newly added."""
 
-    from atlas.core.application import application
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.core.application import application
+    from lanxang.knowledge.store import KnowledgeStore
 
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
     guests = [{"vmid": 100, "name": "plex", "node": "pve1", "type": "qemu", "status": "running", "cpu": 0.1,
                "maxcpu": 4, "mem": 100, "maxmem": 1000, "disk": 0, "maxdisk": 0, "uptime": 10}]
 
     with (
-        patch("atlas.cli.virt.connect", return_value=MagicMock()),
-        patch("atlas.cli.virt.discover_nodes", return_value=[{"name": "pve1", "status": "online"}]),
-        patch("atlas.cli.virt.discover_resources", return_value=guests)
+        patch("lanxang.cli.virt.connect", return_value=MagicMock()),
+        patch("lanxang.cli.virt.discover_nodes", return_value=[{"name": "pve1", "status": "online"}]),
+        patch("lanxang.cli.virt.discover_resources", return_value=guests)
     ):
         runner.invoke(app, ["proxmox", "scan"])
         application.runtime.environment.update("virtualization", {})
@@ -1512,8 +1512,8 @@ def test_proxmox_restart_guest_not_found(isolated_cwd):
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.virt.connect", return_value=MagicMock()),
-        patch("atlas.proxmox.manager.discover_resources", return_value=[]),
+        patch("lanxang.cli.virt.connect", return_value=MagicMock()),
+        patch("lanxang.proxmox.manager.discover_resources", return_value=[]),
     ):
 
         result = runner.invoke(app, ["proxmox", "restart", "999"])
@@ -1534,12 +1534,12 @@ def test_proxmox_restart_declined_does_not_restart_guest(isolated_cwd):
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.virt.connect", return_value=MagicMock()),
+        patch("lanxang.cli.virt.connect", return_value=MagicMock()),
         patch(
-            "atlas.proxmox.manager.discover_resources",
+            "lanxang.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
-        patch("atlas.cli.virt.restart_guest") as mock_restart,
+        patch("lanxang.cli.virt.restart_guest") as mock_restart,
     ):
 
         result = runner.invoke(
@@ -1558,13 +1558,13 @@ def test_proxmox_restart_confirmed_restarts_guest_and_logs_event(
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.virt.connect", return_value=MagicMock()),
+        patch("lanxang.cli.virt.connect", return_value=MagicMock()),
         patch(
-            "atlas.proxmox.manager.discover_resources",
+            "lanxang.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
         patch(
-            "atlas.cli.virt.restart_guest",
+            "lanxang.cli.virt.restart_guest",
             return_value={"success": True}
         ) as mock_restart,
     ):
@@ -1579,7 +1579,7 @@ def test_proxmox_restart_confirmed_restarts_guest_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "atlas.action.guest_restarted"
+    assert events[0].event_type == "lanxang.action.guest_restarted"
 
 
 def test_proxmox_stop_when_disabled_does_not_attempt_connection(isolated_cwd):
@@ -1595,12 +1595,12 @@ def test_proxmox_stop_declined_does_not_stop_guest(isolated_cwd):
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.virt.connect", return_value=MagicMock()),
+        patch("lanxang.cli.virt.connect", return_value=MagicMock()),
         patch(
-            "atlas.proxmox.manager.discover_resources",
+            "lanxang.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
-        patch("atlas.cli.virt.stop_guest") as mock_stop,
+        patch("lanxang.cli.virt.stop_guest") as mock_stop,
     ):
 
         result = runner.invoke(
@@ -1619,13 +1619,13 @@ def test_proxmox_stop_confirmed_stops_guest_and_logs_event(
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.virt.connect", return_value=MagicMock()),
+        patch("lanxang.cli.virt.connect", return_value=MagicMock()),
         patch(
-            "atlas.proxmox.manager.discover_resources",
+            "lanxang.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
         patch(
-            "atlas.cli.virt.stop_guest",
+            "lanxang.cli.virt.stop_guest",
             return_value={"success": True}
         ) as mock_stop,
     ):
@@ -1641,7 +1641,7 @@ def test_proxmox_stop_confirmed_stops_guest_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "atlas.action.guest_stopped"
+    assert events[0].event_type == "lanxang.action.guest_stopped"
 
 
 def test_proxmox_resize_requires_cpus_or_memory(isolated_cwd):
@@ -1659,12 +1659,12 @@ def test_proxmox_resize_prints_hotplug_caveat_for_qemu_guest(isolated_cwd):
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.virt.connect", return_value=MagicMock()),
+        patch("lanxang.cli.virt.connect", return_value=MagicMock()),
         patch(
-            "atlas.proxmox.manager.discover_resources",
+            "lanxang.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
-        patch("atlas.cli.virt.resize_guest") as mock_resize,
+        patch("lanxang.cli.virt.resize_guest") as mock_resize,
     ):
 
         result = runner.invoke(
@@ -1683,12 +1683,12 @@ def test_proxmox_resize_omits_hotplug_caveat_for_lxc_guest(isolated_cwd):
     lxc_guest = {**PROXMOX_GUEST, "type": "lxc"}
 
     with (
-        patch("atlas.cli.virt.connect", return_value=MagicMock()),
+        patch("lanxang.cli.virt.connect", return_value=MagicMock()),
         patch(
-            "atlas.proxmox.manager.discover_resources",
+            "lanxang.proxmox.manager.discover_resources",
             return_value=[lxc_guest]
         ),
-        patch("atlas.cli.virt.resize_guest") as mock_resize,
+        patch("lanxang.cli.virt.resize_guest") as mock_resize,
     ):
 
         result = runner.invoke(
@@ -1707,13 +1707,13 @@ def test_proxmox_resize_confirmed_resizes_guest_and_logs_event(
     (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
-        patch("atlas.cli.virt.connect", return_value=MagicMock()),
+        patch("lanxang.cli.virt.connect", return_value=MagicMock()),
         patch(
-            "atlas.proxmox.manager.discover_resources",
+            "lanxang.proxmox.manager.discover_resources",
             return_value=[PROXMOX_GUEST]
         ),
         patch(
-            "atlas.cli.virt.resize_guest",
+            "lanxang.cli.virt.resize_guest",
             return_value={"success": True}
         ) as mock_resize,
     ):
@@ -1732,7 +1732,7 @@ def test_proxmox_resize_confirmed_resizes_guest_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "atlas.action.guest_resized"
+    assert events[0].event_type == "lanxang.action.guest_resized"
 
 
 def test_monitor_when_disabled_does_not_attempt_connection(isolated_cwd):
@@ -1911,7 +1911,7 @@ def test_monitor_flags_metric_over_threshold_and_publishes_event(
         event.event_type for event in KnowledgeQueries().recent_events()
     ]
 
-    assert "atlas.monitoring.threshold_exceeded" in event_types
+    assert "lanxang.monitoring.threshold_exceeded" in event_types
 
 
 def test_monitor_does_not_publish_threshold_event_when_nothing_exceeds(
@@ -1945,7 +1945,7 @@ def test_monitor_does_not_publish_threshold_event_when_nothing_exceeds(
         event.event_type for event in KnowledgeQueries().recent_events()
     ]
 
-    assert "atlas.monitoring.threshold_exceeded" not in event_types
+    assert "lanxang.monitoring.threshold_exceeded" not in event_types
 
 
 def test_monitor_flags_container_over_its_own_allocation_threshold(
@@ -2106,7 +2106,7 @@ def test_monitor_publishes_changes_detected_event_when_metric_crosses_since_last
         event.event_type for event in KnowledgeQueries().recent_events()
     ]
 
-    assert "atlas.monitoring.changes_detected" in event_types
+    assert "lanxang.monitoring.changes_detected" in event_types
 
 
 def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
@@ -2126,11 +2126,11 @@ def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
 
     with (
         patch(
-            "atlas.discovery.network.socket.gethostbyname_ex",
+            "lanxang.discovery.network.socket.gethostbyname_ex",
             return_value=("homelab", [], ["192.168.1.10"])
         ),
-        patch("atlas.docker.manager.docker.from_env") as mock_from_env,
-        patch("atlas.libvirt.manager.shutil.which", return_value=None)
+        patch("lanxang.docker.manager.docker.from_env") as mock_from_env,
+        patch("lanxang.libvirt.manager.shutil.which", return_value=None)
     ):
 
         mock_from_env.return_value.containers.list.return_value = [
@@ -2165,7 +2165,7 @@ def test_restart_declined_does_not_restart_container(isolated_cwd, temp_db):
     fake_container.image.tags = ["plexinc/pms-docker"]
     fake_container.status = "exited"
 
-    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+    with patch("lanxang.docker.manager.docker.from_env") as mock_from_env:
 
         mock_from_env.return_value.containers.get.return_value = fake_container
 
@@ -2185,7 +2185,7 @@ def test_restart_confirmed_restarts_container_and_logs_event(
     fake_container.image.tags = ["plexinc/pms-docker"]
     fake_container.status = "exited"
 
-    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+    with patch("lanxang.docker.manager.docker.from_env") as mock_from_env:
 
         mock_from_env.return_value.containers.get.return_value = fake_container
 
@@ -2197,7 +2197,7 @@ def test_restart_confirmed_restarts_container_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "atlas.action.container_restarted"
+    assert events[0].event_type == "lanxang.action.container_restarted"
 
 
 def test_restart_with_unknown_node_refuses(isolated_cwd, temp_db):
@@ -2222,7 +2222,7 @@ def test_restart_with_node_connects_via_ssh_and_logs_node(isolated_cwd, temp_db)
     fake_container.image.tags = ["plexinc/pms-docker"]
     fake_container.status = "exited"
 
-    with patch("atlas.docker.manager.docker.DockerClient") as mock_docker_client:
+    with patch("lanxang.docker.manager.docker.DockerClient") as mock_docker_client:
 
         mock_docker_client.return_value.containers.get.return_value = fake_container
 
@@ -2248,8 +2248,8 @@ def test_libvirt_restart_declined_does_not_restart_guest(isolated_cwd, temp_db):
     fake_result.stdout = "running\n"
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", return_value=fake_result) as mock_run,
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", return_value=fake_result) as mock_run,
     ):
 
         result = runner.invoke(app, ["libvirt", "restart", "test-vm"], input="n\n")
@@ -2279,8 +2279,8 @@ def test_libvirt_restart_confirmed_restarts_guest_and_logs_event(
         return result
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", side_effect=fake_run),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", side_effect=fake_run),
     ):
 
         result = runner.invoke(app, ["libvirt", "restart", "test-vm"], input="y\n")
@@ -2290,7 +2290,7 @@ def test_libvirt_restart_confirmed_restarts_guest_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "atlas.action.libvirt_guest_restarted"
+    assert events[0].event_type == "lanxang.action.libvirt_guest_restarted"
 
 
 def test_libvirt_restart_with_node_uses_connect_uri_and_logs_node(
@@ -2318,8 +2318,8 @@ def test_libvirt_restart_with_node_uses_connect_uri_and_logs_node(
         return result
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", side_effect=fake_run) as mock_run,
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", side_effect=fake_run) as mock_run,
     ):
 
         result = runner.invoke(
@@ -2341,9 +2341,9 @@ def test_libvirt_restart_with_node_uses_connect_uri_and_logs_node(
 def test_libvirt_restart_guest_not_found(isolated_cwd, temp_db):
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
         patch(
-            "atlas.libvirt.manager.subprocess.run",
+            "lanxang.libvirt.manager.subprocess.run",
             side_effect=subprocess.CalledProcessError(1, "virsh")
         ),
     ):
@@ -2370,8 +2370,8 @@ def test_libvirt_stop_confirmed_stops_guest_and_logs_event(isolated_cwd, temp_db
         return result
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", side_effect=fake_run),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", side_effect=fake_run),
     ):
 
         result = runner.invoke(app, ["libvirt", "stop", "test-vm"], input="y\n")
@@ -2381,7 +2381,7 @@ def test_libvirt_stop_confirmed_stops_guest_and_logs_event(isolated_cwd, temp_db
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "atlas.action.libvirt_guest_stopped"
+    assert events[0].event_type == "lanxang.action.libvirt_guest_stopped"
 
 
 def test_libvirt_resize_requires_at_least_one_flag(isolated_cwd, temp_db):
@@ -2408,8 +2408,8 @@ def test_libvirt_resize_confirmed_resizes_guest_and_logs_event(isolated_cwd, tem
         return result
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", side_effect=fake_run),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", side_effect=fake_run),
     ):
 
         result = runner.invoke(
@@ -2423,7 +2423,7 @@ def test_libvirt_resize_confirmed_resizes_guest_and_logs_event(isolated_cwd, tem
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "atlas.action.libvirt_guest_resized"
+    assert events[0].event_type == "lanxang.action.libvirt_guest_resized"
 
     payload = json.loads(events[0].payload)
 
@@ -2441,7 +2441,7 @@ def test_report_json_with_no_inventory(isolated_cwd):
 
 def test_report_json_prints_inventory_without_writing_markdown(isolated_cwd):
 
-    from atlas.inventory import save_inventory
+    from lanxang.inventory import save_inventory
 
     save_inventory({"system": {"hostname": "homelab"}, "hardware": {}, "storage": [], "network": {}})
 
@@ -2499,8 +2499,8 @@ def test_fleet_doctor_aggregates_reachable_and_unreachable_nodes(
         return result
 
     with (
-        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
-        patch("atlas.fleet.manager.subprocess.run", side_effect=fake_run),
+        patch("lanxang.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("lanxang.fleet.manager.subprocess.run", side_effect=fake_run),
     ):
 
         result = runner.invoke(app, ["fleet", "doctor", "--json"])
@@ -2557,8 +2557,8 @@ def test_fleet_trends_aggregates_reachable_and_unreachable_nodes(
         return result
 
     with (
-        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
-        patch("atlas.fleet.manager.subprocess.run", side_effect=fake_run),
+        patch("lanxang.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("lanxang.fleet.manager.subprocess.run", side_effect=fake_run),
     ):
 
         result = runner.invoke(app, ["fleet", "trends", "--json"])
@@ -2612,8 +2612,8 @@ def test_fleet_report_aggregates_reachable_and_unreachable_nodes(
         return result
 
     with (
-        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
-        patch("atlas.fleet.manager.subprocess.run", side_effect=fake_run),
+        patch("lanxang.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("lanxang.fleet.manager.subprocess.run", side_effect=fake_run),
     ):
 
         result = runner.invoke(app, ["fleet", "report", "--json"])
@@ -2646,8 +2646,8 @@ def test_fleet_report_shows_reachable_node_with_no_inventory(
     fake_result.stdout = "null"
 
     with (
-        patch("atlas.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
-        patch("atlas.fleet.manager.subprocess.run", return_value=fake_result),
+        patch("lanxang.fleet.manager.shutil.which", return_value="/usr/bin/ssh"),
+        patch("lanxang.fleet.manager.subprocess.run", return_value=fake_result),
     ):
 
         result = runner.invoke(app, ["fleet", "report"])
@@ -2663,7 +2663,7 @@ def test_stop_declined_does_not_stop_container(isolated_cwd, temp_db):
     fake_container.image.tags = ["plexinc/pms-docker"]
     fake_container.status = "running"
 
-    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+    with patch("lanxang.docker.manager.docker.from_env") as mock_from_env:
 
         mock_from_env.return_value.containers.get.return_value = fake_container
 
@@ -2683,7 +2683,7 @@ def test_stop_confirmed_stops_container_and_logs_event(
     fake_container.image.tags = ["plexinc/pms-docker"]
     fake_container.status = "running"
 
-    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+    with patch("lanxang.docker.manager.docker.from_env") as mock_from_env:
 
         mock_from_env.return_value.containers.get.return_value = fake_container
 
@@ -2695,7 +2695,7 @@ def test_stop_confirmed_stops_container_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "atlas.action.container_stopped"
+    assert events[0].event_type == "lanxang.action.container_stopped"
 
 
 def _fake_container_with_limits(**host_config):
@@ -2722,7 +2722,7 @@ def test_resize_declined_does_not_update_container(isolated_cwd, temp_db):
 
     fake_container = _fake_container_with_limits()
 
-    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+    with patch("lanxang.docker.manager.docker.from_env") as mock_from_env:
 
         mock_from_env.return_value.containers.get.return_value = fake_container
 
@@ -2739,7 +2739,7 @@ def test_resize_confirmed_with_cpus_only(isolated_cwd, temp_db):
 
     fake_container = _fake_container_with_limits()
 
-    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+    with patch("lanxang.docker.manager.docker.from_env") as mock_from_env:
 
         mock_from_env.return_value.containers.get.return_value = fake_container
         mock_from_env.return_value.api.base_url = "http+docker://localhost"
@@ -2756,14 +2756,14 @@ def test_resize_confirmed_with_cpus_only(isolated_cwd, temp_db):
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "atlas.action.container_resized"
+    assert events[0].event_type == "lanxang.action.container_resized"
 
 
 def test_resize_confirmed_with_memory_only(isolated_cwd, temp_db):
 
     fake_container = _fake_container_with_limits()
 
-    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+    with patch("lanxang.docker.manager.docker.from_env") as mock_from_env:
 
         mock_from_env.return_value.containers.get.return_value = fake_container
         mock_from_env.return_value.api.base_url = "http+docker://localhost"
@@ -2785,7 +2785,7 @@ def test_resize_confirmed_shows_current_configured_limits(isolated_cwd, temp_db)
         CpuPeriod=100000, CpuQuota=50000, Memory=268435456
     )
 
-    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+    with patch("lanxang.docker.manager.docker.from_env") as mock_from_env:
 
         mock_from_env.return_value.containers.get.return_value = fake_container
 
@@ -2803,7 +2803,7 @@ def test_resize_confirmed_shows_unlimited_when_no_configured_limits(
 
     fake_container = _fake_container_with_limits()
 
-    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+    with patch("lanxang.docker.manager.docker.from_env") as mock_from_env:
 
         mock_from_env.return_value.containers.get.return_value = fake_container
 
@@ -2817,7 +2817,7 @@ def test_resize_confirmed_shows_unlimited_when_no_configured_limits(
 
 def test_web_starts_server_with_default_host_and_port(isolated_cwd):
 
-    with patch("atlas.web.server.run_server") as mock_run_server:
+    with patch("lanxang.web.server.run_server") as mock_run_server:
 
         result = runner.invoke(app, ["web"])
 
@@ -2831,7 +2831,7 @@ def test_web_starts_server_with_default_host_and_port(isolated_cwd):
 def test_web_proxy_auth_passes_no_auth(isolated_cwd):
 
     (isolated_cwd / "atlas.yaml").write_text("web:\n  auth: proxy\n")
-    with patch("atlas.web.server.run_server") as mock_run_server:
+    with patch("lanxang.web.server.run_server") as mock_run_server:
 
         result = runner.invoke(app, ["web"])
 
@@ -2855,7 +2855,7 @@ def test_auth_commands(isolated_cwd):
 
 def test_web_respects_host_and_port_options(isolated_cwd):
 
-    with patch("atlas.web.server.run_server") as mock_run_server:
+    with patch("lanxang.web.server.run_server") as mock_run_server:
 
         result = runner.invoke(app, ["web", "--host", "0.0.0.0", "--port", "9000"])
 
@@ -2866,7 +2866,7 @@ def test_web_respects_host_and_port_options(isolated_cwd):
 
 def test_web_handles_keyboard_interrupt_cleanly(isolated_cwd):
 
-    with patch("atlas.web.server.run_server", side_effect=KeyboardInterrupt):
+    with patch("lanxang.web.server.run_server", side_effect=KeyboardInterrupt):
 
         result = runner.invoke(app, ["web"])
 

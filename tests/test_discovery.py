@@ -1,10 +1,10 @@
 from unittest.mock import patch
 
-from atlas.discovery import run_discovery
-from atlas.discovery.hardware import collect_hardware
-from atlas.discovery.network import collect_network
-from atlas.discovery.storage import collect_storage
-from atlas.discovery.system import collect_system
+from lanxang.discovery import run_discovery
+from lanxang.discovery.hardware import collect_hardware
+from lanxang.discovery.network import collect_network
+from lanxang.discovery.storage import collect_storage
+from lanxang.discovery.system import collect_system
 
 
 def test_collect_system_returns_expected_keys():
@@ -46,7 +46,7 @@ def test_collect_network_uses_mocked_resolution():
     """
 
     with patch(
-        "atlas.discovery.network.socket.gethostbyname_ex",
+        "lanxang.discovery.network.socket.gethostbyname_ex",
         return_value=("homelab", [], ["192.168.1.10"])
     ):
 
@@ -59,7 +59,7 @@ def test_collect_network_uses_mocked_resolution():
 def test_run_discovery_merges_all_categories():
 
     with patch(
-        "atlas.discovery.network.socket.gethostbyname_ex",
+        "lanxang.discovery.network.socket.gethostbyname_ex",
         return_value=("homelab", [], ["192.168.1.10"])
     ):
 

@@ -3,12 +3,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
-from atlas.monitoring.client import (
+from lanxang.monitoring.client import (
     PrometheusUnavailableError,
     query_prometheus,
     query_prometheus_vector,
 )
-from atlas.monitoring.collector import (
+from lanxang.monitoring.collector import (
     collect_container_metrics,
     collect_metrics,
     evaluate_thresholds,
@@ -143,7 +143,7 @@ class TestCollectContainerMetrics:
     def test_available_false_when_prometheus_unreachable(self):
 
         with patch(
-            "atlas.monitoring.collector.query_prometheus_vector",
+            "lanxang.monitoring.collector.query_prometheus_vector",
             side_effect=PrometheusUnavailableError("connection refused")
         ):
 
@@ -154,7 +154,7 @@ class TestCollectContainerMetrics:
     def test_merges_cpu_and_memory_by_container_name(self):
 
         with patch(
-            "atlas.monitoring.collector.query_prometheus_vector",
+            "lanxang.monitoring.collector.query_prometheus_vector",
             side_effect=[
                 {"plex": 12.3, "sonarr": 45.6},
                 {"plex": 30.0, "sonarr": 10.0},
@@ -186,7 +186,7 @@ class TestCollectContainerMetrics:
     def test_container_present_in_only_one_query_gets_none_for_the_other(self):
 
         with patch(
-            "atlas.monitoring.collector.query_prometheus_vector",
+            "lanxang.monitoring.collector.query_prometheus_vector",
             side_effect=[
                 {"plex": 12.3},
                 {"sonarr": 10.0},
@@ -205,7 +205,7 @@ class TestCollectContainerMetrics:
     def test_reports_percent_of_configured_limit_when_present(self):
 
         with patch(
-            "atlas.monitoring.collector.query_prometheus_vector",
+            "lanxang.monitoring.collector.query_prometheus_vector",
             side_effect=[
                 {"plex": 50.0},
                 {"plex": 60.0},
@@ -235,7 +235,7 @@ class TestCollectContainerMetrics:
         """
 
         with patch(
-            "atlas.monitoring.collector.query_prometheus_vector",
+            "lanxang.monitoring.collector.query_prometheus_vector",
             side_effect=[
                 {"plex": 50.0},
                 {"plex": 60.0},
@@ -255,7 +255,7 @@ class TestCollectMetrics:
     def test_available_false_when_prometheus_unreachable(self):
 
         with patch(
-            "atlas.monitoring.collector.query_prometheus",
+            "lanxang.monitoring.collector.query_prometheus",
             side_effect=PrometheusUnavailableError("connection refused")
         ):
 
@@ -266,7 +266,7 @@ class TestCollectMetrics:
     def test_available_true_with_all_metrics_present(self):
 
         with patch(
-            "atlas.monitoring.collector.query_prometheus",
+            "lanxang.monitoring.collector.query_prometheus",
             side_effect=[12.3, 45.6, 78.9]
         ):
 
@@ -289,7 +289,7 @@ class TestCollectMetrics:
         """
 
         with patch(
-            "atlas.monitoring.collector.query_prometheus",
+            "lanxang.monitoring.collector.query_prometheus",
             side_effect=[12.3, None, None]
         ):
 

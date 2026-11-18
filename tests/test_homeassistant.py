@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from atlas.config.models import AtlasConfig, HomeAssistantConfig
-from atlas.monitoring import homeassistant as ha
-from atlas.web.home_page import build_stats, render_home_page
+from lanxang.config.models import AtlasConfig, HomeAssistantConfig
+from lanxang.monitoring import homeassistant as ha
+from lanxang.web.home_page import build_stats, render_home_page
 
 NOW = datetime(2026, 11, 18, 12)
 LONG_AGO = (NOW - timedelta(hours=30)).isoformat() + "+00:00"
@@ -78,7 +78,7 @@ def test_fetch_uses_the_token_and_explains_failures():
 
 
 def test_alerts_once_and_when_fine_again(temp_db):
-    from atlas.posture.store import PostureStore
+    from lanxang.posture.store import PostureStore
 
     store, sent = PostureStore(temp_db), []
     settings = AtlasConfig(homeassistant={"enabled": True, "url": "http://192.0.2.80:8123"})

@@ -3,9 +3,9 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timedelta
 
-from atlas.web.cabling_page import cabling_csv, render_cabling_page
-from atlas.wiring.build import build_wiring
-from atlas.wiring.unifi import parse_unifi
+from lanxang.web.cabling_page import cabling_csv, render_cabling_page
+from lanxang.wiring.build import build_wiring
+from lanxang.wiring.unifi import parse_unifi
 from tests.test_web_server import running_server  # noqa: F401  (fixture)
 from tests.test_wiring_build import CABLING, CLIENTS, DEVICES, INVENTORY, SWITCH
 

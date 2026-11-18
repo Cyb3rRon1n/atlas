@@ -64,8 +64,8 @@ Documentation = "https://cyb3rron1n.github.io/atlas/"
 "Issue Tracker" = "https://github.com/Cyb3rRon1n/atlas/issues"
 
 [project.scripts]
-atlas = "atlas.cli:app"
+atlas = "lanxang.cli:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["atlas"]
+packages = ["lanxang"]
 

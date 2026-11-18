@@ -1,9 +1,9 @@
 import re
 from pathlib import Path
 
-from atlas.web.render import render_page
+from lanxang.web.render import render_page
 
-WEB = Path(__file__).resolve().parents[1] / "atlas" / "web"
+WEB = Path(__file__).resolve().parents[1] / "lanxang" / "web"
 
 
 def test_pages_use_theme_tokens_not_raw_colours():
@@ -26,6 +26,6 @@ def test_shell_has_side_menu_sub_pages_and_both_themes():
 
 
 def test_pages_have_an_inline_icon():
-    from atlas.web.login_page import _page
+    from lanxang.web.login_page import _page
     for html in (render_page("Home", ""), _page("Sign in", "")):
         assert "<link rel=\"icon\" href=\"data:image/svg+xml," in html

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from atlas.monitoring.trends import (
+from lanxang.monitoring.trends import (
     container_metric_trend,
     host_metric_trend,
     known_container_names,

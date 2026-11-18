@@ -2,8 +2,8 @@ from types import SimpleNamespace
 
 import requests
 
-from atlas.access.store import AccessStore
-from atlas.monitoring.vpn import check, probe
+from lanxang.access.store import AccessStore
+from lanxang.monitoring.vpn import check, probe
 
 
 class FakeSession:

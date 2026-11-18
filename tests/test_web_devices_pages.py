@@ -1,7 +1,7 @@
 import json
 from html import unescape
 
-from atlas.web.devices_pages import (ACTIONS_SCRIPT, render_coverage_page, render_device_page, render_devices_page,
+from lanxang.web.devices_pages import (ACTIONS_SCRIPT, render_coverage_page, render_device_page, render_devices_page,
                                      render_triage_page)
 
 

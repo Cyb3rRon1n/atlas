@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timedelta
 
-from atlas.web import changes_feed
+from lanxang.web import changes_feed
 
 NOW = datetime(2026, 11, 17, 12)
 
@@ -20,9 +20,9 @@ SOURCES = {
     "devices": lambda: [{"name": "Den TV", "ip": "192.0.2.41", "sightings": [{"first_seen": (NOW - timedelta(hours=3)).isoformat()}]},
                         {"name": "nas", "ip": "192.0.2.10", "sightings": [{"first_seen": "2026-01-01T00:00:00"}]}],
     "changes": lambda since: [
-        (NOW - timedelta(hours=4), "atlas.proxmox.changes_detected",
+        (NOW - timedelta(hours=4), "lanxang.proxmox.changes_detected",
          {"changes": [{"type": "guest_removed", "vmid": 110, "name": "old-vm", "guest_type": "qemu"}]}),
-        (NOW - timedelta(hours=6), "atlas.proxmox.changes_detected",
+        (NOW - timedelta(hours=6), "lanxang.proxmox.changes_detected",
          {"changes": [{"type": "guest_removed", "vmid": 110, "name": "old-vm", "guest_type": "qemu"}]})]}
 
 
@@ -45,6 +45,6 @@ def test_broken_sources_and_empty_render():
 
 
 def test_activity_page_shows_it(temp_db, isolated_cwd):
-    from atlas.web.render import render_history_page
+    from lanxang.web.render import render_history_page
     html = render_history_page([], changes=changes_feed.render(changes_feed.collect(NOW, "24h", SOURCES), NOW, "24h"))
     assert "What changed" in html and "Printer is offline" in html and html.index("What changed") < html.index("No historical")

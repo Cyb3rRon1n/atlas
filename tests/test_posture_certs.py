@@ -8,11 +8,11 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
 
-from atlas.config.models import AtlasConfig
-from atlas.posture.certs import assess, due, fetch, hosts, level, run
-from atlas.posture.model import build_posture
-from atlas.posture.store import PostureStore
-from atlas.web.posture_page import render_posture_page
+from lanxang.config.models import AtlasConfig
+from lanxang.posture.certs import assess, due, fetch, hosts, level, run
+from lanxang.posture.model import build_posture
+from lanxang.posture.store import PostureStore
+from lanxang.web.posture_page import render_posture_page
 
 NOW = datetime(2026, 11, 15, 12, 0)
 UTC = NOW.replace(tzinfo=timezone.utc)

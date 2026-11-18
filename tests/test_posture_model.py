@@ -1,9 +1,9 @@
 import time
 from datetime import datetime, timedelta
 
-import atlas.posture.model as model_module
-from atlas.posture.model import _reverse_dns, build_posture, node_details
-from atlas.posture.store import PostureStore
+import lanxang.posture.model as model_module
+from lanxang.posture.model import _reverse_dns, build_posture, node_details
+from lanxang.posture.store import PostureStore
 
 
 NOW = datetime(2026, 10, 8, 13, 42, 0)

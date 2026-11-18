@@ -1,4 +1,4 @@
-from atlas.services import detect_services
+from lanxang.services import detect_services
 
 
 def test_detect_services_matches_known_container():

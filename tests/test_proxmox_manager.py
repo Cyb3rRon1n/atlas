@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from atlas.proxmox.manager import get_guest_info, resize_guest, restart_guest, stop_guest
+from lanxang.proxmox.manager import get_guest_info, resize_guest, restart_guest, stop_guest
 
 
 def test_get_guest_info_found():
@@ -8,7 +8,7 @@ def test_get_guest_info_found():
     fake_client = MagicMock()
 
     with patch(
-        "atlas.proxmox.manager.discover_resources",
+        "lanxang.proxmox.manager.discover_resources",
         return_value=[
             {
                 "vmid": 100, "name": "plex", "node": "pve1", "type": "qemu",
@@ -31,7 +31,7 @@ def test_get_guest_info_not_found():
     fake_client = MagicMock()
 
     with patch(
-        "atlas.proxmox.manager.discover_resources",
+        "lanxang.proxmox.manager.discover_resources",
         return_value=[]
     ):
 

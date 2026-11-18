@@ -1,11 +1,11 @@
-from atlas.config.models import AtlasConfig
-from atlas.devices import Sighting
-from atlas.devices import identify
-from atlas.devices.store import InventoryStore
-from atlas.web.devices_pages import _clues
-from atlas.wiring.scan import run_scan
-from atlas.wiring.store import WiringStore
-from atlas.wiring.unifi import parse_unifi, sightings
+from lanxang.config.models import AtlasConfig
+from lanxang.devices import Sighting
+from lanxang.devices import identify
+from lanxang.devices.store import InventoryStore
+from lanxang.web.devices_pages import _clues
+from lanxang.wiring.scan import run_scan
+from lanxang.wiring.store import WiringStore
+from lanxang.wiring.unifi import parse_unifi, sightings
 
 AP = {"mac": "02:00:00:00:00:a1", "name": "office-ap", "type": "uap", "model": "U6-Lite", "ip": "192.0.2.3"}
 CLIENTS = [

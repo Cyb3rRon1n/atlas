@@ -29,7 +29,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml README.md LICENSE ./
-COPY atlas/ atlas/
+COPY lanxang/ lanxang/
 RUN pip install ".[alerts]"   # alerts = Apprise (100+ notification services)
 
 RUN useradd --create-home --uid 10001 atlas \

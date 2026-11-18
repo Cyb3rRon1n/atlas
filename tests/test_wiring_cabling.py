@@ -1,4 +1,4 @@
-from atlas.wiring.cabling import load_cabling
+from lanxang.wiring.cabling import load_cabling
 
 
 def test_missing_file_is_empty(tmp_path):

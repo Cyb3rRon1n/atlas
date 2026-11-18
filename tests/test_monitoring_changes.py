@@ -1,4 +1,4 @@
-from atlas.monitoring.changes import diff_monitoring, format_change
+from lanxang.monitoring.changes import diff_monitoring, format_change
 
 
 THRESHOLDS = {"cpu_percent": 90.0, "memory_percent": 90.0}

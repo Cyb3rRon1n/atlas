@@ -1,5 +1,5 @@
-from atlas.config.loader import load_config
-from atlas.config.models import AtlasConfig
+from lanxang.config.loader import load_config
+from lanxang.config.models import AtlasConfig
 
 
 def test_load_config_defaults_when_no_file(isolated_cwd):

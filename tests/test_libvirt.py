@@ -1,8 +1,8 @@
 import subprocess
 from unittest.mock import MagicMock, patch
 
-from atlas.config.models import FleetNode
-from atlas.libvirt import collect_guests, get_guest_info, resize_guest, restart_guest, stop_guest
+from lanxang.config.models import FleetNode
+from lanxang.libvirt import collect_guests, get_guest_info, resize_guest, restart_guest, stop_guest
 
 
 def _node(**overrides):
@@ -14,7 +14,7 @@ def _node(**overrides):
 
 def test_collect_guests_when_virsh_not_available():
 
-    with patch("atlas.libvirt.manager.shutil.which", return_value=None):
+    with patch("lanxang.libvirt.manager.shutil.which", return_value=None):
         result = collect_guests()
 
     assert result == {"available": False, "guests": []}
@@ -23,9 +23,9 @@ def test_collect_guests_when_virsh_not_available():
 def test_collect_guests_when_list_command_fails():
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
         patch(
-            "atlas.libvirt.manager.subprocess.run",
+            "lanxang.libvirt.manager.subprocess.run",
             side_effect=subprocess.CalledProcessError(1, "virsh")
         ),
     ):
@@ -53,8 +53,8 @@ def test_collect_guests_when_available():
         return result
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", side_effect=fake_run),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", side_effect=fake_run),
     ):
 
         result = collect_guests()
@@ -82,8 +82,8 @@ def test_collect_guests_when_guest_state_lookup_fails():
         raise subprocess.CalledProcessError(1, "virsh")
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", side_effect=fake_run),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", side_effect=fake_run),
     ):
 
         result = collect_guests()
@@ -93,7 +93,7 @@ def test_collect_guests_when_guest_state_lookup_fails():
 
 def test_get_guest_info_when_virsh_not_available():
 
-    with patch("atlas.libvirt.manager.shutil.which", return_value=None):
+    with patch("lanxang.libvirt.manager.shutil.which", return_value=None):
         result = get_guest_info("vm1")
 
     assert result == {"found": False, "error": "libvirt/virsh unavailable"}
@@ -102,9 +102,9 @@ def test_get_guest_info_when_virsh_not_available():
 def test_get_guest_info_when_guest_not_found():
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
         patch(
-            "atlas.libvirt.manager.subprocess.run",
+            "lanxang.libvirt.manager.subprocess.run",
             side_effect=subprocess.CalledProcessError(1, "virsh")
         ),
     ):
@@ -123,8 +123,8 @@ def test_get_guest_info_when_found():
     fake_result.stdout = "running\n"
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", return_value=fake_result),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", return_value=fake_result),
     ):
 
         result = get_guest_info("vm1")
@@ -134,7 +134,7 @@ def test_get_guest_info_when_found():
 
 def test_restart_guest_when_virsh_not_available():
 
-    with patch("atlas.libvirt.manager.shutil.which", return_value=None):
+    with patch("lanxang.libvirt.manager.shutil.which", return_value=None):
         result = restart_guest("vm1")
 
     assert result == {"success": False, "error": "libvirt/virsh unavailable"}
@@ -143,8 +143,8 @@ def test_restart_guest_when_virsh_not_available():
 def test_restart_guest_when_successful():
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", return_value=MagicMock()),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", return_value=MagicMock()),
     ):
 
         result = restart_guest("vm1")
@@ -158,8 +158,8 @@ def test_restart_guest_when_command_fails_uses_stderr():
     error.stderr = "error: failed to get domain 'vm1'\n"
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", side_effect=error),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", side_effect=error),
     ):
 
         result = restart_guest("vm1")
@@ -173,9 +173,9 @@ def test_restart_guest_when_command_fails_uses_stderr():
 def test_restart_guest_when_command_times_out():
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
         patch(
-            "atlas.libvirt.manager.subprocess.run",
+            "lanxang.libvirt.manager.subprocess.run",
             side_effect=subprocess.TimeoutExpired("virsh", 5)
         ),
     ):
@@ -187,7 +187,7 @@ def test_restart_guest_when_command_times_out():
 
 def test_stop_guest_when_virsh_not_available():
 
-    with patch("atlas.libvirt.manager.shutil.which", return_value=None):
+    with patch("lanxang.libvirt.manager.shutil.which", return_value=None):
         result = stop_guest("vm1")
 
     assert result == {"success": False, "error": "libvirt/virsh unavailable"}
@@ -196,8 +196,8 @@ def test_stop_guest_when_virsh_not_available():
 def test_stop_guest_sends_shutdown_not_destroy():
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
     ):
 
         result = stop_guest("vm1")
@@ -211,7 +211,7 @@ def test_stop_guest_sends_shutdown_not_destroy():
 
 def test_resize_guest_when_virsh_not_available():
 
-    with patch("atlas.libvirt.manager.shutil.which", return_value=None):
+    with patch("lanxang.libvirt.manager.shutil.which", return_value=None):
         result = resize_guest("vm1", vcpus=2)
 
     assert result == {"success": False, "error": "libvirt/virsh unavailable"}
@@ -220,8 +220,8 @@ def test_resize_guest_when_virsh_not_available():
 def test_resize_guest_sets_vcpus_and_memory():
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
     ):
 
         result = resize_guest("vm1", vcpus=2, memory="512MiB")
@@ -238,8 +238,8 @@ def test_resize_guest_sets_vcpus_and_memory():
 def test_resize_guest_vcpus_only_does_not_call_setmem():
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
     ):
 
         resize_guest("vm1", vcpus=2)
@@ -255,9 +255,9 @@ def test_resize_guest_stops_after_first_failure():
     """
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
         patch(
-            "atlas.libvirt.manager.subprocess.run",
+            "lanxang.libvirt.manager.subprocess.run",
             side_effect=subprocess.CalledProcessError(1, "virsh")
         ) as mock_run,
     ):
@@ -271,8 +271,8 @@ def test_resize_guest_stops_after_first_failure():
 def test_restart_guest_with_node_uses_connect_uri():
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
     ):
 
         restart_guest("vm1", node=_node())
@@ -288,8 +288,8 @@ def test_get_guest_info_with_node_uses_connect_uri():
     fake_result.stdout = "running\n"
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", return_value=fake_result) as mock_run,
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", return_value=fake_result) as mock_run,
     ):
 
         get_guest_info("vm1", node=_node())
@@ -302,8 +302,8 @@ def test_get_guest_info_with_node_uses_connect_uri():
 def test_resize_guest_with_node_uses_connect_uri_on_both_calls():
 
     with (
-        patch("atlas.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
-        patch("atlas.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
+        patch("lanxang.libvirt.manager.shutil.which", return_value="/usr/bin/virsh"),
+        patch("lanxang.libvirt.manager.subprocess.run", return_value=MagicMock()) as mock_run,
     ):
 
         resize_guest("vm1", vcpus=2, memory="512MiB", node=_node())

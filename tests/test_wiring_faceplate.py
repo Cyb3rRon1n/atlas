@@ -1,4 +1,4 @@
-from atlas.wiring.faceplate import physical_layout
+from lanxang.wiring.faceplate import physical_layout
 
 
 def _ports(names):

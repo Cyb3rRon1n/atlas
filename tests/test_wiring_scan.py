@@ -2,10 +2,10 @@ import threading
 
 import pytest
 
-from atlas.config.models import AtlasConfig
-from atlas.wiring import WiringError
-from atlas.wiring.scan import WiringBusy, run_scan, _LOCK
-from atlas.wiring.store import WiringStore
+from lanxang.config.models import AtlasConfig
+from lanxang.wiring import WiringError
+from lanxang.wiring.scan import WiringBusy, run_scan, _LOCK
+from lanxang.wiring.store import WiringStore
 
 SWITCH_RESULT = {"name": "core-switch", "host": "192.0.2.2", "sys_name": "core-switch",
                  "chassis_mac": "02:00:00:00:00:10", "weak_privacy": True,
@@ -48,7 +48,7 @@ def test_busy(temp_db, tmp_path):
 def test_cli_wiring_scan_disabled(isolated_cwd):
     from typer.testing import CliRunner
 
-    from atlas.cli.main import app
+    from lanxang.cli.main import app
 
     result = CliRunner().invoke(app, ["wiring", "scan"])
     assert result.exit_code == 0 and "wiring.enabled is false" in result.output

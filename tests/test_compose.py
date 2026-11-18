@@ -1,4 +1,4 @@
-from atlas.compose import parse_compose_file
+from lanxang.compose import parse_compose_file
 
 
 COMPOSE_YAML = """

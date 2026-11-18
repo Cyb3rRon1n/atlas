@@ -4,8 +4,8 @@ import urllib.request
 from datetime import datetime
 from http.server import ThreadingHTTPServer
 
-from atlas.config.models import AtlasConfig
-from atlas.web.metrics import collect, render
+from lanxang.config.models import AtlasConfig
+from lanxang.web.metrics import collect, render
 
 NOW = datetime(2026, 11, 17, 12)
 
@@ -48,8 +48,8 @@ def test_broken_sources_are_left_out():
 
 
 def test_metrics_needs_sign_in_or_the_api_token(temp_db, isolated_cwd):
-    from atlas.web.auth import Auth
-    from atlas.web.server import AtlasWebHandler
+    from lanxang.web.auth import Auth
+    from lanxang.web.server import AtlasWebHandler
 
     auth = Auth(isolated_cwd / "auth.json")
     auth.set_password("correct horse battery staple")

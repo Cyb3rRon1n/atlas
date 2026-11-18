@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
-from atlas.config.models import MapHost
-from atlas.devices import Sighting
-from atlas.devices.store import InventoryStore
+from lanxang.config.models import MapHost
+from lanxang.devices import Sighting
+from lanxang.devices.store import InventoryStore
 
 
 T0 = datetime(2026, 9, 29, 12, 0)

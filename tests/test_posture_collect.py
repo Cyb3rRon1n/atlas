@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from atlas.config.models import PostureConfig
-from atlas.posture.collect import Collector
-from atlas.posture.collectors.asn import AsnTable, parse_ip2asn
-from atlas.posture.collectors.conntrack import parse_conntrack
-from atlas.posture.store import PostureStore
+from lanxang.config.models import PostureConfig
+from lanxang.posture.collect import Collector
+from lanxang.posture.collectors.asn import AsnTable, parse_ip2asn
+from lanxang.posture.collectors.conntrack import parse_conntrack
+from lanxang.posture.store import PostureStore
 from posture_fakes import Container, Response, make_client
 
 
@@ -36,7 +36,7 @@ def make(temp_db, read=None):
 
 
 def test_run_once_records_statuses_and_flows(temp_db, monkeypatch):
-    monkeypatch.setattr("atlas.posture.aggregate.is_public", lambda ip: ip.startswith(("203.", "198.")))
+    monkeypatch.setattr("lanxang.posture.aggregate.is_public", lambda ip: ip.startswith(("203.", "198.")))
     collector = make(temp_db)
     result = collector.run_once(NOW)
     statuses = collector.store.statuses()
@@ -155,7 +155,7 @@ def test_corrupt_asn_data_does_not_stop_the_collector(temp_db, tmp_path):
 
 
 def test_empty_asn_table_records_flows_but_no_new_destinations(temp_db, monkeypatch):
-    monkeypatch.setattr("atlas.posture.aggregate.is_public", lambda ip: ip.startswith(("203.", "198.")))
+    monkeypatch.setattr("lanxang.posture.aggregate.is_public", lambda ip: ip.startswith(("203.", "198.")))
     collector = make(temp_db)
     collector.asn_table = AsnTable([])
     result = collector.run_once(NOW)
@@ -169,7 +169,7 @@ class FailingStore(PostureStore):
 
 
 def test_store_failure_while_recording_flows_keeps_other_statuses(temp_db, monkeypatch):
-    monkeypatch.setattr("atlas.posture.aggregate.is_public", lambda ip: ip.startswith(("203.", "198.")))
+    monkeypatch.setattr("lanxang.posture.aggregate.is_public", lambda ip: ip.startswith(("203.", "198.")))
     collector = make(temp_db)
     collector.store = FailingStore(temp_db)
     result = collector.run_once(NOW)
@@ -182,7 +182,7 @@ def test_store_failure_while_recording_flows_keeps_other_statuses(temp_db, monke
 def test_watch_logs_an_error_once_per_change(isolated_cwd, monkeypatch):
     import time
     from typer.testing import CliRunner
-    from atlas.cli.main import app
+    from lanxang.cli.main import app
 
     (isolated_cwd / "atlas.yaml").write_text("posture:\n  enabled: true\n")
     errors = iter(["database is locked", "database is locked", "disk full", None, "disk full", "disk full"])
@@ -205,9 +205,9 @@ def test_watch_logs_an_error_once_per_change(isolated_cwd, monkeypatch):
         if len(calls) == 6:
             raise Stop()
 
-    monkeypatch.setattr("atlas.docker.manager.get_client", lambda: object())
-    monkeypatch.setattr("atlas.posture.collect.Collector", Stub)
-    monkeypatch.setattr("atlas.posture.store.PostureStore", lambda *a, **k: None)
+    monkeypatch.setattr("lanxang.docker.manager.get_client", lambda: object())
+    monkeypatch.setattr("lanxang.posture.collect.Collector", Stub)
+    monkeypatch.setattr("lanxang.posture.store.PostureStore", lambda *a, **k: None)
     monkeypatch.setattr(time, "sleep", sleep)
     output = CliRunner().invoke(app, ["posture", "watch"]).output
     assert output.count("database is locked") == 1 and output.count("disk full") == 2

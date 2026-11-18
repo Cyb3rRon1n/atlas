@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from atlas.wiring.store import WiringStore, diff_snapshots
+from lanxang.wiring.store import WiringStore, diff_snapshots
 
 
 def _snap(port="gi5", speed=1000, up=True):

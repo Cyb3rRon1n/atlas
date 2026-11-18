@@ -1,19 +1,19 @@
 from datetime import datetime
 
-from atlas.core.application import application
-from atlas.devices import Sighting
-from atlas.devices.store import InventoryStore
-from atlas.intelligence.providers.base import AIProviderError, ChatReply, SuggestedAction
-from atlas.knowledge.queries import KnowledgeQueries
-from atlas.web import api
-from atlas.clock import utcnow
+from lanxang.core.application import application
+from lanxang.devices import Sighting
+from lanxang.devices.store import InventoryStore
+from lanxang.intelligence.providers.base import AIProviderError, ChatReply, SuggestedAction
+from lanxang.knowledge.queries import KnowledgeQueries
+from lanxang.web import api
+from lanxang.clock import utcnow
 
 
 def two_devices():
 
     store = InventoryStore()
     # Globally-assigned-looking MACs (first octet's locally-administered bit unset) -
-    # atlas.devices.wiring guesses "wireless" from that bit, and these two devices
+    # lanxang.devices.wiring guesses "wireless" from that bit, and these two devices
     # need to default to visible/non-wireless for the rest of this module's tests.
     store.record_run("lan", [Sighting("lan", "00:01", ip="192.168.50.1", mac="00:01", hostname="router"),
                              Sighting("lan", "00:02", ip="192.168.50.2", mac="00:02")])
@@ -41,7 +41,7 @@ def test_edit_publishes_event_and_maps_errors(temp_db):
 
     assert api.handle("POST", f"/api/devices/{ids['router']}", {"name": "UniFi", "kind": "network"}) == (200, {"ok": True})
     assert InventoryStore().device(ids["router"])["name"] == "UniFi"
-    assert KnowledgeQueries().recent_events(5)[0].event_type == "atlas.devices.updated"
+    assert KnowledgeQueries().recent_events(5)[0].event_type == "lanxang.devices.updated"
 
     status, payload = api.handle("POST", f"/api/devices/{ids['router']}", {"kind": "toaster"})
     assert status == 400 and "kind must be one of" in payload["error"]
@@ -72,12 +72,12 @@ def test_merge_and_split(temp_db):
 
     assert api.handle("POST", f"/api/devices/{other}/merge", {"into": True}) == (400, {"error": "into must be a device id"})
     assert api.handle("POST", f"/api/devices/{other}/merge", {"into": router}) == (200, {"ok": True, "device_id": router})
-    assert KnowledgeQueries().recent_events(5)[0].event_type == "atlas.devices.merged"
+    assert KnowledgeQueries().recent_events(5)[0].event_type == "lanxang.devices.merged"
 
     sighting = InventoryStore().device(router)["sightings"][-1]["id"]
     status, payload = api.handle("POST", f"/api/sightings/{sighting}/split", {})
     assert status == 200 and payload["ok"] is True and payload["device_id"] != router
-    assert KnowledgeQueries().recent_events(5)[0].event_type == "atlas.devices.split"
+    assert KnowledgeQueries().recent_events(5)[0].event_type == "lanxang.devices.split"
     assert api.handle("POST", "/api/other", {}) is None
 
 
@@ -159,7 +159,7 @@ def test_chat_route_maps_provider_error_to_502(temp_db, monkeypatch):
 def test_execute_route(temp_db, monkeypatch):
 
     monkeypatch.setattr(api, "_environment", lambda: {"containers": {"Docker": {"containers": [{"name": "sonarr"}]}}})
-    monkeypatch.setattr("atlas.web.chat.execute_action", lambda action: {"success": True})
+    monkeypatch.setattr("lanxang.web.chat.execute_action", lambda action: {"success": True})
 
     assert api.handle("POST", "/api/actions/execute", {"action": {"type": "restart_container", "target": "sonarr"}}) == \
         (200, {"ok": True, "result": {"success": True}})
@@ -178,8 +178,8 @@ def test_execute_route_maps_live_state_failure_to_503(temp_db, monkeypatch):
 
 
 def test_posture_endpoints(temp_db):
-    from atlas.posture.store import PostureStore
-    from atlas.web import api
+    from lanxang.posture.store import PostureStore
+    from lanxang.web import api
     store = PostureStore(temp_db)
     store.set_status("conntrack", True, {"flows": 1}, utcnow())
     status, body = api.handle("GET", "/api/posture?window=1h")

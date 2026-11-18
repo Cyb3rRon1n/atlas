@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 
 import docker.errors
 
-from atlas.config.models import FleetNode
-from atlas.docker import (
+from lanxang.config.models import FleetNode
+from lanxang.docker import (
     collect_containers,
     get_container_info,
     get_container_logs,
@@ -12,7 +12,7 @@ from atlas.docker import (
     restart_container,
     stop_container,
 )
-from atlas.docker.manager import get_client
+from lanxang.docker.manager import get_client
 
 
 def test_collect_containers_when_daemon_unavailable():
@@ -23,7 +23,7 @@ def test_collect_containers_when_daemon_unavailable():
     """
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         side_effect=RuntimeError("no docker socket")
     ):
 
@@ -44,7 +44,7 @@ def test_collect_containers_when_available():
     fake_client.containers.list.return_value = [fake_container]
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -66,7 +66,7 @@ def test_collect_containers_when_available():
 def test_get_container_info_when_daemon_unavailable():
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         side_effect=RuntimeError("no docker socket")
     ):
 
@@ -81,7 +81,7 @@ def test_get_container_info_when_not_found():
     fake_client.containers.get.side_effect = docker.errors.NotFound("not found")
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -105,7 +105,7 @@ def test_get_container_info_when_found():
     fake_client.containers.get.return_value = fake_container
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -141,7 +141,7 @@ def test_get_container_info_reports_configured_limits():
     fake_client.containers.get.return_value = fake_container
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -177,7 +177,7 @@ def test_get_container_info_reads_nanocpus_for_docker_run_cpus_flag():
     fake_client.containers.get.return_value = fake_container
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -189,7 +189,7 @@ def test_get_container_info_reads_nanocpus_for_docker_run_cpus_flag():
 def test_restart_container_when_daemon_unavailable():
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         side_effect=RuntimeError("no docker socket")
     ):
 
@@ -204,7 +204,7 @@ def test_restart_container_when_not_found():
     fake_client.containers.get.side_effect = docker.errors.NotFound("not found")
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -226,7 +226,7 @@ def test_restart_container_when_restart_raises():
     fake_client.containers.get.return_value = fake_container
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -244,7 +244,7 @@ def test_restart_container_when_successful():
     fake_client.containers.get.return_value = fake_container
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -258,7 +258,7 @@ def test_restart_container_when_successful():
 def test_stop_container_when_daemon_unavailable():
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         side_effect=RuntimeError("no docker socket")
     ):
 
@@ -273,7 +273,7 @@ def test_stop_container_when_not_found():
     fake_client.containers.get.side_effect = docker.errors.NotFound("not found")
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -295,7 +295,7 @@ def test_stop_container_when_stop_raises():
     fake_client.containers.get.return_value = fake_container
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -313,7 +313,7 @@ def test_stop_container_when_successful():
     fake_client.containers.get.return_value = fake_container
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -348,7 +348,7 @@ def _fake_docker_client_for_resize():
 def test_resize_container_when_daemon_unavailable():
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         side_effect=RuntimeError("no docker socket")
     ):
 
@@ -363,7 +363,7 @@ def test_resize_container_when_not_found():
     fake_client.containers.get.side_effect = docker.errors.NotFound("not found")
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -381,7 +381,7 @@ def test_resize_container_when_update_raises():
     fake_response.raise_for_status.side_effect = RuntimeError("daemon exploded")
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -402,7 +402,7 @@ def test_resize_container_posts_nanocpus_for_cpus():
     fake_client, fake_container, _ = _fake_docker_client_for_resize()
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -420,7 +420,7 @@ def test_resize_container_with_memory_only_does_not_touch_cpu():
     fake_client, fake_container, _ = _fake_docker_client_for_resize()
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -437,7 +437,7 @@ def test_resize_container_with_both_cpus_and_memory():
     fake_client, fake_container, _ = _fake_docker_client_for_resize()
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -454,7 +454,7 @@ def test_resize_container_with_both_cpus_and_memory():
 def test_get_container_logs_when_daemon_unavailable():
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         side_effect=RuntimeError("no docker socket")
     ):
 
@@ -469,7 +469,7 @@ def test_get_container_logs_when_not_found():
     fake_client.containers.get.side_effect = docker.errors.NotFound("not found")
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -490,7 +490,7 @@ def test_get_container_logs_when_logs_raises():
     fake_client.containers.get.return_value = fake_container
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -509,7 +509,7 @@ def test_get_container_logs_when_successful():
     fake_client.containers.get.return_value = fake_container
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         return_value=fake_client
     ):
 
@@ -526,7 +526,7 @@ def test_get_container_logs_when_successful():
 
 def test_get_client_local_uses_from_env():
 
-    with patch("atlas.docker.manager.docker.from_env") as mock_from_env:
+    with patch("lanxang.docker.manager.docker.from_env") as mock_from_env:
 
         get_client()
 
@@ -537,7 +537,7 @@ def test_get_client_with_node_connects_over_ssh():
 
     node = FleetNode(name="node1", host="10.0.0.5", user="atlas", port=22)
 
-    with patch("atlas.docker.manager.docker.DockerClient") as mock_docker_client:
+    with patch("lanxang.docker.manager.docker.DockerClient") as mock_docker_client:
 
         get_client(node)
 
@@ -554,7 +554,7 @@ def test_restart_container_passes_node_to_get_client():
 
     node = FleetNode(name="node1", host="10.0.0.5", user="atlas", port=22)
 
-    with patch("atlas.docker.manager.get_client") as mock_get_client:
+    with patch("lanxang.docker.manager.get_client") as mock_get_client:
 
         mock_get_client.return_value.containers.get.return_value = fake_container
 

@@ -1,9 +1,9 @@
 import pytest
 
-from atlas.events import EventBus
-from atlas.plugins.base import AtlasPlugin
-from atlas.plugins.loader import discover_plugins
-from atlas.plugins.manager import PluginManager
+from lanxang.events import EventBus
+from lanxang.plugins.base import AtlasPlugin
+from lanxang.plugins.loader import discover_plugins
+from lanxang.plugins.manager import PluginManager
 
 
 def test_atlas_plugin_cannot_be_instantiated_directly():
@@ -38,7 +38,7 @@ def test_plugin_manager_initialize_publishes_loaded_event():
     runtime = FakeRuntime()
     received = []
 
-    runtime.events.subscribe("atlas.plugin.loaded", received.append)
+    runtime.events.subscribe("lanxang.plugin.loaded", received.append)
 
     manager.initialize(runtime)
 

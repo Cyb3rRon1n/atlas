@@ -4,8 +4,8 @@ import stat
 
 import pytest
 
-from atlas.config import local
-from atlas.config.loader import load_config
+from lanxang.config import local
+from lanxang.config.loader import load_config
 
 
 @pytest.fixture

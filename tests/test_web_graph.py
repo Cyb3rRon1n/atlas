@@ -1,4 +1,4 @@
-from atlas.web.graph import build_graph
+from lanxang.web.graph import build_graph
 
 
 def device(id, name, sightings, state="known", status="seen", important=False, kind="other",

@@ -1,0 +1,21 @@
+from lanxang.events import EventBus
+
+
+class EventLogger:
+    """
+    Basic Atlas event logger.
+    """
+
+    def register(self, bus: EventBus):
+
+        bus.subscribe(
+            "lanxang.plugin.loaded",
+            self.plugin_loaded
+        )
+
+    def plugin_loaded(self, event):
+
+        print(
+            f"[EVENT] Plugin loaded: "
+            f"{event.payload['plugin']}"
+        )

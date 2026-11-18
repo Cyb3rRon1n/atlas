@@ -5,9 +5,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from atlas.config.models import AtlasConfig
-from atlas.discovery.host_health import get_host_health
-from atlas.intelligence.tools import build_tools, execute_tool
+from lanxang.config.models import AtlasConfig
+from lanxang.discovery.host_health import get_host_health
+from lanxang.intelligence.tools import build_tools, execute_tool
 
 
 class _FakeJellyfin(BaseHTTPRequestHandler):
@@ -120,7 +120,7 @@ def test_search_container_logs_counts_and_keeps_most_recent():
     )
     client, container = _container_with_logs(lines)
 
-    with patch("atlas.docker.manager.get_client", return_value=client):
+    with patch("lanxang.docker.manager.get_client", return_value=client):
         result = execute_tool(build_tools(AtlasConfig()), "search_container_logs",
                               {"container": "jellyfin", "pattern": "killing TRANSCODE", "since_minutes": 60})
 
@@ -133,8 +133,8 @@ def test_search_container_logs_treats_bad_regex_as_text_and_caps_window():
 
     client, container = _container_with_logs("a [WRN( b\nplain\n")
 
-    with patch("atlas.docker.manager.get_client", return_value=client), patch("time.time", return_value=10_000_000):
-        from atlas.docker.manager import search_container_logs
+    with patch("lanxang.docker.manager.get_client", return_value=client), patch("time.time", return_value=10_000_000):
+        from lanxang.docker.manager import search_container_logs
         result = search_container_logs("jellyfin", "[WRN(", since_minutes=10**9)
 
     assert result["total_matches"] == 1

@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, patch
 import anthropic
 import pytest
 
-from atlas.config.models import IntelligenceConfig
-from atlas.intelligence.providers import anthropic_provider, get_provider, ollama_provider
-from atlas.intelligence.providers.anthropic_provider import AnthropicProvider
-from atlas.intelligence.providers.base import AIProviderError
-from atlas.intelligence.providers.ollama_provider import OllamaProvider
-from atlas.intelligence.tools import ToolDefinition
+from lanxang.config.models import IntelligenceConfig
+from lanxang.intelligence.providers import anthropic_provider, get_provider, ollama_provider
+from lanxang.intelligence.providers.anthropic_provider import AnthropicProvider
+from lanxang.intelligence.providers.base import AIProviderError
+from lanxang.intelligence.providers.ollama_provider import OllamaProvider
+from lanxang.intelligence.tools import ToolDefinition
 
 
 SAMPLE_CONTEXT = {"system": {"hostname": "homelab"}}

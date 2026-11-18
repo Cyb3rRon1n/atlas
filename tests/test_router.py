@@ -1,8 +1,8 @@
 import pytest
 
-from atlas.config.models import RouterConfig
-from atlas.devices import router
-from atlas.devices.store import InventoryStore
+from lanxang.config.models import RouterConfig
+from lanxang.devices import router
+from lanxang.devices.store import InventoryStore
 
 
 class Reply:
@@ -51,7 +51,7 @@ def test_dhcp_names_and_wifi_then_signs_out():
 
 
 def test_leases_link_to_devices_by_mac(temp_db):
-    from atlas.devices import Sighting, identify
+    from lanxang.devices import Sighting, identify
 
     store = InventoryStore(temp_db)
     store.record_run("lan", [Sighting("lan", "02:00:00:00:00:41", ip="192.0.2.41", mac="02:00:00:00:00:41")])

@@ -1,5 +1,5 @@
-from atlas.intelligence.analyzer import AtlasAnalyzer
-from atlas.intelligence.providers.base import (
+from lanxang.intelligence.analyzer import AtlasAnalyzer
+from lanxang.intelligence.providers.base import (
     AIProvider,
     AnalysisResult,
     PlanStep,

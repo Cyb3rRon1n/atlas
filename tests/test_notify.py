@@ -7,8 +7,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from atlas import notify
-from atlas.config.models import EmailNotifyConfig, NotifyConfig, NtfyNotifyConfig
+from lanxang import notify
+from lanxang.config.models import EmailNotifyConfig, NotifyConfig, NtfyNotifyConfig
 
 TEXT = "**🆕 New device on the network**\n• **Pixel-7** (192.0.2.8)\n\nTriage them in atlas."
 
@@ -125,7 +125,7 @@ def test_apprise_missing_is_a_clear_error(monkeypatch):
 
 def test_cli_notify_test(receiver, isolated_cwd):
     from typer.testing import CliRunner
-    from atlas.cli.main import app
+    from lanxang.cli.main import app
     base, got = receiver
     runner = CliRunner()
 

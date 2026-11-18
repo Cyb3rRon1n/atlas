@@ -2,9 +2,9 @@ import json
 
 import pytest
 
-from atlas.intelligence.providers.base import AIProviderError, ChatReply, PlanStep, SuggestedAction, SuggestedPlan
-from atlas.knowledge.queries import KnowledgeQueries
-from atlas.web.chat import ChatSessions, chat_turn, execute_step, reply_to_dict
+from lanxang.intelligence.providers.base import AIProviderError, ChatReply, PlanStep, SuggestedAction, SuggestedPlan
+from lanxang.knowledge.queries import KnowledgeQueries
+from lanxang.web.chat import ChatSessions, chat_turn, execute_step, reply_to_dict
 
 
 class FakeAgent:
@@ -70,7 +70,7 @@ def test_turn_keeps_history_per_session_and_logs_event(temp_db):
     assert {"role": "assistant", "content": "All good."} in agent.seen[1]
 
     event = KnowledgeQueries().recent_events(5)[0]
-    assert event.event_type == "atlas.chat.turn"
+    assert event.event_type == "lanxang.chat.turn"
 
 
 def test_turn_history_survives_agent_copying_messages_before_appending(temp_db):
@@ -153,7 +153,7 @@ def test_execute_step_grounds_runs_and_logs(temp_db):
     assert status == 200 and payload == {"ok": True, "result": {"success": True, "previous_status": "running"}}
     assert calls[0].target == "sonarr"
     event = KnowledgeQueries().recent_events(5)[0]
-    assert event.event_type == "atlas.action.container_restarted" and event.source == "AtlasWeb"
+    assert event.event_type == "lanxang.action.container_restarted" and event.source == "AtlasWeb"
 
 
 def test_execute_step_refuses_ungrounded_and_malformed(temp_db):
@@ -241,7 +241,7 @@ def test_execute_step_executor_exception_becomes_ok_false(temp_db):
     assert payload == {"ok": False, "result": {"success": False, "error": "docker exploded"}}
 
     event = KnowledgeQueries().recent_events(5)[0]
-    assert event.event_type == "atlas.action.container_restarted"
+    assert event.event_type == "lanxang.action.container_restarted"
     assert json.loads(event.payload)["result"] == {"success": False, "error": "docker exploded"}
 
 

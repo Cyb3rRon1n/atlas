@@ -2,7 +2,7 @@ import gzip
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from atlas.posture.collectors.asn import AsnInfo, AsnTable, load_table, parse_ip2asn, refresh
+from lanxang.posture.collectors.asn import AsnInfo, AsnTable, load_table, parse_ip2asn, refresh
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "posture" / "ip2asn-v4.tsv"

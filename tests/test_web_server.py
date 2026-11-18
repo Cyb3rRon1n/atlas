@@ -6,9 +6,9 @@ from http.server import ThreadingHTTPServer
 
 import pytest
 
-from atlas.intelligence.context import AtlasEnvironmentContext
-from atlas.knowledge.store import KnowledgeStore
-from atlas.web.server import AtlasWebHandler, same_origin
+from lanxang.intelligence.context import AtlasEnvironmentContext
+from lanxang.knowledge.store import KnowledgeStore
+from lanxang.web.server import AtlasWebHandler, same_origin
 
 
 @pytest.fixture
@@ -129,11 +129,11 @@ def _post(url, body, origin=None, raw=None):
 
 def _seed_device():
 
-    from atlas.devices import Sighting
-    from atlas.devices.store import InventoryStore
+    from lanxang.devices import Sighting
+    from lanxang.devices.store import InventoryStore
 
     store = InventoryStore()
-    # A globally-assigned-looking MAC (locally-administered bit unset) - atlas.devices.wiring
+    # A globally-assigned-looking MAC (locally-administered bit unset) - lanxang.devices.wiring
     # guesses "wireless" from that bit, and this device needs to default to visible/wired.
     store.record_run("lan", [Sighting("lan", "00:01", ip="192.168.50.1", mac="00:01", hostname="router")])
 
@@ -192,7 +192,7 @@ def test_chat_prefill_falls_back_to_ip_then_id_when_name_is_none(running_server,
     that: a nameless device used to render "Tell me about None".
     """
 
-    from atlas.devices.store import InventoryStore
+    from lanxang.devices.store import InventoryStore
 
     nameless = {"id": 9, "name": None, "ip": "10.0.0.5", "status": "online", "state": "known",
                 "sightings": [{"source": "lan"}]}
@@ -236,7 +236,7 @@ def test_graph_route_with_ignored_flag(running_server):
     ({"Origin": "http://127.0.0.1:8420", "Host": "127.0.0.1:8420"}, True),
     ({"Origin": "null", "Host": "127.0.0.1:8420"}, False),
     ({"Referer": "http://127.0.0.1:8420/devices/1", "Host": "127.0.0.1:8420"}, True),
-    ({"Origin": "https://atlas.x@evil.com", "Host": "atlas.x"}, False),
+    ({"Origin": "https://lanxang.x@evil.com", "Host": "lanxang.x"}, False),
     ({}, False),
 ], ids=[
     "sec-fetch-site same-origin passes",
@@ -286,7 +286,7 @@ def test_device_pages_render(running_server):
 
 def test_get_500s_are_plain_text_for_pages_and_json_for_api(running_server, monkeypatch):
 
-    from atlas.devices.store import InventoryStore
+    from lanxang.devices.store import InventoryStore
 
     def boom(self, now=None):
         raise RuntimeError("boom")
@@ -304,7 +304,7 @@ def test_device_page_scans_devices_only_once(running_server, monkeypatch):
     """The device page used to call InventoryStore.devices() twice (once inside
     store.device(), once again to pass to the renderer) - now it's a single scan."""
 
-    from atlas.devices.store import InventoryStore
+    from lanxang.devices.store import InventoryStore
 
     _, device_id = _seed_device()
     original = InventoryStore.devices
@@ -347,7 +347,7 @@ PINNED = {
 
 def test_vendored_files_match_pinned_hashes():
 
-    static = Path(__file__).resolve().parents[1] / "atlas" / "web" / "static"
+    static = Path(__file__).resolve().parents[1] / "lanxang" / "web" / "static"
 
     for name, digest in PINNED.items():
         assert hashlib.sha256((static / name).read_bytes()).hexdigest() == digest, name

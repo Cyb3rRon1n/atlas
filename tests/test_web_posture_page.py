@@ -1,5 +1,5 @@
-from atlas.web.posture_page import POSTURE_SCRIPT, render_posture_page
-from atlas.web.render import NAV, render_page
+from lanxang.web.posture_page import POSTURE_SCRIPT, render_posture_page
+from lanxang.web.render import NAV, render_page
 
 
 def test_nav_has_four_sections_and_marks_active():
@@ -43,7 +43,7 @@ def test_posture_side_lists_are_tabs_and_map_click_shows_details():
 
 def test_nav_order_and_hosts_tabs():
     from datetime import datetime
-    from atlas.web.trends_page import render_trends_page
+    from lanxang.web.trends_page import render_trends_page
     assert [label for _, label, _ in NAV] == ["Home", "Alerts", "Network", "Servers", "Security", "Setup"]
     html = render_trends_page([], [], "24h", datetime(2026, 10, 11))
     assert 'href="/overview"' in html and ">Trends<" in html
@@ -51,7 +51,7 @@ def test_nav_order_and_hosts_tabs():
 
 
 def test_every_old_page_sits_under_one_top_tab():
-    from atlas.web.render import SECTIONS
+    from lanxang.web.render import SECTIONS
     for key, href in (("cabling", "/devices"), ("history", "/alerts"), ("access", "/posture"), ("lan", "/posture")):
         html = render_page("x", "", active=key)
         assert f'href="{href}" aria-current="page"' in html
@@ -114,14 +114,14 @@ def test_posture_and_network_scripts_are_valid_javascript(tmp_path):
     import pytest
     if not shutil.which("node"):
         pytest.skip("node not installed")
-    from atlas.web.home_page import render_home_page, build_hosts
+    from lanxang.web.home_page import render_home_page, build_hosts
     from types import SimpleNamespace
-    from atlas.web.render import render_history_page
-    from atlas.web.devices_pages import render_devices_page
-    ev = SimpleNamespace(created_at="2026-01-01 00:00:00", event_type="atlas.scan.completed", source="x", payload="{}")
+    from lanxang.web.render import render_history_page
+    from lanxang.web.devices_pages import render_devices_page
+    ev = SimpleNamespace(created_at="2026-01-01 00:00:00", event_type="lanxang.scan.completed", source="x", payload="{}")
     pages = {"posture": render_posture_page(), "home": render_home_page(None, build_hosts(None, None, None), []),
              "history": render_history_page([ev]), "devices": render_devices_page([]),
-             "access": __import__("atlas.web.access_page", fromlist=["x"]).render_access_page(
+             "access": __import__("lanxang.web.access_page", fromlist=["x"]).render_access_page(
                  {"visitors": [], "logins": []}, "7d", user_places=[{"user": "u", "place_key": "US/x", "label": "l", "status": "review",
                  "first_seen": "", "last_seen": "", "ip": "", "app": "jellyfin"}])}
     for name, html in pages.items():

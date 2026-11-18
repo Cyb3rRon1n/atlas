@@ -270,7 +270,7 @@ def analyze(
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.analysis.completed",
+            event_type="atlas.analysis.completed",
             source="AtlasAnalyzer",
             payload={
                 "provider": settings.intelligence.provider,
@@ -472,7 +472,7 @@ def chat():
 
         runtime.events.publish(
             AtlasEvent(
-                event_type="lanxang.chat.transcript_saved",
+                event_type="atlas.chat.transcript_saved",
                 source="AtlasChat",
                 payload={"messages": transcript}
             )

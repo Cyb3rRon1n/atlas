@@ -9,7 +9,7 @@ class EventLogger:
     def register(self, bus: EventBus):
 
         bus.subscribe(
-            "lanxang.plugin.loaded",
+            "atlas.plugin.loaded",
             self.plugin_loaded
         )
 

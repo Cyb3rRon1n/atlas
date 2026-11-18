@@ -4,7 +4,7 @@ Host health alerts: one pure assess() over what `atlas sample` already reads
 status feeds) and alerts() that fire once per new problem and once on recovery.
 
 Containers that stopped cleanly (exit code 0, e.g. a game room an idle timer
-put to sleep) or carry the label lanxang.on-demand=true are "asleep", not a
+put to sleep) or carry the label lanxang.on-demand=true (or the older atlas.on-demand) are "asleep", not a
 problem: only crashes, restart loops and failing health checks count.
 """
 

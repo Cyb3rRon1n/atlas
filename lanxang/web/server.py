@@ -232,7 +232,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         settings = safe("config", load_config)
         health_settings = settings.health if settings else None
         topology = safe("topology", query.latest_topology)
-        pve_scan = safe("proxmox scan", lambda: query.latest_event_payload("lanxang.proxmox.scan.completed"))
+        pve_scan = safe("proxmox scan", lambda: query.latest_event_payload("atlas.proxmox.scan.completed"))
         host_issues = safe("host issues", lambda: ((PostureStore().statuses().get("host") or {}).get("detail")
                                                     or {}).get("issues"))
         local = safe("host health", lambda: get_host_health(health_settings.status_urls if health_settings else None))
@@ -365,11 +365,11 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             topology = query.latest_topology() or {}
             pve = (topology.get("proxmox") or {}).get("host")
             lan = {h.get("address"): h["name"] for h in topology.get("lan", [])}
-            scans = query.events_since(["lanxang.proxmox.scan.completed"], since)
+            scans = query.events_since(["atlas.proxmox.scan.completed"], since)
             node_set = {n["name"] for _, p in scans for n in p.get("nodes", [])}
             # a single-node install is the LAN host at the Proxmox address - show the name people use (as on Home)
             names = {next(iter(node_set)): lan[pve]} if len(node_set) == 1 and pve in lan else {}
-            body = render_trends_page(query.events_since(["lanxang.host.sample"], since), scans, window, now,
+            body = render_trends_page(query.events_since(["atlas.host.sample"], since), scans, window, now,
                                       topology.get("host") or "this host", names)
         elif path == "/map":
             topology = query.latest_topology()

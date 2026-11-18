@@ -111,7 +111,7 @@ Controls `lanxang monitor`.
 
 The default metric queries assume [`node_exporter`](https://github.com/prometheus/node_exporter) is running on the monitored host and being scraped by Prometheus — install and configure it there for `lanxang monitor` to return real CPU/memory/disk figures. If Prometheus is reachable but `node_exporter` isn't set up yet, `lanxang monitor` still runs; each affected metric just reports as unavailable rather than failing the whole command.
 
-A metric at or above its threshold prints with a yellow `!` instead of a green `✓` (e.g. `! cpu_percent: 92.1% (threshold: 90.0%)`), and if anything crossed its threshold, `lanxang monitor` publishes `lanxang.monitoring.threshold_exceeded` (visible via `lanxang history`) alongside the `lanxang.monitoring.scan.completed` event every scan already publishes — so a no-op scan doesn't add event-log noise, only an actual threshold crossing does. A metric with no data (`node_exporter` not scraped, etc.) is never flagged either way — "unavailable" isn't "under the limit."
+A metric at or above its threshold prints with a yellow `!` instead of a green `✓` (e.g. `! cpu_percent: 92.1% (threshold: 90.0%)`), and if anything crossed its threshold, `lanxang monitor` publishes `atlas.monitoring.threshold_exceeded` (visible via `lanxang history`) alongside the `atlas.monitoring.scan.completed` event every scan already publishes — so a no-op scan doesn't add event-log noise, only an actual threshold crossing does. A metric with no data (`node_exporter` not scraped, etc.) is never flagged either way — "unavailable" isn't "under the limit."
 
 ## `fleet`
 
@@ -172,7 +172,7 @@ Every atlas-scan pass (`lanxang sample`) checks the machine lanxang runs on and 
 - a container that crashed (stopped with an error code), keeps restarting, or fails its health check;
 - a `status_urls` feed whose `state` is anything but `ok` (for example a RAID-card watchdog saying `warn`).
 
-**Containers that sleep on purpose are not problems.** One that stopped cleanly (exit code 0), such as a game room an idle timer shuts down, shows as *Asleep* on the home page and never alerts. For an app that sleeps but exits with an error code, add the label `lanxang.on-demand=true`. The `/api/summary` tile data counts them as `containers_asleep`.
+**Containers that sleep on purpose are not problems.** One that stopped cleanly (exit code 0), such as a game room an idle timer shuts down, shows as *Asleep* on the home page and never alerts. For an app that sleeps but exits with an error code, add the label `lanxang.on-demand=true` (the older `atlas.on-demand=true` still works). The `/api/summary` tile data counts them as `containers_asleep`.
 
 ### Disk health (Proxmox)
 

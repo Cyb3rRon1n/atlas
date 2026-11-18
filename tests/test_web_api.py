@@ -41,7 +41,7 @@ def test_edit_publishes_event_and_maps_errors(temp_db):
 
     assert api.handle("POST", f"/api/devices/{ids['router']}", {"name": "UniFi", "kind": "network"}) == (200, {"ok": True})
     assert InventoryStore().device(ids["router"])["name"] == "UniFi"
-    assert KnowledgeQueries().recent_events(5)[0].event_type == "lanxang.devices.updated"
+    assert KnowledgeQueries().recent_events(5)[0].event_type == "atlas.devices.updated"
 
     status, payload = api.handle("POST", f"/api/devices/{ids['router']}", {"kind": "toaster"})
     assert status == 400 and "kind must be one of" in payload["error"]
@@ -72,12 +72,12 @@ def test_merge_and_split(temp_db):
 
     assert api.handle("POST", f"/api/devices/{other}/merge", {"into": True}) == (400, {"error": "into must be a device id"})
     assert api.handle("POST", f"/api/devices/{other}/merge", {"into": router}) == (200, {"ok": True, "device_id": router})
-    assert KnowledgeQueries().recent_events(5)[0].event_type == "lanxang.devices.merged"
+    assert KnowledgeQueries().recent_events(5)[0].event_type == "atlas.devices.merged"
 
     sighting = InventoryStore().device(router)["sightings"][-1]["id"]
     status, payload = api.handle("POST", f"/api/sightings/{sighting}/split", {})
     assert status == 200 and payload["ok"] is True and payload["device_id"] != router
-    assert KnowledgeQueries().recent_events(5)[0].event_type == "lanxang.devices.split"
+    assert KnowledgeQueries().recent_events(5)[0].event_type == "atlas.devices.split"
     assert api.handle("POST", "/api/other", {}) is None
 
 

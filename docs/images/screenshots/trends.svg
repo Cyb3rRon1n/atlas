@@ -5,8 +5,8 @@
 <circle cx="26" cy="23.0" r="7" fill="#e0645a" opacity="0.85"/>
 <circle cx="48" cy="23.0" r="7" fill="#e0b04a" opacity="0.85"/>
 <circle cx="70" cy="23.0" r="7" fill="#5fb87a" opacity="0.85"/>
-<text x="490.0" y="28.0" text-anchor="middle" font-family="JetBrains Mono" font-size="15" fill="#8a99a2">atlas trends</text>
-<text x="24" y="84" font-family="JetBrains Mono" font-size="20" fill="#5cb3c4" xml:space="preserve">Atlas Trends</text>
+<text x="490.0" y="28.0" text-anchor="middle" font-family="JetBrains Mono" font-size="15" fill="#8a99a2">lanxang trends</text>
+<text x="24" y="84" font-family="JetBrains Mono" font-size="20" fill="#5cb3c4" xml:space="preserve">Lanxang Trends</text>
 <text x="24" y="144" font-family="JetBrains Mono" font-size="20" fill="#5cb3c4" xml:space="preserve">Host:</text>
 <text x="24" y="174" font-family="JetBrains Mono" font-size="20" fill="#dbe3e6" xml:space="preserve">  cpu_percent: latest 12.4%, min 4.1%, max 82.1%, avg 15.3% (24 samples)</text>
 <text x="24" y="204" font-family="JetBrains Mono" font-size="20" fill="#dbe3e6" xml:space="preserve">  memory_percent: latest 41.2%, min 38.5%, max 44.0%, avg 40.9% (24 samples)</text>

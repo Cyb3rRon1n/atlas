@@ -27,7 +27,7 @@ class PluginManager:
 
             runtime.events.publish(
                 AtlasEvent(
-                    event_type="lanxang.plugin.loaded",
+                    event_type="atlas.plugin.loaded",
                     source="PluginManager",
                     payload={
                         "plugin": plugin.name

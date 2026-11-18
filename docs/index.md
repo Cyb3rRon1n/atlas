@@ -36,18 +36,30 @@ pieces fit together.
 ## See it in action
 
 <p align="center">
-  <img src="images/screenshots/cabling-map.png" alt="Cabling map: internet, gateway, a 28-port switch and the hosts on each port" style="max-width: 100%; width: 900px;"><br>
-  <img src="images/screenshots/cabling-ports.png" alt="Switch front panels with a standby backup cable and a PoE-powered access point" style="max-width: 100%; width: 900px;"><br>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/screenshots/cabling-map-dark.png">
+    <img src="images/screenshots/cabling-map-light.png" alt="Cabling map: internet, gateway, a 16-port switch, an unmanaged desk switch, an access point and the hosts on each port" style="max-width: 100%; width: 900px;">
+  </picture><br>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/screenshots/cabling-ports-dark.png">
+    <img src="images/screenshots/cabling-ports-light.png" alt="Switch front panels with a PoE-powered access point and the selected port explained" style="max-width: 100%; width: 900px;">
+  </picture><br>
   <sub>The Cabling page, shown with example data.</sub>
 </p>
 
 <p align="center">
-  <img src="images/screenshots/devices.png" alt="Devices page" style="max-width: 100%; width: 900px;"><br>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/screenshots/devices-dark.png">
+    <img src="images/screenshots/devices-light.png" alt="Devices page: new devices with their maker and Wi-Fi details, then the known devices by type" style="max-width: 100%; width: 900px;">
+  </picture><br>
   <sub>The Devices page, shown with example data.</sub>
 </p>
 
 <p align="center">
-  <img src="images/screenshots/setup.png" alt="The Setup tab: alerts, the AI model, switches and UniFi, each with a Test button" style="max-width: 100%; width: 820px;"><br>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/screenshots/setup-dark.png">
+    <img src="images/screenshots/setup-light.png" alt="The Setup tab: what is on your network, then cards for ntfy, webhooks and email" style="max-width: 100%; width: 820px;">
+  </picture><br>
   <sub>The Setup tab: connect alerts, switches, UniFi and Proxmox from the browser. Shown with example data.</sub>
 </p>
 

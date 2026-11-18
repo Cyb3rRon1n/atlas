@@ -2,8 +2,8 @@ DOCKER_DISCOVERED = "docker.discovered"
 
 PROXMOX_DISCOVERED = "proxmox.discovered"
 
-DISCOVERY_COMPLETED = "lanxang.discovery.completed"
+DISCOVERY_COMPLETED = "atlas.discovery.completed"
 
-PLUGIN_LOADED = "lanxang.plugin.loaded"
+PLUGIN_LOADED = "atlas.plugin.loaded"
 
-REPORT_GENERATED = "lanxang.report.generated"
+REPORT_GENERATED = "atlas.report.generated"

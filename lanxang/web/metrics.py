@@ -124,7 +124,7 @@ def _sources():
     uptime, alerts = UptimeStore(), AlertStore()
 
     def disks(statuses):
-        scan = KnowledgeQueries().latest_event_payload("lanxang.proxmox.scan.completed") or {}
+        scan = KnowledgeQueries().latest_event_payload("atlas.proxmox.scan.completed") or {}
         found = [(node.get("name"), node.get("disks") or []) for node in scan.get("nodes") or []]
         nas = (statuses.get("nas") or {}).get("detail") or {}
         if nas.get("name"):

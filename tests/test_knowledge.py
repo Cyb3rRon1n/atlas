@@ -24,7 +24,7 @@ def test_save_and_query_events(temp_db):
 
     store.save_event(
         AtlasEvent(
-            event_type="lanxang.discovery.completed",
+            event_type="atlas.discovery.completed",
             source="test",
             payload={"ok": True}
         )
@@ -33,20 +33,20 @@ def test_save_and_query_events(temp_db):
     events = KnowledgeQueries().recent_events()
 
     assert len(events) == 1
-    assert events[0].event_type == "lanxang.discovery.completed"
+    assert events[0].event_type == "atlas.discovery.completed"
     assert events[0].source == "test"
 
 
 def test_latest_event_payload_picks_newest_of_type(temp_db):
 
     store = KnowledgeStore()
-    assert KnowledgeQueries().latest_event_payload("lanxang.proxmox.scan.completed") is None
+    assert KnowledgeQueries().latest_event_payload("atlas.proxmox.scan.completed") is None
 
-    for event_type, payload in (("lanxang.proxmox.scan.completed", {"n": 1}), ("other", {"n": 2}),
-                                ("lanxang.proxmox.scan.completed", {"n": 3})):
+    for event_type, payload in (("atlas.proxmox.scan.completed", {"n": 1}), ("other", {"n": 2}),
+                                ("atlas.proxmox.scan.completed", {"n": 3})):
         store.save_event(AtlasEvent(event_type=event_type, source="test", payload=payload))
 
-    assert KnowledgeQueries().latest_event_payload("lanxang.proxmox.scan.completed") == {"n": 3}
+    assert KnowledgeQueries().latest_event_payload("atlas.proxmox.scan.completed") == {"n": 3}
 
 
 def test_latest_environment_none_when_nothing_stored(temp_db):

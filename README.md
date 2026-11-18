@@ -21,8 +21,15 @@ Lanxang (formerly Atlas) is a self-hosted monitor for homelabs. It finds every m
 It never changes anything on its own. Restarting a container or a VM is only ever *suggested*, and every action asks you first.
 
 <p align="center">
-  <img src="docs/images/screenshots/home.png" alt="Lanxang home page: one sentence saying two things need a look, number tiles for devices, servers, uptime, public routes and power, and a Needs attention table" width="90%">
-  <br><img src="docs/images/screenshots/devices.png" alt="Lanxang devices page: new devices with their maker, what they announce, where they are plugged in and a suggested name and type" width="90%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshots/home-dark.png">
+    <img src="docs/images/screenshots/home-light.png" alt="Lanxang home page: one sentence saying one thing needs a look, a Getting started checklist, number tiles for devices, internet, servers, uptime, public routes and power, a Needs attention table with the offline printer, and cards for security posture, host health and storage" width="90%">
+  </picture>
+  <br>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshots/devices-dark.png">
+    <img src="docs/images/screenshots/devices-light.png" alt="Lanxang devices page: two new devices with their maker, Wi-Fi network and access point and a suggested name and type, a printer that went quiet, then the known devices grouped by type" width="90%">
+  </picture>
   <br><sub>Home and the devices page, shown with example data.</sub>
 </p>
 
@@ -36,8 +43,15 @@ It never changes anything on its own. Restarting a container or a VM is only eve
 - **Chat with your homelab**: "why did Jellyfin stop transcoding?" gets answered from live logs, status and your own notes, using Ollama on your hardware or Claude.
 
 <p align="center">
-  <img src="docs/images/screenshots/cabling-map.png" alt="Lanxang cabling map: internet, gateway, a switch, an access point and a Wi-Fi bridge, with port-to-port labels and link speeds" width="90%">
-  <br><img src="docs/images/screenshots/cabling-ports.png" alt="Switch front panels: which device is on each port, with a panel explaining the selected port" width="90%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshots/cabling-map-dark.png">
+    <img src="docs/images/screenshots/cabling-map-light.png" alt="Lanxang cabling map: internet, gateway, a switch, an unmanaged desk switch and an access point, with port-to-port labels and link speeds" width="90%">
+  </picture>
+  <br>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshots/cabling-ports-dark.png">
+    <img src="docs/images/screenshots/cabling-ports-light.png" alt="Switch front panels for the gateway, the switch and the access point: which device is on each port, a PoE port powering the access point, and a panel explaining the selected port" width="90%">
+  </picture>
   <br><sub>The cabling map and switch front panels, shown with example data.</sub>
 </p>
 
@@ -65,7 +79,10 @@ No Docker? `pip install` works as well; see [Getting started](https://cyb3rron1n
 Prefer files? Everything on the Setup tab can also go in `~/lanxang/lanxang.yaml`, and anything set there wins; [Configuration](https://cyb3rron1n.github.io/lanxang/configuration/) has copy-paste examples. Signal and Apprise alerts are set there.
 
 <p align="center">
-  <img src="docs/images/screenshots/setup.png" alt="The Setup tab: What is on your network? with a managed switch and a UPS ticked, then cards for ntfy and webhooks" width="80%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshots/setup-dark.png">
+    <img src="docs/images/screenshots/setup-light.png" alt="The Setup tab: What is on your network? with UniFi, Proxmox, NAS and UPS ticked, then cards for ntfy, webhooks and email" width="80%">
+  </picture>
   <br><sub>The Setup tab, shown with example data.</sub>
 </p>
 

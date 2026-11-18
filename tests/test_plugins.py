@@ -38,7 +38,7 @@ def test_plugin_manager_initialize_publishes_loaded_event():
     runtime = FakeRuntime()
     received = []
 
-    runtime.events.subscribe("lanxang.plugin.loaded", received.append)
+    runtime.events.subscribe("atlas.plugin.loaded", received.append)
 
     manager.initialize(runtime)
 

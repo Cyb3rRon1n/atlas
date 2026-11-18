@@ -118,7 +118,7 @@ def test_posture_and_network_scripts_are_valid_javascript(tmp_path):
     from types import SimpleNamespace
     from lanxang.web.render import render_history_page
     from lanxang.web.devices_pages import render_devices_page
-    ev = SimpleNamespace(created_at="2026-01-01 00:00:00", event_type="lanxang.scan.completed", source="x", payload="{}")
+    ev = SimpleNamespace(created_at="2026-01-01 00:00:00", event_type="atlas.scan.completed", source="x", payload="{}")
     pages = {"posture": render_posture_page(), "home": render_home_page(None, build_hosts(None, None, None), []),
              "history": render_history_page([ev]), "devices": render_devices_page([]),
              "access": __import__("lanxang.web.access_page", fromlist=["x"]).render_access_page(

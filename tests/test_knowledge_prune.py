@@ -33,14 +33,14 @@ def test_routine_discovery_events_go_after_a_week(temp_db):
     from lanxang.knowledge import store as store_module
 
     now = datetime(2026, 11, 17, 12)
-    rows = [("lanxang.discovery.completed", now - timedelta(days=10)), ("lanxang.discovery.completed", now - timedelta(days=9)),
-            ("lanxang.discovery.completed", now - timedelta(days=1)), ("lanxang.plugin.loaded", now - timedelta(days=8)),
-            ("lanxang.host.sample", now - timedelta(days=10))]
+    rows = [("atlas.discovery.completed", now - timedelta(days=10)), ("atlas.discovery.completed", now - timedelta(days=9)),
+            ("atlas.discovery.completed", now - timedelta(days=1)), ("atlas.plugin.loaded", now - timedelta(days=8)),
+            ("atlas.host.sample", now - timedelta(days=10))]
     with Session(temp_db) as session:
         session.add_all([EventRecord(event_type=kind, source="x", payload="{}", created_at=at) for kind, at in rows])
         session.commit()
     store_module.KnowledgeStore().prune(now)
     with Session(temp_db) as session:
         left = sorted((e.event_type, (now - e.created_at).days) for e in session.scalars(select(EventRecord)))
-    assert left == [("lanxang.discovery.completed", 1), ("lanxang.host.sample", 10),    # Trends reads host samples
-                    ("lanxang.plugin.loaded", 8)]                                      # the newest of its type stays
+    assert left == [("atlas.discovery.completed", 1), ("atlas.host.sample", 10),    # Trends reads host samples
+                    ("atlas.plugin.loaded", 8)]                                      # the newest of its type stays

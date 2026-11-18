@@ -67,7 +67,7 @@ def scan():
 
     # The last Proxmox scan itself - not the latest saved environment, which other atlas-scan commands keep
     # overwriting with an empty "virtualization" (so every guest looked newly added each time).
-    previous = KnowledgeQueries().latest_event_payload("lanxang.proxmox.scan.completed")
+    previous = KnowledgeQueries().latest_event_payload("atlas.proxmox.scan.completed")
 
 
     client = connect(
@@ -159,7 +159,7 @@ CPU / Memory:
 
             runtime.events.publish(
                 AtlasEvent(
-                    event_type="lanxang.proxmox.changes_detected",
+                    event_type="atlas.proxmox.changes_detected",
                     source="ProxmoxScan",
                     payload={"changes": changes}
                 )
@@ -190,7 +190,7 @@ CPU / Memory:
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.proxmox.scan.completed",
+            event_type="atlas.proxmox.scan.completed",
             source="ProxmoxScan",
             payload=data
         )
@@ -278,7 +278,7 @@ def restart_guest_command(vmid: int):
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.action.guest_restarted",
+            event_type="atlas.action.guest_restarted",
             source="ProxmoxRestartAction",
             payload={
                 "vmid": vmid,
@@ -383,7 +383,7 @@ def stop_guest_command(vmid: int):
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.action.guest_stopped",
+            event_type="atlas.action.guest_stopped",
             source="ProxmoxStopAction",
             payload={
                 "vmid": vmid,
@@ -515,7 +515,7 @@ def resize_guest_command(
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.action.guest_resized",
+            event_type="atlas.action.guest_resized",
             source="ProxmoxResizeAction",
             payload={
                 "vmid": vmid,
@@ -609,7 +609,7 @@ def restart_libvirt_guest_command(
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.action.libvirt_guest_restarted",
+            event_type="atlas.action.libvirt_guest_restarted",
             source="LibvirtRestartAction",
             payload={
                 "guest": name,
@@ -694,7 +694,7 @@ def stop_libvirt_guest_command(
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.action.libvirt_guest_stopped",
+            event_type="atlas.action.libvirt_guest_stopped",
             source="LibvirtStopAction",
             payload={
                 "guest": name,
@@ -797,7 +797,7 @@ def resize_libvirt_guest_command(
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.action.libvirt_guest_resized",
+            event_type="atlas.action.libvirt_guest_resized",
             source="LibvirtResizeAction",
             payload={
                 "guest": name,

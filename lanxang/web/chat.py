@@ -127,7 +127,7 @@ def chat_turn(sessions, session_id, message, agent_factory, now=None, tools=True
             session["messages"] = new_messages
             session["turns"] += 1
 
-    _publish("lanxang.chat.turn", {"session": session_id, "question": message, "answer": data["text"],
+    _publish("atlas.chat.turn", {"session": session_id, "question": message, "answer": data["text"],
                                  "action": data["action"], "plan": data["plan"]})
 
     return 200, {"session": session_id, **data}
@@ -243,7 +243,7 @@ def execute_step(action_data, environment_factory, executor=execute_action):
     except Exception as error:  # the browser is waiting on a real response, not a 500
         result = {"success": False, "error": str(error)}
 
-    event_type = PLAN_STEP_EVENT_TYPES.get(action.type, "lanxang.action.executed")
+    event_type = PLAN_STEP_EVENT_TYPES.get(action.type, "atlas.action.executed")
     _publish(event_type, {"target": action.target, "result": result})
 
     return 200, {"ok": bool(result.get("success")), "result": result}

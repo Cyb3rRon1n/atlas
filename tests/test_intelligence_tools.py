@@ -96,7 +96,7 @@ def test_get_recent_events_tool_reads_from_knowledge_store(temp_db):
 
     KnowledgeStore().save_event(
         AtlasEvent(
-            event_type="lanxang.discovery.completed",
+            event_type="atlas.discovery.completed",
             source="Discovery",
             payload={}
         )
@@ -106,7 +106,7 @@ def test_get_recent_events_tool_reads_from_knowledge_store(temp_db):
 
     result = execute_tool(tools, "get_recent_events", {})
 
-    assert result["events"][0]["event_type"] == "lanxang.discovery.completed"
+    assert result["events"][0]["event_type"] == "atlas.discovery.completed"
     assert result["events"][0]["source"] == "Discovery"
 
 

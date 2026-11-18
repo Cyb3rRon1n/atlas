@@ -419,7 +419,7 @@ def discover():
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.discovery.completed",
+            event_type="atlas.discovery.completed",
             source="DiscoveryEngine",
             payload=data
         )
@@ -427,7 +427,7 @@ def discover():
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.plugins.discovery.completed",
+            event_type="atlas.plugins.discovery.completed",
             source="PluginManager",
             payload=plugin_data
         )

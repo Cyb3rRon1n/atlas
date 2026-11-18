@@ -79,6 +79,10 @@ def initialize_database(engine=None):
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_events_time ON events (created_at)"))
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_environment_time ON environment (created_at)"))
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_uptime_name_time ON uptime (name, checked_at)"))
+        # Images built from main between the rename and 1.0 wrote lanxang.* event types; stored names stay
+        # atlas.*. Matches nothing once healed, so later runs are no-ops.
+        connection.execute(text("UPDATE events SET event_type = 'atlas.' || substr(event_type, 9) "
+                                "WHERE event_type LIKE 'lanxang.%'"))
 
 
 __all__ = [

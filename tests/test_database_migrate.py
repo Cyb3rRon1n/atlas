@@ -81,3 +81,23 @@ def test_migrate_devices_table_tolerates_a_concurrent_migration(tmp_path, monkey
 
     columns = {column["name"] for column in inspect(engine).get_columns("devices")}
     assert {"connection", "uplink_id"} <= columns
+
+
+def test_initialize_database_renames_lanxang_event_types_back(tmp_path):
+    """Images built from main before 1.0 wrote lanxang.* event types; the stored names stay atlas.*."""
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'events.db'}")
+    initialize_database(engine)
+
+    with engine.begin() as connection:
+        for kind in ("lanxang.proxmox.scan.completed", "atlas.monitor.completed"):
+            connection.execute(text("INSERT INTO events (event_type, source, payload, created_at) "
+                                    "VALUES (:kind, 'test', '{}', '2026-11-01')"), {"kind": kind})
+
+    initialize_database(engine)
+    initialize_database(engine)  # second run is harmless
+
+    with engine.connect() as connection:
+        kinds = sorted(connection.execute(text("SELECT event_type FROM events")).scalars())
+
+    assert kinds == ["atlas.monitor.completed", "atlas.proxmox.scan.completed"]

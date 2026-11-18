@@ -211,3 +211,16 @@ def test_sign_out_button_only_with_builtin_auth(monkeypatch):
     assert "Sign out" not in render.render_page("T", "")
     monkeypatch.setattr(render, "SIGN_OUT", True)
     assert 'action="/logout"' in render.render_page("T", "")
+
+
+def test_vendored_fonts_are_served_and_the_allow_list_holds(secured):
+
+    base, auth = secured
+    auth.set_password("a good password")
+
+    for name in ("Lexend.woff2", "NotoSansLao-Medium.woff2"):
+        with OPENER.open(base + "/static/fonts/" + name, timeout=5) as response:    # no sign-in needed
+            assert response.status == 200 and response.headers["Content-Type"] == "font/woff2" and response.read()
+
+    assert _call(base + "/static/fonts/../server.py")[0] == 404
+    assert _call(base + "/static/fonts/x.woff2")[0] == 404

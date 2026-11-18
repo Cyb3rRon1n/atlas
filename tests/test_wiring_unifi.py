@@ -69,7 +69,7 @@ class FakeOpener:
 def test_fetch_unifi():
     opener = FakeOpener()
     config = WiringUnifi(enabled=True, url="https://192.0.2.1")
-    result = fetch_unifi(config, {"ATLAS_UNIFI_USER": "atlas", "ATLAS_UNIFI_PASS": "pw-123456"}, 5,
+    result = fetch_unifi(config, {"LANXANG_UNIFI_USER": "atlas", "LANXANG_UNIFI_PASS": "pw-123456"}, 5,
                          opener_factory=lambda: opener)
     assert len(result["devices"]) == 4
     assert opener.calls[1][0] == "https://192.0.2.1/proxy/network/api/s/default/stat/device"
@@ -77,10 +77,10 @@ def test_fetch_unifi():
 
 def test_fetch_unifi_errors():
     config = WiringUnifi(enabled=True, url="https://192.0.2.1")
-    with pytest.raises(WiringError, match="ATLAS_UNIFI_USER"):
+    with pytest.raises(WiringError, match="LANXANG_UNIFI_USER"):
         fetch_unifi(config, {}, 5, opener_factory=FakeOpener)
     with pytest.raises(WiringError, match="login refused"):
-        fetch_unifi(config, {"ATLAS_UNIFI_USER": "a", "ATLAS_UNIFI_PASS": "b"}, 5,
+        fetch_unifi(config, {"LANXANG_UNIFI_USER": "a", "LANXANG_UNIFI_PASS": "b"}, 5,
                     opener_factory=lambda: FakeOpener(401))
 
 def test_public_ip_is_not_shown():

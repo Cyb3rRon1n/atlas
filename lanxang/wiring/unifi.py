@@ -128,9 +128,9 @@ def _default_opener(verify_ssl):
 def _session(config, env, timeout, opener_factory, read):
     """Sign in with the read-only account, then read(get) - get(path) returns that API path's data list."""
 
-    user, password = env.get("ATLAS_UNIFI_USER"), env.get("ATLAS_UNIFI_PASS")
+    user, password = env.get("LANXANG_UNIFI_USER"), env.get("LANXANG_UNIFI_PASS")
     if not user or not password:
-        raise WiringError("set ATLAS_UNIFI_USER and ATLAS_UNIFI_PASS in the atlas env file")
+        raise WiringError("set LANXANG_UNIFI_USER and LANXANG_UNIFI_PASS in the atlas env file")
 
     opener = (opener_factory or (lambda: _default_opener(config.verify_ssl)))()
     base = config.url.rstrip("/")
@@ -148,7 +148,7 @@ def _session(config, env, timeout, opener_factory, read):
 
     except urllib.error.HTTPError as error:
         if error.code in (401, 403):
-            raise WiringError("UniFi login refused - check ATLAS_UNIFI_USER/PASS (a local, read-only account)")
+            raise WiringError("UniFi login refused - check LANXANG_UNIFI_USER/PASS (a local, read-only account)")
         raise WiringError(f"UniFi API error {error.code}")
     except (urllib.error.URLError, OSError, ValueError) as error:
         raise WiringError(f"UniFi unreachable: {getattr(error, 'reason', error)}")

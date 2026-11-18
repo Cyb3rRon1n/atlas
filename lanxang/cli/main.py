@@ -6,7 +6,7 @@ from lanxang.inventory import save_inventory
 from lanxang.inventory import load_inventory
 from lanxang.reporting.generator import generate_report
 from lanxang.config import load_config, write_config, write_setup_log
-from lanxang.config.loader import CONFIG_FILE
+from lanxang.config.local import config_file
 from lanxang.config.models import AtlasConfig, IntelligenceConfig, MonitoringConfig, ProxmoxConfig
 from lanxang.health import run_checks
 from lanxang.plugins import PluginManager
@@ -106,10 +106,10 @@ def init():
         "[bold cyan]Atlas Init[/bold cyan]\n"
     )
 
-    if CONFIG_FILE.exists():
+    if config_file().exists():
 
         console.print(
-            f"{CONFIG_FILE} already exists.\n"
+            f"{config_file()} already exists.\n"
         )
 
         if not typer.confirm("Overwrite?"):
@@ -350,13 +350,13 @@ def init():
 
     write_config(config)
 
-    log_lines.append(f"{CONFIG_FILE} written")
+    log_lines.append(f"{config_file()} written")
     log_lines.append("Atlas init completed")
 
     log_path = write_setup_log(log_lines)
 
     console.print(
-        f"\n[green]✓ {CONFIG_FILE} created[/green]"
+        f"\n[green]✓ {config_file()} created[/green]"
     )
 
     console.print(

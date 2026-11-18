@@ -53,7 +53,7 @@ class FakeTrueNAS:
 
 def test_truenas_reads_pools_disks_temps_and_smart_alerts():
     ws = FakeTrueNAS()
-    info = nas.fetch(_config(), {"ATLAS_NAS_PASSWORD": "1-key"}, connect=ws)
+    info = nas.fetch(_config(), {"LANXANG_NAS_PASSWORD": "1-key"}, connect=ws)
     assert ws.url == "wss://192.0.2.20/api/current" and ws.sslopt["cert_reqs"] == 0 and ws.closed
     assert ws.sent[0] == "auth.login_ex"
     assert info["pools"] == [{"name": "tank", "health": "DEGRADED", "size": 8 * 10**12, "alloc": 2 * 10**12}]
@@ -64,14 +64,14 @@ def test_truenas_reads_pools_disks_temps_and_smart_alerts():
 
 def test_truenas_older_login_bad_key_and_plain_http():
     old = FakeTrueNAS(login_ex=False)
-    nas.fetch(_config(), {"ATLAS_NAS_PASSWORD": "1-key"}, connect=old)
+    nas.fetch(_config(), {"LANXANG_NAS_PASSWORD": "1-key"}, connect=old)
     assert old.sent[:2] == ["auth.login_ex", "auth.login_with_api_key"]                # 24.10 has no login_ex
     for fake in (FakeTrueNAS(key_ok=False), FakeTrueNAS(login_ex=False, key_ok=False)):
         with pytest.raises(nas.NasError, match="API key not accepted"):
-            nas.fetch(_config(), {"ATLAS_NAS_PASSWORD": "1-bad"}, connect=fake)
+            nas.fetch(_config(), {"LANXANG_NAS_PASSWORD": "1-bad"}, connect=fake)
         assert fake.closed
     with pytest.raises(nas.NasError, match="https"):
-        nas.fetch(_config(url="http://192.0.2.20"), {"ATLAS_NAS_PASSWORD": "1-key"}, connect=FakeTrueNAS())
+        nas.fetch(_config(url="http://192.0.2.20"), {"LANXANG_NAS_PASSWORD": "1-key"}, connect=FakeTrueNAS())
 
 
 class Reply:
@@ -107,7 +107,7 @@ class FakeSynology:
 
 def test_synology_reads_volumes_and_disks_and_always_signs_out():
     http = FakeSynology()
-    info = nas.fetch(_config(kind="synology"), {"ATLAS_NAS_PASSWORD": "pw"}, http)
+    info = nas.fetch(_config(kind="synology"), {"LANXANG_NAS_PASSWORD": "pw"}, http)
     assert http.calls == ["login", "load_info", "logout"]
     assert info["pools"] == [{"name": "volume 1", "health": "NORMAL", "size": 4 * 10**12, "alloc": 10**12}]
     drive, cache = info["disks"]
@@ -115,9 +115,9 @@ def test_synology_reads_volumes_and_disks_and_always_signs_out():
         ("Drive 1", "hdd", 36, "PASSED", "Example HDD")
     assert cache["type"] == "ssd" and cache["worn"]
     with pytest.raises(nas.NasError, match="must be an administrator"):
-        nas.fetch(_config(kind="synology"), {"ATLAS_NAS_PASSWORD": "pw"}, FakeSynology(login_error=402))
+        nas.fetch(_config(kind="synology"), {"LANXANG_NAS_PASSWORD": "pw"}, FakeSynology(login_error=402))
     with pytest.raises(nas.NasError, match="two-factor"):
-        nas.fetch(_config(kind="synology"), {"ATLAS_NAS_PASSWORD": "pw"}, FakeSynology(login_error=403))
+        nas.fetch(_config(kind="synology"), {"LANXANG_NAS_PASSWORD": "pw"}, FakeSynology(login_error=403))
 
 
 def test_pool_alerts_once_disk_alerts_and_read_errors_keep_state(temp_db):

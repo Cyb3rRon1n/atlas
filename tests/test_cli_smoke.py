@@ -44,9 +44,9 @@ def test_init_declining_every_integration_writes_minimal_config(isolated_cwd):
     )
 
     assert result.exit_code == 0
-    assert "atlas.yaml created" in result.output
+    assert "lanxang.yaml created" in result.output
 
-    written = (isolated_cwd / "atlas.yaml").read_text()
+    written = (isolated_cwd / "lanxang.yaml").read_text()
 
     assert "name: homelab" in written
     assert "enabled: false" in written
@@ -73,7 +73,7 @@ def test_init_with_proxmox_token_auth_redacts_secret_from_log(isolated_cwd):
 
     assert result.exit_code == 0
 
-    written = (isolated_cwd / "atlas.yaml").read_text()
+    written = (isolated_cwd / "lanxang.yaml").read_text()
 
     assert "token_value: supersecret" in written
     assert "host: 192.168.1.10" in written
@@ -105,7 +105,7 @@ def test_init_with_proxmox_password_auth(isolated_cwd):
 
     assert result.exit_code == 0
 
-    written = (isolated_cwd / "atlas.yaml").read_text()
+    written = (isolated_cwd / "lanxang.yaml").read_text()
 
     assert "password: hunter2" in written
     assert "token_value: ''" in written
@@ -125,7 +125,7 @@ def test_init_with_ollama_provider(isolated_cwd):
 
     assert result.exit_code == 0
 
-    written = (isolated_cwd / "atlas.yaml").read_text()
+    written = (isolated_cwd / "lanxang.yaml").read_text()
 
     assert "provider: ollama" in written
     assert "model: llama3.1" in written
@@ -142,7 +142,7 @@ def test_init_reprompts_on_invalid_provider(isolated_cwd):
     assert result.exit_code == 0
     assert "Please enter 'anthropic' or 'ollama'." in result.output
 
-    written = (isolated_cwd / "atlas.yaml").read_text()
+    written = (isolated_cwd / "lanxang.yaml").read_text()
 
     assert "provider: anthropic" in written
 
@@ -192,7 +192,7 @@ def test_init_declining_review_writes_nothing(isolated_cwd):
 
     assert result.exit_code == 0
     assert "Cancelled - nothing written." in result.output
-    assert not (isolated_cwd / "atlas.yaml").exists()
+    assert not (isolated_cwd / "lanxang.yaml").exists()
     assert not (isolated_cwd / "logs").exists()
 
 

@@ -8,7 +8,7 @@ headline, **bold** marks names. Each channel gets the form it understands.
 A channel that fails never stops the others; send() reports success when
 at least one channel took the message, so callers mark it delivered once.
 Secrets can come from the environment instead of atlas.yaml:
-ATLAS_NTFY_TOKEN, ATLAS_SMTP_PASSWORD.
+LANXANG_NTFY_TOKEN, LANXANG_SMTP_PASSWORD.
 """
 
 import json
@@ -51,7 +51,7 @@ def _post_json(url, payload, headers=None):
 
 def send_ntfy(config, text):
 
-    token = config.token or os.environ.get("ATLAS_NTFY_TOKEN", "")
+    token = config.token or os.environ.get("LANXANG_NTFY_TOKEN", "")
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     _post_json(config.url.rstrip("/"), {"topic": config.topic, "title": _title(text), "message": _body(text),
                                         "markdown": True, "tags": ["atlas"]}, headers)
@@ -80,7 +80,7 @@ def send_email(config, text):
     message["From"] = config.sender or config.user
     message["To"] = ", ".join(config.to)
     message.set_content(_plain(text))
-    password = config.password or os.environ.get("ATLAS_SMTP_PASSWORD", "")
+    password = config.password or os.environ.get("LANXANG_SMTP_PASSWORD", "")
 
     smtp = smtplib.SMTP_SSL if config.port == 465 else smtplib.SMTP
     with smtp(config.host, config.port, timeout=TIMEOUT) as server:

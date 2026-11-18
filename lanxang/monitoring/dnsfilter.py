@@ -15,7 +15,7 @@ import os
 
 from lanxang.alerts import Text
 
-PASSWORD_ENV = "ATLAS_DNS_PASSWORD"
+PASSWORD_ENV = "LANXANG_DNS_PASSWORD"
 
 
 class DnsFilterError(Exception):

@@ -14,7 +14,7 @@ from lanxang.web.settings_page import handle_post, render_settings_page
 
 @pytest.fixture
 def env(isolated_cwd, monkeypatch):
-    environ = {k: v for k, v in os.environ.items() if not k.startswith(("ATLAS_", "ANTHROPIC_"))}
+    environ = {k: v for k, v in os.environ.items() if not k.startswith(("ATLAS_", "LANXANG_", "ANTHROPIC_"))}
     monkeypatch.setattr(os, "environ", environ)
     monkeypatch.setattr(local, "_APPLIED", set())
     return environ
@@ -99,7 +99,7 @@ def test_webhooks_are_secrets_and_get_a_test(env, receiver, isolated_cwd):
     assert load_config().notify.webhooks == [f"{url}/one", f"{url}/two"]
     assert url not in (isolated_cwd / "inventory" / "settings.yaml").read_text()
     handle_post("/api/settings/webhooks/save", {"urls": f"{url}/three"})
-    assert load_config().notify.webhooks == [f"{url}/three"] and local.secret_names() == {"ATLAS_WEBHOOK_1"}
+    assert load_config().notify.webhooks == [f"{url}/three"] and local.secret_names() == {"LANXANG_WEBHOOK_1"}
     assert handle_post("/api/settings/webhooks/save", {"urls": "not a url"})[0] == 400
 
 
@@ -165,7 +165,7 @@ def test_switches_add_update_remove_and_turn_wiring_on(env, isolated_cwd):
     assert config.wiring.enabled is True
     assert [(s.name, s.host, s.priv) for s in config.wiring.switches] == [("spare", "192.0.2.3", "des"),
                                                                          ("core switch", "192.0.2.9", "des")]
-    assert env["ATLAS_SNMP_CORE_SWITCH_AUTH"] == "auth-pass" and env["ATLAS_SNMP_CORE_SWITCH_PRIV"] == "priv-pass"
+    assert env["LANXANG_SNMP_CORE_SWITCH_AUTH"] == "auth-pass" and env["LANXANG_SNMP_CORE_SWITCH_PRIV"] == "priv-pass"
     assert "pass" not in (isolated_cwd / "inventory" / "settings.yaml").read_text()
     page = render_settings_page()
     assert "core switch" in page and "auth-pass" not in page and "Remove this switch" in page
@@ -210,7 +210,7 @@ def test_unifi_test_signs_in_and_counts_devices(env, monkeypatch):
     seen = {}
 
     def session(config, environ, timeout, opener_factory, read):
-        seen.update(url=config.url, user=environ["ATLAS_UNIFI_USER"])
+        seen.update(url=config.url, user=environ["LANXANG_UNIFI_USER"])
         return read(lambda path: [{"mac": "a"}, {"mac": "b"}] if path == "stat/device" else [])
 
     monkeypatch.setattr(unifi, "_session", session)
@@ -219,7 +219,7 @@ def test_unifi_test_signs_in_and_counts_devices(env, monkeypatch):
     assert status == 200 and "2 UniFi devices" in data["message"] and seen["user"] == "viewer"
 
     def refused(*args):
-        raise WiringError("UniFi login refused - check ATLAS_UNIFI_USER/PASS (a local, read-only account)")
+        raise WiringError("UniFi login refused - check LANXANG_UNIFI_USER/PASS (a local, read-only account)")
 
     monkeypatch.setattr(unifi, "_session", refused)
     assert handle_post("/api/settings/unifi/test", body)[1]["error"].startswith("UniFi login refused")
@@ -283,7 +283,7 @@ def test_snmp_v2c_switch_saves_a_community_and_drops_v3_secrets(env, isolated_cw
 
     switch = load_config().wiring.switches[0]
     assert (switch.version, switch.host) == ("2c", "192.0.2.9")
-    assert local.secret_names() == {"ATLAS_SNMP_CORE_SWITCH_COMMUNITY"}          # the v3 passphrases are gone
+    assert local.secret_names() == {"LANXANG_SNMP_CORE_SWITCH_COMMUNITY"}          # the v3 passphrases are gone
     page = render_settings_page()
     assert "SNMPv2c (community)" in page and "ro-community" not in page
 
@@ -298,10 +298,10 @@ def test_snmp_session_file_for_each_version(tmp_path):
             return open(child["SNMPCONFPATH"] + "/snmp.conf").read()
 
     v2 = WiringSwitch(name="nas", host="192.0.2.5", version="2c")
-    assert conf(v2, {"ATLAS_SNMP_NAS_COMMUNITY": "ro"}) == "defVersion 2c\ndefCommunity ro\n"
+    assert conf(v2, {"LANXANG_SNMP_NAS_COMMUNITY": "ro"}) == "defVersion 2c\ndefCommunity ro\n"
     with pytest.raises(WiringError, match="COMMUNITY"):
         conf(v2, {})
-    v3 = conf(WiringSwitch(name="sw", host="192.0.2.2"), {"ATLAS_SNMP_SW_AUTH": "a" * 8, "ATLAS_SNMP_SW_PRIV": "p" * 8})
+    v3 = conf(WiringSwitch(name="sw", host="192.0.2.2"), {"LANXANG_SNMP_SW_AUTH": "a" * 8, "LANXANG_SNMP_SW_PRIV": "p" * 8})
     assert v3.startswith("defVersion 3\n") and "defPrivType AES" in v3
 
 
@@ -319,3 +319,27 @@ def test_gear_chooser_shows_matching_cards_and_saves(env, isolated_cwd):
 
     handle_post("/api/settings/switches/save", SWITCH)                    # a configured card always shows
     assert '<section class="card" id="switches">' in render_settings_page()
+
+
+def test_setup_manages_an_old_atlas_keyed_install(env, receiver, isolated_cwd):
+    url, got = receiver
+    (isolated_cwd / "inventory").mkdir()
+    (isolated_cwd / "inventory" / "secrets.json").write_text(json.dumps(
+        {"ATLAS_WEBHOOK_1": f"{url}/one", "ATLAS_WEBHOOK_2": f"{url}/two", "ATLAS_NTFY_TOKEN": "tk_old"}))
+    local.save_settings({"notify": {"webhooks": ["${ATLAS_WEBHOOK_1}", "${ATLAS_WEBHOOK_2}"],
+                                    "ntfy": {"url": url, "topic": "t", "token": "${ATLAS_NTFY_TOKEN}"}}})
+    assert load_config().notify.webhooks == [f"{url}/one", f"{url}/two"]
+    assert local.secret_names() == {"LANXANG_WEBHOOK_1", "LANXANG_WEBHOOK_2", "LANXANG_NTFY_TOKEN"}
+    page = render_settings_page()
+    assert "set in .env" not in page and "saved - leave blank to keep it" in page      # saved, not from environment
+
+    handle_post("/api/settings/webhooks/save", {"urls": f"{url}/three"})
+    stored = json.loads((isolated_cwd / "inventory" / "secrets.json").read_text())
+    assert stored == {"ATLAS_NTFY_TOKEN": "tk_old", "LANXANG_WEBHOOK_1": f"{url}/three"}
+    assert load_config().notify.webhooks == [f"{url}/three"]
+
+    handle_post("/api/settings/ntfy/off", {})
+    stored = json.loads((isolated_cwd / "inventory" / "secrets.json").read_text())
+    assert stored == {"LANXANG_WEBHOOK_1": f"{url}/three"}
+    load_config()
+    assert "LANXANG_NTFY_TOKEN" not in env and "ATLAS_NTFY_TOKEN" not in env

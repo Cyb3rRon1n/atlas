@@ -66,15 +66,15 @@ class FakeHA:
 def test_fetch_uses_the_token_and_explains_failures():
     config = HomeAssistantConfig(url="http://192.0.2.80:8123")
     http = FakeHA()
-    info = ha.fetch(config, {"ATLAS_HA_TOKEN": "t0k"}, http, now=NOW)
+    info = ha.fetch(config, {"LANXANG_HA_TOKEN": "t0k"}, http, now=NOW)
     assert info["version"] == "2026.10.3" and info["offline"][0]["name"] == "Porch camera"
     assert http.seen == ["Bearer t0k", "Bearer t0k"]
     with pytest.raises(ha.HomeAssistantError, match="token was refused"):
-        ha.fetch(config, {"ATLAS_HA_TOKEN": "bad"}, FakeHA(401))
+        ha.fetch(config, {"LANXANG_HA_TOKEN": "bad"}, FakeHA(401))
     with pytest.raises(ha.HomeAssistantError, match="long-lived access token"):
         ha.fetch(config, {}, FakeHA())
     with pytest.raises(ha.HomeAssistantError, match="address"):
-        ha.fetch(HomeAssistantConfig(url="homeassistant"), {"ATLAS_HA_TOKEN": "t"}, FakeHA())
+        ha.fetch(HomeAssistantConfig(url="homeassistant"), {"LANXANG_HA_TOKEN": "t"}, FakeHA())
 
 
 def test_alerts_once_and_when_fine_again(temp_db):

@@ -13,7 +13,7 @@ def env(isolated_cwd, monkeypatch):
     """A private copy of the environment, so stored secrets applied by load_config never leak between tests."""
 
     environ = dict(os.environ)
-    for key in [k for k in environ if k.startswith(("ATLAS_", "ANTHROPIC_"))]:
+    for key in [k for k in environ if k.startswith(("ATLAS_", "LANXANG_", "ANTHROPIC_"))]:
         environ.pop(key)
     monkeypatch.setattr(os, "environ", environ)
     monkeypatch.setattr(local, "_APPLIED", set())
@@ -40,30 +40,30 @@ def test_saving_merges_and_none_removes(env):
 
 
 def test_secrets_are_private_never_listed_and_env_wins(env, isolated_cwd):
-    local.save_secrets({"ATLAS_UNIFI_PASS": "s3cret", "ATLAS_NTFY_TOKEN": "tk"})
+    local.save_secrets({"LANXANG_UNIFI_PASS": "s3cret", "LANXANG_NTFY_TOKEN": "tk"})
     path = isolated_cwd / "inventory" / "secrets.json"
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
-    assert local.secret_names() == {"ATLAS_UNIFI_PASS", "ATLAS_NTFY_TOKEN"}
+    assert local.secret_names() == {"LANXANG_UNIFI_PASS", "LANXANG_NTFY_TOKEN"}
 
-    env["ATLAS_NTFY_TOKEN"] = "from-dotenv"
+    env["LANXANG_NTFY_TOKEN"] = "from-dotenv"
     load_config()
-    assert env["ATLAS_UNIFI_PASS"] == "s3cret" and env["ATLAS_NTFY_TOKEN"] == "from-dotenv"
+    assert env["LANXANG_UNIFI_PASS"] == "s3cret" and env["LANXANG_NTFY_TOKEN"] == "from-dotenv"
 
 
 def test_changed_and_removed_secrets_take_effect_without_restart(env):
-    local.save_secrets({"ATLAS_UNIFI_PASS": "old"})
+    local.save_secrets({"LANXANG_UNIFI_PASS": "old"})
     load_config()
-    local.save_secrets({"ATLAS_UNIFI_PASS": "new"})
+    local.save_secrets({"LANXANG_UNIFI_PASS": "new"})
     load_config()
-    assert env["ATLAS_UNIFI_PASS"] == "new"
-    local.save_secrets({"ATLAS_UNIFI_PASS": None})
+    assert env["LANXANG_UNIFI_PASS"] == "new"
+    local.save_secrets({"LANXANG_UNIFI_PASS": None})
     load_config()
-    assert "ATLAS_UNIFI_PASS" not in env and local.secret_names() == set()
+    assert "LANXANG_UNIFI_PASS" not in env and local.secret_names() == set()
 
 
 def test_settings_reference_stored_secrets(env):
-    local.save_settings({"proxmox": {"token_value": "${ATLAS_PROXMOX_TOKEN}"}})
-    local.save_secrets({"ATLAS_PROXMOX_TOKEN": "abc-123"})
+    local.save_settings({"proxmox": {"token_value": "${LANXANG_PROXMOX_TOKEN}"}})
+    local.save_secrets({"LANXANG_PROXMOX_TOKEN": "abc-123"})
     assert load_config().proxmox.token_value == "abc-123"
 
 
@@ -77,5 +77,43 @@ def test_broken_files_never_stop_atlas(env, isolated_cwd):
 def test_secret_values_never_reach_the_settings_file(env, isolated_cwd):
     with pytest.raises(ValueError):
         local.save_secrets({"not-an-env-name": "x"})
-    local.save_secrets({"ATLAS_SMTP_PASSWORD": "pw"})
+    local.save_secrets({"LANXANG_SMTP_PASSWORD": "pw"})
     assert "pw" not in json.dumps(local.read_settings())
+
+
+def test_apply_secrets_with_counterparts(env):
+    local.save_secrets({"LANXANG_UNIFI_PASS": "old"})
+    local.apply_secrets()
+    assert env["LANXANG_UNIFI_PASS"] == env["ATLAS_UNIFI_PASS"] == "old"
+    local.save_secrets({"LANXANG_UNIFI_PASS": "new"})
+    local.apply_secrets()
+    assert env["LANXANG_UNIFI_PASS"] == env["ATLAS_UNIFI_PASS"] == "new"      # the mirrored copy follows
+    local.save_secrets({"LANXANG_UNIFI_PASS": None})
+    local.apply_secrets()
+    assert "LANXANG_UNIFI_PASS" not in env and "ATLAS_UNIFI_PASS" not in env  # nothing resurrects it
+
+
+def test_apply_secrets_never_touches_a_real_variable(env):
+    env["ATLAS_NTFY_TOKEN"] = "real"
+    local.mirror()
+    local.save_secrets({"LANXANG_NTFY_TOKEN": "saved", "LANXANG_UNIFI_PASS": "x"})
+    local.apply_secrets()
+    assert env["LANXANG_NTFY_TOKEN"] == env["ATLAS_NTFY_TOKEN"] == "real"
+    local.save_secrets({"LANXANG_NTFY_TOKEN": None, "LANXANG_UNIFI_PASS": None})
+    local.apply_secrets()
+    assert env["LANXANG_NTFY_TOKEN"] == env["ATLAS_NTFY_TOKEN"] == "real"
+
+
+def test_an_old_atlas_keyed_secrets_file_can_be_replaced_and_cleared(env, isolated_cwd):
+    path = isolated_cwd / "inventory" / "secrets.json"
+    path.parent.mkdir()
+    path.write_text(json.dumps({"ATLAS_UNIFI_PASS": "old"}))
+    load_config()
+    assert env["LANXANG_UNIFI_PASS"] == "old" and local.secret_names() == {"LANXANG_UNIFI_PASS"}
+    local.save_secrets({"LANXANG_UNIFI_PASS": "new"})
+    assert json.loads(path.read_text()) == {"LANXANG_UNIFI_PASS": "new"}
+    load_config()
+    assert env["LANXANG_UNIFI_PASS"] == env["ATLAS_UNIFI_PASS"] == "new"
+    local.save_secrets({"LANXANG_UNIFI_PASS": None})
+    load_config()
+    assert json.loads(path.read_text()) == {} and "LANXANG_UNIFI_PASS" not in env and "ATLAS_UNIFI_PASS" not in env

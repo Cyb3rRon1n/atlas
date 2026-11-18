@@ -3,7 +3,7 @@ Settings saved from the web Setup page, kept beside the database (inventory/, th
 
 atlas.yaml stays the user's file: it is never rewritten, and any value it sets wins over a web-saved one.
 settings.yaml only fills in what atlas.yaml leaves out. Secrets live apart in secrets.json (mode 600), keyed
-by the environment variable names atlas already reads (ATLAS_UNIFI_PASS, ATLAS_SNMP_<NAME>_AUTH, ...).
+by the environment variable names atlas already reads (LANXANG_UNIFI_PASS, LANXANG_SNMP_<NAME>_AUTH, ...).
 load_config() puts them into the environment unless the real environment (.env) already sets them, so
 settings.yaml can reference them as ${NAME} and secret values never appear in a settings file or a page.
 """
@@ -15,12 +15,20 @@ from pathlib import Path
 
 import yaml
 
+from lanxang.config.env import NEW as NEW_PREFIX, OLD as OLD_PREFIX, mirror
+
 SETTINGS_FILE = Path("inventory/settings.yaml")
 SECRETS_FILE = Path("inventory/secrets.json")
-CONFIG_FILE = Path("atlas.yaml")
+NEW_CONFIG, OLD_CONFIG = Path("lanxang.yaml"), Path("atlas.yaml")
 ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]*$")
 
 _APPLIED = set()     # environment keys this process set from secrets.json (so a later change can replace them)
+
+
+def config_file():
+    """lanxang.yaml, or an existing install's atlas.yaml when only that exists (read until 1.2)."""
+
+    return OLD_CONFIG if OLD_CONFIG.exists() and not NEW_CONFIG.exists() else NEW_CONFIG
 
 
 def _read_yaml(path):
@@ -83,7 +91,7 @@ def save_settings(patch):
 def locked(path):
     """True when atlas.yaml sets this setting (a tuple of keys), so the Setup page shows it read-only."""
 
-    node = _read_yaml(CONFIG_FILE)
+    node = _read_yaml(config_file())
     for key in path:
         if not isinstance(node, dict) or key not in node:
             return False
@@ -102,25 +110,48 @@ def _read_secrets():
     return {k: v for k, v in data.items() if isinstance(v, str)} if isinstance(data, dict) else {}
 
 
-def secret_names():
-    """Which secrets are saved - never their values."""
+def _counterpart(name):
+    """The same setting under the other prefix (LANXANG_X <-> ATLAS_X); None for any other name."""
 
-    return set(_read_secrets())
+    if name.startswith(NEW_PREFIX):
+        return OLD_PREFIX + name[len(NEW_PREFIX):]
+    if name.startswith(OLD_PREFIX):
+        return NEW_PREFIX + name[len(OLD_PREFIX):]
+
+
+def _normal(name):
+
+    return NEW_PREFIX + name[len(OLD_PREFIX):] if name.startswith(OLD_PREFIX) else name
+
+
+def secret_names():
+    """Which secrets are saved - never their values. An old install's ATLAS_ keys are listed as LANXANG_."""
+
+    return {_normal(name) for name in _read_secrets()}
 
 
 def save_secrets(values):
-    """{ENV_NAME: value}; None or "" removes one."""
+    """{ENV_NAME: value}; None or "" removes one (under either prefix, so an old ATLAS_ key never lingers)."""
 
     for name in values:
         if not ENV_NAME.match(name):
             raise ValueError(f"not an environment variable name: {name!r}")
     current = _read_secrets()
     for name, value in values.items():
+        current.pop(_counterpart(name), None)
         if value:
             current[name] = value
         else:
             current.pop(name, None)
     _write(SECRETS_FILE, json.dumps(current, indent=1), 0o600)
+
+
+def _drop_copy(environ, name, was):
+    """Remove the mirrored copy of name - only while it still holds the value mirror() gave it."""
+
+    other = _counterpart(name)
+    if other and environ.get(other) == was:
+        environ.pop(other, None)
 
 
 def apply_secrets(environ=None):
@@ -130,9 +161,13 @@ def apply_secrets(environ=None):
     stored = _read_secrets()
     for name in list(_APPLIED):
         if name not in stored:
-            environ.pop(name, None)
+            was = environ.pop(name, None)
+            _drop_copy(environ, name, was)      # the mirrored copy, or it would bring the secret back
             _APPLIED.discard(name)
     for name, value in stored.items():
         if name in _APPLIED or not environ.get(name):      # an empty variable (compose's ${X:-}) counts as unset
+            _drop_copy(environ, name, environ.get(name))
             environ[name] = value
             _APPLIED.add(name)
+
+    mirror(environ)

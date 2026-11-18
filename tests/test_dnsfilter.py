@@ -54,12 +54,12 @@ def _config(**kw):
 
 def test_pihole_signs_in_reads_and_always_signs_out():
     http = FakePihole()
-    info = dnsfilter.fetch(_config(), {"ATLAS_DNS_PASSWORD": "secret"}, http)
+    info = dnsfilter.fetch(_config(), {"LANXANG_DNS_PASSWORD": "secret"}, http)
     assert info["blocking"] and info["queries"] == 20000 and info["percent"] == 15.5 and info["blocklist"] == 123456
     assert info["clients"][1] == {"ip": "192.0.2.21", "name": "tv.lan", "count": 900}
     assert http.calls[-1] == ("DELETE", "http://192.0.2.53/api/auth") and not http.open
     with pytest.raises(dnsfilter.DnsFilterError, match="wrong password"):
-        dnsfilter.fetch(_config(), {"ATLAS_DNS_PASSWORD": "nope"}, FakePihole())
+        dnsfilter.fetch(_config(), {"LANXANG_DNS_PASSWORD": "nope"}, FakePihole())
     open_pihole = FakePihole(password="")
     assert dnsfilter.fetch(_config(), {}, open_pihole)["blocking"]               # no password set: no sign-in
     assert not any(method == "POST" for method, _ in open_pihole.calls)
@@ -77,7 +77,7 @@ def test_adguard_home_basic_auth_and_bad_addresses():
             return Reply(200, {"num_dns_queries": 1000, "num_blocked_filtering": 250,
                                "top_clients": [{"192.0.2.30": 600}, {"192.0.2.31": 400}]})
 
-    info = dnsfilter.fetch(_config(kind="adguard", user="admin"), {"ATLAS_DNS_PASSWORD": "pw"}, FakeAdGuard())
+    info = dnsfilter.fetch(_config(kind="adguard", user="admin"), {"LANXANG_DNS_PASSWORD": "pw"}, FakeAdGuard())
     assert info["kind"] == "AdGuard Home" and info["blocking"] is False and info["percent"] == 25.0
     assert info["blocklist"] == 190000                                           # enabled lists only
     assert info["clients"][0] == {"ip": "192.0.2.30", "name": "", "count": 600}

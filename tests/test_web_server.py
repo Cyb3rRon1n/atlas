@@ -55,7 +55,7 @@ def test_home_at_root_and_posture_route(running_server):
     status, body = _get(running_server + "/")
 
     assert status == 200
-    assert "Security posture" in body and "Hosts health" in body and "Recent activity" in body
+    assert "Security posture" in body and "Host health" in body and "Recent activity" in body
 
     status, body = _get(running_server + "/posture")
 

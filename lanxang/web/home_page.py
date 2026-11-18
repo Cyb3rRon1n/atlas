@@ -50,6 +50,7 @@ HOME_STYLE = """
 .hcard dl { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:8px 0 0; font-size:14px; }
 .hcard dt { color:var(--muted); }
 .hcard .host { padding:8px 0; border-top:1px solid var(--line); font-size:14px; }
+.hcard .host .m { white-space:nowrap; }
 .hcard .host:first-of-type { border-top:0; }
 .hcard .bad { color:var(--bad-text); font-size:13px; }
 .hcard ul { list-style:none; margin:0; padding:0; font-size:13px; }
@@ -243,7 +244,7 @@ def build_storage(arrays, usage, feeds, pve_scan, topology=None, health=None, na
                          "warn": pool["health"] not in ("ONLINE", "NORMAL") or pct >= WARN_PERCENT})
         rows.extend(_disk_rows(host, node.get("disks") or [], health))
     if nas and nas.get("error"):
-        rows.append({"name": nas.get("name") or "NAS", "detail": "can't read it - see Setup", "warn": True})
+        rows.append({"name": nas.get("name") or "NAS", "detail": "can't read it — see Setup", "warn": True})
 
     state = "unknown" if not rows else ("warn" if any(r["warn"] for r in rows) else "ok")
 
@@ -335,9 +336,14 @@ def _age(created_at, now):
 
 def _analysis_card(analysis, now):
 
+    from lanxang.web import render
+
+    if not render.AI_ON:
+        return ""
+
     if not analysis:
         return _card("/overview", "Latest AI check-up", "unknown",
-                     '<p class="muted">No check-up yet. atlas-scan runs one daily once the AI model is reachable.</p>')
+                     '<p class="muted">No check-up yet. The scan service runs one daily once the AI model is reachable.</p>')
 
     recs = [r if isinstance(r, dict) else {"title": str(r), "severity": ""} for r in analysis.get("recommendations") or []]
     worst = "warn" if any(r.get("severity") in ("high", "critical") for r in recs) else "ok"
@@ -362,6 +368,9 @@ def _storage_card(storage, flagged=False):
 
 
 def _card(href, title, state, inner, wide=False, flagged=False):
+
+    if flagged and state == "ok":
+        state = "warn"
 
     classes = f"hcard {state}" + (" wide" if wide else "") + (" flagged" if flagged else "")
     tag = '<span class="tag">needs attention</span>' if flagged else ""
@@ -429,16 +438,16 @@ def _usage(row):
     parts = [f"{label} {row[key]}%" for key, label in (("cpu", "CPU"), ("mem", "RAM"), ("disk", "Disk"))
              if row[key] is not None]
 
-    return " · ".join(parts)
+    return " ".join(f'<span class="m">{_esc(part)}</span>' for part in parts)
 
 
 def _hosts_card(hosts, flagged=False):
 
     if not hosts["rows"]:
-        return _card("/overview", "Hosts health", "unknown", '<p class="muted">No host data yet.</p>')
+        return _card("/overview", "Host health", "unknown", '<p class="muted">No host data yet.</p>')
 
     inner = "".join(
-        f'<div class="host"><strong>{_esc(row["name"])}</strong> <span class="muted">{_esc(_usage(row))}</span>'
+        f'<div class="host"><strong>{_esc(row["name"])}</strong> <span class="muted">{_usage(row)}</span>'
         + (f'<br><span class="muted">{_esc(row["detail"])}</span>' if row["detail"] else "")
         + (f'<br><span class="bad">{_esc(", ".join(row["problems"][:4]))}</span>' if row["problems"] else "")
         + (f'<br><span class="muted">Asleep: {_esc(", ".join(row["asleep"]))}</span>' if row.get("asleep") else "")
@@ -449,7 +458,7 @@ def _hosts_card(hosts, flagged=False):
     if hosts["down"]:
         inner += f'<p class="muted">Unreachable: {_esc(", ".join(hosts["down"]))}</p>'
 
-    return _card("/overview", "Hosts health", hosts["state"], inner, flagged=flagged)
+    return _card("/overview", "Host health", hosts["state"], inner, flagged=flagged)
 
 
 def _activity_card(events):
@@ -476,8 +485,8 @@ def setup_steps(config, devices):
                       or (alerts.email.host and alerts.email.to) or alerts.apprise)
 
     return [
-        ("Name your devices", f"{new} device{'s' * (new != 1)} still marked new - name them, or mark them known"
-         if new else "Lanxang hasn't found any devices yet - the first scan runs within a few minutes",
+        ("Name your devices", f"{new} device{'s' * (new != 1)} still marked new — name them, or mark them known"
+         if new else "Lanxang hasn't found any devices yet — the first scan runs within a few minutes",
          "/devices", bool(devices) and not new, False),
         ("Turn on alerts", "Get a message when something new joins, a port opens or a cable goes bad",
          "/settings#ntfy", has_alerts, False),
@@ -523,7 +532,7 @@ def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=Non
     if internet:                                  # (up, ms) from the newest internet check
         up, ms = internet
         tiles.append(("Internet", "Up" if up else "Down", f"{ms:.0f} ms" if up and ms is not None else
-                      "router or provider - see Uptime" if not up else "", "/uptime", "good" if up else "bad"))
+                      "router or provider — see Uptime" if not up else "", "/uptime", "good" if up else "bad"))
     info = (dns or {}).get("info") or {}
     if info:                                      # Pi-hole / AdGuard Home
         on = info.get("blocking")
@@ -545,7 +554,7 @@ def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=Non
     if uptime is not None:
         known = [u for u in uptime if u is not None]
         tiles.append(("Uptime, 7 days", f"{min(known):g}%" if known else "–",
-                      f"{len(uptime)} check{'s' * (len(uptime) != 1)}" if uptime else "no checks yet - add one",
+                      f"{len(uptime)} check{'s' * (len(uptime) != 1)}" if uptime else "no checks yet — add one",
                       "/uptime", "bad" if known and min(known) < 99 else ""))
     if posture:
         tiles.append(("Public routes", str(posture["routes"]), f"{posture['review_count']} to review"
@@ -628,7 +637,7 @@ def _headline(items):
     if not items:
         return "\u2713 Everything is healthy"
     n = len(items)
-    return f"{n} thing{'s' * (n != 1)} need{'s' * (n == 1)} a look - everything else is healthy"
+    return f"{n} thing{'s' * (n != 1)} need{'s' * (n == 1)} a look — everything else is healthy"
 
 
 def _issues(items):

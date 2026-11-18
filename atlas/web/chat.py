@@ -120,7 +120,7 @@ def chat_turn(sessions, session_id, message, agent_factory, now=None, tools=True
     new_messages = messages + [{"role": "assistant", "content": data["text"]}]
 
     with sessions.lock:
-        # ponytail: last-writer-wins if two turns on the same session race -
+        # Limit: last-writer-wins if two turns on the same session race -
         # no per-turn ordering guarantee; a per-session queue would fix that
         # if concurrent chat on one browser tab ever becomes real.
         if sessions.sessions.get(session_id) is session:

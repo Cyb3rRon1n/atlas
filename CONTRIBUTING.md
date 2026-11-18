@@ -152,13 +152,49 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-Install dependencies:
+Install atlas with its development extras, then run the tests (CI runs them on Python 3.11 and 3.12):
 
 ```bash
-pip install -r requirements.txt
+pip install -e ".[dev]"            # not `pip install -r requirements.txt` - that is a pip-freeze lockfile
+python -m pytest tests/
+python -m atlas.cli.main <command> # the CLI from source; `atlas web` serves the pages
 ```
 
-As the project evolves, installation may transition to modern tooling such as `uv`.
+No linter or formatter is configured. Match the style of the file you are editing. The history of design
+decisions lives in [docs/development/design-notes.md](docs/development/design-notes.md); read the section for the
+area you are changing before you change it.
+
+## Project Layout
+
+| Path | What lives there |
+|---|---|
+| `atlas/cli/` | The CLI (Typer + Rich): `app.py` the shared app, `main.py` setup/status/web commands, `watch.py` what atlas-scan runs, `virt.py` Proxmox/libvirt/fleet, `containers.py` Docker, `ai.py` the AI model |
+| `atlas/web/` | `atlas web`: stdlib `http.server`, one `*_page.py` per page, `api.py` for the write routes |
+| `atlas/devices/` | Device inventory: LAN scan, sightings merged into devices, open-port watch, LAN (DHCP/ARP) watch |
+| `atlas/wiring/` | Cabling map: SNMP + UniFi collectors, `build.py` turns them into nodes and links, cable health |
+| `atlas/posture/` | Egress/exposure collectors, certificate watch, the Posture page's data |
+| `atlas/access/` | Who reaches the public services (Traefik access log + GeoIP) |
+| `atlas/docker`, `proxmox`, `libvirt`, `fleet` | Integrations; mutating calls are pure functions returning result dicts |
+| `atlas/intelligence/` | AI providers (Ollama, Anthropic), read-only chat tools, the agent |
+| `atlas/actions/` | Registry of actions the AI may suggest; each one still asks before it runs |
+| `atlas/notify.py` | Alert fan-out (ntfy, webhooks, email, Signal, Apprise) |
+| `atlas/config/models.py` | Every `atlas.yaml` setting (pydantic); add a section by adding a model |
+| `atlas/config/local.py` | Settings and secrets saved from the web Setup tab (`inventory/`); `atlas.yaml` and `.env` always win |
+| `atlas/web/settings_page.py` | The Setup tab: one card per integration, read-only Test, Save / Turn off |
+
+## Ground Rules
+
+- **Never act without asking.** Anything that changes infrastructure is shown first and gated by a confirmation;
+  there is no bypass flag and no autonomous mode.
+- **Read-only by default.** New collectors observe; alerts fire once when a problem appears and once when it clears.
+- **Optional data never fails a scan.** A table a device doesn't support, or an integration that isn't configured,
+  means that part is left out, not an error.
+- **No personal data in the repo.** Examples use `192.0.2.x`/`example.org` and made-up names; screenshots use
+  example data.
+- **Tests use fixtures, not ambient state**: `isolated_cwd` and `temp_db` in `tests/conftest.py`. Docker, SNMP and
+  network calls are injected or mocked. A feature that talks to real hardware is also checked against it before
+  release.
+- **Docs move with the code**: `docs/configuration.md` for settings, `CHANGELOG.md` under *Unreleased*.
 
 ---
 

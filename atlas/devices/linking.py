@@ -30,7 +30,7 @@ def match(new, known):
 
     if new.ip:
         for entry in known:
-            # ponytail: stale IPs are offered from any past sighting, not just the
+            # Limit: stale IPs are offered from any past sighting, not just the
             # source's latest ok run; safe in PR 1 (proxmox sightings carry no IP
             # yet, manual IPs are operator claims) - restrict to sightings seen in
             # the source's latest ok run once guest IPs are added.

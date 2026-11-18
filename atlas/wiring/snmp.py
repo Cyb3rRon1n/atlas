@@ -125,7 +125,7 @@ def port_counters(get_counter, index):
 
 def _poe(get, names):
     """({port name: poe}, budget W, used W). The MIB's port number is the ifIndex on the switches
-    seen so far. ponytail: per-vendor group/port -> ifIndex maps if one numbers them differently."""
+    seen so far. Limit: per-vendor group/port -> ifIndex maps if one numbers them differently."""
 
     columns = {}
     for suffix, value in get("psePort").items():

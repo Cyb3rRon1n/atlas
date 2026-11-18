@@ -1,4 +1,4 @@
-# Atlas is deliberately not a daemon (see CLAUDE.md's "no daemon, no
+# Atlas is deliberately not a daemon (see docs/development/design-notes.md's "no daemon, no
 # scheduled mode" — every command is on-demand, run when you want fresh
 # data). This image doesn't add one either: it just runs `atlas web`, the
 # existing read-only dashboard, as a long-running foreground process — the

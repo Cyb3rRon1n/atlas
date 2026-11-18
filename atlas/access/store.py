@@ -20,7 +20,7 @@ LEARN_DAYS = 14
 def place_of(ip_row):
     """(key, label) for a geolocated IP: country + provider is stable per person; city is too noisy on mobile."""
 
-    # ponytail: IPv6 has no ASN here (the iptoasn table is IPv4-only) - a provider's /32 is stable enough;
+    # Limit: IPv6 has no ASN here (the iptoasn table is IPv4-only) - a provider's /32 is stable enough;
     # load ip2asn-v6 if names are wanted
     v6 = ":" in ip_row.ip and "IPv6 " + ":".join(ip_row.ip.split(":")[:2]) + "::/32"
     provider = ip_row.org or (f"AS{ip_row.asn}" if ip_row.asn else "") or v6 or ip_row.city or "unknown provider"

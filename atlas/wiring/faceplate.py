@@ -7,7 +7,7 @@ the right - the front-panel convention almost every managed switch follows.
 Logical ports (port-channels, VLAN interfaces) have no socket and are listed
 apart. Pure; shared by the faceplate grid and the diagram boxes.
 
-ponytail: a convention, not per-model data - a switch with an unusual panel
+Limit: a convention, not per-model data - a switch with an unusual panel
 (ports numbered top row first, SFP cages left) needs a per-model override.
 """
 

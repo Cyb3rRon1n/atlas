@@ -200,7 +200,7 @@ def resize_guest(name, vcpus=None, memory=None, node=None):
     live. A running guest needing this immediately would need --live
     too, which requires hotplug already configured on that guest -
     the same class of gotcha Proxmox's own QEMU resize work found
-    real surprises in (see CLAUDE.md). Deliberately not attempted
+    real surprises in (see docs/development/design-notes.md). Deliberately not attempted
     here; the CLI's confirmation text says a restart may be needed
     instead. vcpus is an integer *count* of virtual CPUs (topology),
     not a fractional core limit like Docker's --cpus/Proxmox's

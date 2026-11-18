@@ -243,7 +243,7 @@ uptime checks, UPS power alerts, per-port traffic, one alert per outage, and a S
   timer) or has the label `atlas.on-demand=true` is listed as *Asleep* on the home page, not as a problem;
   `/api/summary` adds `containers_asleep`.
 - Posture forgets a container's destinations and "expected" marks after `posture.retention_days` without traffic.
-- The README shows the cabling map and switch front panels; the long design history moved from `CLAUDE.md`
+- The README shows the cabling map and switch front panels; the long design history moved from the contributor notes
   to [Design notes](docs/development/design-notes.md).
 
 ## 0.6.0 - 2026-11-15

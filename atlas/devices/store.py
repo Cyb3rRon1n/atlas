@@ -158,7 +158,7 @@ class InventoryStore:
 
                 if row is None:
 
-                    # ponytail: O(new x total) re-query per sighting; fine at /24 scale,
+                    # Limit: O(new x total) re-query per sighting; fine at /24 scale,
                     # cache per run if subnets grow.
                     verdict, device_id = match(new, self._known(session))
 

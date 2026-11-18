@@ -163,11 +163,7 @@ site/
 # ==========================
 
 atlas.yaml
-.superpowers/
 
 # Operator cabling map (site-specific)
 cabling.yaml
 
-# Local design notes / plans (kept out of the public repo)
-docs/superpowers/
-docs/chat-history/

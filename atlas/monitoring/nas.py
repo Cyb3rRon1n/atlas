@@ -8,7 +8,9 @@ health and how full it is, and each disk's health and temperature. Read-only.
   Synology  DSM's web API with an administrator account (DSM only lets admins read storage; that account can be
             denied every folder and app): SYNO.API.Auth login, SYNO.Storage.CGI.Storage load_info, logout.
 
-Not checked against real hardware yet - built from the vendors' API docs and Home Assistant's Synology library.
+TrueNAS checked against 25.10.8 in a VM (both sign-ins, pools, disks, a degraded mirror and its alerts); SMART
+warnings and temperatures not, as virtual disks have none. Synology not checked against real hardware yet -
+built from DSM's API docs and Home Assistant's Synology library.
 Disks then go through atlas.monitoring.disks like the Proxmox ones (failing, hot, worn out); a pool that isn't
 healthy is one alert, and one more when it is again.
 """

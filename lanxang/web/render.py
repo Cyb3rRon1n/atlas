@@ -25,7 +25,7 @@ LIGHT = """--bg:#f7fbf9; --surface:#ffffff; --surface2:#f1f3f8; --deep:#eceff5; 
   --bad-text:#991b1b; --bad-line:#f3a8a8; --bad-bg:#fef2f2; --lane:#c7cdf7;
   --nav-bg:#0e1a19; --nav-text:#cfe3dc; --nav-muted:#8fb0a6; --nav-on:#16302c; color-scheme:light;"""
 DARK = """--bg:#0e1a19; --surface:#13231f; --surface2:#182c27; --deep:#0b1513; --line:#1f3631; --line2:#2a4740;
-  --text:#e7edf3; --muted:#a3b0bd; --blue:#5ec2a4; --accent:#5ec2a4; --gold:#e9b44c; --on-accent:#ffffff;
+  --text:#e7edf3; --muted:#a3b0bd; --blue:#5ec2a4; --accent:#5ec2a4; --gold:#e9b44c; --on-accent:#0e1a19;
   --green:#43c08f; --orange:#f0a23a; --red:#f47a5c; --purple:#b48cf2; --teal:#3ccfb4; --yellow:#d9b44a;
   --ok-text:#7fdcb5; --ok-line:#2f6b55; --warn-text:#ffd08a; --warn-line:#6b5530; --warn-bg:#1d1810;
   --bad-text:#ffb4a2; --bad-line:#6b3030; --bad-bg:#2a1d1a; --lane:#2c4560;
@@ -375,7 +375,7 @@ EVENT_CATEGORIES = (("alert", icon("alert"), ("threshold", "alert", "down", "fai
 HISTORY_STYLE = """
 <style>
 .filters { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 14px; }
-.filters button[aria-pressed="true"] { background:var(--blue); border-color:var(--blue); }
+.filters button[aria-pressed="true"] { background:var(--blue); border-color:var(--blue); color:var(--on-accent); }
 .day { margin:0 0 18px; } .day > h2 { font-size:14px; color:var(--muted); border:0; margin:0 0 6px; }
 .ev { display:grid; grid-template-columns:52px 26px 1fr; gap:6px; align-items:start; padding:6px 0;
       border-top:1px solid var(--line); font-size:14px; }

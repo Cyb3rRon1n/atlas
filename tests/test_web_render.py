@@ -264,3 +264,8 @@ def test_pages_carry_the_lanxang_brand():
     assert "#5ec2a4" in html and "#1e7f66" in html        # jade, both themes
     assert "/static/fonts/Lexend.woff2" in html
     assert "Atlas" not in html
+
+
+def test_dark_primary_buttons_use_dark_text_on_jade():
+    from lanxang.web.render import DARK
+    assert "--accent:#5ec2a4" in DARK and "--on-accent:#0e1a19" in DARK

@@ -31,7 +31,7 @@ CABLING_STYLE = """
 .chip { font-size:12px; padding:2px 9px; border-radius:999px; border:1px solid var(--line); }
 .chip.ok { color:var(--ok-text); border-color:var(--ok-line); } .chip.stale { color:var(--warn-text); border-color:var(--warn-line); }
 .chip.error { color:var(--bad-text); border-color:var(--bad-line); }
-.cab-btn { background:var(--accent); color:#fff; border:0; border-radius:6px; padding:6px 12px; cursor:pointer; font:inherit; }
+.cab-btn { background:var(--accent); color:var(--on-accent); border:0; border-radius:6px; padding:6px 12px; cursor:pointer; font:inherit; }
 .cab-btn.ghost { background:transparent; border:1px solid var(--line); color:inherit; }
 .cab-btn[disabled] { opacity:.6; cursor:wait; }
 .warn { margin:6px 0 12px; padding:8px 12px 8px 28px; border:1px solid var(--warn-line); border-radius:8px; color:var(--warn-text); font-size:14px; }

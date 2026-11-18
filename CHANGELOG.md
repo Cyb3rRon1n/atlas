@@ -3,6 +3,13 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
+## Unreleased
+
+### Fixed
+- **One problem, one line on Home**: a degraded pool or failing disk was listed twice under *Needs attention*
+  (the Storage line and its own alert), so Home said "2 things need a look" for one. Its *Details* now opens the
+  alert, which says what to do, instead of Overview.
+
 ## 0.12.0 - 2026-11-18
 
 ### Added

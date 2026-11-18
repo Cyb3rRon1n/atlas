@@ -58,7 +58,7 @@ def test_home_all_good_verdict_cards_and_links():
     assert "Everything is healthy" in html and "Needs attention" not in html
     for href in ('href="/posture"', 'href="/overview"', 'href="/history"'):
         assert href in html
-    assert "Security posture" in html and "Hosts health" in html and "Recent activity" in html
+    assert "Security posture" in html and "Host health" in html and "Recent activity" in html
     assert "&lt;b&gt;x&lt;/b&gt;" in html and "<b>x</b>" not in html
     assert "proxmox changes detected" in html and "&times;3" in html
     assert 'aria-current="page" href="/"' in html or 'href="/" aria-current="page"' in html
@@ -175,10 +175,10 @@ def test_home_headline_tiles_and_issue_table():
     labels = [tile[0] for tile in stats]
     assert labels == ["Devices", "Servers", "Uptime, 7 days", "Public routes", "Power"]
     assert stats[0][1:3] == ("2 / 3", "online · 1 new") and stats[2][1] == "99.95%" and stats[4][1] == "On battery"
-    assert build_stats(uptime=[])[0][1:3] == ("–", "no checks yet - add one")
+    assert build_stats(uptime=[])[0][1:3] == ("–", "no checks yet — add one")
 
     html = render_home_page({**POSTURE_OK, "state": "warn", "message": "VPN: down"}, hosts, EVENTS, stats=stats)
-    assert "<h1>1 thing needs a look - everything else is healthy</h1>" in html
+    assert "<h1>1 thing needs a look — everything else is healthy</h1>" in html
     assert 'class="kpis"' in html and "On battery" in html and 'class="sev problem"' in html and "VPN: down" in html
 
 
@@ -196,3 +196,17 @@ def test_a_degraded_pool_is_one_line_that_links_to_its_alert():
     assert attention_items(None, {"rows": []}, full, (), [])[0][3] == "/overview"     # no alert to open
     healthy = {"rows": [{"name": "nas tank", "detail": "ONLINE", "warn": False}]}
     assert attention_items(None, {"rows": []}, healthy, (), [pool])[0][0] == "alerts"  # not shown twice, not hidden
+
+
+def test_ai_checkup_card_hidden_while_no_ai(monkeypatch):
+    from lanxang.web import home_page, render
+    monkeypatch.setattr(render, "AI_ON", False)
+    assert home_page._analysis_card(None, None) == ""
+    monkeypatch.setattr(render, "AI_ON", True)
+    assert "Latest AI check-up" in home_page._analysis_card(None, None)
+
+
+def test_flagged_card_dot_matches_its_border():
+    from lanxang.web.home_page import _card
+    html = _card("/x", "Security posture", "ok", "<p/>", flagged=True)
+    assert 'class="dot warn"' in html and "hcard warn" in html

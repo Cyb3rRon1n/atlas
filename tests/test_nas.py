@@ -152,4 +152,4 @@ def test_home_storage_card_shows_the_nas():
     assert rows[0] == {"name": "nas volume 1", "detail": "NORMAL · 25% of 4.0 TB", "warn": False}
     assert rows[1]["name"] == "nas disks" and "all healthy" in rows[1]["detail"]
     broken = build_storage([], {}, {}, None, nas={"name": "nas", "error": "No answer", "info": {}})
-    assert broken["state"] == "warn" and broken["rows"][-1]["detail"] == "can't read it - see Setup"
+    assert broken["state"] == "warn" and broken["rows"][-1]["detail"] == "can't read it — see Setup"

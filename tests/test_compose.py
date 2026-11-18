@@ -54,8 +54,8 @@ def test_atlas_scan_runs_posture_watch_with_net_admin():
     data = yaml.safe_load(open("docker-compose.yml"))
     scan = data["services"]["atlas-scan"]
     assert "NET_ADMIN" in scan["cap_add"]
-    assert "while :; do atlas posture watch; sleep 30; done &" in "\n".join(scan["command"])   # restarts if it dies
-    assert "atlas uptime check" in "\n".join(scan["command"]) and "atlas ups check" in "\n".join(scan["command"])
+    assert "while :; do lanxang posture watch; sleep 30; done &" in "\n".join(scan["command"])   # restarts if it dies
+    assert "lanxang uptime check" in "\n".join(scan["command"]) and "lanxang ups check" in "\n".join(scan["command"])
 
 
 def test_docker_proxy_allows_what_the_container_list_reads():
@@ -63,4 +63,13 @@ def test_docker_proxy_allows_what_the_container_list_reads():
     env = yaml.safe_load(open("docker-compose.yml"))["services"]["docker-proxy"]["environment"]
     # collect_containers() reads container.image.tags -> GET /images/<id>/json
     assert env["CONTAINERS"] == 1 and env["IMAGES"] == 1
-    assert env["POST"] == "${ATLAS_DOCKER_WRITE:-0}"   # writes stay off by default
+    assert env["POST"] == "${LANXANG_DOCKER_WRITE:-${ATLAS_DOCKER_WRITE:-0}}"   # writes stay off by default
+
+
+def test_service_names_and_old_env_names_survive_the_rename():
+    import yaml
+    data = yaml.safe_load(open("docker-compose.yml"))
+    assert {"atlas", "atlas-scan"} <= set(data["services"])   # existing overrides name these
+    web = data["services"]["atlas"]
+    assert web["image"] == "ghcr.io/cyb3rron1n/lanxang:${LANXANG_TAG:-${ATLAS_TAG:-latest}}"
+    assert "${LANXANG_PORT:-${ATLAS_PORT:-8420}}" in web["ports"][0]

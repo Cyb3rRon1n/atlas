@@ -84,7 +84,7 @@ def test_compose_has_host_network_scanner():
     scanner = compose["services"]["atlas-scan"]
 
     assert scanner["network_mode"] == "host"
-    assert "atlas scan" in " ".join(scanner["command"])
+    assert "lanxang scan" in " ".join(scanner["command"])
     assert "atlas-refresh" not in compose["services"]
 
 

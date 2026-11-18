@@ -6,7 +6,7 @@ LAN watch: rogue DHCP servers and ARP spoofing of the gateway.
         ever taken). Every server that offers is listed; one that is neither
         the default gateway nor in security.dhcp_servers is a problem.
         Answering needs UDP port 68: root, or the image's capability-only
-        helper interpreter (atlas-dhcp-python, cap_net_bind_service).
+        helper interpreter (lanxang-dhcp-python, cap_net_bind_service).
   ARP   passive, from the host's ARP table (and UniFi's wired clients when the
         cabling map has them): the gateway's MAC is learned on first sight; a
         different MAC later is the classic man-in-the-middle sign.
@@ -25,7 +25,7 @@ import sys
 import time
 
 PROBE_MAC = bytes.fromhex("02a7145c0001")    # locally administered: never a real NIC
-HELPER = "atlas-dhcp-python"
+HELPER = "lanxang-dhcp-python"
 SILENT_RUNS = 2       # runs in a row with no DHCP answer before "DHCP is down" alerts
 MAGIC = b"\x63\x82\x53\x63"
 
@@ -115,7 +115,7 @@ def probe_with_helper(timeout=3.0, run=subprocess.run):
     except PermissionError:
         helper = shutil.which(HELPER)
         if not helper:
-            raise PermissionError("binding UDP port 68 needs root or the atlas-dhcp-python helper (Docker image)")
+            raise PermissionError("binding UDP port 68 needs root or the lanxang-dhcp-python helper (Docker image)")
     result = run([helper, "-I", "-m", "lanxang.devices.lanwatch", str(timeout)],
                  capture_output=True, text=True, timeout=timeout + 10)
     if result.returncode:
@@ -245,5 +245,5 @@ def run(settings, store, now, *, probe=probe_with_helper, read=None, unifi_clien
     return detail
 
 
-if __name__ == "__main__":      # the helper: atlas-dhcp-python -I -m lanxang.devices.lanwatch [timeout]
+if __name__ == "__main__":      # the helper: lanxang-dhcp-python -I -m lanxang.devices.lanwatch [timeout]
     print(json.dumps(probe_dhcp(float(sys.argv[1]) if len(sys.argv) > 1 else 3.0)))

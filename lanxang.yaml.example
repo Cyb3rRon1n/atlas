@@ -27,7 +27,7 @@ fleet:
       user: atlas
       port: 22
       identity_file: ''
-# Posture page (`atlas posture watch`, run by the atlas-scan container). Off by default.
+# Posture page (`lanxang posture watch`, run by the atlas-scan container). Off by default.
 # Needs net.netfilter.nf_conntrack_acct=1 on the host and NET_ADMIN on atlas-scan
 # (already in docker-compose.yml) for the read-only conntrack listing.
 # posture:
@@ -36,7 +36,7 @@ fleet:
 #   gluetun_api_key: ''               # gluetun control-server API key (VPN exit IP check)
 #   crowdsec_api_key: ''              # cscli bouncers add atlas
 #   traefik_dynamic_dir: /traefik/dynamic   # Traefik file-provider dir, mounted read-only
-# Cabling map (`atlas wiring scan`, or Refresh on web /cabling): port-level wired topology
+# Cabling map (`lanxang wiring scan`, or Refresh on web /cabling): port-level wired topology
 # from your switches over SNMPv3 (read-only, authPriv) and, optionally, a UniFi console.
 # Secrets live in the .env file next to docker-compose.yml, never here:
 #   ATLAS_SNMP_<NAME>_AUTH / ATLAS_SNMP_<NAME>_PRIV   (<NAME> = switch name, upper-case, - -> _)
@@ -52,13 +52,13 @@ fleet:
 #     enabled: true
 #     url: https://192.168.1.1
 # Alerts (new / offline devices, VPN clients, new sign-in places) go to every channel set here.
-# Test with: atlas notify test. Secrets can live in .env: ATLAS_NTFY_TOKEN, ATLAS_SMTP_PASSWORD.
+# Test with: lanxang notify test. Secrets can live in .env: ATLAS_NTFY_TOKEN, ATLAS_SMTP_PASSWORD.
 # notify:
 #   ntfy: {url: https://ntfy.sh, topic: my-homelab-a8f3k2}
 #   webhooks: [https://discord.com/api/webhooks/123/abc]
 #   email: {host: smtp.example.com, port: 587, user: atlas@example.com, to: [me@example.com]}
 #   apprise: [tgram://bottoken/ChatID]
-# Sign-in for the web page: builtin = atlas's own admin password (first visit asks for the
+# Sign-in for the web page: builtin = Lanxang's own admin password (first visit asks for the
 # setup code from `docker compose logs atlas`); proxy = Authelia/Authentik/... in front does it.
 web:
   auth: builtin

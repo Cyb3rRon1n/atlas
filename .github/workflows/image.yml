@@ -1,7 +1,7 @@
 name: Image
 
-# Publishes ghcr.io/cyb3rron1n/atlas so stacks can pull Atlas instead of
-# building it: `latest` + `sha-<short>` from main, `X.Y.Z` / `X.Y` from v* tags.
+# Publishes ghcr.io/cyb3rron1n/lanxang so stacks can pull Lanxang instead of
+# building it (the old ghcr.io/cyb3rron1n/atlas name is published too, until 1.2): `latest` + `sha-<short>` from main, `X.Y.Z` / `X.Y` from v* tags.
 on:
   push:
     branches: [main]
@@ -37,7 +37,9 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/cyb3rron1n/atlas
+          images: |
+            ghcr.io/cyb3rron1n/lanxang
+            ghcr.io/cyb3rron1n/atlas
           # latest=false: by default a v* tag build ALSO pushes `latest`, so tagging an older commit
           # (a release cut before the newest merge) moved `latest` backwards (happened with v0.6.0).
           flavor: |

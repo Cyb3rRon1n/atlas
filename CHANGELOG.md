@@ -3,7 +3,7 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
-## Unreleased
+## 1.0.1 - 2026-11-18
 
 ### Fixed
 - First start on a fresh data volume no longer fails when the web and scan containers create the database tables at the same moment (`table events already exists`); the loser now retries.

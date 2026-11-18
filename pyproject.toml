@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "atlas-homelab"
+name = "lanxang"
 version = "0.12.1"
 description = "Self-hosted watchdog for your home network: every device, every cable, every change. Alerts included, cloud not required."
 readme = "README.md"
@@ -64,7 +64,8 @@ Documentation = "https://cyb3rron1n.github.io/atlas/"
 "Issue Tracker" = "https://github.com/Cyb3rRon1n/atlas/issues"
 
 [project.scripts]
-atlas = "lanxang.cli:app"
+lanxang = "lanxang.cli:app"
+atlas = "lanxang.cli:legacy"
 
 [tool.hatch.build.targets.wheel]
 packages = ["lanxang"]

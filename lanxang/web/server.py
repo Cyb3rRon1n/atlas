@@ -53,7 +53,7 @@ DEVICE_PAGE = re.compile(r"^/devices/(\d+)$")
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 # Explicit allow-list - never build a filesystem path from the request.
-STATIC_FILES = {"cytoscape.min.js", "elk.bundled.js"}
+STATIC_FILES = {"cytoscape.min.js", "elk.bundled.js", "fonts/Lexend.woff2", "fonts/NotoSansLao-Medium.woff2"}
 
 
 def _latest_wiring():
@@ -494,9 +494,10 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 return
             data = (STATIC_DIR / name).read_bytes()
             self.send_response(200)
-            self.send_header("Content-Type", "application/javascript; charset=utf-8")
+            font = name.endswith(".woff2")
+            self.send_header("Content-Type", "font/woff2" if font else "application/javascript; charset=utf-8")
             self.send_header("Content-Length", str(len(data)))
-            self.send_header("Cache-Control", "max-age=86400")
+            self.send_header("Cache-Control", "max-age=31536000" if font else "max-age=86400")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.end_headers()
             self.wfile.write(data)

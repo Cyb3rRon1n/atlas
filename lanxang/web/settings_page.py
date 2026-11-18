@@ -76,7 +76,7 @@ CARDS = {
                     Field("token_name", "Token ID", "text", ("proxmox", "token_name"), hint="atlas"),
                     Field("token_value", "Token secret", "secret", ("proxmox", "token_value"), "LANXANG_PROXMOX_TOKEN"),
                     Field("verify_ssl", "Check the host's certificate", "bool", ("proxmox", "verify_ssl"))]),
-    "ups": ("UPS (NUT)", "Alerts on a power cut, a low battery, and when power is back. Atlas reads a NUT server "
+    "ups": ("UPS (NUT)", "Alerts on a power cut, a low battery, and when power is back. Lanxang reads a NUT server "
             "(Network UPS Tools): nut-server on the computer the UPS is plugged into, or a Synology, QNAP, Unraid or "
             "TrueNAS with its network UPS server switched on (allow this machine's address). Read-only, no login.", [
                 Field("host", "UPS server address", "text", ("ups", "host"), hint="192.168.1.20"),
@@ -171,7 +171,7 @@ def _gear_html(chosen, detected):
         f'{"<em>found</em>" if key in detected else ""}<small>{_esc(hint)}</small></span></label>'
         for key, label, hint, cards in GEAR)
 
-    return ('<section class="card gear" id="gear"><h2>What\'s on your network?</h2><p class="muted">Atlas finds '
+    return ('<section class="card gear" id="gear"><h2>What\'s on your network?</h2><p class="muted">Lanxang finds '
             'every device by itself. Tick what you have and Setup shows the matching cards - each one adds detail, '
             'like switch ports or your VMs. Nothing here is required.</p>'
             f'<div class="gear-list">{boxes}</div><p class="muted gear-plain" hidden>Nothing more to connect: '
@@ -185,7 +185,7 @@ ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "e
 WIRING_CARDS = ("switches", "unifi")
 
 ACTIONS = re.compile(r"^/api/settings/([a-z]+)/(test|save|off|dismiss)$")
-TEST_TEXT = "**✅ Test alert from Atlas**\nIf you can read this, alerts reach you here."
+TEST_TEXT = "**✅ Test alert from Lanxang**\nIf you can read this, alerts reach you here."
 
 
 def _get(data, path):

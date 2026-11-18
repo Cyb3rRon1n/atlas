@@ -28,7 +28,7 @@ STYLE = """<style>
 .up-add form { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .up-add input { background:var(--bg); color:inherit; border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
 .up-add input[name=name] { width:180px; } .up-add input[name=target] { flex:1; min-width:240px; }
-.up-btn { background:var(--accent); color:#fff; border:0; border-radius:6px; padding:7px 14px; cursor:pointer; font:inherit; }
+.up-btn { background:var(--accent); color:var(--on-accent); border:0; border-radius:6px; padding:7px 14px; cursor:pointer; font:inherit; }
 .up-btn.ghost { background:transparent; color:inherit; border:1px solid var(--line); padding:4px 10px; font-size:13px; }
 .up-sugg { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; color:var(--muted); font-size:13px; }
 .up-power { margin:.4rem 0; } .up-power .state { margin-right:.4rem; }
@@ -263,7 +263,7 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
                + '<p id="up-msg"></p></section>')
 
     body = (STYLE
-            + '<p class="up-intro">Is each service answering? Atlas tries every check once a minute. A web address '
+            + '<p class="up-intro">Is each service answering? Lanxang tries every check once a minute. A web address '
               'is up when it answers at all (a login page counts); <code>host:port</code> is up when the port accepts '
               f'a connection. After {fail_after} failures in a row it is <strong>down</strong>: you get one alert, and '
               'another when it is back.</p>'

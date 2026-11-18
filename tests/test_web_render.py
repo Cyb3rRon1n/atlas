@@ -255,3 +255,17 @@ def test_server_turns_the_chat_off_with_the_setting(temp_db, isolated_cwd):
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+def test_pages_carry_the_lanxang_brand():
+    from lanxang.web.render import render_page
+    html = render_page("Home", "<p>x</p>", active="home")
+    assert "Lanxang" in html and "ລ້ານຊ້າງ" in html
+    assert "#5ec2a4" in html and "#1e7f66" in html        # jade, both themes
+    assert "/static/fonts/Lexend.woff2" in html
+    assert "Atlas" not in html
+
+
+def test_dark_primary_buttons_use_dark_text_on_jade():
+    from lanxang.web.render import DARK
+    assert "--accent:#5ec2a4" in DARK and "--on-accent:#0e1a19" in DARK

@@ -37,7 +37,7 @@ HOME_STYLE = """
 .hcard .summary { font-size:14px; line-height:1.45; margin:6px 0 10px; }
 @media (max-width: 1100px) { .cards { grid-template-columns:repeat(2,minmax(0,1fr)); } .cards a.hcard.wide { grid-row:auto; } }
 @media (max-width: 700px) { .cards { grid-template-columns:1fr; } .cards a.hcard.wide { grid-column:auto; } }
-.cards a.hcard.flagged { box-shadow:0 0 0 2px var(--orange); }
+.cards a.hcard.flagged { box-shadow:0 0 0 2px var(--gold); }
 .cards a.hcard.flagged.warn { box-shadow:0 0 0 2px var(--red); }
 .hcard .tag { margin-left:auto; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.05em; color:var(--warn-text); }
 .cards a.hcard { display:block; color:var(--text); text-decoration:none; background:var(--surface);
@@ -477,7 +477,7 @@ def setup_steps(config, devices):
 
     return [
         ("Name your devices", f"{new} device{'s' * (new != 1)} still marked new - name them, or mark them known"
-         if new else "Atlas hasn't found any devices yet - the first scan runs within a few minutes",
+         if new else "Lanxang hasn't found any devices yet - the first scan runs within a few minutes",
          "/devices", bool(devices) and not new, False),
         ("Turn on alerts", "Get a message when something new joins, a port opens or a cable goes bad",
          "/settings#ntfy", has_alerts, False),

@@ -97,6 +97,16 @@ def build(settings, now, sources):
         lines.append(f"💽 Disks: {len(disks)}, " + (f"{len(flagged)} need a look" if flagged else "all healthy")
                      + (f", warmest {max(temps)}°C" if temps else ""))
 
+    home = ((statuses.get("homeassistant") or {}).get("detail")) or {}
+    if home and settings.homeassistant.enabled:
+        info = home.get("info") or {}
+        lost, low, waiting = info.get("offline") or [], info.get("batteries") or [], info.get("updates") or []
+        parts = ([f"{len(lost)} device{'s' if len(lost) != 1 else ''} offline ({', '.join(d['name'] for d in lost[:3])})"]
+                 if lost else []) + ([f"{len(low)} low batter{'ies' if len(low) != 1 else 'y'}"] if low else []) \
+            + ([f"{len(waiting)} update{'s' if len(waiting) != 1 else ''} waiting"] if waiting else [])
+        lines.append("🏠 Smart home: " + ("not answering" if home.get("failures", 0) >= 2 else
+                                          ", ".join(parts) or "every device answering"))
+
     upses = (((statuses.get("ups") or {}).get("detail")) or {}).get("upses") or {}
     for name, ups in list(upses.items())[:2]:
         charge = f", {ups['charge']:.0f}% charged" if ups.get("charge") is not None else ""

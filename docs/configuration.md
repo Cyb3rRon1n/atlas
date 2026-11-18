@@ -401,6 +401,26 @@ The password goes in the `ATLAS_DNS_PASSWORD` secret (Setup stores it for you). 
 Pi-hole after every read, so it never uses up Pi-hole's session slots. Ad blocking off at two checks in a row
 sends one alert, and one more when it's back on - a short pause doesn't.
 
+## `homeassistant`
+
+Home Assistant, read with every `atlas scan` (and `atlas ha check`) through its REST API. Set it up in Setup →
+*Home Assistant*. Off by default.
+
+| Field | Default | Description |
+|---|---|---|
+| `enabled` | `false` | Turn it on |
+| `url` | | Home Assistant's address, like `http://homeassistant.local:8123` |
+| `verify_ssl` | `false` | Check its certificate |
+| `timeout` | `15` | Seconds to wait |
+| `offline_hours` | `6` | A device counts as dropped out when all its sensors, cameras, locks, switches, lights... have been unavailable this long |
+| `battery_percent` | `20` | A battery at or under this is low |
+
+The long-lived access token (Home Assistant: your profile → Security → Long-lived access tokens) is the
+`ATLAS_HA_TOKEN` secret. Home shows a *Smart home* tile and card: devices that dropped out, low batteries and
+updates waiting. TVs, media players, remotes and phones are left out of "dropped out" - they go unavailable
+whenever they're switched off. Alerts: Home Assistant not answering (two checks in a row), a device dropping out,
+a low battery - once each, and once when it's fine again. Updates are listed to watch, never messaged.
+
 ## `nas`
 
 TrueNAS or Synology disk and pool health, read with every `atlas scan` (and `atlas nas check`). Set it up in Setup → *TrueNAS or Synology*. Off by default.

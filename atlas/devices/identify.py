@@ -219,6 +219,9 @@ def clues(device, table, open_ports=(), place=None):
                  if isinstance(s.get("detail"), dict) and s["detail"].get("announce")), {})
     unifi = next((s["detail"]["unifi"] for s in device.get("sightings", [])
                   if isinstance(s.get("detail"), dict) and s["detail"].get("unifi")), {})
+    router = next((s["detail"]["router"] for s in device.get("sightings", [])
+                   if isinstance(s.get("detail"), dict) and s["detail"].get("router")), {})
+    unifi = {**unifi, "wifi": unifi.get("wifi") or router.get("wifi")}
     return {"unifi_name": unifi.get("name"), "wifi": unifi.get("wifi"), "network": unifi.get("network"),
             "guest": unifi.get("guest", False), "announced": said.get("name"), "model": said.get("model"), "said_maker": said.get("maker"),
             "services": list(dict.fromkeys(SERVICE_WORDS[s] for s in said.get("services") or () if s in SERVICE_WORDS)),

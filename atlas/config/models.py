@@ -286,6 +286,17 @@ class DnsFilterConfig(BaseModel):
     timeout: float = 5.0
 
 
+class RouterConfig(BaseModel):
+    # Router details (OpenWrt for now): DHCP names and Wi-Fi clients as device sightings, read with each scan.
+    # The password is the ATLAS_ROUTER_PASSWORD secret.
+    enabled: bool = False
+    kind: Literal["openwrt"] = "openwrt"
+    url: str = ""                   # http://192.168.1.1
+    user: str = "root"
+    verify_ssl: bool = False
+    timeout: float = 10.0
+
+
 class HomeAssistantConfig(BaseModel):
     # Home Assistant, read with each scan through its REST API. The long-lived access token is the
     # ATLAS_HA_TOKEN secret (HA: your profile > Security > Long-lived access tokens).
@@ -343,4 +354,5 @@ class AtlasConfig(BaseModel):
     dns_filter: DnsFilterConfig = DnsFilterConfig()
     nas: NasConfig = NasConfig()
     homeassistant: HomeAssistantConfig = HomeAssistantConfig()
+    router: RouterConfig = RouterConfig()
     ups: UpsConfig = UpsConfig()

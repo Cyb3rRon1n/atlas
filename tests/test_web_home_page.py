@@ -180,3 +180,19 @@ def test_home_headline_tiles_and_issue_table():
     html = render_home_page({**POSTURE_OK, "state": "warn", "message": "VPN: down"}, hosts, EVENTS, stats=stats)
     assert "<h1>1 thing needs a look - everything else is healthy</h1>" in html
     assert 'class="kpis"' in html and "On battery" in html and 'class="sev problem"' in html and "VPN: down" in html
+
+
+def test_a_degraded_pool_is_one_line_that_links_to_its_alert():
+    from atlas.web.home_page import attention_items
+
+    storage = {"rows": [{"name": "nas tank", "detail": "DEGRADED · 0% of 16.6 GB", "warn": True}]}
+    pool = {"source": "nas", "title": "nas tank is DEGRADED"}
+    cert = {"source": "certs", "title": "Certificate expires in 3 days: example.org"}
+    items = attention_items(None, {"rows": []}, storage, (), [pool, cert])
+    assert items == [("storage", "Storage", "nas tank: DEGRADED · 0% of 16.6 GB", "/alerts", "Details"),
+                     ("alerts", "Alerts", "Certificate expires in 3 days: example.org", "/alerts", "Review")]
+
+    full = {"rows": [{"name": "nas tank", "detail": "ONLINE · 93% of 16.6 GB", "warn": True}]}
+    assert attention_items(None, {"rows": []}, full, (), [])[0][3] == "/overview"     # no alert to open
+    healthy = {"rows": [{"name": "nas tank", "detail": "ONLINE", "warn": False}]}
+    assert attention_items(None, {"rows": []}, healthy, (), [pool])[0][0] == "alerts"  # not shown twice, not hidden

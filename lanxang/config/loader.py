@@ -7,8 +7,6 @@ from lanxang.config import local
 from lanxang.config.models import AtlasConfig
 
 
-CONFIG_FILE = local.CONFIG_FILE
-
 # ${NAME} / ${NAME:-default} - lets a stack keep secrets in its .env and
 # out of atlas.yaml. Only the braced form, so a literal "$" in a value
 # (passwords) is never touched.
@@ -47,9 +45,10 @@ def _expand_values(value, environ=None):
 def read_user_config():
     """atlas.yaml as written by the user (unexpanded), or {}."""
 
-    if not CONFIG_FILE.exists():
+    path = local.config_file()
+    if not path.exists():
         return {}
-    with open(CONFIG_FILE, "r") as file:
+    with open(path, "r") as file:
         return yaml.safe_load(file) or {}
 
 
@@ -63,5 +62,9 @@ def load_config():
     """atlas.yaml, with settings saved from the web Setup page filling in what it leaves out (lanxang.config.local)."""
 
     local.apply_secrets()
+    if local.config_file() == local.OLD_CONFIG and not getattr(load_config, "_noticed", False):
+        import logging
+        logging.getLogger("lanxang").info("Reading atlas.yaml - rename it to lanxang.yaml before 1.2")
+        load_config._noticed = True
 
     return build_config(local.read_settings())

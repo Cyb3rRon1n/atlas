@@ -62,7 +62,7 @@ def test_parse_switch_falls_back_to_dot1d_fdb():
 
 
 SWITCH = WiringSwitch(name="core-switch", host="192.0.2.2", priv="des")
-ENV = {"ATLAS_SNMP_CORE_SWITCH_AUTH": "auth-secret-123", "ATLAS_SNMP_CORE_SWITCH_PRIV": "priv-secret-456"}
+ENV = {"LANXANG_SNMP_CORE_SWITCH_AUTH": "auth-secret-123", "LANXANG_SNMP_CORE_SWITCH_PRIV": "priv-secret-456"}
 
 
 def test_walk_switch_keeps_secrets_off_the_command_line(tmp_path):
@@ -85,7 +85,7 @@ def test_walk_switch_keeps_secrets_off_the_command_line(tmp_path):
 def test_walk_switch_errors():
     with pytest.raises(WiringError, match="install net-snmp"):
         walk_switch(SWITCH, ENV, 5, which=lambda _: None)
-    with pytest.raises(WiringError, match="ATLAS_SNMP_CORE_SWITCH_AUTH"):
+    with pytest.raises(WiringError, match="LANXANG_SNMP_CORE_SWITCH_AUTH"):
         walk_switch(SWITCH, {}, 5, which=lambda _: "/x")
 
     def failing(args, **kwargs):

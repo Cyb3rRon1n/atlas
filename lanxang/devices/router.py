@@ -11,7 +11,7 @@ device sightings so they link to devices by MAC and show as clues on Devices. Re
 import json
 import os
 
-PASSWORD_ENV = "ATLAS_ROUTER_PASSWORD"
+PASSWORD_ENV = "LANXANG_ROUTER_PASSWORD"
 NO_SESSION = "0" * 32
 
 

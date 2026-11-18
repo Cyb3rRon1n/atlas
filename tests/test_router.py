@@ -39,13 +39,13 @@ class FakeOpenWrt:
 
 def test_dhcp_names_and_wifi_then_signs_out():
     http = FakeOpenWrt()
-    clients = router.fetch(RouterConfig(url="http://192.0.2.1"), {"ATLAS_ROUTER_PASSWORD": "pw"}, http)
+    clients = router.fetch(RouterConfig(url="http://192.0.2.1"), {"LANXANG_ROUTER_PASSWORD": "pw"}, http)
     assert clients[0] == {"mac": "02:00:00:00:00:41", "ip": "192.0.2.41", "hostname": "den-tv",
                           "wifi": {"ssid": "home", "ap": "", "band": "", "signal": -58}}
     assert clients[1]["hostname"] == "" and clients[1]["wifi"] is None
     assert http.calls[-1] == "session.destroy"
     with pytest.raises(router.RouterError, match="wrong user or password"):
-        router.fetch(RouterConfig(url="http://192.0.2.1"), {"ATLAS_ROUTER_PASSWORD": "nope"}, FakeOpenWrt())
+        router.fetch(RouterConfig(url="http://192.0.2.1"), {"LANXANG_ROUTER_PASSWORD": "nope"}, FakeOpenWrt())
     with pytest.raises(router.RouterError, match="address"):
         router.fetch(RouterConfig(url="192.0.2.1"), {}, FakeOpenWrt())
 
@@ -55,7 +55,7 @@ def test_leases_link_to_devices_by_mac(temp_db):
 
     store = InventoryStore(temp_db)
     store.record_run("lan", [Sighting("lan", "02:00:00:00:00:41", ip="192.0.2.41", mac="02:00:00:00:00:41")])
-    clients = router.fetch(RouterConfig(url="http://192.0.2.1"), {"ATLAS_ROUTER_PASSWORD": "pw"}, FakeOpenWrt())
+    clients = router.fetch(RouterConfig(url="http://192.0.2.1"), {"LANXANG_ROUTER_PASSWORD": "pw"}, FakeOpenWrt())
     store.record_run("router", router.sightings(clients))
     tv = next(d for d in store.devices() if d["ip"] == "192.0.2.41")
     assert {s["source"] for s in tv["sightings"]} == {"lan", "router"}
@@ -71,7 +71,7 @@ class NoWifiRights(FakeOpenWrt):
 
 
 def test_wifi_trouble_keeps_dhcp_names_and_http_errors_read_plainly():
-    clients = router.fetch(RouterConfig(url="http://192.0.2.1"), {"ATLAS_ROUTER_PASSWORD": "pw"}, NoWifiRights())
+    clients = router.fetch(RouterConfig(url="http://192.0.2.1"), {"LANXANG_ROUTER_PASSWORD": "pw"}, NoWifiRights())
     assert [c["hostname"] for c in clients] == ["den-tv", ""] and clients[0]["wifi"] is None
 
     class Down:

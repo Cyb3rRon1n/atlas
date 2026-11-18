@@ -40,30 +40,30 @@ def test_saving_merges_and_none_removes(env):
 
 
 def test_secrets_are_private_never_listed_and_env_wins(env, isolated_cwd):
-    local.save_secrets({"ATLAS_UNIFI_PASS": "s3cret", "ATLAS_NTFY_TOKEN": "tk"})
+    local.save_secrets({"LANXANG_UNIFI_PASS": "s3cret", "LANXANG_NTFY_TOKEN": "tk"})
     path = isolated_cwd / "inventory" / "secrets.json"
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
-    assert local.secret_names() == {"ATLAS_UNIFI_PASS", "ATLAS_NTFY_TOKEN"}
+    assert local.secret_names() == {"LANXANG_UNIFI_PASS", "LANXANG_NTFY_TOKEN"}
 
-    env["ATLAS_NTFY_TOKEN"] = "from-dotenv"
+    env["LANXANG_NTFY_TOKEN"] = "from-dotenv"
     load_config()
-    assert env["ATLAS_UNIFI_PASS"] == "s3cret" and env["ATLAS_NTFY_TOKEN"] == "from-dotenv"
+    assert env["LANXANG_UNIFI_PASS"] == "s3cret" and env["LANXANG_NTFY_TOKEN"] == "from-dotenv"
 
 
 def test_changed_and_removed_secrets_take_effect_without_restart(env):
-    local.save_secrets({"ATLAS_UNIFI_PASS": "old"})
+    local.save_secrets({"LANXANG_UNIFI_PASS": "old"})
     load_config()
-    local.save_secrets({"ATLAS_UNIFI_PASS": "new"})
+    local.save_secrets({"LANXANG_UNIFI_PASS": "new"})
     load_config()
-    assert env["ATLAS_UNIFI_PASS"] == "new"
-    local.save_secrets({"ATLAS_UNIFI_PASS": None})
+    assert env["LANXANG_UNIFI_PASS"] == "new"
+    local.save_secrets({"LANXANG_UNIFI_PASS": None})
     load_config()
-    assert "ATLAS_UNIFI_PASS" not in env and local.secret_names() == set()
+    assert "LANXANG_UNIFI_PASS" not in env and local.secret_names() == set()
 
 
 def test_settings_reference_stored_secrets(env):
-    local.save_settings({"proxmox": {"token_value": "${ATLAS_PROXMOX_TOKEN}"}})
-    local.save_secrets({"ATLAS_PROXMOX_TOKEN": "abc-123"})
+    local.save_settings({"proxmox": {"token_value": "${LANXANG_PROXMOX_TOKEN}"}})
+    local.save_secrets({"LANXANG_PROXMOX_TOKEN": "abc-123"})
     assert load_config().proxmox.token_value == "abc-123"
 
 
@@ -77,5 +77,5 @@ def test_broken_files_never_stop_atlas(env, isolated_cwd):
 def test_secret_values_never_reach_the_settings_file(env, isolated_cwd):
     with pytest.raises(ValueError):
         local.save_secrets({"not-an-env-name": "x"})
-    local.save_secrets({"ATLAS_SMTP_PASSWORD": "pw"})
+    local.save_secrets({"LANXANG_SMTP_PASSWORD": "pw"})
     assert "pw" not in json.dumps(local.read_settings())

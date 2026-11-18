@@ -28,16 +28,16 @@ CARDS = {
                  Field("url", "Server", "text", ("notify", "ntfy", "url"), hint="https://ntfy.sh, or your own"),
                  Field("topic", "Topic", "text", ("notify", "ntfy", "topic")),
                  Field("token", "Access token (only for a protected topic)", "secret", ("notify", "ntfy", "token"),
-                       "ATLAS_NTFY_TOKEN")]),
+                       "LANXANG_NTFY_TOKEN")]),
     "webhooks": ("Discord, Slack or a webhook", "Paste a Discord or Slack webhook URL, or any URL that accepts "
                  "JSON. One per line.", [
-                     Field("urls", "Webhook URLs", "lines", ("notify", "webhooks"), "ATLAS_WEBHOOK_")]),
+                     Field("urls", "Webhook URLs", "lines", ("notify", "webhooks"), "LANXANG_WEBHOOK_")]),
     "email": ("Email", "Alerts by email through any SMTP server (your mail provider's, with an app password).", [
         Field("host", "SMTP server", "text", ("notify", "email", "host"), hint="smtp.example.org"),
         Field("port", "Port", "number", ("notify", "email", "port"), hint="587, or 465 for TLS"),
         Field("starttls", "Use STARTTLS (port 587)", "bool", ("notify", "email", "starttls")),
         Field("user", "Username", "text", ("notify", "email", "user")),
-        Field("password", "Password", "secret", ("notify", "email", "password"), "ATLAS_SMTP_PASSWORD"),
+        Field("password", "Password", "secret", ("notify", "email", "password"), "LANXANG_SMTP_PASSWORD"),
         Field("sender", "From address (blank = username)", "text", ("notify", "email", "sender")),
         Field("to", "Send to (comma separated)", "list", ("notify", "email", "to"))]),
     "ai": ("AI assistant", "Optional: powers Chat and the daily check-up. Ollama runs on your own hardware; "
@@ -56,25 +56,25 @@ CARDS = {
                      Field("name", "Name", "text", hint="core-switch"),
                      Field("host", "Address", "text", hint="192.168.1.2"),
                      Field("version", "SNMP version", "select", options=("3", "2c")),
-                     Field("community", "v2c read-only community", "secret", None, "ATLAS_SNMP_{}_COMMUNITY"),
+                     Field("community", "v2c read-only community", "secret", None, "LANXANG_SNMP_{}_COMMUNITY"),
                      Field("snmp_user", "SNMPv3 user", "text", hint="atlas"),
                      Field("priv", "Privacy", "select", options=("aes", "des")),
-                     Field("auth", "Auth passphrase (SHA)", "secret", None, "ATLAS_SNMP_{}_AUTH"),
-                     Field("priv_pass", "Privacy passphrase", "secret", None, "ATLAS_SNMP_{}_PRIV")]),
+                     Field("auth", "Auth passphrase (SHA)", "secret", None, "LANXANG_SNMP_{}_AUTH"),
+                     Field("priv_pass", "Privacy passphrase", "secret", None, "LANXANG_SNMP_{}_PRIV")]),
     "unifi": ("UniFi console", "Optional: adds UniFi gateway, AP and switch ports, port forwards and wired "
               "clients. Use a local account with the View Only role.", [
                   Field("url", "Console address", "text", ("wiring", "unifi", "url"), hint="https://192.168.1.1"),
                   Field("site", "Site", "text", ("wiring", "unifi", "site"), hint="default"),
                   Field("verify_ssl", "Check the console's certificate (off for the self-signed one)", "bool",
                         ("wiring", "unifi", "verify_ssl")),
-                  Field("user", "Username", "secret", None, "ATLAS_UNIFI_USER"),
-                  Field("password", "Password", "secret", None, "ATLAS_UNIFI_PASS")]),
+                  Field("user", "Username", "secret", None, "LANXANG_UNIFI_USER"),
+                  Field("password", "Password", "secret", None, "LANXANG_UNIFI_PASS")]),
     "proxmox": ("Proxmox VE", "Lists your VMs and containers and draws them under their host. An API token "
                 "with the PVEAuditor role is enough.", [
                     Field("host", "Host", "text", ("proxmox", "host"), hint="192.168.1.10"),
                     Field("user", "User", "text", ("proxmox", "user"), hint="atlas@pve"),
                     Field("token_name", "Token ID", "text", ("proxmox", "token_name"), hint="atlas"),
-                    Field("token_value", "Token secret", "secret", ("proxmox", "token_value"), "ATLAS_PROXMOX_TOKEN"),
+                    Field("token_value", "Token secret", "secret", ("proxmox", "token_value"), "LANXANG_PROXMOX_TOKEN"),
                     Field("verify_ssl", "Check the host's certificate", "bool", ("proxmox", "verify_ssl"))]),
     "ups": ("UPS (NUT)", "Alerts on a power cut, a low battery, and when power is back. Atlas reads a NUT server "
             "(Network UPS Tools): nut-server on the computer the UPS is plugged into, or a Synology, QNAP, Unraid or "
@@ -87,7 +87,7 @@ CARDS = {
                "LuCI uses) with its login - a separate read-only user works too. Read-only.", [
                    Field("url", "Router address", "text", ("router", "url"), hint="http://192.168.1.1"),
                    Field("user", "User", "text", ("router", "user"), hint="root"),
-                   Field("password", "Password", "secret", None, "ATLAS_ROUTER_PASSWORD"),
+                   Field("password", "Password", "secret", None, "LANXANG_ROUTER_PASSWORD"),
                    Field("verify_ssl", "Check its certificate (off for a self-signed one)", "bool",
                          ("router", "verify_ssl"))]),
     "homeassistant": ("Home Assistant", "Watches Home Assistant itself and the smart home it runs: devices that "
@@ -96,7 +96,7 @@ CARDS = {
                       "token in Home Assistant (your profile > Security). Read-only.", [
                           Field("url", "Address", "text", ("homeassistant", "url"),
                                 hint="http://homeassistant.local:8123"),
-                          Field("token", "Long-lived access token", "secret", None, "ATLAS_HA_TOKEN"),
+                          Field("token", "Long-lived access token", "secret", None, "LANXANG_HA_TOKEN"),
                           Field("verify_ssl", "Check its certificate (off for a self-signed one)", "bool",
                                 ("homeassistant", "verify_ssl"))]),
     "nas": ("TrueNAS or Synology", "Shows each pool's health and how full it is, and each disk's health and "
@@ -108,7 +108,7 @@ CARDS = {
                 Field("url", "Web address", "text", ("nas", "url"), hint="https://192.168.1.20 (Synology: ...:5001)"),
                 Field("user", "Username (the API key's user, or the Synology account)", "text", ("nas", "user"),
                       hint="atlas"),
-                Field("password", "API key (TrueNAS) or password (Synology)", "secret", None, "ATLAS_NAS_PASSWORD"),
+                Field("password", "API key (TrueNAS) or password (Synology)", "secret", None, "LANXANG_NAS_PASSWORD"),
                 Field("name", "Call it (optional)", "text", ("nas", "name"), hint="nas"),
                 Field("verify_ssl", "Check its certificate (off for a self-signed one)", "bool", ("nas", "verify_ssl"))]),
     "dnsfilter": ("Pi-hole or AdGuard Home", "Shows whether ad blocking is on, how many DNS questions were asked "
@@ -118,7 +118,7 @@ CARDS = {
                       Field("kind", "Which one", "select", ("dns_filter", "kind"), options=("pihole", "adguard")),
                       Field("url", "Web address", "text", ("dns_filter", "url"), hint="http://192.168.1.53"),
                       Field("user", "Username (AdGuard Home only)", "text", ("dns_filter", "user"), hint="admin"),
-                      Field("password", "Password or app password", "secret", None, "ATLAS_DNS_PASSWORD"),
+                      Field("password", "Password or app password", "secret", None, "LANXANG_DNS_PASSWORD"),
                       Field("verify_ssl", "Check its certificate (off for a self-signed one)", "bool",
                             ("dns_filter", "verify_ssl"))]),
 }
@@ -220,7 +220,7 @@ def _locked(field):
 
 def _webhook_names():
 
-    return sorted((n for n in local.secret_names() if n.startswith("ATLAS_WEBHOOK_")),
+    return sorted((n for n in local.secret_names() if n.startswith("LANXANG_WEBHOOK_")),
                   key=lambda n: int(n.rsplit("_", 1)[1]) if n.rsplit("_", 1)[1].isdigit() else 0)
 
 
@@ -240,9 +240,9 @@ def _switch_changes(body, off):
     if not name:
         raise ValueError("Enter the switch name.")
     others = [s for s in _get(local.read_settings(), ("wiring", "switches")) or [] if s.get("name") != name]
-    every = {key: secret.format(env_key(name)) for key, secret in (("auth", "ATLAS_SNMP_{}_AUTH"),
-                                                                    ("priv_pass", "ATLAS_SNMP_{}_PRIV"),
-                                                                    ("community", "ATLAS_SNMP_{}_COMMUNITY"))}
+    every = {key: secret.format(env_key(name)) for key, secret in (("auth", "LANXANG_SNMP_{}_AUTH"),
+                                                                    ("priv_pass", "LANXANG_SNMP_{}_PRIV"),
+                                                                    ("community", "LANXANG_SNMP_{}_COMMUNITY"))}
     if off:
         return {"wiring": {"switches": others or None}}, {n: None for n in every.values() if not _from_env(n)}
 

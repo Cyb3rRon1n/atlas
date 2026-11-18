@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 
 from lanxang.alerts import Text
 
-PASSWORD_ENV = "ATLAS_NAS_PASSWORD"            # the TrueNAS API key, or the Synology password
+PASSWORD_ENV = "LANXANG_NAS_PASSWORD"            # the TrueNAS API key, or the Synology password
 HEALTHY_POOL = ("ONLINE", "NORMAL")
 
 

@@ -101,7 +101,7 @@ class MapConfig(BaseModel):
 
 class ScanConfig(BaseModel):
     # Whole-LAN device discovery (atlas scan). Empty subnets = the default-route interface's network.
-    # How often atlas-scan re-runs (docker-compose.yml) is ATLAS_SCAN_MINUTES, an env
+    # How often atlas-scan re-runs (docker-compose.yml) is LANXANG_SCAN_MINUTES, an env
     # var read by the compose loop itself - not a config field here.
     enabled: bool = True
     subnets: list[str] = []
@@ -121,7 +121,7 @@ class NtfyNotifyConfig(BaseModel):
     # e.g. https://ntfy.sh or your own server; the phone app subscribes to topic.
     url: str = ""
     topic: str = ""
-    token: str = ""        # or ATLAS_NTFY_TOKEN in the environment
+    token: str = ""        # or LANXANG_NTFY_TOKEN in the environment
 
 
 class EmailNotifyConfig(BaseModel):
@@ -129,7 +129,7 @@ class EmailNotifyConfig(BaseModel):
     port: int = 587        # 465 = implicit TLS, otherwise STARTTLS when starttls is on
     starttls: bool = True
     user: str = ""
-    password: str = ""     # or ATLAS_SMTP_PASSWORD in the environment
+    password: str = ""     # or LANXANG_SMTP_PASSWORD in the environment
     sender: str = ""       # From: address, defaults to user
     to: list[str] = []
 
@@ -198,8 +198,8 @@ class VpnWatchConfig(BaseModel):
 
 
 class WiringSwitch(BaseModel):
-    # SNMPv3 authPriv: passphrases from env ATLAS_SNMP_<NAME>_AUTH / _PRIV. SNMPv2c (cheaper switches, many
-    # routers and NAS boxes): a read-only community from ATLAS_SNMP_<NAME>_COMMUNITY - sent in clear text.
+    # SNMPv3 authPriv: passphrases from env LANXANG_SNMP_<NAME>_AUTH / _PRIV. SNMPv2c (cheaper switches, many
+    # routers and NAS boxes): a read-only community from LANXANG_SNMP_<NAME>_COMMUNITY - sent in clear text.
     name: str
     host: str
     version: Literal["3", "2c"] = "3"
@@ -208,7 +208,7 @@ class WiringSwitch(BaseModel):
 
 
 class WiringUnifi(BaseModel):
-    # Optional: a local read-only UniFi account, from env ATLAS_UNIFI_USER / ATLAS_UNIFI_PASS.
+    # Optional: a local read-only UniFi account, from env LANXANG_UNIFI_USER / LANXANG_UNIFI_PASS.
     enabled: bool = False
     url: str = ""
     site: str = "default"
@@ -277,7 +277,7 @@ class InternetConfig(BaseModel):
 
 class DnsFilterConfig(BaseModel):
     # Pi-hole (v6) or AdGuard Home, read with each scan. The password (or a Pi-hole app password) is the
-    # ATLAS_DNS_PASSWORD secret; AdGuard Home also needs its username.
+    # LANXANG_DNS_PASSWORD secret; AdGuard Home also needs its username.
     enabled: bool = False
     kind: Literal["pihole", "adguard"] = "pihole"
     url: str = ""
@@ -288,7 +288,7 @@ class DnsFilterConfig(BaseModel):
 
 class RouterConfig(BaseModel):
     # Router details (OpenWrt for now): DHCP names and Wi-Fi clients as device sightings, read with each scan.
-    # The password is the ATLAS_ROUTER_PASSWORD secret.
+    # The password is the LANXANG_ROUTER_PASSWORD secret.
     enabled: bool = False
     kind: Literal["openwrt"] = "openwrt"
     url: str = ""                   # http://192.168.1.1
@@ -299,7 +299,7 @@ class RouterConfig(BaseModel):
 
 class HomeAssistantConfig(BaseModel):
     # Home Assistant, read with each scan through its REST API. The long-lived access token is the
-    # ATLAS_HA_TOKEN secret (HA: your profile > Security > Long-lived access tokens).
+    # LANXANG_HA_TOKEN secret (HA: your profile > Security > Long-lived access tokens).
     enabled: bool = False
     url: str = ""                   # http://homeassistant.local:8123
     verify_ssl: bool = False
@@ -310,7 +310,7 @@ class HomeAssistantConfig(BaseModel):
 
 class NasConfig(BaseModel):
     # TrueNAS (an API key) or Synology (an administrator account), read with each scan. The key or password is
-    # the ATLAS_NAS_PASSWORD secret; user is the TrueNAS user the key belongs to, or the Synology account.
+    # the LANXANG_NAS_PASSWORD secret; user is the TrueNAS user the key belongs to, or the Synology account.
     enabled: bool = False
     kind: Literal["truenas", "synology"] = "truenas"
     url: str = ""

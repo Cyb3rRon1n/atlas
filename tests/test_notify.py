@@ -41,7 +41,7 @@ def test_nothing_configured():
 
 def test_ntfy_gets_title_markdown_and_token_from_env(receiver, monkeypatch):
     base, got = receiver
-    monkeypatch.setenv("ATLAS_NTFY_TOKEN", "tk_secret")
+    monkeypatch.setenv("LANXANG_NTFY_TOKEN", "tk_secret")
 
     assert notify.send(NotifyConfig(ntfy=NtfyNotifyConfig(url=base + "/", topic="homelab")), TEXT) == (True, "")
     body = got[0]["body"]
@@ -103,7 +103,7 @@ def test_email_over_a_real_smtp_conversation(monkeypatch):
         conn.close()
 
     threading.Thread(target=smtp, daemon=True).start()
-    monkeypatch.setenv("ATLAS_SMTP_PASSWORD", "pw")
+    monkeypatch.setenv("LANXANG_SMTP_PASSWORD", "pw")
     config = NotifyConfig(email=EmailNotifyConfig(host="127.0.0.1", port=server.getsockname()[1], starttls=False,
                                                   user="atlas@example.com", to=["me@example.com"]))
 

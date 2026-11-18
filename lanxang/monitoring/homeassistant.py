@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 
 from lanxang.alerts import Text
 
-TOKEN_ENV = "ATLAS_HA_TOKEN"
+TOKEN_ENV = "LANXANG_HA_TOKEN"
 WATCHED = ("sensor", "binary_sensor", "camera", "lock", "climate", "alarm_control_panel", "cover", "switch",
            "light", "fan", "vacuum", "water_heater", "siren", "valve", "humidifier", "lawn_mower")
 # one template call: each watched or battery entity's device name (HA's REST API has no device list)

@@ -3,6 +3,40 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
+## 1.0.0 - 2026-11-18
+
+### Changed
+- **Atlas is now Lanxang** (ລ້ານຊ້າງ, the old Lao kingdom, "land of a million elephants"): a new name, logo,
+  colours and typeface (Lexend, shipped with the app - nothing is loaded from an outside font host), and the Lao
+  name under the logo. The repo is now github.com/Cyb3rRon1n/lanxang, the docs are at
+  cyb3rron1n.github.io/lanxang/ and the image is `ghcr.io/cyb3rron1n/lanxang`. Old repo and docs links redirect.
+- **Polish**: Home hides the AI check-up card and the Chat link while no AI is set up; the *Host health* wording;
+  card dots and borders now agree on colour; cleaner punctuation; messages name the config file actually in use;
+  new light and dark screenshots.
+
+### Upgrading
+**Nothing is required** - an existing install keeps working and keeps its data and history. Until 1.2:
+- the `atlas` command still works (and prints a one-line notice);
+- `atlas.yaml` is still read when there is no `lanxang.yaml`;
+- `ATLAS_*` settings still work next to `LANXANG_*` (the new name wins);
+- the image is also still published as `ghcr.io/cyb3rron1n/atlas`;
+- the compose services keep their names, `atlas` and `atlas-scan`.
+
+To move to the new names when you like: rename `atlas.yaml` to `lanxang.yaml` and set
+`LANXANG_CONFIG=lanxang.yaml` in `.env`; rename your `ATLAS_*` variables to `LANXANG_*`; and point the image at
+`ghcr.io/cyb3rron1n/lanxang`.
+
+Three things can affect you:
+- Alert email subjects now start with "Lanxang:" - update any mail filters.
+- A scan interval set only in your host shell (not in `.env` or an override file) no longer reaches the
+  container. Put it in `.env`.
+- A clone with a hand-pinned pre-1.0 `ATLAS_TAG=0.x` should switch to a 1.0 tag; the new image name has no 0.x
+  tags.
+
+### Removed in 1.2 (announcement)
+The `atlas` command, the `atlas.yaml` fallback, the `ATLAS_*` setting names and the `ghcr.io/cyb3rron1n/atlas`
+image name.
+
 ## 0.12.1 - 2026-11-18
 
 ### Fixed

@@ -6,6 +6,8 @@ Access: the usual sign-in, or atlas's read-only API token (the one dashboards li
 `Authorization: Bearer <token>`, so a Prometheus server can scrape without a browser session.
 """
 
+from atlas.clock import utcnow
+
 HELP = {
     "atlas_uptime_up": ("gauge", "Last uptime check result (1 up, 0 down); includes Internet, Router and DNS"),
     "atlas_uptime_response_ms": ("gauge", "Last uptime check response time in milliseconds"),
@@ -118,7 +120,7 @@ def _sources():
 
     def live_alerts():
         from datetime import datetime
-        listing = alerts.listing(datetime.utcnow())
+        listing = alerts.listing(utcnow())
         return listing["open"] + listing["watch"]
 
     return {"uptime": uptime.latest, "devices": InventoryStore().devices, "alerts": live_alerts,

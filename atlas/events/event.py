@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
+from atlas.clock import utcnow
 
 
 @dataclass
@@ -14,5 +15,5 @@ class AtlasEvent:
     payload: Any
 
     timestamp: datetime = field(
-        default_factory=datetime.utcnow
+        default_factory=utcnow
     )

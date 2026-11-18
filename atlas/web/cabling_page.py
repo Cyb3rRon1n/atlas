@@ -18,6 +18,7 @@ from atlas.web.render import _esc, render_page
 from atlas.wiring import traffic
 from atlas.wiring.build import IDLE
 from atlas.wiring.faceplate import physical_layout
+from atlas.clock import utcnow
 
 
 INFRA = ("wan", "gateway", "switch", "ap")
@@ -635,7 +636,7 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
                 '<p class="muted">No wiring scan yet - press Refresh map (or run <code>atlas wiring scan</code>).</p>')
         return render_page("Cabling", CABLING_STYLE + body + DIAGRAM_SCRIPT, active="cabling")
 
-    now = now or datetime.utcnow()
+    now = now or utcnow()
     snapshot, sources = latest["snapshot"], latest["sources"]
 
     chips = []

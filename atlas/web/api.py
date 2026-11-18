@@ -23,6 +23,7 @@ from atlas.posture.model import WINDOWS, build_posture, node_details
 from atlas.posture.store import PostureStore
 from atlas.web.chat import ChatSessions, chat_turn, execute_step
 from atlas.web.graph import build_graph
+from atlas.clock import utcnow
 
 
 DEVICE = re.compile(r"^/api/devices/(\d+)$")
@@ -87,11 +88,11 @@ def _get(path, query=""):
         window = unquote(params.get("window", "24h"))
         if window not in WINDOWS:
             return 400, {"error": "window must be one of: " + ", ".join(WINDOWS)}
-        return 200, build_posture(PostureStore(), datetime.utcnow(), window)
+        return 200, build_posture(PostureStore(), utcnow(), window)
 
     if path == "/api/posture/node":
         params = dict(part.partition("=")[::2] for part in query.split("&") if part)
-        details = node_details(PostureStore(), unquote(params.get("id", "")), datetime.utcnow())
+        details = node_details(PostureStore(), unquote(params.get("id", "")), utcnow())
         return (200, details) if details else NOT_FOUND
 
     store = InventoryStore()

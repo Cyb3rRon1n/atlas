@@ -18,6 +18,7 @@ from atlas.database.models import DeviceRecord, NotificationRecord, SightingReco
 from atlas.devices.linking import match
 from atlas.devices.status import device_status
 from atlas.devices.wiring import effective_connection
+from atlas.clock import utcnow
 
 
 ROLLUP = timedelta(hours=24)
@@ -88,7 +89,7 @@ class InventoryStore:
     def import_manual_hosts(self, hosts, now=None):
         """map.hosts become known devices with a locked name - once per address."""
 
-        now = now or datetime.utcnow()
+        now = now or utcnow()
         added = 0
 
         with Session(self.engine) as session:
@@ -124,7 +125,7 @@ class InventoryStore:
 
     def record_run(self, source, sightings, ok=True, error="", now=None):
 
-        now = now or datetime.utcnow()
+        now = now or utcnow()
         result = {"new": [], "linked": 0, "suggested": 0, "seen": len(sightings) if ok else 0, "baseline": False}
 
         with Session(self.engine) as session:
@@ -238,7 +239,7 @@ class InventoryStore:
                 device.suggested_merge_id = None
 
             device.locked_fields = json.dumps(sorted(locked))
-            device.updated_at = now or datetime.utcnow()
+            device.updated_at = now or utcnow()
             session.commit()
 
         return {"found": True}
@@ -292,7 +293,7 @@ class InventoryStore:
             session.execute(update(DeviceRecord).where(DeviceRecord.uplink_id == device_id,
                                                        DeviceRecord.id == into_id).values(uplink_id=None))
 
-            target.updated_at = now or datetime.utcnow()
+            target.updated_at = now or utcnow()
             session.delete(source)
             session.commit()
 
@@ -301,7 +302,7 @@ class InventoryStore:
     def split(self, sighting_id, now=None):
         """Operator split: one sighting becomes its own new device (lands in Triage)."""
 
-        now = now or datetime.utcnow()
+        now = now or utcnow()
 
         with Session(self.engine) as session:
 
@@ -419,7 +420,7 @@ class InventoryStore:
     def queue_offline(self, now=None):
         """One offline alert per episode: skipped if one was queued since it was last seen."""
 
-        now = now or datetime.utcnow()
+        now = now or utcnow()
         queued = []
 
         candidates = [device for device in self.devices(now)
@@ -448,7 +449,7 @@ class InventoryStore:
         about (a "new" device the operator already triaged; an "offline" device
         seen again) shouldn't surface once its cause is gone."""
 
-        now = now or datetime.utcnow()
+        now = now or utcnow()
         devices = {device["id"]: device for device in self.devices(now)}
         due = {}
 
@@ -485,7 +486,7 @@ class InventoryStore:
         with Session(self.engine) as session:
 
             for note in session.scalars(select(NotificationRecord).where(NotificationRecord.id.in_(ids))):
-                note.sent_at = now or datetime.utcnow()
+                note.sent_at = now or utcnow()
 
             session.commit()
 

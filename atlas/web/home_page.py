@@ -10,6 +10,7 @@ from datetime import datetime
 
 from atlas.health.alerts import container_problem, container_state
 from atlas.web.render import _esc, ask_chips, render_page
+from atlas.clock import utcnow
 
 
 HOME_STYLE = """
@@ -623,7 +624,7 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
             + ask_chips(ASK_SHORTCUTS) + '<div class="cards">'
             + _posture_card(posture, "posture" in flagged) + _hosts_card(hosts, "hosts" in flagged)
             + _storage_card(storage, "storage" in flagged) + _dns_card(dns, names or {})
-            + _trends_card(trends) + _analysis_card(analysis, now or datetime.utcnow())
+            + _trends_card(trends) + _analysis_card(analysis, now or utcnow())
             + _activity_card(events) + "</div>")
 
     return render_page("Home", body, active="home", heading=_headline(items))

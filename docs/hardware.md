@@ -27,6 +27,11 @@ has already found is ticked for you.
 | **Your internet connection** | TCP connects to public DNS servers and your router, once a minute - nothing to set up | Up/down alerts, response time, uptime %, an outage list that says whether it was your router or your provider | Servers → Uptime |
 | **Any web service or port** | HTTP or TCP | Up/down alerts, response time, uptime % | Servers → Uptime |
 
+<p align="center">
+  <img src="images/screenshots/nas-degraded.png" alt="A TrueNAS mirror with a disk dropped out: the alert on the Alerts page and the Storage card on Home, both saying the pool is DEGRADED" style="max-width: 100%; width: 800px;"><br>
+  <em>A TrueNAS mirror losing a disk, as atlas shows it.</em>
+</p>
+
 **SNMPv3 or v2c?** Use v3 whenever the device offers it (a read-only user, SHA + AES). Many cheaper switches,
 routers and NAS boxes only speak v2c: atlas reads them with a read-only *community*, which travels unencrypted,
 so give it no write access. Unmanaged switches and "Easy Smart" / "Plus" switches with no SNMP can't show their

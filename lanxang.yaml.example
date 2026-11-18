@@ -24,7 +24,7 @@ fleet:
   nodes:
     - name: media-server
       host: 192.168.1.20
-      user: atlas
+      user: lanxang
       port: 22
       identity_file: ''
 # Posture page (`lanxang posture watch`, run by the atlas-scan container). Off by default.
@@ -34,13 +34,13 @@ fleet:
 #   enabled: true
 #   host_ip: 192.168.1.5              # this host's LAN address
 #   gluetun_api_key: ''               # gluetun control-server API key (VPN exit IP check)
-#   crowdsec_api_key: ''              # cscli bouncers add atlas
+#   crowdsec_api_key: ''              # cscli bouncers add lanxang
 #   traefik_dynamic_dir: /traefik/dynamic   # Traefik file-provider dir, mounted read-only
 # Cabling map (`lanxang wiring scan`, or Refresh on web /cabling): port-level wired topology
 # from your switches over SNMPv3 (read-only, authPriv) and, optionally, a UniFi console.
-# Secrets live in the .env file next to docker-compose.yml, never here:
-#   ATLAS_SNMP_<NAME>_AUTH / ATLAS_SNMP_<NAME>_PRIV   (<NAME> = switch name, upper-case, - -> _)
-#   ATLAS_UNIFI_USER / ATLAS_UNIFI_PASS               (a local, View Only UniFi account)
+# Secrets live in the .env file next to docker-compose.yml, never here (the old ATLAS_* names still work until 1.2):
+#   LANXANG_SNMP_<NAME>_AUTH / LANXANG_SNMP_<NAME>_PRIV   (<NAME> = switch name, upper-case, - -> _)
+#   LANXANG_UNIFI_USER / LANXANG_UNIFI_PASS               (a local, View Only UniFi account)
 # Patch panels and wall jacks: copy cabling.example.yaml to cabling.yaml.
 # wiring:
 #   enabled: true
@@ -52,7 +52,7 @@ fleet:
 #     enabled: true
 #     url: https://192.168.1.1
 # Alerts (new / offline devices, VPN clients, new sign-in places) go to every channel set here.
-# Test with: lanxang notify test. Secrets can live in .env: ATLAS_NTFY_TOKEN, ATLAS_SMTP_PASSWORD.
+# Test with: lanxang notify test. Secrets can live in .env: LANXANG_NTFY_TOKEN, LANXANG_SMTP_PASSWORD.
 # notify:
 #   ntfy: {url: https://ntfy.sh, topic: my-homelab-a8f3k2}
 #   webhooks: [https://discord.com/api/webhooks/123/abc]

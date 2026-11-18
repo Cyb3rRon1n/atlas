@@ -44,7 +44,7 @@ def _run_remote_json(node, *atlas_args, timeout=20):
     ConnectTimeout bounds the SSH handshake; the outer `timeout` bounds
     the whole call including the remote atlas subcommand's own work
     (a remote atlas doctor's reachability checks can themselves take
-    several seconds - see atlas/health/checks.py).
+    several seconds - see lanxang/health/checks.py).
 
     A remote command that ran and reported something unhealthy (e.g.
     atlas doctor finding a problem) exits non-zero but still prints

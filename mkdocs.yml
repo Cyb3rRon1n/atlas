@@ -1,21 +1,27 @@
-site_name: Atlas
+site_name: Lanxang
 site_description: "Self-hosted watchdog for your home network: every device, every cable, every change. Alerts included, cloud not required."
-repo_url: https://github.com/Cyb3rRon1n/atlas
-repo_name: Cyb3rRon1n/atlas
+repo_url: https://github.com/Cyb3rRon1n/lanxang
+repo_name: Cyb3rRon1n/lanxang
+site_url: https://cyb3rron1n.github.io/lanxang/
 edit_uri: edit/main/docs/
 
 theme:
   name: material
-  logo: images/logo.svg
-  favicon: images/favicon.svg
+  font: false
+  logo: images/brand/mark-dark.svg
+  favicon: images/brand/favicon.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
@@ -26,17 +32,21 @@ theme:
     - content.action.edit
     - content.code.copy
 
+extra_css:
+  - stylesheets/lanxang.css
+
 nav:
   - Home: index.md
-  - Getting Started: getting-started/index.md
-  - Architecture: architecture/index.md
-  - CLI Reference: cli-reference.md
-  - Configuration: configuration.md
+  - Getting started: getting-started/index.md
   - Supported hardware: hardware.md
+  - Configuration: configuration.md
+  - CLI reference: cli-reference.md
   - Deployment: deployment/index.md
-  - Service Catalog: service-catalog.md
-  - Roadmap: roadmap.md
-  - Design notes: development/design-notes.md
+  - Development:
+      - Architecture: architecture/index.md
+      - Service catalog: service-catalog.md
+      - Roadmap: roadmap.md
+      - Design notes: development/design-notes.md
 
 markdown_extensions:
   - admonition

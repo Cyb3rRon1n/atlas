@@ -136,7 +136,7 @@ DIAGRAM_SCRIPT = r"""
       ends[l.b].push({id: pb, side: "NORTH", label: l.b_port, port: l.b_port});
       return {id: "e" + i, sources: [pa], targets: [pb], link: l};
     });
-    // Boxes for switches/gateways/APs draw the device's real port grid (see atlas/wiring/faceplate.py)
+    // Boxes for switches/gateways/APs draw the device's real port grid (see lanxang/wiring/faceplate.py)
     // and every cable leaves from its port's real position, so the screen reads like the front panel.
     var PW = 23, PS = 20, PH = 16, TOP = 44;
     var portLabel = {}, geometry = {};

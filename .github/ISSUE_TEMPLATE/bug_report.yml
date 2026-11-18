@@ -21,7 +21,7 @@ body:
     id: command
     attributes:
       label: Command and output
-      description: The exact `atlas ...` command you ran, and its full output (or a relevant excerpt). Use `--json` output where applicable — it's easier to compare against expected values.
+      description: The exact `lanxang ...` command you ran, and its full output (or a relevant excerpt). Use `--json` output where applicable — it's easier to compare against expected values.
       render: shell
     validations:
       required: true
@@ -29,15 +29,15 @@ body:
   - type: textarea
     id: doctor-output
     attributes:
-      label: atlas doctor output
-      description: Run `atlas doctor` (or `atlas doctor --json`) and paste the result — helps distinguish "not configured" from "genuinely broken."
+      label: lanxang doctor output
+      description: Run `lanxang doctor` (or `lanxang doctor --json`) and paste the result — helps distinguish "not configured" from "genuinely broken."
       render: shell
 
   - type: input
     id: version
     attributes:
-      label: Atlas version
-      description: Output of `atlas version`
+      label: Lanxang version
+      description: Output of `lanxang version`
     validations:
       required: true
 
@@ -52,7 +52,7 @@ body:
   - type: textarea
     id: config
     attributes:
-      label: Relevant atlas.yaml (secrets redacted)
+      label: Relevant lanxang.yaml (secrets redacted)
       description: Only the sections relevant to the bug — remove `token_value`/`password`/any real hostnames or IPs you'd rather not share.
       render: yaml
 

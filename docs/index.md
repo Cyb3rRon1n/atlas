@@ -1,21 +1,19 @@
 <p align="center">
-  <img src="images/social-preview.svg" alt="Atlas - see and secure everything on your home network" style="max-width: 100%;">
+  <img src="images/brand/social-preview.png" alt="Lanxang - see and secure everything on your home network" style="max-width: 100%;">
 </p>
-
-# Atlas
 
 **Know every device on your home network, what changed, and what needs you — without sending anything to the cloud.**
 
-Atlas is a self-hosted watchdog for homelabs. It finds every machine on your LAN without installing anything on
+Lanxang (formerly Atlas) is a self-hosted watchdog for homelabs. It finds every machine on your LAN without installing anything on
 them, maps how they are cabled together down to the switch port, watches your Docker containers and Proxmox
 guests, checks your network's security, and alerts you when something new shows up or something important goes
 quiet. An AI model is optional: run one locally with Ollama and ask questions in plain language.
 
 !!! quote "Watch everything. Change nothing without asking."
-    Atlas observes and explains. Restarting a container or a VM is only ever suggested, and every action asks you
+    Lanxang observes and explains. Restarting a container or a VM is only ever suggested, and every action asks you
     first. There is no autonomous mode and no bypass flag.
 
-## What Atlas does
+## What Lanxang does
 
 - **Device inventory**: every device on the LAN, found from ARP, SNMP and LLDP. New ones wait for you to name them;
   important ones alert you when they drop off.
@@ -58,35 +56,35 @@ pieces fit together.
 Representative output, not a literal capture — field names and formatting match real commands; hostnames, containers, and figures are illustrative.
 
 <p align="center">
-  <img src="images/screenshots/doctor.svg" alt="atlas doctor example output" style="max-width: 100%; width: 820px;"><br>
-  <sub><code>atlas doctor</code> — environment health plus integration readiness</sub>
+  <img src="images/screenshots/doctor.svg" alt="lanxang doctor example output" style="max-width: 100%; width: 820px;"><br>
+  <sub><code>lanxang doctor</code> — environment health plus integration readiness</sub>
 </p>
 
 <p align="center">
-  <img src="images/screenshots/proxmox-scan.svg" alt="atlas proxmox scan example output" style="max-width: 100%; width: 820px;"><br>
-  <sub><code>atlas proxmox scan</code> — cluster inventory and change detection since the last scan</sub>
+  <img src="images/screenshots/proxmox-scan.svg" alt="lanxang proxmox scan example output" style="max-width: 100%; width: 820px;"><br>
+  <sub><code>lanxang proxmox scan</code> — cluster inventory and change detection since the last scan</sub>
 </p>
 
 <p align="center">
-  <img src="images/screenshots/analyze.svg" alt="atlas analyze example output" style="max-width: 100%; width: 820px;"><br>
-  <sub><code>atlas analyze</code> — AI summary with a grounded, approval-gated action suggestion</sub>
+  <img src="images/screenshots/analyze.svg" alt="lanxang analyze example output" style="max-width: 100%; width: 820px;"><br>
+  <sub><code>lanxang analyze</code> — AI summary with a grounded, approval-gated action suggestion</sub>
 </p>
 
 <p align="center">
-  <img src="images/screenshots/chat.svg" alt="atlas chat example output" style="max-width: 100%; width: 820px;"><br>
-  <sub><code>atlas chat</code> — a live conversation, grounded the same way as <code>atlas analyze</code></sub>
+  <img src="images/screenshots/chat.svg" alt="lanxang chat example output" style="max-width: 100%; width: 820px;"><br>
+  <sub><code>lanxang chat</code> — a live conversation, grounded the same way as <code>lanxang analyze</code></sub>
 </p>
 
 <p align="center">
-  <img src="images/screenshots/plan.svg" alt="atlas analyze multi-step plan example output" style="max-width: 100%; width: 820px;"><br>
+  <img src="images/screenshots/plan.svg" alt="lanxang analyze multi-step plan example output" style="max-width: 100%; width: 820px;"><br>
   <sub>A suggested multi-step plan — printed for you to run yourself, one step at a time</sub>
 </p>
 
 <p align="center">
-  <img src="images/screenshots/trends.svg" alt="atlas trends example output" style="max-width: 100%; width: 820px;"><br>
-  <sub><code>atlas trends</code> — resource-usage history built from saved <code>atlas monitor</code> snapshots</sub>
+  <img src="images/screenshots/trends.svg" alt="lanxang trends example output" style="max-width: 100%; width: 820px;"><br>
+  <sub><code>lanxang trends</code> — resource-usage history built from saved <code>lanxang monitor</code> snapshots</sub>
 </p>
 
 ## Where this is headed
 
-Atlas isn't meant to run on your laptop and poke at infrastructure from the outside — see [Deployment](deployment/index.md) for the intended model of Atlas running as a guest on the Proxmox host it's helping you manage. The [Roadmap](roadmap.md) covers what's shipped and what's next.
+Lanxang isn't meant to run on your laptop and poke at infrastructure from the outside — see [Deployment](deployment/index.md) for the intended model of Lanxang running as a guest on the Proxmox host it's helping you manage. The [Roadmap](roadmap.md) covers what's shipped and what's next.

@@ -2,9 +2,9 @@
 
 ## Overview
 
-Security is a core consideration of the Atlas project.
+Security is a core consideration of the Lanxang project.
 
-Atlas is designed to help users understand, document, and manage their self-hosted infrastructure. Because it interacts with infrastructure information and may eventually assist with operational tasks, security and responsible handling of data are critical.
+Lanxang is designed to help users understand, document, and manage their self-hosted infrastructure. Because it interacts with infrastructure information and may eventually assist with operational tasks, security and responsible handling of data are critical.
 
 We appreciate the security community and contributors who help identify and improve potential vulnerabilities.
 
@@ -12,7 +12,7 @@ We appreciate the security community and contributors who help identify and impr
 
 # Supported Versions
 
-During early development, Atlas may have limited supported versions.
+During early development, Lanxang may have limited supported versions.
 
 Security updates will generally focus on:
 
@@ -22,7 +22,7 @@ Security updates will generally focus on:
 | Development branch | ✅              |
 | Older releases     | ⚠️ Best effort |
 
-As Atlas matures, this policy will be updated with a formal support lifecycle.
+As Lanxang matures, this policy will be updated with a formal support lifecycle.
 
 ---
 
@@ -74,7 +74,7 @@ After receiving a report, maintainers will:
 
 # Security Principles
 
-Atlas follows these principles:
+Lanxang follows these principles:
 
 ## Least Privilege
 
@@ -121,7 +121,7 @@ Use examples and templates instead.
 
 # AI Security Considerations
 
-Atlas includes AI-assisted functionality, which introduces additional considerations.
+Lanxang includes AI-assisted functionality, which introduces additional considerations.
 
 AI systems should not:
 
@@ -140,7 +140,7 @@ AI recommendations should remain:
 
 # Responsible Disclosure
 
-Atlas contributors and users are encouraged to report security issues responsibly.
+Lanxang contributors and users are encouraged to report security issues responsibly.
 
 We appreciate researchers and community members who help improve the project.
 
@@ -163,4 +163,4 @@ Planned improvements may include:
 
 Security is a community effort.
 
-Every report, suggestion, and improvement helps make Atlas a safer platform for everyone building self-hosted infrastructure.
+Every report, suggestion, and improvement helps make Lanxang a safer platform for everyone building self-hosted infrastructure.

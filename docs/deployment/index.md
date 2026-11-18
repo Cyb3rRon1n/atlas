@@ -2,47 +2,47 @@
 
 ## The intended model
 
-Atlas is designed to run **as a guest on the Proxmox host it's helping you manage**, not as an external tool polling your infrastructure from somewhere else:
+Lanxang is designed to run **as a guest on the Proxmox host it's helping you manage**, not as an external tool polling your infrastructure from somewhere else:
 
 ```mermaid
 graph TD
     A[Proxmox VE host] -->|hosts| B[Ubuntu VM guest]
-    B -->|runs| C[Atlas]
+    B -->|runs| C[Lanxang]
     C -->|connects back to| A
 ```
 
 The typical setup:
 
-1. Install Proxmox VE on your hardware, on a static (or DHCP-reserved) IP — Atlas's config keys off a fixed host address, and Proxmox itself expects a stable management IP regardless.
+1. Install Proxmox VE on your hardware, on a static (or DHCP-reserved) IP — Lanxang's config keys off a fixed host address, and Proxmox itself expects a stable management IP regardless.
 2. Create an Ubuntu VM inside that Proxmox host.
-3. Clone Atlas into that VM, install it (`pip install -e .`), and run `atlas init` there to generate `atlas.yaml` — see [Getting Started](../getting-started/index.md).
+3. Clone Lanxang into that VM, install it (`pip install -e .`), and run `lanxang init` there to generate `lanxang.yaml` — see [Getting Started](../getting-started/index.md).
 
-Because Atlas runs on the same cluster it inspects, connecting back to the Proxmox API is a same-network call rather than something exposed externally.
+Because Lanxang runs on the same cluster it inspects, connecting back to the Proxmox API is a same-network call rather than something exposed externally.
 
 ## Authentication: use a scoped API token, not the root password
 
-Atlas's [`proxmox` configuration](../configuration.md#proxmox) accepts either a password or an API token. **Prefer the token.** Generate one in the Proxmox UI under **Datacenter → Permissions → API Tokens** (create a dedicated user first, e.g. `atlas@pve` under the *Proxmox VE authentication server* realm, rather than tokenizing `root@pam`), and grant it a role scoped to only what Atlas actually needs — the built-in `PVEAuditor` role is read-only and sufficient for `atlas proxmox scan`. `atlas proxmox restart` needs additional power-management permission on top of that — confirmed against a real Proxmox instance, granting the built-in `PVEVMUser` role (which includes `VM.PowerMgmt`) at path `/` is enough. `atlas init` prompts for the token directly and writes it into `atlas.yaml` for you; it does not create the token in Proxmox itself, so generate it in the UI first.
+Lanxang's [`proxmox` configuration](../configuration.md#proxmox) accepts either a password or an API token. **Prefer the token.** Generate one in the Proxmox UI under **Datacenter → Permissions → API Tokens** (create a dedicated user first, e.g. `atlas@pve` under the *Proxmox VE authentication server* realm, rather than tokenizing `root@pam`), and grant it a role scoped to only what Lanxang actually needs — the built-in `PVEAuditor` role is read-only and sufficient for `lanxang proxmox scan`. `lanxang proxmox restart` needs additional power-management permission on top of that — confirmed against a real Proxmox instance, granting the built-in `PVEVMUser` role (which includes `VM.PowerMgmt`) at path `/` is enough. `lanxang init` prompts for the token directly and writes it into `lanxang.yaml` for you; it does not create the token in Proxmox itself, so generate it in the UI first.
 
-**Privilege Separation gotcha, confirmed against a real Proxmox instance**: when creating the API token, Proxmox defaults **Privilege Separation** to on, meaning the *token* (`atlas@pve!atlas-token`) has its own permission set, separate from the *user* (`atlas@pve`). Permissions granted only to the user — e.g. adding `PVEVMUser` to `atlas@pve` — do **not** apply to the token while separation is on, even though it looks like it should; `atlas proxmox restart` will 403 with `Permission check failed (.../VM.PowerMgmt)` despite the role being correctly assigned. Either grant permissions to the token identity specifically (it's selectable in the same "User" field in **Datacenter → Permissions → Add**, listed as `atlas@pve!atlas-token`), or — simpler, and no real security loss since this is already a single-purpose account — uncheck **Privilege Separation** on the token itself (**Datacenter → Permissions → API Tokens** → edit the token) so it just inherits whatever the user has.
+**Privilege Separation gotcha, confirmed against a real Proxmox instance**: when creating the API token, Proxmox defaults **Privilege Separation** to on, meaning the *token* (`atlas@pve!atlas-token`) has its own permission set, separate from the *user* (`atlas@pve`). Permissions granted only to the user — e.g. adding `PVEVMUser` to `atlas@pve` — do **not** apply to the token while separation is on, even though it looks like it should; `lanxang proxmox restart` will 403 with `Permission check failed (.../VM.PowerMgmt)` despite the role being correctly assigned. Either grant permissions to the token identity specifically (it's selectable in the same "User" field in **Datacenter → Permissions → Add**, listed as `atlas@pve!atlas-token`), or — simpler, and no real security loss since this is already a single-purpose account — uncheck **Privilege Separation** on the token itself (**Datacenter → Permissions → API Tokens** → edit the token) so it just inherits whatever the user has.
 
 This isn't just caution for its own sake — it's the project's own stated principle. From `CONTRIBUTING.md`:
 
 !!! note "Safety"
     Changes affecting infrastructure should be observable, logged, reversible whenever possible, and configurable through user approval.
 
-Atlas's role is to assist — observe, understand, recommend — not to require unrestricted access to operate. A least-privilege token that can be widened later is a better default than broad access you have to walk back.
+Lanxang's role is to assist — observe, understand, recommend — not to require unrestricted access to operate. A least-privilege token that can be widened later is a better default than broad access you have to walk back.
 
-## What this means for the rest of Atlas
+## What this means for the rest of Lanxang
 
-Every discovery path (`atlas discover`, `atlas proxmox scan`) feeds into the same local knowledge store and environment context, which `atlas analyze` reads from. Nothing about the deployment model changes the trust boundary of the intelligence layer: recommendations come from Anthropic or a local Ollama model reasoning over what Atlas observed, not from Atlas taking action on its own.
+Every discovery path (`lanxang discover`, `lanxang proxmox scan`) feeds into the same local knowledge store and environment context, which `lanxang analyze` reads from. Nothing about the deployment model changes the trust boundary of the intelligence layer: recommendations come from Anthropic or a local Ollama model reasoning over what Lanxang observed, not from Lanxang taking action on its own.
 
 ## As a dashboard tile (Homepage)
 
-If you run [Homepage](https://gethomepage.dev) (or any dashboard), give Atlas a tile so the map and dashboard are one click away. Behind a reverse proxy with its own sign-in — e.g. Traefik + Authelia — set `web.auth: proxy` in `atlas.yaml` and add a `docker-compose.override.yml` next to Atlas's own:
+If you run [Homepage](https://gethomepage.dev) (or any dashboard), give Lanxang a tile so the map and dashboard are one click away. Behind a reverse proxy with its own sign-in — e.g. Traefik + Authelia — set `web.auth: proxy` in `lanxang.yaml` and add a `docker-compose.override.yml` next to Lanxang's own:
 
 ```yaml
 services:
-  atlas:
+  lanxang:
     ports: !reset []                 # no host port; Traefik reaches it on the shared network
     networks: [proxy]                # your Traefik network
     labels:
@@ -57,21 +57,21 @@ networks:
     external: true
 ```
 
-Then the tile, in Homepage's `services.yaml` - with live counts from Atlas's `/api/summary`
+Then the tile, in Homepage's `services.yaml` - with live counts from Lanxang's `/api/summary`
 (a small read-only JSON view of the latest network map):
 
 ```yaml
 - Infrastructure:
-  - Atlas:
+  - Lanxang:
       href: https://atlas.example.com/map
       icon: mdi-radar
-      description: Network map, inventory, history - chat via `atlas chat`
-      siteMonitor: http://atlas:8420
+      description: Network map, inventory, history - chat via `lanxang chat`
+      siteMonitor: http://lanxang:8420
       widget:
         type: customapi
-        url: http://atlas:8420/api/summary
+        url: http://lanxang:8420/api/summary
         refreshInterval: 60000
-        headers:                       # only with web.auth: builtin - the token is `atlas auth token`
+        headers:                       # only with web.auth: builtin - the token is `lanxang auth token`
           Authorization: Bearer {{HOMEPAGE_VAR_ATLAS_TOKEN}}
         mappings:
           - field: status
@@ -100,24 +100,24 @@ unhealthy), `containers_running`/`_total`/`_unhealthy`, `guests_running`/`_total
 mappings above.
 
 Keep what the tile shows current with the `atlas-scan` container (started by default alongside
-`atlas` — nothing extra to do), or one host cron line if you're not running the compose stack:
+`lanxang` — nothing extra to do), or one host cron line if you're not running the compose stack:
 
 ```cron
-*/30 * * * * docker exec atlas atlas discover >/dev/null 2>&1; docker exec atlas atlas proxmox scan >/dev/null 2>&1; docker exec atlas atlas map >/dev/null 2>&1
+*/30 * * * * docker exec atlas lanxang discover >/dev/null 2>&1; docker exec atlas lanxang proxmox scan >/dev/null 2>&1; docker exec atlas lanxang map >/dev/null 2>&1
 ```
 
-Chat lives in the terminal: `docker exec -it atlas atlas chat` (a one-line `atlas-chat` wrapper script on the host makes it easy to reach from an SSH/Guacamole session). If you use Authelia, make sure admin-only rules end with a `deny` rule for the same domains — a rule whose `subject` doesn't match falls through to the default policy.
+Chat lives in the terminal: `docker exec -it atlas lanxang chat` (a one-line `atlas-chat` wrapper script on the host makes it easy to reach from an SSH/Guacamole session). If you use Authelia, make sure admin-only rules end with a `deny` rule for the same domains — a rule whose `subject` doesn't match falls through to the default policy.
 
 ## Posture page
 
 The home page (`/`) is a posture map of what reaches the internet and what the internet can reach.
-It stays empty (with a banner saying so) until `atlas posture watch` runs - the atlas-scan container
-starts it once `posture.enabled: true` is set (see the `posture:` block in `atlas.yaml.example`).
+It stays empty (with a banner saying so) until `lanxang posture watch` runs - the atlas-scan container
+starts it once `posture.enabled: true` is set (see the `posture:` block in `lanxang.yaml.example`).
 On the Docker host:
 
 - Byte counts need conntrack accounting: `sysctl -w net.netfilter.nf_conntrack_acct=1` (persist it in
   `/etc/sysctl.d/`). atlas-scan already has `NET_ADMIN`, used only for the read-only `conntrack -L`.
-- `posture.crowdsec_api_key`: a bouncer key from `docker exec crowdsec cscli bouncers add atlas`.
+- `posture.crowdsec_api_key`: a bouncer key from `docker exec crowdsec cscli bouncers add lanxang`.
 - `posture.gluetun_api_key`: an API key for gluetun's control server (an `apikey` role in its
   `config.toml`), so the VPN exit IP can be compared with the home IP.
 - `posture.traefik_dynamic_dir`: Traefik's file-provider directory, mounted read-only into atlas-scan,

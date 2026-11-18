@@ -1,5 +1,5 @@
 name: Feature request / idea
-description: Suggest something Atlas doesn't do yet, or an improvement
+description: Suggest something Lanxang doesn't do yet, or an improvement
 labels: ["enhancement"]
 body:
   - type: textarea
@@ -13,7 +13,7 @@ body:
   - type: textarea
     id: proposal
     attributes:
-      label: What would you like Atlas to do?
+      label: What would you like Lanxang to do?
       description: Your idea, if you have one. Rough is fine.
 
   - type: textarea
@@ -26,6 +26,6 @@ body:
     id: safety
     attributes:
       label: A quick check
-      description: Atlas is observe-first and approval-gated — see CONTRIBUTING.md's project philosophy.
+      description: Lanxang is observe-first and approval-gated — see CONTRIBUTING.md's project philosophy.
       options:
-        - label: I understand new mutating actions need to stay approval-gated (no autonomous execution, no bypass flag) to fit Atlas's existing design.
+        - label: I understand new mutating actions need to stay approval-gated (no autonomous execution, no bypass flag) to fit Lanxang's existing design.

@@ -1,10 +1,12 @@
 # Configuration
 
-Atlas uses YAML configuration, loaded from `atlas.yaml` in the current working directory. If the file doesn't exist, Atlas runs on defaults (safe — no Proxmox connection is attempted, discovery is fully enabled, no AI model is used until you choose one).
+Settings live in `lanxang.yaml` next to `docker-compose.yml` (a file called `atlas.yaml` from an earlier install is still read when there is no `lanxang.yaml`), and secrets in `.env`. Environment variables use the `LANXANG_` prefix; the old `ATLAS_` names keep working until 1.2. The compose file mounts the file named by `LANXANG_CONFIG` in `.env`, which defaults to `atlas.yaml` until 1.2, so set `LANXANG_CONFIG=lanxang.yaml` when you create a new `lanxang.yaml` by hand (the installer does it for you).
 
-**Prefer a web page?** The **Setup** tab sets up alerts (ntfy, webhooks, email), the AI model, managed switches (SNMPv3), a UniFi console and Proxmox, with a Test button for each. Tests are read-only: alerts send one test message, switches get one SNMP request, UniFi and Proxmox are signed in to and read. It saves to `inventory/settings.yaml` and keeps passwords in `inventory/secrets.json` (readable only by atlas), both in the data volume. Anything you set in `atlas.yaml` or `.env` wins and shows read-only there. Until alerts are on and every device has a name, the Home page shows a short **Getting started** list linking to each step.
+Lanxang uses YAML configuration, loaded from `lanxang.yaml` in the current working directory. If the file doesn't exist, Lanxang runs on defaults (safe — no Proxmox connection is attempted, discovery is fully enabled, no AI model is used until you choose one).
 
-Run `atlas init` to generate this file interactively instead of writing it by hand — it only prompts for the fields below that actually vary per deployment (Proxmox, AI provider, Prometheus), leaves `discovery`/`inventory` at their defaults, and logs the session to `logs/` for troubleshooting. The reference below is for editing the result by hand, or understanding what each field does.
+**Prefer a web page?** The **Setup** tab sets up alerts (ntfy, webhooks, email), the AI model, managed switches (SNMPv3), a UniFi console and Proxmox, with a Test button for each. Tests are read-only: alerts send one test message, switches get one SNMP request, UniFi and Proxmox are signed in to and read. It saves to `inventory/settings.yaml` and keeps passwords in `inventory/secrets.json` (readable only by lanxang), both in the data volume. Anything you set in `lanxang.yaml` or `.env` wins and shows read-only there. Until alerts are on and every device has a name, the Home page shows a short **Getting started** list linking to each step.
+
+Run `lanxang init` to generate this file interactively instead of writing it by hand — it only prompts for the fields below that actually vary per deployment (Proxmox, AI provider, Prometheus), leaves `discovery`/`inventory` at their defaults, and logs the session to `logs/` for troubleshooting. The reference below is for editing the result by hand, or understanding what each field does.
 
 ```yaml
 name: homelab
@@ -39,18 +41,18 @@ fleet:
   nodes:
     - name: media-server
       host: 192.168.1.20
-      user: atlas
+      user: lanxang
       port: 22
       identity_file: ""
 ```
 
 ## `name`
 
-A label for this Atlas instance. Defaults to `atlas-node`.
+A label for this Lanxang instance. Defaults to `atlas-node`.
 
 ## `discovery`
 
-Toggles which discovery categories `atlas discover` collects. All default to `true`.
+Toggles which discovery categories `lanxang discover` collects. All default to `true`.
 
 | Field | Default | Description |
 |---|---|---|
@@ -62,7 +64,7 @@ Toggles which discovery categories `atlas discover` collects. All default to `tr
 
 | Field | Default | Description |
 |---|---|---|
-| `directory` | `inventory/generated` | Where `atlas discover` writes `system-inventory.yaml` |
+| `directory` | `inventory/generated` | Where `lanxang discover` writes `system-inventory.yaml` |
 
 ## `proxmox`
 
@@ -70,7 +72,7 @@ See [Deployment](deployment/index.md) for why a scoped API token is preferred ov
 
 | Field | Default | Description |
 |---|---|---|
-| `enabled` | `false` | Must be `true` for `atlas proxmox scan` to attempt a connection |
+| `enabled` | `false` | Must be `true` for `lanxang proxmox scan` to attempt a connection |
 | `host` | `""` | Proxmox host/IP |
 | `user` | `""` | Proxmox user, e.g. `atlas@pve` |
 | `token_name` | `""` | API token name — **preferred** over `password` |
@@ -80,11 +82,11 @@ See [Deployment](deployment/index.md) for why a scoped API token is preferred ov
 
 If both a token and a password are configured, the token is used.
 
-Read access (the built-in `PVEAuditor` role) is enough for `atlas proxmox scan`. `atlas proxmox restart <vmid>` needs additional power-management permission on top of that — confirmed against a real Proxmox instance, granting the built-in `PVEVMUser` role (which includes `VM.PowerMgmt`) at path `/` is enough. If the token has **Privilege Separation** enabled (Proxmox's default), that permission has to be granted to the token identity itself (`user@realm!tokenid`), not just the user — see [Deployment](deployment/index.md) for the exact gotcha and fix.
+Read access (the built-in `PVEAuditor` role) is enough for `lanxang proxmox scan`. `lanxang proxmox restart <vmid>` needs additional power-management permission on top of that — confirmed against a real Proxmox instance, granting the built-in `PVEVMUser` role (which includes `VM.PowerMgmt`) at path `/` is enough. If the token has **Privilege Separation** enabled (Proxmox's default), that permission has to be granted to the token identity itself (`user@realm!tokenid`), not just the user — see [Deployment](deployment/index.md) for the exact gotcha and fix.
 
 ## `intelligence`
 
-Controls the AI backend behind `atlas analyze`.
+Controls the AI backend behind `lanxang analyze`.
 
 | Field | Default | Description |
 |---|---|---|
@@ -93,43 +95,43 @@ Controls the AI backend behind `atlas analyze`.
 | `ollama_host` | `http://localhost:11434` | Only used when `provider: ollama` |
 | `think` | `false` | Only used when `provider: ollama`. Thinking models such as qwen3 reason silently before answering, which is much slower — `false` keeps replies fast. Set `null` if your Ollama or model rejects the field. |
 
-The Anthropic provider reads its API key from the `ANTHROPIC_API_KEY` environment variable — it is never stored in `atlas.yaml`.
+The Anthropic provider reads its API key from the `ANTHROPIC_API_KEY` environment variable — it is never stored in `lanxang.yaml`.
 
 ## `monitoring`
 
-Controls `atlas monitor`.
+Controls `lanxang monitor`.
 
 | Field | Default | Description |
 |---|---|---|
-| `enabled` | `false` | Must be `true` for `atlas monitor` to attempt a connection |
+| `enabled` | `false` | Must be `true` for `lanxang monitor` to attempt a connection |
 | `prometheus_url` | `http://localhost:9090` | Base URL of an existing Prometheus server |
-| `cpu_threshold` | `90.0` | CPU usage percentage at or above which `atlas monitor` flags the metric |
-| `memory_threshold` | `90.0` | Memory usage percentage at or above which `atlas monitor` flags the metric |
-| `disk_threshold` | `90.0` | Disk usage percentage at or above which `atlas monitor` flags the metric |
+| `cpu_threshold` | `90.0` | CPU usage percentage at or above which `lanxang monitor` flags the metric |
+| `memory_threshold` | `90.0` | Memory usage percentage at or above which `lanxang monitor` flags the metric |
+| `disk_threshold` | `90.0` | Disk usage percentage at or above which `lanxang monitor` flags the metric |
 
-The default metric queries assume [`node_exporter`](https://github.com/prometheus/node_exporter) is running on the monitored host and being scraped by Prometheus — install and configure it there for `atlas monitor` to return real CPU/memory/disk figures. If Prometheus is reachable but `node_exporter` isn't set up yet, `atlas monitor` still runs; each affected metric just reports as unavailable rather than failing the whole command.
+The default metric queries assume [`node_exporter`](https://github.com/prometheus/node_exporter) is running on the monitored host and being scraped by Prometheus — install and configure it there for `lanxang monitor` to return real CPU/memory/disk figures. If Prometheus is reachable but `node_exporter` isn't set up yet, `lanxang monitor` still runs; each affected metric just reports as unavailable rather than failing the whole command.
 
-A metric at or above its threshold prints with a yellow `!` instead of a green `✓` (e.g. `! cpu_percent: 92.1% (threshold: 90.0%)`), and if anything crossed its threshold, `atlas monitor` publishes `atlas.monitoring.threshold_exceeded` (visible via `atlas history`) alongside the `atlas.monitoring.scan.completed` event every scan already publishes — so a no-op scan doesn't add event-log noise, only an actual threshold crossing does. A metric with no data (`node_exporter` not scraped, etc.) is never flagged either way — "unavailable" isn't "under the limit."
+A metric at or above its threshold prints with a yellow `!` instead of a green `✓` (e.g. `! cpu_percent: 92.1% (threshold: 90.0%)`), and if anything crossed its threshold, `lanxang monitor` publishes `lanxang.monitoring.threshold_exceeded` (visible via `lanxang history`) alongside the `lanxang.monitoring.scan.completed` event every scan already publishes — so a no-op scan doesn't add event-log noise, only an actual threshold crossing does. A metric with no data (`node_exporter` not scraped, etc.) is never flagged either way — "unavailable" isn't "under the limit."
 
 ## `fleet`
 
-Controls `atlas fleet doctor`. No daemon, no central server — each node just needs to be reachable over SSH with Atlas already installed there; `atlas fleet doctor` SSHes in and runs `atlas doctor --json` remotely.
+Controls `lanxang fleet doctor`. No daemon, no central server — each node just needs to be reachable over SSH with Lanxang already installed there; `lanxang fleet doctor` SSHes in and runs `lanxang doctor --json` remotely.
 
 `nodes` is a list, each entry:
 
 | Field | Default | Description |
 |---|---|---|
-| `name` | *(required)* | A label for this node, shown in `atlas fleet doctor`'s output |
+| `name` | *(required)* | A label for this node, shown in `lanxang fleet doctor`'s output |
 | `host` | *(required)* | Hostname or IP to SSH to |
-| `user` | `atlas` | SSH user |
+| `user` | `lanxang` | SSH user |
 | `port` | `22` | SSH port |
 | `identity_file` | `""` | Path to an SSH private key; empty uses your normal SSH agent/default key |
 
-An empty `nodes` list (the default) means "no fleet nodes configured" — `atlas fleet doctor` exits 0, the same way a disabled Proxmox/monitoring integration does, not an error state.
+An empty `nodes` list (the default) means "no fleet nodes configured" — `lanxang fleet doctor` exits 0, the same way a disabled Proxmox/monitoring integration does, not an error state.
 
 ## `knowledge`
 
-Your own notes, for `atlas chat`.
+Your own notes, for `lanxang chat`.
 
 | Field | Default | Description |
 |---|---|---|
@@ -137,15 +139,15 @@ Your own notes, for `atlas chat`.
 | `pinned_paths` | `[]` | Short files (a host/IP map, conventions) attached to **every** chat question. Keep them small. |
 | `auto_context` | `3` | How many best-matching note sections are attached to every question automatically (0 = only when the model calls `search_notes`). |
 
-Markdown is searched section by section; scripts whole (they document themselves in comments). Files under a folder named `incidents/` or `cases/` rank above general docs - keep one short file per solved problem there (symptom, cause, how it was found, fix) and Atlas starts from it next time. Automatic attachment exists because small local models often skip optional lookups.
+Markdown is searched section by section; scripts whole (they document themselves in comments). Files under a folder named `incidents/` or `cases/` rank above general docs - keep one short file per solved problem there (symptom, cause, how it was found, fix) and Lanxang starts from it next time. Automatic attachment exists because small local models often skip optional lookups.
 
 ## `jellyfin`
 
 | Field | Default | Description |
 |---|---|---|
 | `enabled` | `false` | Offer `get_jellyfin_sessions` / `get_jellyfin_activity` / `get_jellyfin_plugins` to chat. |
-| `url` | `http://jellyfin:8096` | Jellyfin base URL as reachable from Atlas. |
-| `api_key` | `""` | A Jellyfin API key (Dashboard > API Keys) created for Atlas. |
+| `url` | `http://jellyfin:8096` | Jellyfin base URL as reachable from Lanxang. |
+| `api_key` | `""` | A Jellyfin API key (Dashboard > API Keys) created for Lanxang. |
 
 ## `health`
 
@@ -163,24 +165,24 @@ Markdown is searched section by section; scripts whole (they document themselves
 
 ### Host health alerts
 
-Every atlas-scan pass (`atlas sample`) checks the machine atlas runs on and sends one alert when a problem starts and another when it clears:
+Every atlas-scan pass (`lanxang sample`) checks the machine lanxang runs on and sends one alert when a problem starts and another when it clears:
 
 - a temperature sensor within `temp_margin_c` of the limit the chip itself reports (CPUs and NVMe drives report one; sensors without a limit are skipped);
 - memory, the root disk or a `storage_paths` disk above its limit;
 - a container that crashed (stopped with an error code), keeps restarting, or fails its health check;
 - a `status_urls` feed whose `state` is anything but `ok` (for example a RAID-card watchdog saying `warn`).
 
-**Containers that sleep on purpose are not problems.** One that stopped cleanly (exit code 0), such as a game room an idle timer shuts down, shows as *Asleep* on the home page and never alerts. For an app that sleeps but exits with an error code, add the label `atlas.on-demand=true`. The `/api/summary` tile data counts them as `containers_asleep`.
+**Containers that sleep on purpose are not problems.** One that stopped cleanly (exit code 0), such as a game room an idle timer shuts down, shows as *Asleep* on the home page and never alerts. For an app that sleeps but exits with an error code, add the label `lanxang.on-demand=true`. The `/api/summary` tile data counts them as `containers_asleep`.
 
 ### Disk health (Proxmox)
 
-With Proxmox set up, every `atlas proxmox scan` (every 15 minutes in atlas-scan) also reads each node's disks: the SMART result, how much life an SSD has left, its temperature and its bad-sector count (reallocated, pending and uncorrectable sectors; media errors on NVMe). Home's Storage & RAID card gets one line per node (*13 disks · all healthy · warmest 48°C · lowest life left 92%*) and a line for each disk with a problem. One alert when a disk fails its SMART check, runs hot, or is nearly worn out, and one when that clears. Bad sectors alert each time the count goes **up**; a disk that has carried a few for years without change is fine. Needs nothing beyond the PVEAuditor token.
+With Proxmox set up, every `lanxang proxmox scan` (every 15 minutes in atlas-scan) also reads each node's disks: the SMART result, how much life an SSD has left, its temperature and its bad-sector count (reallocated, pending and uncorrectable sectors; media errors on NVMe). Home's Storage & RAID card gets one line per node (*13 disks · all healthy · warmest 48°C · lowest life left 92%*) and a line for each disk with a problem. One alert when a disk fails its SMART check, runs hot, or is nearly worn out, and one when that clears. Bad sectors alert each time the count goes **up**; a disk that has carried a few for years without change is fine. Needs nothing beyond the PVEAuditor token.
 
 A status feed only reachable from Docker's network can be read as a file instead: mount its directory read-only and use a `file://` URL (`raid card: file:///run/raid-watchdog/status.json`).
 
 ## `access`
 
-Who reaches the public services and from where (web `/access`). `atlas access collect` (run by atlas-scan each cycle) reads new
+Who reaches the public services and from where (web `/access`). `lanxang access collect` (run by atlas-scan each cycle) reads new
 Traefik access-log lines and app sign-ins, and geolocates IPs locally with DB-IP's free City Lite database (CC BY 4.0,
 downloaded monthly) plus the posture ASN table - no visitor IP leaves the host.
 
@@ -196,7 +198,7 @@ downloaded monthly) plus the posture ASN table - no visitor IP leaves the host.
 
 ## `map`
 
-`hosts` lists other machines to draw on the network map (`atlas map`, web `/map`). Atlas only checks their TCP reachability - it never acts on them.
+`hosts` lists other machines to draw on the network map (`lanxang map`, web `/map`). Lanxang only checks their TCP reachability - it never acts on them.
 
 | Field | Default | Description |
 |---|---|---|
@@ -209,29 +211,29 @@ A host whose address equals `proxmox.host` gets the Proxmox guests drawn under i
 
 ## `scan`
 
-Controls `atlas scan`, whole-LAN device discovery. Sightings link into the device inventory shown by `atlas devices` (see [CLI Reference](cli-reference.md)).
+Controls `lanxang scan`, whole-LAN device discovery. Sightings link into the device inventory shown by `lanxang devices` (see [CLI Reference](cli-reference.md)).
 
 | Field | Default | Description |
 |---|---|---|
-| `enabled` | `true` | Must be `true` for `atlas scan` to run |
+| `enabled` | `true` | Must be `true` for `lanxang scan` to run |
 | `subnets` | `[]` | CIDR subnets to scan; empty = the default-route interface's own networks |
 | `timeout` | `0.5` | Per-address TCP connect timeout, in seconds |
 | `discover` | `true` | Ask devices their own name and model over mDNS/Bonjour and SSDP/UPnP (a few seconds per scan); shown as clues for new devices |
 
-How often the `atlas-scan` container loops `atlas scan; atlas discover; atlas proxmox scan; atlas map` is controlled by the `ATLAS_SCAN_MINUTES` environment variable (`docker-compose.yml`), default `15` - not an `atlas.yaml` field, since it's a property of the compose service's loop, not of scanning itself.
+How often the `atlas-scan` container loops `lanxang scan; lanxang discover; lanxang proxmox scan; lanxang map` is controlled by the `LANXANG_SCAN_MINUTES` environment variable (`docker-compose.yml`; the old `ATLAS_SCAN_MINUTES` still works), default `15` - not a `lanxang.yaml` field, since it's a property of the compose service's loop, not of scanning itself.
 
-`atlas scan` never pings and never opens a raw socket: it TCP-connects to port 9 on every address in scope, which makes the kernel ARP-resolve each live host, then reads `/proc/net/arp` for the resulting IP-to-MAC table (only complete entries count — an address nobody answered for isn't in it) and does a best-effort reverse DNS lookup for a hostname. This needs host networking (`network_mode: host`) but no extra capabilities. With `discover` on it also sends one mDNS question and one SSDP search to the LAN and reads each answering UPnP device's own description - read-only, and nothing leaves the network. The maker of each MAC address comes from the IEEE's public list (`inventory/oui.csv`, downloaded monthly; without internet it is skipped). A scan refuses to run over more than 1024 addresses at once — narrow `subnets` if your LAN is bigger than that.
+`lanxang scan` never pings and never opens a raw socket: it TCP-connects to port 9 on every address in scope, which makes the kernel ARP-resolve each live host, then reads `/proc/net/arp` for the resulting IP-to-MAC table (only complete entries count — an address nobody answered for isn't in it) and does a best-effort reverse DNS lookup for a hostname. This needs host networking (`network_mode: host`) but no extra capabilities. With `discover` on it also sends one mDNS question and one SSDP search to the LAN and reads each answering UPnP device's own description - read-only, and nothing leaves the network. The maker of each MAC address comes from the IEEE's public list (`inventory/oui.csv`, downloaded monthly; without internet it is skipped). A scan refuses to run over more than 1024 addresses at once — narrow `subnets` if your LAN is bigger than that.
 
 ### Weekly summary
 
-Every Sunday from 18:00 (in `notify.timezone`; UTC when empty) the next `atlas scan` sends one message on how the
+Every Sunday from 18:00 (in `notify.timezone`; UTC when empty) the next `lanxang scan` sends one message on how the
 week went: internet outages, services below 100%, new devices and how many wait for a name, open alerts,
-heartbeats, disks and the UPS - only the parts you use. Getting it also tells you atlas itself is alive.
+heartbeats, disks and the UPS - only the parts you use. Getting it also tells you lanxang itself is alive.
 `notify.weekly_summary: false` turns it off; quiet hours over Sunday evening hold it.
 
 ### Quiet hours
 
-A weekly schedule when no alert messages go out - the night, or the Sunday update window. Problems still show on the Alerts page; only the messages are held, the same as **Pause alerts**. Add them on the Alerts page (times in your browser's time zone, which is saved as `notify.timezone`) or in `atlas.yaml`:
+A weekly schedule when no alert messages go out - the night, or the Sunday update window. Problems still show on the Alerts page; only the messages are held, the same as **Pause alerts**. Add them on the Alerts page (times in your browser's time zone, which is saved as `notify.timezone`) or in `lanxang.yaml`:
 
 ```yaml
 notify:
@@ -241,21 +243,21 @@ notify:
     - {start: "03:00", end: "06:00", days: [sun]}     # Sunday updates
 ```
 
-A window that ends before it starts runs over midnight and belongs to the day it starts. A schedule atlas can't read never silences anything.
+A window that ends before it starts runs over midnight and belongs to the day it starts. A schedule lanxang can't read never silences anything.
 
 ## Prometheus metrics
 
-`/metrics` serves what atlas already knows in Prometheus format, for Grafana or any Prometheus-compatible
+`/metrics` serves what lanxang already knows in Prometheus format, for Grafana or any Prometheus-compatible
 scraper: uptime checks (including Internet, Router and DNS) and their response times, device counts by state,
 open alerts, disk temperature / SMART / life left (Proxmox, TrueNAS, Synology), UPS charge and battery state,
 heartbeats, and Pi-hole / AdGuard Home totals. Nothing is measured on request; a source that isn't set up is
-left out. Sign in, or send the read-only API token (`atlas auth token`) as a Bearer token:
+left out. Sign in, or send the read-only API token (`lanxang auth token`) as a Bearer token:
 
 ```yaml
 scrape_configs:
-  - job_name: atlas
+  - job_name: lanxang
     scrape_interval: 60s
-    authorization: {credentials: <atlas auth token>}
+    authorization: {credentials: <lanxang auth token>}
     static_configs: [{targets: ["atlas.example:8420"]}]
 ```
 
@@ -271,26 +273,26 @@ The web page's **Alerts** tab lists everything the checks below find: *Needs act
 
 ## `wiring`
 
-The cabling map (web `/cabling`): every switch port, what's plugged into it, patch panels, and cable health. Read-only: atlas reads your switches over SNMPv3 and, optionally, a UniFi console, and never changes their settings. The atlas-scan container refreshes it every cycle; the page's **Refresh map** button does it on demand.
+The cabling map (web `/cabling`): every switch port, what's plugged into it, patch panels, and cable health. Read-only: lanxang reads your switches over SNMPv3 and, optionally, a UniFi console, and never changes their settings. The atlas-scan container refreshes it every cycle; the page's **Refresh map** button does it on demand.
 
 ```yaml
 wiring:
   enabled: true
   switches:
-    - name: core-switch          # secrets in .env: ATLAS_SNMP_CORE_SWITCH_AUTH / _PRIV
+    - name: core-switch          # secrets in .env: LANXANG_SNMP_CORE_SWITCH_AUTH / _PRIV
       host: 192.168.1.2
       priv: aes                  # des only for old gear that offers nothing else
-    - name: nas                  # SNMPv2c: read-only community in .env as ATLAS_SNMP_NAS_COMMUNITY
+    - name: nas                  # SNMPv2c: read-only community in .env as LANXANG_SNMP_NAS_COMMUNITY
       host: 192.168.1.20
       version: 2c
   unifi:
-    enabled: true                # a local View Only account: ATLAS_UNIFI_USER / ATLAS_UNIFI_PASS in .env
+    enabled: true                # a local View Only account: LANXANG_UNIFI_USER / LANXANG_UNIFI_PASS in .env
     url: https://192.168.1.1
 ```
 
 | Field | Default | Description |
 |---|---|---|
-| `switches` | `[]` | Switches, routers and NAS boxes that speak the standard MIBs (IF-MIB, LLDP-MIB, BRIDGE-MIB). `version: "3"` (default, authPriv; `snmp_user` defaults to `atlas`) or `"2c"` with a read-only community - unencrypted, so only when the device offers nothing else. See [Supported hardware](hardware.md) |
+| `switches` | `[]` | Switches, routers and NAS boxes that speak the standard MIBs (IF-MIB, LLDP-MIB, BRIDGE-MIB). `version: "3"` (default, authPriv; `snmp_user` defaults to `lanxang`) or `"2c"` with a read-only community - unencrypted, so only when the device offers nothing else. See [Supported hardware](hardware.md) |
 | `unifi` | off | Adds UniFi gateway/AP/switch ports and their uplinks, which SNMP can't see |
 | `cabling_file` | `cabling.yaml` | Patch panels and wall jacks, by hand (see `cabling.example.yaml`) |
 | `not_managed` | `[]` | Addresses never suggested for a login (the Setup tab's *Don't ask* adds them) |
@@ -315,7 +317,7 @@ Each scan compares every connected port's counters with the scan before it, so o
 | PoE fault: a powered device detected but not powered | problem | A bad cable, or the device needs more power than the port gives |
 | PoE budget 90% or more used | watch | Another powered device (camera, access point) may not start |
 
-**Finding switches to add:** atlas notices network gear it can't read yet: devices that answer SNMPv3 discovery (the maker comes from the answer, e.g. Cisco, Netgear, MikroTik) and devices a mapped switch hears announcing themselves as a bridge, router or access point over LLDP. NAS and Linux SNMP agents are left out. The Cabling page then says how many devices could show their ports with a login, the device's own page links to the Setup tab with the address filled in, and the Switches card lists them under *Found on your network* with **Use** and **Don't ask**. Atlas never tries passwords: you give the SNMPv3 login, press Test, then Save.
+**Finding switches to add:** lanxang notices network gear it can't read yet: devices that answer SNMPv3 discovery (the maker comes from the answer, e.g. Cisco, Netgear, MikroTik) and devices a mapped switch hears announcing themselves as a bridge, router or access point over LLDP. NAS and Linux SNMP agents are left out. The Cabling page then says how many devices could show their ports with a login, the device's own page links to the Setup tab with the address filled in, and the Switches card lists them under *Found on your network* with **Use** and **Don't ask**. Lanxang never tries passwords: you give the SNMPv3 login, press Test, then Save.
 
 **PoE:** ports powering a device show ⚡ on the faceplate, ports that can supply PoE but aren't have a dashed outline, and each device's line shows its PoE use and budget ("PoE 6.5 W of 30 W"). Hover a port for the PoE class, mode and watts. Switches report this over SNMP (the standard POWER-ETHERNET-MIB; per-port watts only come from UniFi), UniFi devices through the console. "Started/stopped delivering PoE" appears with the other changes since the last scan.
 
@@ -338,11 +340,11 @@ uptime:
       timeout: 5                            # seconds, default 10
 ```
 
-A check that fails `fail_after` times in a row is **down**: one alert ("Media server is down"), listed on the Alerts page, and one "back up" message saying how long it was down. Mute or pause it from the Alerts page like any other alert. The page shows each check's response time over 24 hours and its uptime over 24 hours, 7 days and 30 days; results are kept 30 days. Certificates aren't verified here - expiry and trust are the certificate watch's job (`security.cert_watch`). A list set in atlas.yaml wins over the page and makes the page read-only.
+A check that fails `fail_after` times in a row is **down**: one alert ("Media server is down"), listed on the Alerts page, and one "back up" message saying how long it was down. Mute or pause it from the Alerts page like any other alert. The page shows each check's response time over 24 hours and its uptime over 24 hours, 7 days and 30 days; results are kept 30 days. Certificates aren't verified here - expiry and trust are the certificate watch's job (`security.cert_watch`). A list set in lanxang.yaml wins over the page and makes the page read-only.
 
 ### Heartbeats
 
-For jobs atlas can't check from outside, such as a nightly backup or a cron job: add one on Servers → Uptime (or under `uptime.heartbeats`), then have the job call its address when it finishes. Add `/fail` when it failed.
+For jobs lanxang can't check from outside, such as a nightly backup or a cron job: add one on Servers → Uptime (or under `uptime.heartbeats`), then have the job call its address when it finishes. Add `/fail` when it failed.
 
 ```bash
 your-backup-command && curl -fsS -m 10 http://atlas.example:8420/ping/<token> \
@@ -357,11 +359,11 @@ uptime:
       grace_minutes: 60     # how late it may be
 ```
 
-A heartbeat that hasn't pinged within `every_minutes` + `grace_minutes` is **late**: one alert, and one when it pings again. A `/fail` ping alerts within a minute. Nothing is said before the first ping. The address needs no sign-in (the token in it is the password), so if atlas sits behind a sign-in proxy, ping it on its own network address. Renaming a heartbeat changes its address.
+A heartbeat that hasn't pinged within `every_minutes` + `grace_minutes` is **late**: one alert, and one when it pings again. A `/fail` ping alerts within a minute. Nothing is said before the first ping. The address needs no sign-in (the token in it is the password), so if lanxang sits behind a sign-in proxy, ping it on its own network address. Renaming a heartbeat changes its address.
 
 ## `internet`
 
-Internet health, checked with the uptime checks once a minute (`atlas uptime check`, run by atlas-scan). Atlas
+Internet health, checked with the uptime checks once a minute (`lanxang uptime check`, run by atlas-scan). Lanxang
 opens a TCP connection to each target and to your default gateway (the router); no ping, so no extra
 privileges. Results show on Servers → Uptime and as a tile on Home.
 
@@ -373,7 +375,7 @@ privileges. Results show on Servers → Uptime and as a tile on Home.
 | `dns_name` | `example.com` | Looked up each minute to check name lookups work; `""` turns that off |
 | `dns_servers` | `[]` | Ask these directly (your router, Pi-hole...), one row each; empty = this machine's own resolver |
 
-**Name lookups (DNS):** a working connection with a broken DNS server still means no websites. Atlas looks up
+**Name lookups (DNS):** a working connection with a broken DNS server still means no websites. Lanxang looks up
 `dns_name` once a minute and shows it under Internet. After `uptime.fail_after` failed minutes in a row - while
 the internet itself answers - you get one alert, and one when lookups work again.
 
@@ -384,8 +386,8 @@ the problem was on the provider's side.
 
 ## `dns_filter`
 
-Pi-hole (version 6) or AdGuard Home, read with every `atlas scan` (or `atlas dns check`). Easiest from Setup →
-*Pi-hole or AdGuard Home*. Read-only: atlas never changes blocking or lists.
+Pi-hole (version 6) or AdGuard Home, read with every `lanxang scan` (or `lanxang dns check`). Easiest from Setup →
+*Pi-hole or AdGuard Home*. Read-only: lanxang never changes blocking or lists.
 
 | Key | Default | What it does |
 |---|---|---|
@@ -396,14 +398,14 @@ Pi-hole (version 6) or AdGuard Home, read with every `atlas scan` (or `atlas dns
 | `verify_ssl` | `false` | Check the certificate on an `https://` address |
 | `timeout` | `5.0` | Seconds to wait |
 
-The password goes in the `ATLAS_DNS_PASSWORD` secret (Setup stores it for you). For Pi-hole, an *app password*
-(Settings → Web interface / API) works too and is the one to use with two-factor sign-in on. Atlas signs out of
+The password goes in the `LANXANG_DNS_PASSWORD` secret (Setup stores it for you). For Pi-hole, an *app password*
+(Settings → Web interface / API) works too and is the one to use with two-factor sign-in on. Lanxang signs out of
 Pi-hole after every read, so it never uses up Pi-hole's session slots. Ad blocking off at two checks in a row
 sends one alert, and one more when it's back on - a short pause doesn't.
 
 ## `homeassistant`
 
-Home Assistant, read with every `atlas scan` (and `atlas ha check`) through its REST API. Set it up in Setup →
+Home Assistant, read with every `lanxang scan` (and `lanxang ha check`) through its REST API. Set it up in Setup →
 *Home Assistant*. Off by default.
 
 | Field | Default | Description |
@@ -416,35 +418,35 @@ Home Assistant, read with every `atlas scan` (and `atlas ha check`) through its 
 | `battery_percent` | `20` | A battery at or under this is low |
 
 The long-lived access token (Home Assistant: your profile → Security → Long-lived access tokens) is the
-`ATLAS_HA_TOKEN` secret. Home shows a *Smart home* tile and card: devices that dropped out, low batteries and
+`LANXANG_HA_TOKEN` secret. Home shows a *Smart home* tile and card: devices that dropped out, low batteries and
 updates waiting. TVs, media players, remotes and phones are left out of "dropped out" - they go unavailable
 whenever they're switched off. Alerts: Home Assistant not answering (two checks in a row), a device dropping out,
 a low battery - once each, and once when it's fine again. Updates are listed to watch, never messaged.
 
 ## `nas`
 
-TrueNAS or Synology disk and pool health, read with every `atlas scan` (and `atlas nas check`). Set it up in Setup → *TrueNAS or Synology*. Off by default.
+TrueNAS or Synology disk and pool health, read with every `lanxang scan` (and `lanxang nas check`). Set it up in Setup → *TrueNAS or Synology*. Off by default.
 
 | Field | Default | Description |
 |---|---|---|
 | `enabled` | `false` | Turn it on |
 | `kind` | `truenas` | `truenas` or `synology` |
 | `url` | | The web address: `https://192.0.2.20` (TrueNAS, https only), `https://192.0.2.20:5001` (Synology) |
-| `user` | | TrueNAS: the user the API key belongs to. Synology: the account atlas signs in with |
+| `user` | | TrueNAS: the user the API key belongs to. Synology: the account lanxang signs in with |
 | `name` | | What to call it on Home and in alerts; the address's host name when empty |
 | `verify_ssl` | `false` | Check its certificate (leave off for the usual self-signed one) |
 | `timeout` | `10` | Seconds to wait |
 
-The API key (TrueNAS) or password (Synology) is the `ATLAS_NAS_PASSWORD` secret.
+The API key (TrueNAS) or password (Synology) is the `LANXANG_NAS_PASSWORD` secret.
 
-- **TrueNAS** (24.10 and newer) is read over its JSON-RPC websocket API, the one that replaces the REST API TrueNAS is removing. Make an API key for a user with the read-only admin role. atlas only uses https: TrueNAS revokes a key sent without encryption.
-- **Synology** (DSM 7): DSM only lets administrators read storage, so make an admin account for atlas, deny it every shared folder and application, and leave two-factor off for it. atlas signs out after every read.
+- **TrueNAS** (24.10 and newer) is read over its JSON-RPC websocket API, the one that replaces the REST API TrueNAS is removing. Make an API key for a user with the read-only admin role. lanxang only uses https: TrueNAS revokes a key sent without encryption.
+- **Synology** (DSM 7): DSM only lets administrators read storage, so make an admin account for lanxang, deny it every shared folder and application, and leave two-factor off for it. lanxang signs out after every read.
 
 Home's Storage & RAID card shows each pool or volume (health, how full) and the disks the same way as Proxmox ones (see *Disk health* under `health`). Alerts: one when a pool or volume isn't healthy and one when it is again; disk alerts use the same `health.disk_*` limits. Built from the vendors' API documentation and not yet checked against real hardware - if something reads wrong on yours, please open an issue.
 
 ## `ups`
 
-Alerts on a power cut, a low battery, and when power is back, read from a NUT server (Network UPS Tools, TCP 3493). The computer the UPS's USB cable goes into usually runs one: `nut-server` on Linux, or the *network UPS server* option on Synology, QNAP, Unraid and TrueNAS (add atlas's address to its allowed list). Set it up on **Setup → UPS** or here. atlas-scan reads it once a minute; only `LIST` commands are sent, so no login is needed.
+Alerts on a power cut, a low battery, and when power is back, read from a NUT server (Network UPS Tools, TCP 3493). The computer the UPS's USB cable goes into usually runs one: `nut-server` on Linux, or the *network UPS server* option on Synology, QNAP, Unraid and TrueNAS (add lanxang's address to its allowed list). Set it up on **Setup → UPS** or here. atlas-scan reads it once a minute; only `LIST` commands are sent, so no login is needed.
 
 ```yaml
 ups:
@@ -458,7 +460,7 @@ The UPS status (charge, time left on battery, load) is shown at the top of **Ser
 
 ## `security`
 
-LAN watch: `atlas lan check` looks for a second DHCP server and for something impersonating your router. atlas-scan runs it after every device scan, and the result shows as the **LAN** tile on the Security tab (Exposure).
+LAN watch: `lanxang lan check` looks for a second DHCP server and for something impersonating your router. atlas-scan runs it after every device scan, and the result shows as the **LAN** tile on the Security tab (Exposure).
 
 ```yaml
 security:
@@ -470,8 +472,8 @@ security:
 | `dhcp_probe` | `true` | Send one DHCP discover per run and list every server that answers. It never asks for or takes an address |
 | `dhcp_timeout` | `3.0` | Seconds to wait for answers |
 | `dhcp_servers` | `[]` | DHCP servers you expect besides the default gateway |
-| `port_watch` | `true` | `atlas ports check`: alert on newly open ports (below) |
-| `snmp_discovery` | `true` | During `atlas ports check`, send each device online the standard SNMPv3 discovery message (no user name, no password, so never a failed login) to find switches and routers that could show their ports |
+| `port_watch` | `true` | `lanxang ports check`: alert on newly open ports (below) |
+| `snmp_discovery` | `true` | During `lanxang ports check`, send each device online the standard SNMPv3 discovery message (no user name, no password, so never a failed login) to find switches and routers that could show their ports |
 | `port_timeout` | `0.5` | Seconds per port connect |
 | `extra_ports` | `[]` | Ports to watch besides the ~25 common service ports |
 
@@ -480,16 +482,16 @@ security:
 | A DHCP server that is neither the gateway nor listed | problem | A router plugged in backwards, a VM or container running DHCP by mistake, or an attacker handing out their own gateway |
 | No DHCP server answered two runs in a row (after answering before) | problem | DHCP is down: new devices and renewing ones can't get an address |
 | No DHCP server has ever answered | watch | Usually this host's firewall dropping the answers: allow incoming UDP port 68 (on firewalld: `firewall-cmd --add-port=68/udp --permanent`, then `--reload`) |
-| The gateway's IP answers from a different MAC than the one learned on the first run | problem | ARP spoofing (a man in the middle), or you replaced the router: run `atlas lan check --trust-gateway` to accept the new MAC |
+| The gateway's IP answers from a different MAC than the one learned on the first run | problem | ARP spoofing (a man in the middle), or you replaced the router: run `lanxang lan check --trust-gateway` to accept the new MAC |
 | A wired UniFi client using the gateway's IP | problem | Something claiming to be the router (needs `wiring.unifi`) |
 | The gateway's MAC also answers for another address | watch | Usually harmless (proxy ARP, a router with two addresses) |
 | One IP on two wired UniFi clients | watch | An address conflict, or a recent DHCP reassignment |
 
-Problems send one alert to every `notify:` channel and another when they clear. The ARP checks see what the atlas host sees; UniFi's client list (when `wiring.unifi` is set) widens that to the rest of the wired network. Hearing DHCP answers needs UDP port 68: the Docker image ships `atlas-dhcp-python`, an interpreter copy holding only that one permission. Run outside Docker as a normal user, the probe reports that it can't listen and the ARP checks still run.
+Problems send one alert to every `notify:` channel and another when they clear. The ARP checks see what the lanxang host sees; UniFi's client list (when `wiring.unifi` is set) widens that to the rest of the wired network. Hearing DHCP answers needs UDP port 68: the Docker image ships `lanxang-dhcp-python`, an interpreter copy holding only that one permission. Run outside Docker as a normal user, the probe reports that it can't listen and the ARP checks still run.
 
 ### Open-port watch
 
-`atlas ports check` (run by atlas-scan after every device scan) looks at three things, all read-only:
+`lanxang ports check` (run by atlas-scan after every device scan) looks at three things, all read-only:
 
 - **LAN devices:** a plain TCP connect to about 25 common service ports (SSH, telnet, web, file sharing, remote desktop, VNC, databases, camera streams, MQTT, printers) on every device that is online, within your scan subnets. It never sends data or logs in.
 - **This host:** sockets listening for other machines (loopback-only ones are left out).
@@ -499,7 +501,7 @@ The first run learns what is normal and sends nothing. After that every newly op
 
 ### Certificate watch
 
-`atlas certs check` (run by atlas-scan, but only once a day) opens a TLS connection to every hostname in your Traefik routes, plus any you list, the same way a browser would, and reads each certificate's expiry date. Nothing is changed and no login is needed. Behind Cloudflare (or any proxy) that is the certificate visitors actually get.
+`lanxang certs check` (run by atlas-scan, but only once a day) opens a TLS connection to every hostname in your Traefik routes, plus any you list, the same way a browser would, and reads each certificate's expiry date. Nothing is changed and no login is needed. Behind Cloudflare (or any proxy) that is the certificate visitors actually get.
 
 ```yaml
 security:
@@ -510,11 +512,11 @@ security:
   cert_timeout: 5.0
 ```
 
-One alert per hostname each time things get worse (14 days left, then 3 days or expired), one when a browser would refuse the certificate (wrong name, untrusted issuer), and a "Resolved" once it is renewed. A hostname that can't be reached is only shown, not alerted: outages are the health checks' job. The Posture page's **Public exposure** tab shows days left next to each route, yellow inside the warning window and red when urgent or untrusted. `atlas certs check --force` checks right away.
+One alert per hostname each time things get worse (14 days left, then 3 days or expired), one when a browser would refuse the certificate (wrong name, untrusted issuer), and a "Resolved" once it is renewed. A hostname that can't be reached is only shown, not alerted: outages are the health checks' job. The Posture page's **Public exposure** tab shows days left next to each route, yellow inside the warning window and red when urgent or untrusted. `lanxang certs check --force` checks right away.
 
 ## `notify`
 
-Where alerts go: new devices, important devices gone offline, VPN/torrent clients disconnected, and sign-ins from new places. Set any number of channels — every one that is set gets each alert, and one failing never stops the others. Check your setup with `atlas notify test`.
+Where alerts go: new devices, important devices gone offline, VPN/torrent clients disconnected, and sign-ins from new places. Set any number of channels — every one that is set gets each alert, and one failing never stops the others. Check your setup with `lanxang notify test`.
 
 ```yaml
 notify:
@@ -523,7 +525,7 @@ notify:
     topic: my-homelab-a8f3k2         # pick something hard to guess on the public server
   webhooks:                          # Discord / Slack webhook URLs, or any URL that takes JSON
     - https://discord.com/api/webhooks/123/abc
-    - http://homeassistant.local:8123/api/webhook/atlas
+    - http://homeassistant.local:8123/api/webhook/lanxang
   email:
     host: smtp.example.com
     port: 587
@@ -539,10 +541,10 @@ notify:
 
 | Channel | Fields | Notes |
 |---|---|---|
-| `ntfy` | `url`, `topic`, `token` | Markdown messages with a title. `token` (or `ATLAS_NTFY_TOKEN` in `.env`) for a protected server |
-| `webhooks` | list of URLs | `discord.com/api/webhooks/...` and `hooks.slack.com/...` get their own format; any other URL gets `{"title", "text", "source": "atlas"}` as JSON |
-| `email` | `host`, `port` (587), `starttls` (true), `user`, `password`, `sender`, `to` | Port 465 uses implicit TLS. Put the password in `.env` as `ATLAS_SMTP_PASSWORD` rather than here |
-| `apprise` | list of [Apprise URLs](https://github.com/caronc/apprise/wiki) | Telegram, Pushover, Gotify, Matrix, Teams and more. Needs the `apprise` package — the Docker image has it; with pip, `pip install "atlas[alerts]"` |
+| `ntfy` | `url`, `topic`, `token` | Markdown messages with a title. `token` (or `LANXANG_NTFY_TOKEN` in `.env`) for a protected server |
+| `webhooks` | list of URLs | `discord.com/api/webhooks/...` and `hooks.slack.com/...` get their own format; any other URL gets `{"title", "text", "source": "lanxang"}` as JSON |
+| `email` | `host`, `port` (587), `starttls` (true), `user`, `password`, `sender`, `to` | Port 465 uses implicit TLS. Put the password in `.env` as `LANXANG_SMTP_PASSWORD` rather than here |
+| `apprise` | list of [Apprise URLs](https://github.com/caronc/apprise/wiki) | Telegram, Pushover, Gotify, Matrix, Teams and more. Needs the `apprise` package — the Docker image has it; with pip, `pip install "lanxang[alerts]"` |
 | `signal` | `url`, `number`, `recipients` | Through [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api). `recipients` can be numbers or group IDs |
 
 An alert counts as delivered when at least one channel took it; if every channel fails it stays queued and is retried on the next run.

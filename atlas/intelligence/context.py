@@ -1,4 +1,5 @@
 from datetime import datetime
+from atlas.clock import utcnow
 
 
 class AtlasEnvironmentContext:
@@ -9,7 +10,7 @@ class AtlasEnvironmentContext:
 
     def __init__(self):
 
-        self.timestamp = datetime.utcnow()
+        self.timestamp = utcnow()
 
         self.system = {}
         self.hardware = {}
@@ -39,7 +40,7 @@ class AtlasEnvironmentContext:
         if "network" in data:
             self.network = data["network"]
 
-        self.timestamp = datetime.utcnow()
+        self.timestamp = utcnow()
 
 
     def update(self, category, data):

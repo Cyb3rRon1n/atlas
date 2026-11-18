@@ -16,6 +16,7 @@ from atlas.wiring.cabling import load_cabling
 from atlas.wiring.health import alerts, assess, poe_ports
 from atlas.wiring.snmp import collect_switch
 from atlas.wiring.unifi import fetch_unifi
+from atlas.clock import utcnow
 
 
 _LOCK = threading.Lock()
@@ -88,7 +89,7 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
             stale |= {d.get("name") for d in ((raw["unifi"] or {}).get("devices") or [])}
         snapshot["health"] = assess(raw, [h["raw"] for h in history], stale)
         snapshot["poe"] = poe_ports(raw)
-        taken_at = now or datetime.utcnow()
+        taken_at = now or utcnow()
         if previous:                                # per-port traffic since the last scan, for the map and graphs
             found = traffic.rates(raw, old_raw, (taken_at - previous[0]["taken_at"]).total_seconds(), stale)
             traffic.annotate(snapshot, found)

@@ -43,6 +43,7 @@ from atlas.web.network_page import render_network_page
 from atlas.web.cabling_page import cabling_csv, render_cabling_page
 from atlas.web.render import _posture_block, build_summary, render_history_page, render_overview_page
 from atlas.web.trends_page import WINDOWS as TREND_WINDOWS, render_trends_page
+from atlas.clock import utcnow
 
 
 MAX_BODY = 65536
@@ -227,7 +228,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 self.log_error("home: %s failed: %r", label, error)
                 return None
 
-        now = datetime.utcnow()
+        now = utcnow()
         settings = safe("config", load_config)
         health_settings = settings.health if settings else None
         topology = safe("topology", query.latest_topology)
@@ -292,7 +293,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             if self.auth and not self._gate(path):
                 return
             self._send(200, "text/plain; version=0.0.4; charset=utf-8",
-                       render(collect(load_config(), datetime.utcnow())))
+                       render(collect(load_config(), utcnow())))
             return
 
         if self.auth and not self._gate(path):
@@ -321,18 +322,18 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             settings = load_config()
             window = (parse_qs(self.path.partition("?")[2]).get("window") or ["7d"])[0]
             window = window if window in ACCESS_WINDOWS else "7d"
-            summary = AccessStore().summary(datetime.utcnow() - timedelta(days=ACCESS_WINDOWS[window]))
+            summary = AccessStore().summary(utcnow() - timedelta(days=ACCESS_WINDOWS[window]))
             body = render_access_page(summary, window, settings.access.home_ips, settings.access.enabled,
                                       AccessStore().places())
         elif path == "/alerts":
             from atlas.web.alerts_page import render_alerts_page
-            now = datetime.utcnow()
+            now = utcnow()
             body = render_alerts_page(AlertStore().listing(now), now, _notify_settings())
         elif path == "/history":
             from atlas.web import changes_feed
             window = (parse_qs(self.path.partition("?")[2]).get("changes") or ["24h"])[0]
             window = window if window in changes_feed.WINDOWS else "24h"
-            events, now = query.recent_events(300), datetime.utcnow()
+            events, now = query.recent_events(300), utcnow()
             feed = changes_feed.collect(now, window, {
                 "alerts": lambda at, days: AlertStore().listing(at, days), "devices": InventoryStore().devices,
                 "changes": lambda since: [(at, kind, payload) for kind in changes_feed.CHANGE_EVENTS
@@ -342,7 +343,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             from atlas.config import local
             from atlas.monitoring.uptime import UptimeStore
             from atlas.web.uptime_page import internet_data, render_uptime_page, suggestions
-            settings, now = load_config(), datetime.utcnow()
+            settings, now = load_config(), utcnow()
             checks = settings.uptime.checks
             power = None
             if settings.ups.enabled:
@@ -357,7 +358,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             from datetime import timedelta
             window = (parse_qs(self.path.partition("?")[2]).get("window") or ["24h"])[0]
             window = window if window in TREND_WINDOWS else "24h"
-            now = datetime.utcnow()
+            now = utcnow()
             since = now - timedelta(days=TREND_WINDOWS[window])
             topology = query.latest_topology() or {}
             pve = (topology.get("proxmox") or {}).get("host")
@@ -424,7 +425,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 return
         elif path == "/api/summary":
             try:
-                posture = build_posture(PostureStore(), datetime.utcnow(), "24h")
+                posture = build_posture(PostureStore(), utcnow(), "24h")
             except Exception as error:
                 self.log_error("posture summary failed: %r", error)
                 posture = None
@@ -577,7 +578,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         if beat is None:
             self._send(404, "text/plain; charset=utf-8", "no such heartbeat")
             return
-        ping(PostureStore(), beat.name, datetime.utcnow(), failed=failed)
+        ping(PostureStore(), beat.name, utcnow(), failed=failed)
         self._send(200, "text/plain; charset=utf-8", "ok")
 
     def _send(self, status, content_type, body):

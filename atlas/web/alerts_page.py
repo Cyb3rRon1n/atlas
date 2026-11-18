@@ -8,6 +8,7 @@ from datetime import datetime
 
 from atlas.web.cabling_page import _ago
 from atlas.web.render import _esc, render_page
+from atlas.clock import utcnow
 
 SOURCES = {"lan": "LAN watch", "host": "Host health", "certs": "Certificates", "wiring": "Cabling",
            "ports": "Open ports", "devices": "Devices", "vpn": "VPN"}
@@ -168,7 +169,7 @@ def handle_post(path, body):
         return None
     alert_id, action, global_action, rule_id = match.groups()
     body = body if isinstance(body, dict) else {}
-    store, now = AlertStore(), datetime.utcnow()
+    store, now = AlertStore(), utcnow()
 
     if global_action == "pause":
         hours = body.get("hours")

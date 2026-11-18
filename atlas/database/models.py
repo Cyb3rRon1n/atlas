@@ -4,6 +4,7 @@ from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
+from atlas.clock import utcnow
 
 
 class Base(DeclarativeBase):
@@ -25,7 +26,7 @@ class EventRecord(Base):
     payload: Mapped[str]
 
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow
+        default=utcnow
     )
 
 
@@ -40,7 +41,7 @@ class EnvironmentRecord(Base):
     data: Mapped[str]
 
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow
+        default=utcnow
     )
 
 
@@ -61,7 +62,7 @@ class AnalysisRecord(Base):
     model: Mapped[str]
 
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow
+        default=utcnow
     )
 
 
@@ -99,9 +100,9 @@ class DeviceRecord(Base):
     # wired map. Self-referential: another row in this same table.
     uplink_id: Mapped[int | None] = mapped_column(ForeignKey("devices.id"), default=None)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow)
 
 
 class SightingRecord(Base):
@@ -124,9 +125,9 @@ class SightingRecord(Base):
 
     detail: Mapped[str] = mapped_column(default="{}")
 
-    first_seen: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    first_seen: Mapped[datetime] = mapped_column(default=utcnow)
 
-    last_seen: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    last_seen: Mapped[datetime] = mapped_column(default=utcnow)
 
     device_id: Mapped[int | None] = mapped_column(ForeignKey("devices.id"), default=None)
 
@@ -140,7 +141,7 @@ class SourceRunRecord(Base):
 
     source: Mapped[str]
 
-    started_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    started_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     ok: Mapped[bool] = mapped_column(default=True)
 
@@ -160,7 +161,7 @@ class NotificationRecord(Base):
 
     kind: Mapped[str]
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     sent_at: Mapped[datetime | None] = mapped_column(default=None)
 
@@ -211,7 +212,7 @@ class PostureKnownRecord(Base):
     source: Mapped[str]
     asn_key: Mapped[str]
     note: Mapped[str] = mapped_column(default="")
-    marked_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    marked_at: Mapped[datetime] = mapped_column(default=utcnow)
 
 
 class PostureRouteRecord(Base):

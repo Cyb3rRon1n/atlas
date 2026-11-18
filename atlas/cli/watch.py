@@ -14,6 +14,7 @@ from atlas.knowledge.store import KnowledgeStore
 from atlas.core.application import application
 
 from atlas.cli.app import app, console, _print_trend_summaries
+from atlas.clock import utcnow
 
 
 @app.command(name="map")
@@ -140,16 +141,16 @@ def lan_scan(
     result = store.record_run("lan", sightings)
     result["subnets"] = subnets
     from atlas.devices import identify
-    identify.refresh(datetime.utcnow())     # the maker list for naming new devices; monthly, skipped offline
+    identify.refresh(utcnow())     # the maker list for naming new devices; monthly, skipped offline
     result["offline"] = store.queue_offline()
     result["notify_errors"] = deliver(store, settings.notify)
     from atlas.devices.notify import report_alerts
-    report_alerts(store, store.devices(), datetime.utcnow())
+    report_alerts(store, store.devices(), utcnow())
     if settings.dns_filter.enabled:
         try:
             from atlas.monitoring.dnsfilter import run as dns_run
             from atlas.posture.store import PostureStore
-            dns_run(settings, PostureStore(), datetime.utcnow())
+            dns_run(settings, PostureStore(), utcnow())
         except Exception as error:                      # Pi-hole trouble never fails the LAN scan
             console.print(f"[yellow]Pi-hole / AdGuard Home check failed: {error}[/yellow]")
 
@@ -157,14 +158,14 @@ def lan_scan(
         try:
             from atlas.monitoring.nas import run as nas_run
             from atlas.posture.store import PostureStore
-            nas_run(settings, PostureStore(), datetime.utcnow())
+            nas_run(settings, PostureStore(), utcnow())
         except Exception as error:                      # NAS trouble never fails the LAN scan
             console.print(f"[yellow]NAS check failed: {error}[/yellow]")
 
     try:                                                # Sunday evening: how the week went
         from atlas.monitoring.summary import run as summary_run
         from atlas.posture.store import PostureStore
-        if summary_run(settings, PostureStore(), datetime.utcnow()):
+        if summary_run(settings, PostureStore(), utcnow()):
             console.print("Weekly summary sent.")
     except Exception as error:
         console.print(f"[yellow]Weekly summary failed: {error}[/yellow]")
@@ -324,7 +325,7 @@ def posture_watch(
 
     while True:
         try:
-            result = collector.run_once(datetime.utcnow())
+            result = collector.run_once(utcnow())
         except Exception as error:
             message = str(error)[:300]
             if message != last_error:   # log once per state change, not every poll
@@ -407,7 +408,7 @@ def sample():
     # host health alerts: temperatures near their limit, memory/disks nearly full, crashed containers
     health["disks"] = {"root disk": payload["disk"], **payload["storage"]}
     for issue in health_run(settings, PostureStore(), health, containers if client is not None else [],
-                            datetime.utcnow()):
+                            utcnow()):
         console.print(f"[yellow]! {issue['reason']}: {issue['detail']}[/yellow]")
 
 
@@ -441,7 +442,7 @@ def access_collect(
     from atlas.docker.manager import get_client
 
     result = AccessCollector(settings.access, settings.posture, AccessStore(),
-                             notify=settings.notify, docker=get_client()).run(datetime.utcnow())
+                             notify=settings.notify, docker=get_client()).run(utcnow())
 
     if json_output:
         print(json.dumps(result, default=str))
@@ -542,7 +543,7 @@ def ports_check(
         console.print("[yellow]security.port_watch is false in atlas.yaml - nothing to do.[/yellow]")
         return
 
-    texts, state = run(settings, PostureStore(), InventoryStore().devices(), datetime.utcnow())
+    texts, state = run(settings, PostureStore(), InventoryStore().devices(), utcnow())
 
     if json_output:
         print(json.dumps(state, default=str))
@@ -596,7 +597,7 @@ def certs_check(
         console.print("[yellow]security.cert_watch is false in atlas.yaml - nothing to do.[/yellow]")
         return
 
-    texts, detail = run(settings, PostureStore(), datetime.utcnow(), force=force)
+    texts, detail = run(settings, PostureStore(), utcnow(), force=force)
 
     if json_output:
         print(json.dumps(detail, default=str))
@@ -635,7 +636,7 @@ def uptime_check(json_output: bool = typer.Option(False, "--json", help="Print t
     from atlas.monitoring import internet
     from atlas.monitoring.uptime import UptimeStore, run
 
-    settings, store, now = load_config(), UptimeStore(), datetime.utcnow()
+    settings, store, now = load_config(), UptimeStore(), utcnow()
     results = run(settings, store, now)
     try:
         results = {**internet.run(settings, store, now), **results}
@@ -685,7 +686,7 @@ def ups_check(json_output: bool = typer.Option(False, "--json", help="Print the 
     if not settings.ups.enabled:
         console.print("UPS watch is off - turn it on in Setup (UPS) or under ups: in atlas.yaml.")
         return
-    detail = run(settings, PostureStore(), datetime.utcnow())
+    detail = run(settings, PostureStore(), utcnow())
     if json_output:
         print(json.dumps(detail))
         return
@@ -730,7 +731,7 @@ def lan_check(
         latest = WiringStore().latest(1)
         clients = ((latest[0]["raw"].get("unifi") or {}).get("clients") or []) if latest else []
 
-    result = run(settings, PostureStore(), datetime.utcnow(), unifi_clients=clients, trust_gateway=trust_gateway)
+    result = run(settings, PostureStore(), utcnow(), unifi_clients=clients, trust_gateway=trust_gateway)
 
     if json_output:
         print(json.dumps(result, default=str))
@@ -844,7 +845,7 @@ def dns_check(json_output: bool = typer.Option(False, "--json", help="Print the 
     if not settings.dns_filter.enabled:
         console.print("Pi-hole / AdGuard Home watch is off - turn it on in Setup or under dns_filter: in atlas.yaml.")
         return
-    detail = run(settings, PostureStore(), datetime.utcnow())
+    detail = run(settings, PostureStore(), utcnow())
     if json_output:
         print(json.dumps(detail))
         return
@@ -878,7 +879,7 @@ def nas_check(json_output: bool = typer.Option(False, "--json", help="Print the 
     if not settings.nas.enabled:
         console.print("NAS watch is off - turn it on in Setup or under nas: in atlas.yaml.")
         return
-    detail = run(settings, PostureStore(), datetime.utcnow())
+    detail = run(settings, PostureStore(), utcnow())
     if json_output:
         print(json.dumps(detail))
         return

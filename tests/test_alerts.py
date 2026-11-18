@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from atlas.alerts import AlertStore, issue, report, report_event
 from atlas.web.alerts_page import render_alerts_page
 from atlas.web.home_page import attention_items
+from atlas.clock import utcnow
 
 NOW = datetime(2026, 11, 16, 12, 0)
 
@@ -69,7 +70,7 @@ def test_cabling_scan_reports_into_alerts(temp_db):
         raise WiringError("sw1: no answer from 192.0.2.2")
 
     run_scan(settings, WiringStore(temp_db), [], env={}, collect=broken, send=lambda text: None)
-    watch = AlertStore(temp_db).listing(datetime.utcnow())["watch"]
+    watch = AlertStore(temp_db).listing(utcnow())["watch"]
     assert [(a["title"], a["detail"], a["href"]) for a in watch] == [
         ("Can't read sw1", "sw1: no answer from 192.0.2.2", "/cabling")]
 
@@ -125,7 +126,7 @@ def test_a_muted_problem_is_listed_but_not_sent(temp_db):
     store = AlertStore(temp_db)
     store.mute(store.listing(NOW)["open"][0]["id"], 7, NOW)
 
-    later = datetime.utcnow()
+    later = utcnow()
     posture.set_status("lan", True, {}, later)                         # forget it, so the check alerts again
     lanwatch.run(settings, posture, later, probe=offer, read=read, send=sent.append)
     assert len(sent) == 1 and len(store.listing(later)["open"]) == 1     # still listed, nothing sent
@@ -146,7 +147,7 @@ def test_alerts_api_and_page_controls(temp_db, monkeypatch):
     assert alerts_page.handle_post("/api/alerts/pause", {"hours": 4})[0] == 200
     assert alerts_page.handle_post("/api/elsewhere", {}) is None
 
-    now = datetime.utcnow()
+    now = utcnow()
     page = render_alerts_page(store.listing(now), now)
     assert "Alerts are paused until" in page and "Resume now" in page
     assert "Muted (1)" in page and "Mute this alert" in page and "Acknowledge" in page

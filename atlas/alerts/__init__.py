@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from atlas.database import initialize_database
 from atlas.database.engine import engine
 from atlas.database.models import AlertQuietRecord, AlertRecord
+from atlas.clock import utcnow
 
 EVENT_DAYS = 7          # a one-off finding stays under "Needs action" this long
 KEEP_DAYS = 30          # resolved alerts are kept this long
@@ -173,7 +174,7 @@ def allowed(owner, text, now=None):
 
     from datetime import datetime
 
-    now = now or datetime.utcnow()
+    now = now or utcnow()
     try:
         from atlas.alerts.quiet import active
         from atlas.config import load_config

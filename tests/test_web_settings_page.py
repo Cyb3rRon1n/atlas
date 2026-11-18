@@ -14,7 +14,7 @@ from lanxang.web.settings_page import handle_post, render_settings_page
 
 @pytest.fixture
 def env(isolated_cwd, monkeypatch):
-    environ = {k: v for k, v in os.environ.items() if not k.startswith(("ATLAS_", "ANTHROPIC_"))}
+    environ = {k: v for k, v in os.environ.items() if not k.startswith(("ATLAS_", "LANXANG_", "ANTHROPIC_"))}
     monkeypatch.setattr(os, "environ", environ)
     monkeypatch.setattr(local, "_APPLIED", set())
     return environ
@@ -319,3 +319,27 @@ def test_gear_chooser_shows_matching_cards_and_saves(env, isolated_cwd):
 
     handle_post("/api/settings/switches/save", SWITCH)                    # a configured card always shows
     assert '<section class="card" id="switches">' in render_settings_page()
+
+
+def test_setup_manages_an_old_atlas_keyed_install(env, receiver, isolated_cwd):
+    url, got = receiver
+    (isolated_cwd / "inventory").mkdir()
+    (isolated_cwd / "inventory" / "secrets.json").write_text(json.dumps(
+        {"ATLAS_WEBHOOK_1": f"{url}/one", "ATLAS_WEBHOOK_2": f"{url}/two", "ATLAS_NTFY_TOKEN": "tk_old"}))
+    local.save_settings({"notify": {"webhooks": ["${ATLAS_WEBHOOK_1}", "${ATLAS_WEBHOOK_2}"],
+                                    "ntfy": {"url": url, "topic": "t", "token": "${ATLAS_NTFY_TOKEN}"}}})
+    assert load_config().notify.webhooks == [f"{url}/one", f"{url}/two"]
+    assert local.secret_names() == {"LANXANG_WEBHOOK_1", "LANXANG_WEBHOOK_2", "LANXANG_NTFY_TOKEN"}
+    page = render_settings_page()
+    assert "set in .env" not in page and "saved - leave blank to keep it" in page      # saved, not from environment
+
+    handle_post("/api/settings/webhooks/save", {"urls": f"{url}/three"})
+    stored = json.loads((isolated_cwd / "inventory" / "secrets.json").read_text())
+    assert stored == {"ATLAS_NTFY_TOKEN": "tk_old", "LANXANG_WEBHOOK_1": f"{url}/three"}
+    assert load_config().notify.webhooks == [f"{url}/three"]
+
+    handle_post("/api/settings/ntfy/off", {})
+    stored = json.loads((isolated_cwd / "inventory" / "secrets.json").read_text())
+    assert stored == {"LANXANG_WEBHOOK_1": f"{url}/three"}
+    load_config()
+    assert "LANXANG_NTFY_TOKEN" not in env and "ATLAS_NTFY_TOKEN" not in env

@@ -15,7 +15,7 @@ from pathlib import Path
 
 import yaml
 
-from lanxang.config.env import NEW as NEW_PREFIX, OLD as OLD_PREFIX
+from lanxang.config.env import NEW as NEW_PREFIX, OLD as OLD_PREFIX, mirror
 
 SETTINGS_FILE = Path("inventory/settings.yaml")
 SECRETS_FILE = Path("inventory/secrets.json")
@@ -110,20 +110,35 @@ def _read_secrets():
     return {k: v for k, v in data.items() if isinstance(v, str)} if isinstance(data, dict) else {}
 
 
-def secret_names():
-    """Which secrets are saved - never their values."""
+def _counterpart(name):
+    """The same setting under the other prefix (LANXANG_X <-> ATLAS_X); None for any other name."""
 
-    return set(_read_secrets())
+    if name.startswith(NEW_PREFIX):
+        return OLD_PREFIX + name[len(NEW_PREFIX):]
+    if name.startswith(OLD_PREFIX):
+        return NEW_PREFIX + name[len(OLD_PREFIX):]
+
+
+def _normal(name):
+
+    return NEW_PREFIX + name[len(OLD_PREFIX):] if name.startswith(OLD_PREFIX) else name
+
+
+def secret_names():
+    """Which secrets are saved - never their values. An old install's ATLAS_ keys are listed as LANXANG_."""
+
+    return {_normal(name) for name in _read_secrets()}
 
 
 def save_secrets(values):
-    """{ENV_NAME: value}; None or "" removes one."""
+    """{ENV_NAME: value}; None or "" removes one (under either prefix, so an old ATLAS_ key never lingers)."""
 
     for name in values:
         if not ENV_NAME.match(name):
             raise ValueError(f"not an environment variable name: {name!r}")
     current = _read_secrets()
     for name, value in values.items():
+        current.pop(_counterpart(name), None)
         if value:
             current[name] = value
         else:
@@ -131,9 +146,12 @@ def save_secrets(values):
     _write(SECRETS_FILE, json.dumps(current, indent=1), 0o600)
 
 
-def _counterpart(name):
+def _drop_copy(environ, name, was):
+    """Remove the mirrored copy of name - only while it still holds the value mirror() gave it."""
 
-    return OLD_PREFIX + name[len(NEW_PREFIX):] if name.startswith(NEW_PREFIX) else NEW_PREFIX + name[len(OLD_PREFIX):]
+    other = _counterpart(name)
+    if other and environ.get(other) == was:
+        environ.pop(other, None)
 
 
 def apply_secrets(environ=None):
@@ -143,14 +161,13 @@ def apply_secrets(environ=None):
     stored = _read_secrets()
     for name in list(_APPLIED):
         if name not in stored:
-            environ.pop(name, None)
-            environ.pop(_counterpart(name), None)      # the mirrored copy, or it would bring the secret back
+            was = environ.pop(name, None)
+            _drop_copy(environ, name, was)      # the mirrored copy, or it would bring the secret back
             _APPLIED.discard(name)
     for name, value in stored.items():
         if name in _APPLIED or not environ.get(name):      # an empty variable (compose's ${X:-}) counts as unset
+            _drop_copy(environ, name, environ.get(name))
             environ[name] = value
-            environ.pop(_counterpart(name), None)
             _APPLIED.add(name)
 
-    from lanxang.config.env import mirror
     mirror(environ)

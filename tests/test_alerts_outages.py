@@ -1,10 +1,10 @@
 from datetime import datetime
 
-import atlas.devices.notify as notify
-import atlas.notify as channels
-from atlas.alerts import AlertStore
-from atlas.alerts.outages import outages
-from atlas.config.models import NotifyConfig, SignalNotifyConfig
+import lanxang.devices.notify as notify
+import lanxang.notify as channels
+from lanxang.alerts import AlertStore
+from lanxang.alerts.outages import outages
+from lanxang.config.models import NotifyConfig, SignalNotifyConfig
 
 
 def dev(id_, name, quiet=True, important=False):
@@ -82,7 +82,7 @@ def test_one_message_line_per_outage(monkeypatch, temp_db):
 
 
 def test_a_name_two_devices_share_is_not_guessed():
-    from atlas.devices.identify import places
+    from lanxang.devices.identify import places
 
     devices = [{"id": 1, "name": "iPhone", "ip": "192.0.2.21", "sightings": []},
                {"id": 2, "name": "iPhone", "ip": "192.0.2.22", "sightings": []},

@@ -8,8 +8,8 @@ from http.server import ThreadingHTTPServer
 
 import pytest
 
-from atlas.web.auth import MAX_FAILS, SESSION_SECONDS, Auth, check_password, hash_password
-from atlas.web.server import AtlasWebHandler, safe_next
+from lanxang.web.auth import MAX_FAILS, SESSION_SECONDS, Auth, check_password, hash_password
+from lanxang.web.server import AtlasWebHandler, safe_next
 
 
 def test_password_hash_round_trip_and_salted():
@@ -205,7 +205,7 @@ def running_server_open(temp_db):
 
 def test_sign_out_button_only_with_builtin_auth(monkeypatch):
 
-    from atlas.web import render
+    from lanxang.web import render
 
     monkeypatch.setattr(render, "SIGN_OUT", False)
     assert "Sign out" not in render.render_page("T", "")

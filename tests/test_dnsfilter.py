@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from atlas.config.models import AtlasConfig, DnsFilterConfig
-from atlas.monitoring import dnsfilter
-from atlas.web.home_page import build_hosts, build_stats, render_home_page
+from lanxang.config.models import AtlasConfig, DnsFilterConfig
+from lanxang.monitoring import dnsfilter
+from lanxang.web.home_page import build_hosts, build_stats, render_home_page
 
 
 class Reply:
@@ -92,7 +92,7 @@ def test_adguard_home_basic_auth_and_bad_addresses():
 
 
 def test_blocking_off_twice_alerts_once_and_again_when_back(temp_db):
-    from atlas.posture.store import PostureStore
+    from lanxang.posture.store import PostureStore
 
     store, sent = PostureStore(temp_db), []
     settings = AtlasConfig(dns_filter=_config())

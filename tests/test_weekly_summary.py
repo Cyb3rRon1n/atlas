@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
-from atlas.config.models import AtlasConfig
-from atlas.monitoring import summary
+from lanxang.config.models import AtlasConfig
+from lanxang.monitoring import summary
 
 SUNDAY_EVENING = datetime(2026, 11, 15, 23, 30)            # 18:30 in Detroit
 
@@ -39,7 +39,7 @@ def test_due_on_sunday_evening_local_once_a_week():
 
 
 def test_run_sends_once_and_can_be_turned_off(temp_db, isolated_cwd):
-    from atlas.posture.store import PostureStore
+    from lanxang.posture.store import PostureStore
 
     store, sent = PostureStore(temp_db), []
     settings = AtlasConfig(notify={"timezone": "America/Detroit"})

@@ -1,6 +1,6 @@
-from atlas.config.loader import load_config
-from atlas.config.models import AtlasConfig, ProxmoxConfig
-from atlas.config.writer import write_config, write_setup_log
+from lanxang.config.loader import load_config
+from lanxang.config.models import AtlasConfig, ProxmoxConfig
+from lanxang.config.writer import write_config, write_setup_log
 
 
 def test_write_config_round_trips_through_load_config(isolated_cwd):

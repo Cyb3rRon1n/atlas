@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, inspect, text
 
-import atlas.database as database_module
-from atlas.database import initialize_database
+import lanxang.database as database_module
+from lanxang.database import initialize_database
 
 
 def test_initialize_database_adds_missing_device_columns(tmp_path):

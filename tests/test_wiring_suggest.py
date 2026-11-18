@@ -1,11 +1,11 @@
 import socket
 import threading
 
-from atlas.config.models import AtlasConfig
-from atlas.devices import snmpprobe
-from atlas.wiring.snmp import _caps
-from atlas.wiring.suggest import suggestions
-from atlas.web.settings_page import handle_post
+from lanxang.config.models import AtlasConfig
+from lanxang.devices import snmpprobe
+from lanxang.wiring.snmp import _caps
+from lanxang.wiring.suggest import suggestions
+from lanxang.web.settings_page import handle_post
 
 
 def _report(engine):
@@ -67,8 +67,8 @@ def test_suggestions_combine_signals_and_skip_known_or_dismissed():
 
 
 def test_dont_ask_is_remembered(isolated_cwd, monkeypatch):
-    from atlas.config import local
-    from atlas.config.loader import load_config
+    from lanxang.config import local
+    from lanxang.config.loader import load_config
 
     monkeypatch.setattr(local, "_APPLIED", set())
     assert handle_post("/api/settings/switches/dismiss", {"ip": "192.0.2.20"})[0] == 200

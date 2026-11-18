@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from atlas.proxmox.trends import guest_metric_trend, known_guests
+from lanxang.proxmox.trends import guest_metric_trend, known_guests
 
 
 def _record(created_at, data):

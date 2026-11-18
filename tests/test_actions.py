@@ -1,13 +1,13 @@
 from unittest.mock import MagicMock, patch
 
-from atlas.actions import (
+from lanxang.actions import (
     ACTIONS,
     execute_action,
     known_container_names,
     known_guest_ids,
     known_libvirt_guest_names,
 )
-from atlas.intelligence.providers.base import SuggestedAction
+from lanxang.intelligence.providers.base import SuggestedAction
 
 
 def test_known_container_names_flattens_across_plugins():
@@ -244,7 +244,7 @@ def test_restart_libvirt_guest_action_wired_correctly():
 def test_execute_action_restart_libvirt_guest_calls_manager_function():
 
     with patch(
-        "atlas.actions.registry.restart_libvirt_guest",
+        "lanxang.actions.registry.restart_libvirt_guest",
         return_value={"success": True}
     ) as mock_restart:
 
@@ -268,7 +268,7 @@ def test_stop_libvirt_guest_action_wired_correctly():
 def test_execute_action_stop_libvirt_guest_calls_manager_function():
 
     with patch(
-        "atlas.actions.registry.stop_libvirt_guest",
+        "lanxang.actions.registry.stop_libvirt_guest",
         return_value={"success": True}
     ) as mock_stop:
 
@@ -293,7 +293,7 @@ def test_resize_libvirt_guest_is_not_in_actions_registry():
 def test_execute_action_restart_container_calls_manager_function():
 
     with patch(
-        "atlas.actions.registry.restart_container",
+        "lanxang.actions.registry.restart_container",
         return_value={"success": True, "previous_status": "running"}
     ) as mock_restart:
 
@@ -308,7 +308,7 @@ def test_execute_action_restart_container_calls_manager_function():
 def test_execute_action_stop_container_calls_manager_function():
 
     with patch(
-        "atlas.actions.registry.stop_container",
+        "lanxang.actions.registry.stop_container",
         return_value={"success": True, "previous_status": "running"}
     ) as mock_stop:
 
@@ -323,7 +323,7 @@ def test_execute_action_stop_container_calls_manager_function():
 def test_execute_action_resize_container_converts_cpus_and_passes_memory():
 
     with patch(
-        "atlas.actions.registry.resize_container",
+        "lanxang.actions.registry.resize_container",
         return_value={"success": True}
     ) as mock_resize:
 
@@ -358,10 +358,10 @@ def _fake_proxmox_setup(guest_type="lxc"):
     fake_client = MagicMock()
 
     return patch(
-        "atlas.actions.registry.connect",
+        "lanxang.actions.registry.connect",
         return_value=fake_client
     ), patch(
-        "atlas.actions.registry.get_guest_info",
+        "lanxang.actions.registry.get_guest_info",
         return_value={
             "found": True, "node": "pve1", "type": guest_type
         }
@@ -373,7 +373,7 @@ def test_execute_action_restart_guest_connects_and_looks_up_guest_first():
     connect_patch, info_patch = _fake_proxmox_setup(guest_type="qemu")
 
     with connect_patch as mock_connect, info_patch as mock_info, patch(
-        "atlas.actions.registry.restart_guest",
+        "lanxang.actions.registry.restart_guest",
         return_value={"success": True}
     ) as mock_restart_guest:
 
@@ -394,7 +394,7 @@ def test_execute_action_stop_guest_calls_manager_function():
     connect_patch, info_patch = _fake_proxmox_setup(guest_type="lxc")
 
     with connect_patch as mock_connect, info_patch, patch(
-        "atlas.actions.registry.stop_guest",
+        "lanxang.actions.registry.stop_guest",
         return_value={"success": True}
     ) as mock_stop_guest:
 
@@ -413,7 +413,7 @@ def test_execute_action_resize_guest_converts_cpus_and_passes_memory():
     connect_patch, info_patch = _fake_proxmox_setup(guest_type="lxc")
 
     with connect_patch as mock_connect, info_patch, patch(
-        "atlas.actions.registry.resize_guest",
+        "lanxang.actions.registry.resize_guest",
         return_value={"success": True}
     ) as mock_resize_guest:
 
@@ -434,7 +434,7 @@ def test_execute_action_resize_guest_converts_cpus_and_passes_memory():
 def test_execute_action_guest_action_returns_error_when_cannot_connect():
 
     with patch(
-        "atlas.actions.registry.connect",
+        "lanxang.actions.registry.connect",
         return_value=None
     ):
 
@@ -451,10 +451,10 @@ def test_execute_action_guest_action_returns_error_when_cannot_connect():
 def test_execute_action_guest_action_returns_error_when_guest_not_found():
 
     with patch(
-        "atlas.actions.registry.connect",
+        "lanxang.actions.registry.connect",
         return_value=MagicMock()
     ), patch(
-        "atlas.actions.registry.get_guest_info",
+        "lanxang.actions.registry.get_guest_info",
         return_value={"found": False, "error": "No guest with vmid 999 found"}
     ):
 

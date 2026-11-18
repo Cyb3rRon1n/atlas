@@ -1,11 +1,11 @@
 import copy
 from datetime import datetime, timedelta
 
-from atlas.config.models import AtlasConfig
-from atlas.web.cabling_page import render_cabling_page
-from atlas.wiring import traffic
-from atlas.wiring.scan import run_scan
-from atlas.wiring.store import WiringStore
+from lanxang.config.models import AtlasConfig
+from lanxang.web.cabling_page import render_cabling_page
+from lanxang.wiring import traffic
+from lanxang.wiring.scan import run_scan
+from lanxang.wiring.store import WiringStore
 
 
 def switch(in_bytes, out_bytes, speed=1000):

@@ -2,13 +2,13 @@ from unittest.mock import MagicMock, patch
 
 import requests
 
-from atlas.config.models import (
+from lanxang.config.models import (
     AtlasConfig,
     IntelligenceConfig,
     MonitoringConfig,
     ProxmoxConfig,
 )
-from atlas.health.checks import (
+from lanxang.health.checks import (
     check_docker,
     check_environment,
     check_intelligence,
@@ -52,7 +52,7 @@ def test_check_memory_and_storage_report_percent_used():
 def test_check_docker_reflects_availability():
 
     with patch(
-        "atlas.docker.manager.docker.from_env",
+        "lanxang.docker.manager.docker.from_env",
         side_effect=RuntimeError("no docker socket")
     ):
         result = check_docker()
@@ -63,7 +63,7 @@ def test_check_docker_reflects_availability():
 
 def test_check_inventory_true_when_file_present(isolated_cwd):
 
-    from atlas.inventory import save_inventory
+    from lanxang.inventory import save_inventory
 
     save_inventory({"system": {"hostname": "homelab"}})
 
@@ -115,7 +115,7 @@ def test_check_proxmox_healthy_when_enabled_and_reachable():
     mock_client = MagicMock()
     mock_client.version.get.return_value = {"version": "8.0"}
 
-    with patch("atlas.proxmox.client.connect", return_value=mock_client):
+    with patch("lanxang.proxmox.client.connect", return_value=mock_client):
         result = check_proxmox(config)
 
     assert result["status"] is True
@@ -137,7 +137,7 @@ def test_check_proxmox_unhealthy_when_enabled_but_unreachable():
     mock_client = MagicMock()
     mock_client.version.get.side_effect = RuntimeError("connection refused")
 
-    with patch("atlas.proxmox.client.connect", return_value=mock_client):
+    with patch("lanxang.proxmox.client.connect", return_value=mock_client):
         result = check_proxmox(config)
 
     assert result["status"] is False
@@ -181,7 +181,7 @@ def test_check_intelligence_healthy_for_ollama_when_reachable(monkeypatch):
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
 
-    with patch("atlas.health.checks.requests.get", return_value=mock_response):
+    with patch("lanxang.health.checks.requests.get", return_value=mock_response):
         result = check_intelligence(config)
 
     assert result["status"] is True
@@ -197,7 +197,7 @@ def test_check_intelligence_unhealthy_for_ollama_when_unreachable(monkeypatch):
     )
 
     with patch(
-        "atlas.health.checks.requests.get",
+        "lanxang.health.checks.requests.get",
         side_effect=requests.exceptions.ConnectionError("refused"),
     ):
         result = check_intelligence(config)
@@ -225,7 +225,7 @@ def test_check_monitoring_healthy_when_enabled_and_reachable():
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
 
-    with patch("atlas.health.checks.requests.get", return_value=mock_response):
+    with patch("lanxang.health.checks.requests.get", return_value=mock_response):
         result = check_monitoring(config)
 
     assert result["status"] is True
@@ -241,7 +241,7 @@ def test_check_monitoring_unhealthy_when_enabled_but_unreachable():
     )
 
     with patch(
-        "atlas.health.checks.requests.get",
+        "lanxang.health.checks.requests.get",
         side_effect=requests.exceptions.ConnectionError("refused"),
     ):
         result = check_monitoring(config)
@@ -253,8 +253,8 @@ def test_check_monitoring_unhealthy_when_enabled_but_unreachable():
 def test_check_environment_reports_none_detected(monkeypatch):
 
     monkeypatch.delenv("KUBERNETES_SERVICE_HOST", raising=False)
-    monkeypatch.setattr("atlas.health.checks.shutil.which", lambda name: None)
-    monkeypatch.setattr("atlas.health.checks.Path.exists", lambda self: False)
+    monkeypatch.setattr("lanxang.health.checks.shutil.which", lambda name: None)
+    monkeypatch.setattr("lanxang.health.checks.Path.exists", lambda self: False)
 
     result = check_environment()
 
@@ -267,11 +267,11 @@ def test_check_environment_detects_libvirt(monkeypatch):
     monkeypatch.delenv("KUBERNETES_SERVICE_HOST", raising=False)
 
     monkeypatch.setattr(
-        "atlas.health.checks.shutil.which",
+        "lanxang.health.checks.shutil.which",
         lambda name: "/usr/bin/virsh" if name == "virsh" else None,
     )
 
-    monkeypatch.setattr("atlas.health.checks.Path.exists", lambda self: False)
+    monkeypatch.setattr("lanxang.health.checks.Path.exists", lambda self: False)
 
     result = check_environment()
 
@@ -282,8 +282,8 @@ def test_check_environment_detects_libvirt(monkeypatch):
 def test_check_environment_detects_kubernetes_in_cluster(monkeypatch):
 
     monkeypatch.setenv("KUBERNETES_SERVICE_HOST", "10.0.0.1")
-    monkeypatch.setattr("atlas.health.checks.shutil.which", lambda name: None)
-    monkeypatch.setattr("atlas.health.checks.Path.exists", lambda self: False)
+    monkeypatch.setattr("lanxang.health.checks.shutil.which", lambda name: None)
+    monkeypatch.setattr("lanxang.health.checks.Path.exists", lambda self: False)
 
     result = check_environment()
 

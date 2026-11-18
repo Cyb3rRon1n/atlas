@@ -1,6 +1,6 @@
 import struct
 
-from atlas.devices import discover, identify
+from lanxang.devices import discover, identify
 
 
 def _label(name):
@@ -65,8 +65,8 @@ def test_announced_name_and_services_drive_the_guess():
 
 
 def test_store_keeps_what_a_device_said_when_it_sleeps(temp_db):
-    from atlas.devices import Sighting
-    from atlas.devices.store import InventoryStore
+    from lanxang.devices import Sighting
+    from lanxang.devices.store import InventoryStore
 
     store = InventoryStore(temp_db)
     store.record_run("lan", [Sighting("lan", "aa:00:00:00:00:01", ip="192.0.2.9", mac="aa:00:00:00:00:01",

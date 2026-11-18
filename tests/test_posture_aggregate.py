@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from atlas.posture.aggregate import Accountant, inbound_counts, is_public, tunnel_connections
-from atlas.posture.collectors.asn import AsnTable, parse_ip2asn
-from atlas.posture.collectors.conntrack import parse_conntrack
+from lanxang.posture.aggregate import Accountant, inbound_counts, is_public, tunnel_connections
+from lanxang.posture.collectors.asn import AsnTable, parse_ip2asn
+from lanxang.posture.collectors.conntrack import parse_conntrack
 
 
 FIX = Path(__file__).parent / "fixtures" / "posture"
@@ -19,7 +19,7 @@ def test_is_public():
 
 
 def test_first_pass_counts_outbound_flows_with_owner_and_band(monkeypatch):
-    monkeypatch.setattr("atlas.posture.aggregate.is_public", lambda ip: not ip.startswith(("192.168.", "172.", "100.64.", "224.")))
+    monkeypatch.setattr("lanxang.posture.aggregate.is_public", lambda ip: not ip.startswith(("192.168.", "172.", "100.64.", "224.")))
     deltas = Accountant().deltas(FLOWS, SOURCES, HOST, {"gluetun"}, ASN)
     by_source = {d["source"]: d for d in deltas}
     assert set(by_source) == {"sonarr", "host", "cloudflared", "gluetun"}
@@ -31,7 +31,7 @@ def test_first_pass_counts_outbound_flows_with_owner_and_band(monkeypatch):
 
 
 def test_second_pass_counts_only_growth_and_forgets_closed(monkeypatch):
-    monkeypatch.setattr("atlas.posture.aggregate.is_public", lambda ip: not ip.startswith(("192.168.", "172.", "100.64.", "224.")))
+    monkeypatch.setattr("lanxang.posture.aggregate.is_public", lambda ip: not ip.startswith(("192.168.", "172.", "100.64.", "224.")))
     acct = Accountant()
     acct.deltas(FLOWS, SOURCES, HOST, set(), ASN)
     grown = [f.__class__(**{**f.__dict__, "bytes_out": f.bytes_out + 10}) if f.id == 1002 else f for f in FLOWS]
@@ -42,7 +42,7 @@ def test_second_pass_counts_only_growth_and_forgets_closed(monkeypatch):
 
 
 def test_counter_reset_counts_full_value(monkeypatch):
-    monkeypatch.setattr("atlas.posture.aggregate.is_public", lambda ip: ip.startswith("203."))
+    monkeypatch.setattr("lanxang.posture.aggregate.is_public", lambda ip: ip.startswith("203."))
     acct = Accountant()
     acct.deltas(FLOWS, SOURCES, HOST, set(), ASN)
     shrunk = [f.__class__(**{**f.__dict__, "bytes_out": 1, "bytes_in": 2}) for f in FLOWS if f.id == 1002]
@@ -57,6 +57,6 @@ def test_inbound_and_tunnel_counts(monkeypatch):
 
 
 def test_missing_asn_table_means_unknown_owners(monkeypatch):
-    monkeypatch.setattr("atlas.posture.aggregate.is_public", lambda ip: not ip.startswith(("192.168.", "172.", "100.64.", "224.")))
+    monkeypatch.setattr("lanxang.posture.aggregate.is_public", lambda ip: not ip.startswith(("192.168.", "172.", "100.64.", "224.")))
     deltas = Accountant().deltas(FLOWS, SOURCES, HOST, {"gluetun"}, None)
     assert deltas and all((d["asn"], d["org"], d["cc"]) == (0, "", "") for d in deltas)

@@ -1,9 +1,9 @@
 import socket
 
-from atlas.config.models import AtlasConfig
-from atlas.discovery.reachability import check_host
-from atlas.intelligence.tools import build_tools, execute_tool
-from atlas.knowledge.notes import search_notes
+from lanxang.config.models import AtlasConfig
+from lanxang.discovery.reachability import check_host
+from lanxang.intelligence.tools import build_tools, execute_tool
+from lanxang.knowledge.notes import search_notes
 
 
 def _notes(tmp_path):

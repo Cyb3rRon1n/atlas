@@ -1,6 +1,6 @@
-from atlas.intelligence.context import AtlasEnvironmentContext
-from atlas.knowledge.store import KnowledgeStore
-from atlas.reporting.trends import build_trends_payload
+from lanxang.intelligence.context import AtlasEnvironmentContext
+from lanxang.knowledge.store import KnowledgeStore
+from lanxang.reporting.trends import build_trends_payload
 
 
 def test_build_trends_payload_empty_when_nothing_stored(temp_db):

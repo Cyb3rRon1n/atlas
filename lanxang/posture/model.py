@@ -1,0 +1,297 @@
+"""
+The posture page's data: status strip, zone-map nodes/edges with preset
+positions (three bands: inbound, outbound direct, outbound via VPN), public
+exposure and unreviewed new destinations. Pure over PostureStore reads.
+"""
+
+import socket
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
+from datetime import timedelta
+
+from lanxang.posture.store import asn_key
+
+
+WINDOWS = {"live": timedelta(0), "1h": timedelta(hours=1), "24h": timedelta(hours=24)}
+NEW_FOR = timedelta(days=7)
+BASELINE = timedelta(hours=24)   # posture_seen's first day is learning, not "new"
+STALE_AFTER = timedelta(minutes=5)
+LAN_STALE_AFTER = timedelta(hours=2)   # atlas lan check runs with each atlas-scan pass (15 min default)
+MAX_SOURCES, MAX_DESTS, MAX_BUSIEST = 8, 10, 6   # dest boxes: 6 busiest, then unreviewed ones
+COL, ROW = 200, 64
+BANDS = {"inbound": 40, "direct": 220, "vpn": 0}   # vpn y is computed after direct's height
+
+
+def _fmt_bytes(value):
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if value < 1000 or unit == "TB":
+            return f"{value:.0f} {unit}" if unit == "B" else f"{value:.1f} {unit}"
+        value /= 1000
+
+
+def _fresh(statuses, name, now):
+    status = statuses.get(name)
+    return bool(status and status["ok"] and now - status["updated_at"] <= STALE_AFTER)
+
+
+def _strip(statuses, routes, review, now):
+
+    tunnel = statuses.get("tunnel")
+    gluetun, home = statuses.get("gluetun"), statuses.get("public_ip")
+    crowdsec = statuses.get("crowdsec")
+    public = [r for r in routes if r["protection"] != "authelia"]
+
+    if not tunnel or now - tunnel["updated_at"] > STALE_AFTER:
+        ingress = ("unknown", "No data", "")
+    elif tunnel["ok"]:
+        ingress = ("ok", "Tunnel up", f"{tunnel['detail'].get('connections', 0)} connections")
+    else:
+        ingress = ("warn", "Tunnel down", "no connections to Cloudflare")
+
+    exit_ip = (gluetun or {}).get("detail", {}).get("exit_ip") if gluetun and gluetun["ok"] else None
+    home_ip = (home or {}).get("detail", {}).get("ip") if home and home["ok"] else None
+    if not exit_ip or not home_ip:
+        vpn = ("unknown", "Unknown", "gluetun or public IP unavailable")
+    elif exit_ip == home_ip:
+        vpn = ("warn", "Leaking", "VPN exit IP equals the home IP")
+    else:
+        vpn = ("ok", "Verified", "exit IP differs from home")
+
+    blocked = (("ok", str(crowdsec["detail"].get("active", 0)), "active CrowdSec bans")
+               if crowdsec and crowdsec["ok"] else ("unknown", "-", "CrowdSec unavailable"))
+
+    lan = statuses.get("lan")
+    if not lan or now - lan["updated_at"] > LAN_STALE_AFTER:
+        lan_state = ("unknown", "No data", "atlas lan check has not run")
+    else:
+        issues = lan["detail"].get("issues") or []
+        bad = [i for i in issues if i["level"] == "bad"]
+        top = (bad or issues)[:1]
+        more = f" (+{len(issues) - 1} more)" if len(issues) > 1 else ""
+        servers = ", ".join(o["server"] for o in lan["detail"].get("offers") or []) or "probe off"
+        if lan["detail"].get("probe_error"):
+            servers = "probe failed"
+        lan_state = (("warn", f"{len(bad)} problem{'s' * (len(bad) > 1)}", top[0]["detail"] + more) if bad else
+                     ("review", "Check", top[0]["detail"] + more) if issues else
+                     ("ok", "OK", f"DHCP: {servers} · gateway MAC unchanged"))
+
+    item = lambda key, label, state_value_detail: {"key": key, "label": label, "state": state_value_detail[0],
+                                                    "value": state_value_detail[1], "detail": state_value_detail[2]}
+
+    return [
+        item("ingress", "Ingress", ingress),
+        item("vpn", "VPN egress", vpn),
+        item("exposure", "Exposure", ("ok" if routes else "unknown", f"{len(routes)} routes",
+                                      f"{len(public)} without Authelia")),
+        item("blocked", "Blocked", blocked),
+        item("new", "New destinations", ("review" if review else "ok", str(len(review)),
+                                         "need review" if review else "nothing new")),
+        item("lan", "LAN", lan_state),
+    ]
+
+
+def _baseline_end(seen):
+    return min(s["first_seen"] for s in seen) + BASELINE if seen else None
+
+
+LABEL_MAX = 26   # longer org names (e.g. a whole network description) spill across the map
+
+
+def _short(text):
+    text = str(text)
+    return text if len(text) <= LABEL_MAX else text[:LABEL_MAX - 1] + "\u2026"
+
+
+def _node(node_id, label, sub, band, x, y, state="ok", w=170):
+    return {"id": node_id, "label": _short(label), "sub": sub, "band": band, "state": state, "x": x, "y": y, "w": w}
+
+
+def _edge(source, target, bytes_=0, state="ok"):
+    return {"id": f"{source}->{target}", "source": source, "target": target, "bytes": bytes_, "state": state}
+
+
+def build_posture(store, now, window="24h"):
+
+    statuses, routes = store.statuses(), store.latest_routes()
+    seen = store.seen()
+    baseline_end = _baseline_end(seen)
+    review = sorted(({k: s[k] for k in ("source", "asn_key", "org", "cc", "first_seen")}
+                     for s in seen if not s["known"] and now - s["first_seen"] <= NEW_FOR
+                     and s["first_seen"] > baseline_end),
+                    key=lambda s: s["first_seen"], reverse=True)
+    review_keys = {(r["source"], r["asn_key"]) for r in review}
+    flows = store.flows(now - WINDOWS[window])
+    strip_items = _strip(statuses, routes, review, now)
+    nodes, edges = [], []
+
+    # Inbound band - fixed chain.
+    y = BANDS["inbound"]
+    authed = sum(r["protection"] == "authelia" for r in routes)
+    tunnel_ok = _fresh(statuses, "tunnel", now)
+    chain = [("in:internet", "Internet", "visitors"), ("in:cloudflare", "Cloudflare", "DNS + proxy"),
+             ("in:tunnel", "cloudflared", f"{statuses.get('tunnel', {}).get('detail', {}).get('connections', 0)} connections"),
+             ("in:traefik", "Traefik", f"{len(routes)} routes"), ("in:auth", "Authelia", f"{authed} routes")]
+    for i, (node_id, label, sub) in enumerate(chain):
+        nodes.append(_node(node_id, label, sub, "inbound", i * COL, y,
+                           state="ok" if node_id != "in:tunnel" or tunnel_ok else "warn"))
+        if i:
+            edges.append(_edge(chain[i - 1][0], node_id))
+    nodes.append(_node("in:svc-auth", "Behind Authelia", f"{authed} services", "inbound", 5 * COL, y))
+    nodes.append(_node("in:svc-public", "Public", f"{len(routes) - authed} services", "inbound", 5 * COL, y + ROW,
+                       state="review" if len(routes) - authed else "ok"))
+    edges += [_edge("in:auth", "in:svc-auth"), _edge("in:traefik", "in:svc-public")]
+
+    # Outbound direct band.
+    direct = [f for f in flows if f["band"] == "direct"]
+    by_source, by_dest, dest_meta, pair_state = {}, {}, {}, {}
+    for f in direct:
+        total = f["bytes_out"] + f["bytes_in"]
+        key = asn_key(f["asn"], f["dest_ip"])
+        by_source[f["source"]] = by_source.get(f["source"], 0) + total
+        by_dest[key] = by_dest.get(key, 0) + total
+        dest_meta[key] = (f["org"] or f["dest_ip"], f["cc"])
+        if (f["source"], key) in review_keys:
+            pair_state[key] = "review"
+
+    top_sources = sorted(by_source, key=by_source.get, reverse=True)[:MAX_SOURCES]
+    ranked = sorted(by_dest, key=by_dest.get, reverse=True)
+    shown = ranked[:MAX_BUSIEST]
+    for key in [k for k in ranked if k in pair_state] + ranked:   # fill with unreviewed first, then busiest
+        if len(shown) >= MAX_DESTS:
+            break
+        if key not in shown:
+            shown.append(key)
+    # The rest fold into two boxes; the full unreviewed list stays in the "Needs review" tab.
+    hidden_review = [k for k in pair_state if k not in shown]
+    others = sum(v for k, v in by_dest.items() if k not in shown and k not in pair_state)
+
+    y0 = BANDS["direct"]
+    for i, name in enumerate(top_sources):
+        nodes.append(_node(f"src:{name}", name, _fmt_bytes(by_source[name]), "direct", 0, y0 + i * ROW))
+        edges.append(_edge(f"src:{name}", "out:router", by_source[name]))
+    rows = max(len(top_sources), len(shown) + bool(others) + bool(hidden_review), 1)
+    nodes.append(_node("out:router", "Home router", "WAN", "direct", COL + 40, y0 + (rows - 1) * ROW // 2))
+    for i, key in enumerate(shown):
+        org, cc = dest_meta[key]
+        nodes.append(_node(f"dst:{key}", org, f"{key} · {cc}" if cc else key, "direct", 2 * COL + 120,
+                           y0 + i * ROW, state=pair_state.get(key, "ok"), w=260))
+        edges.append(_edge("out:router", f"dst:{key}", by_dest[key], pair_state.get(key, "ok")))
+    if others:
+        nodes.append(_node("dst:others", "Other destinations", _fmt_bytes(others), "direct", 2 * COL + 120,
+                           y0 + len(shown) * ROW, w=260))
+        edges.append(_edge("out:router", "dst:others", others))
+    if hidden_review:
+        hidden_bytes = sum(by_dest[k] for k in hidden_review)
+        nodes.append(_node("dst:review-more", f"{len(hidden_review)} more to review", _fmt_bytes(hidden_bytes),
+                           "direct", 2 * COL + 120, y0 + (len(shown) + bool(others)) * ROW, state="review", w=260))
+        edges.append(_edge("out:router", "dst:review-more", hidden_bytes, "review"))
+
+    # VPN band.
+    vpn_y = y0 + rows * ROW + 60
+    vpn_bytes = sum(f["bytes_out"] + f["bytes_in"] for f in flows if f["band"] == "vpn")
+    gluetun = statuses.get("gluetun") or {}
+    vpn_state = next(s["state"] for s in strip_items if s["key"] == "vpn")
+    nodes += [_node("vpn:members", "VPN clients", "qBittorrent etc.", "vpn", 0, vpn_y),
+              _node("vpn:gluetun", "gluetun", _fmt_bytes(vpn_bytes), "vpn", COL + 40, vpn_y),
+              _node("vpn:exit", "VPN exit", gluetun.get("detail", {}).get("exit_ip", "unknown"), "vpn",
+                    2 * COL + 120, vpn_y, state=vpn_state, w=260)]
+    edges += [_edge("vpn:members", "vpn:gluetun"), _edge("vpn:gluetun", "vpn:exit", vpn_bytes, vpn_state)]
+
+    bands = [
+        {"id": "inbound", "label": "Inbound · public", "y": BANDS["inbound"] - 30, "h": 2 * ROW + 40,
+         "stale": not _fresh(statuses, "tunnel", now) and not _fresh(statuses, "routes", now)},
+        {"id": "direct", "label": "Outbound · direct", "y": y0 - 30, "h": rows * ROW + 40,
+         "stale": not _fresh(statuses, "conntrack", now)},
+        {"id": "vpn", "label": "Outbound · via VPN", "y": vpn_y - 30, "h": ROW + 40,
+         "stale": not _fresh(statuses, "gluetun", now)},
+    ]
+
+    return {"generated_at": now.isoformat(), "window": window, "enabled": bool(statuses), "strip": strip_items,
+            "nodes": nodes, "edges": edges, "bands": bands, "exposure": routes, "router": _router(statuses),
+            "certs": ((statuses.get("certs") or {}).get("detail") or {}).get("hosts") or {},
+            "review": [{**r, "first_seen": r["first_seen"].isoformat()} for r in review]}
+
+
+def _router(statuses):
+    """Port forwards / UPnP and the latest new open ports, from atlas ports check (None before its first run)."""
+
+    detail = (statuses.get("ports") or {}).get("detail")
+    if not detail:
+        return None
+    forwards = (detail.get("forwards") or {}).get("open")
+
+    return {"forwards": forwards, "upnp": detail.get("upnp"), "source": detail.get("forwards_source", ""),
+            "recent": [{"text": r["text"], "at": r.get("at", "")} for r in (detail.get("recent") or [])[:8]]}
+
+
+def build_trends(store, now):
+    """
+    Home page security chart data: outbound bytes per hour for the last 24 h
+    (direct vs VPN), and new destinations first seen per day for the last 7
+    days (the first-day learning baseline is not counted as new).
+    """
+
+    start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=23)
+    hours = [start + timedelta(hours=i) for i in range(24)]
+    traffic = {h: {"direct": 0, "vpn": 0} for h in hours}
+
+    for f in store.flows(start):
+        if f["hour"] in traffic and f["band"] in ("direct", "vpn"):
+            traffic[f["hour"]][f["band"]] += f["bytes_out"] + f["bytes_in"]
+
+    seen = store.seen()
+    baseline = _baseline_end(seen)
+    days = [(now - timedelta(days=6 - i)).date() for i in range(7)]
+    new = dict.fromkeys(days, 0)
+
+    for s in seen:
+        day = s["first_seen"].date()
+        if day in new and baseline and s["first_seen"] >= baseline:
+            new[day] += 1
+
+    return {"hours": [{"hour": h.isoformat(), **traffic[h]} for h in hours],
+            "new_per_day": [{"day": d.isoformat(), "count": new[d]} for d in days]}
+
+
+_RDNS = ThreadPoolExecutor(max_workers=4, thread_name_prefix="rdns")   # never shut down per call - see below
+
+
+def _reverse_dns(ip):
+    # A `with ThreadPoolExecutor(...)` here would call shutdown(wait=True) on exit, which
+    # blocks for the lookup to actually finish even after result(timeout=1) raises - a slow
+    # socket.gethostbyaddr would make the 1s bound fake. One shared, never-shut-down executor
+    # means a timed-out lookup is simply abandoned (thread keeps running in the background,
+    # result discarded) instead of blocking the request that gave up on it.
+    try:
+        return _RDNS.submit(lambda: socket.gethostbyaddr(ip)[0]).result(timeout=1)
+    except (FutureTimeout, OSError):
+        return ""
+
+
+def node_details(store, node_id, now, resolve=_reverse_dns):
+
+    if not node_id.startswith("dst:") or node_id in ("dst:others", "dst:review-more"):
+        return None
+
+    key = node_id[4:]
+    flows = [f for f in store.flows(now - WINDOWS["24h"]) if asn_key(f["asn"], f["dest_ip"]) == key]
+    if not flows:
+        return None
+
+    sources, ips = {}, {}
+    for f in flows:
+        total = f["bytes_out"] + f["bytes_in"]
+        sources[f["source"]] = sources.get(f["source"], 0) + total
+        ips[f["dest_ip"]] = ips.get(f["dest_ip"], 0) + total
+    all_seen = store.seen()
+    baseline_end = _baseline_end(all_seen)
+    # Only the sources listed (24 h window); a first-day baseline row counts as expected, as on the map.
+    seen = [s for s in all_seen if s["asn_key"] == key and s["source"] in sources]
+    top_ips = sorted(ips, key=ips.get, reverse=True)[:5]
+
+    return {"id": node_id, "asn_key": key, "asn": flows[0]["asn"], "org": flows[0]["org"], "cc": flows[0]["cc"],
+            "first_seen": min(s["first_seen"] for s in seen).isoformat() if seen else None,
+            "known": all(s["known"] or s["first_seen"] <= baseline_end for s in seen) if seen else False,
+            "sources": [{"source": s, "bytes": b} for s, b in sorted(sources.items(), key=lambda kv: -kv[1])],
+            "ips": [{"ip": ip, "rdns": resolve(ip) if i == 0 else ""} for i, ip in enumerate(top_ips)],
+            "ports": sorted({f["dest_port"] for f in flows})}

@@ -2,11 +2,11 @@ import json
 
 from typer.testing import CliRunner
 
-import atlas.cli.watch as cli_main
-import atlas.devices.lan as lan
-from atlas.cli.main import app
-from atlas.devices import Sighting
-from atlas.devices.store import InventoryStore
+import lanxang.cli.watch as cli_main
+import lanxang.devices.lan as lan
+from lanxang.cli.main import app
+from lanxang.devices import Sighting
+from lanxang.devices.store import InventoryStore
 
 
 runner = CliRunner()
@@ -58,7 +58,7 @@ def test_scan_with_nothing_new_or_offline_does_not_publish_event(temp_db, isolat
     or offline devices and nothing to notify is a no-op - it shouldn't add
     event-log noise (same rule already applied elsewhere in this codebase)."""
 
-    from atlas.knowledge.queries import KnowledgeQueries
+    from lanxang.knowledge.queries import KnowledgeQueries
 
     (isolated_cwd / "atlas.yaml").write_text(
         "map:\n  hosts:\n    - name: fileserver\n      address: 192.168.50.57\n")
@@ -69,7 +69,7 @@ def test_scan_with_nothing_new_or_offline_does_not_publish_event(temp_db, isolat
 
     assert result.exit_code == 0
     event_types = [event.event_type for event in KnowledgeQueries().recent_events()]
-    assert "atlas.devices.scan.completed" not in event_types
+    assert "lanxang.devices.scan.completed" not in event_types
 
 
 def test_scan_disabled_does_nothing(temp_db, isolated_cwd):

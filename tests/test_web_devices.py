@@ -3,7 +3,7 @@
 def test_triage_buttons_update_the_row_in_place_instead_of_reloading():
     """Keep / Ignore used to reload the page, folding the "Show N more" list shut every time."""
 
-    from atlas.web.devices_pages import ACTIONS_SCRIPT, render_devices_page
+    from lanxang.web.devices_pages import ACTIONS_SCRIPT, render_devices_page
 
     device = {"id": 7, "name": "192.0.2.7", "ip": "192.0.2.7", "kind": "other", "state": "new", "status": "seen",
               "important": False, "tags": [], "notes": "", "connection": "unknown", "uplink_id": None,

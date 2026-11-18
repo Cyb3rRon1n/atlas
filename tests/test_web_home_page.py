@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from atlas.web.home_page import attention_items, build_hosts, build_storage, interesting_events, parse_mdstat, render_home_page
+from lanxang.web.home_page import attention_items, build_hosts, build_storage, interesting_events, parse_mdstat, render_home_page
 
 
 TOPOLOGY = {
@@ -22,7 +22,7 @@ PVE = {"nodes": [{"name": "proxmox", "status": "online", "cpu": 0.051, "mem": 4,
                   "disk": 30, "maxdisk": 100}]}
 POSTURE_OK = {"state": "ok", "message": "All good", "vpn": "up", "routes": 12, "blocked": "3",
               "review_count": 0, "link": "/posture"}
-EVENTS = [(SimpleNamespace(created_at="2026-10-10 12:00", event_type="atlas.proxmox.changes_detected",
+EVENTS = [(SimpleNamespace(created_at="2026-10-10 12:00", event_type="lanxang.proxmox.changes_detected",
                            source="<b>x</b>"), 3)]
 
 
@@ -40,9 +40,9 @@ def test_build_hosts_local_and_proxmox_rows():
 
 def test_interesting_events_skips_routine_bookkeeping():
     events = [SimpleNamespace(event_type=t) for t in
-              ("atlas.plugin.loaded", "atlas.proxmox.changes_detected", "atlas.discovery.completed", "device.new")]
-    events.append(SimpleNamespace(event_type="atlas.proxmox.changes_detected"))
-    assert [(e.event_type, n) for e, n in interesting_events(events, 1)] == [("atlas.proxmox.changes_detected", 2)]
+              ("lanxang.plugin.loaded", "lanxang.proxmox.changes_detected", "lanxang.discovery.completed", "device.new")]
+    events.append(SimpleNamespace(event_type="lanxang.proxmox.changes_detected"))
+    assert [(e.event_type, n) for e, n in interesting_events(events, 1)] == [("lanxang.proxmox.changes_detected", 2)]
     assert len(interesting_events(events)) == 2
 
 
@@ -134,7 +134,7 @@ def test_attention_items_name_the_problem_and_link_to_the_fix():
 
 
 def test_hosts_summary_meters_storage_and_container_chips():
-    from atlas.web.hosts_page import render_hosts_summary
+    from lanxang.web.hosts_page import render_hosts_summary
     html = render_hosts_summary(build_hosts(TOPOLOGY, LOCAL, PVE), {"rows": [{"name": "md0", "detail": "ok", "warn": False}]}, TOPOLOGY)
     assert "media-server" in html and "pve-host" in html and 'style="width:25%"' in html
     assert "Storage &amp; RAID" in html and "media (3)" in html and "Proxmox guests (2)" in html
@@ -148,8 +148,8 @@ def test_home_attention_lists_new_sign_in_places():
 
 
 def test_getting_started_checklist_until_the_required_steps_are_done():
-    from atlas.config.models import AtlasConfig
-    from atlas.web.home_page import setup_steps
+    from lanxang.config.models import AtlasConfig
+    from lanxang.web.home_page import setup_steps
 
     hosts = {"rows": [], "down": [], "state": "unknown"}
     fresh = setup_steps(AtlasConfig(), [{"state": "new"}, {"state": "new"}, {"state": "known"}])
@@ -165,7 +165,7 @@ def test_getting_started_checklist_until_the_required_steps_are_done():
 
 
 def test_home_headline_tiles_and_issue_table():
-    from atlas.web.home_page import build_stats
+    from lanxang.web.home_page import build_stats
 
     devices = [{"state": "known", "status": "seen"}, {"state": "new", "status": "seen"},
                {"state": "known", "status": "quiet"}, {"state": "ignored", "status": "seen"}]
@@ -183,7 +183,7 @@ def test_home_headline_tiles_and_issue_table():
 
 
 def test_a_degraded_pool_is_one_line_that_links_to_its_alert():
-    from atlas.web.home_page import attention_items
+    from lanxang.web.home_page import attention_items
 
     storage = {"rows": [{"name": "nas tank", "detail": "DEGRADED · 0% of 16.6 GB", "warn": True}]}
     pool = {"source": "nas", "title": "nas tank is DEGRADED"}

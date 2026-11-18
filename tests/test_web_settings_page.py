@@ -6,10 +6,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
-from atlas.config import local
-from atlas.config.loader import load_config
-from atlas.web import settings_page
-from atlas.web.settings_page import handle_post, render_settings_page
+from lanxang.config import local
+from lanxang.config.loader import load_config
+from lanxang.web import settings_page
+from lanxang.web.settings_page import handle_post, render_settings_page
 
 
 @pytest.fixture
@@ -184,7 +184,7 @@ def test_switches_in_atlas_yaml_lock_the_card(env, isolated_cwd):
 
 
 def test_switch_test_makes_one_read_only_snmp_request(env, monkeypatch):
-    from atlas.wiring import snmp
+    from lanxang.wiring import snmp
 
     calls = []
 
@@ -205,7 +205,7 @@ def test_switch_test_makes_one_read_only_snmp_request(env, monkeypatch):
 
 
 def test_unifi_test_signs_in_and_counts_devices(env, monkeypatch):
-    from atlas.wiring import WiringError, unifi
+    from lanxang.wiring import WiringError, unifi
 
     seen = {}
 
@@ -232,7 +232,7 @@ def test_unifi_test_signs_in_and_counts_devices(env, monkeypatch):
 
 
 def test_proxmox_test_reads_version_and_nodes(env, monkeypatch):
-    import atlas.proxmox.client as client
+    import lanxang.proxmox.client as client
 
     class Api:
         version = type("V", (), {"get": staticmethod(lambda: {"version": "8.4.1"})})()
@@ -253,11 +253,11 @@ def test_proxmox_test_reads_version_and_nodes(env, monkeypatch):
 
 
 def test_network_test_errors_are_plain_words(env, monkeypatch):
-    import atlas.proxmox.client as client
+    import lanxang.proxmox.client as client
     from requests.exceptions import ConnectionError as Refused
 
-    from atlas.config.models import WiringSwitch
-    from atlas.wiring.snmp import _failure
+    from lanxang.config.models import WiringSwitch
+    from lanxang.wiring.snmp import _failure
 
     switch = WiringSwitch(name="lab", host="192.0.2.2", priv="des")
     timeout = type("R", (), {"stderr": "snmpget: Timeout\n"})()
@@ -289,9 +289,9 @@ def test_snmp_v2c_switch_saves_a_community_and_drops_v3_secrets(env, isolated_cw
 
 
 def test_snmp_session_file_for_each_version(tmp_path):
-    from atlas.config.models import WiringSwitch
-    from atlas.wiring import WiringError
-    from atlas.wiring.snmp import _snmp
+    from lanxang.config.models import WiringSwitch
+    from lanxang.wiring import WiringError
+    from lanxang.wiring.snmp import _snmp
 
     def conf(switch, env):
         with _snmp(switch, env, lambda tool: "/usr/bin/" + tool) as (_, child):

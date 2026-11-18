@@ -5,11 +5,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from atlas.config.models import AtlasConfig
-from atlas.devices import lanwatch
-from atlas.devices.lanwatch import alerts, assess, build_discover, parse_offer, probe_dhcp, run
-from atlas.posture.model import build_posture
-from atlas.posture.store import PostureStore
+from lanxang.config.models import AtlasConfig
+from lanxang.devices import lanwatch
+from lanxang.devices.lanwatch import alerts, assess, build_discover, parse_offer, probe_dhcp, run
+from lanxang.posture.model import build_posture
+from lanxang.posture.store import PostureStore
 
 
 GW, GW_MAC, EVIL = "192.0.2.1", "aa:aa:aa:00:00:01", "bb:bb:bb:00:00:02"
@@ -176,7 +176,7 @@ def test_helper_used_when_port_68_is_privileged(monkeypatch):
         calls.append(args)
         return SimpleNamespace(returncode=0, stdout='[{"server": "192.0.2.1"}]', stderr="")
     assert lanwatch.probe_with_helper(1.0, run=fake_run) == [{"server": GW}]
-    assert calls[0][:4] == ["/usr/local/bin/atlas-dhcp-python", "-I", "-m", "atlas.devices.lanwatch"]
+    assert calls[0][:4] == ["/usr/local/bin/atlas-dhcp-python", "-I", "-m", "lanxang.devices.lanwatch"]
     monkeypatch.setattr(lanwatch.shutil, "which", lambda name: None)
     with pytest.raises(PermissionError, match="helper"):
         lanwatch.probe_with_helper(1.0, run=fake_run)

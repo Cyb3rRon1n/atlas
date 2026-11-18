@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
-from atlas.config.models import AtlasConfig
-from atlas.intelligence.tools import ToolDefinition, build_tools, execute_tool
+from lanxang.config.models import AtlasConfig
+from lanxang.intelligence.tools import ToolDefinition, build_tools, execute_tool
 
 
 def test_build_tools_always_includes_base_tools():
@@ -47,7 +47,7 @@ def test_get_containers_tool_wraps_collect_containers():
     tools = build_tools(AtlasConfig())
 
     with patch(
-        "atlas.docker.collect_containers",
+        "lanxang.docker.collect_containers",
         return_value={"available": True, "containers": [{"name": "plex"}]}
     ):
 
@@ -77,7 +77,7 @@ def test_get_services_tool_detects_known_service_in_live_containers():
     tools = build_tools(AtlasConfig())
 
     with patch(
-        "atlas.docker.collect_containers",
+        "lanxang.docker.collect_containers",
         return_value={
             "available": True,
             "containers": [{"name": "jellyfin", "status": "running"}]
@@ -91,12 +91,12 @@ def test_get_services_tool_detects_known_service_in_live_containers():
 
 def test_get_recent_events_tool_reads_from_knowledge_store(temp_db):
 
-    from atlas.events import AtlasEvent
-    from atlas.knowledge.store import KnowledgeStore
+    from lanxang.events import AtlasEvent
+    from lanxang.knowledge.store import KnowledgeStore
 
     KnowledgeStore().save_event(
         AtlasEvent(
-            event_type="atlas.discovery.completed",
+            event_type="lanxang.discovery.completed",
             source="Discovery",
             payload={}
         )
@@ -106,7 +106,7 @@ def test_get_recent_events_tool_reads_from_knowledge_store(temp_db):
 
     result = execute_tool(tools, "get_recent_events", {})
 
-    assert result["events"][0]["event_type"] == "atlas.discovery.completed"
+    assert result["events"][0]["event_type"] == "lanxang.discovery.completed"
     assert result["events"][0]["source"] == "Discovery"
 
 
@@ -126,7 +126,7 @@ def test_get_proxmox_status_tool_reports_unavailable_when_connect_fails():
 
     tools = build_tools(config)
 
-    with patch("atlas.proxmox.connect", return_value=None):
+    with patch("lanxang.proxmox.connect", return_value=None):
 
         result = execute_tool(tools, "get_proxmox_status", {})
 
@@ -140,9 +140,9 @@ def test_get_proxmox_status_tool_reports_nodes_and_guests():
 
     tools = build_tools(config)
 
-    with patch("atlas.proxmox.connect", return_value=object()), \
-         patch("atlas.proxmox.discover_nodes", return_value=[{"name": "pve1", "status": "online"}]), \
-         patch("atlas.proxmox.discover_resources", return_value=[{"vmid": 100, "name": "plex"}]):
+    with patch("lanxang.proxmox.connect", return_value=object()), \
+         patch("lanxang.proxmox.discover_nodes", return_value=[{"name": "pve1", "status": "online"}]), \
+         patch("lanxang.proxmox.discover_resources", return_value=[{"vmid": 100, "name": "plex"}]):
 
         result = execute_tool(tools, "get_proxmox_status", {})
 
@@ -159,7 +159,7 @@ def test_get_monitoring_tool_reports_unavailable_when_prometheus_unreachable():
     tools = build_tools(config)
 
     with patch(
-        "atlas.monitoring.collect_metrics",
+        "lanxang.monitoring.collect_metrics",
         return_value={"available": False, "metrics": {}}
     ):
 
@@ -176,10 +176,10 @@ def test_get_monitoring_tool_merges_host_and_container_metrics():
     tools = build_tools(config)
 
     with patch(
-        "atlas.monitoring.collect_metrics",
+        "lanxang.monitoring.collect_metrics",
         return_value={"available": True, "metrics": {"cpu_percent": 10.0}}
     ), patch(
-        "atlas.monitoring.collect_container_metrics",
+        "lanxang.monitoring.collect_container_metrics",
         return_value={"available": True, "containers": {"plex": {"cpu_percent": 2.0}}}
     ):
 
@@ -202,7 +202,7 @@ def test_get_container_logs_tool_passes_container_and_default_tail():
     tools = build_tools(AtlasConfig())
 
     with patch(
-        "atlas.docker.get_container_logs",
+        "lanxang.docker.get_container_logs",
         return_value={"found": True, "name": "plex", "logs": "line one\n"}
     ) as mock_logs:
 
@@ -219,7 +219,7 @@ def test_get_container_logs_tool_respects_a_lower_requested_tail():
     tools = build_tools(AtlasConfig())
 
     with patch(
-        "atlas.docker.get_container_logs",
+        "lanxang.docker.get_container_logs",
         return_value={"found": True, "name": "plex", "logs": ""}
     ) as mock_logs:
 
@@ -235,7 +235,7 @@ def test_get_container_logs_tool_caps_an_excessive_requested_tail():
     tools = build_tools(AtlasConfig())
 
     with patch(
-        "atlas.docker.get_container_logs",
+        "lanxang.docker.get_container_logs",
         return_value={"found": True, "name": "plex", "logs": ""}
     ) as mock_logs:
 

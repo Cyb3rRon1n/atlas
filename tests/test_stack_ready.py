@@ -5,9 +5,9 @@ from http.server import ThreadingHTTPServer
 
 import pytest
 
-from atlas.config import loader
-from atlas.config.loader import expand_env
-from atlas.web.render import build_summary
+from lanxang.config import loader
+from lanxang.config.loader import expand_env
+from lanxang.web.render import build_summary
 
 
 def test_expand_env_braced_only_with_defaults():
@@ -90,7 +90,7 @@ def test_compose_has_host_network_scanner():
 
 def test_api_summary_route_serves_json(monkeypatch):
 
-    from atlas.web import server
+    from lanxang.web import server
 
     monkeypatch.setattr(server.KnowledgeQueries, "latest_topology", lambda self: _topology())
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.AtlasWebHandler)

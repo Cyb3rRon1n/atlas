@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from atlas.config.models import AtlasConfig, NasConfig
-from atlas.monitoring import nas
-from atlas.web.home_page import build_storage
+from lanxang.config.models import AtlasConfig, NasConfig
+from lanxang.monitoring import nas
+from lanxang.web.home_page import build_storage
 
 
 def _config(**kw):
@@ -121,7 +121,7 @@ def test_synology_reads_volumes_and_disks_and_always_signs_out():
 
 
 def test_pool_alerts_once_disk_alerts_and_read_errors_keep_state(temp_db):
-    from atlas.posture.store import PostureStore
+    from lanxang.posture.store import PostureStore
 
     store, sent = PostureStore(temp_db), []
     settings = AtlasConfig(nas=_config(name="nas"))

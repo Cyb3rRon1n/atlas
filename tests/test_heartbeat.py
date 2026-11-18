@@ -4,9 +4,9 @@ import urllib.request
 from datetime import datetime, timedelta
 from http.server import ThreadingHTTPServer
 
-from atlas.config.models import AtlasConfig, Heartbeat
-from atlas.monitoring import heartbeat
-from atlas.web.uptime_page import handle_post, render_uptime_page
+from lanxang.config.models import AtlasConfig, Heartbeat
+from lanxang.monitoring import heartbeat
+from lanxang.web.uptime_page import handle_post, render_uptime_page
 
 KEY = bytes(32)
 
@@ -21,7 +21,7 @@ def test_token_is_per_name_and_find_checks_it():
 
 
 def test_late_failed_and_back_alert_once_each(temp_db):
-    from atlas.posture.store import PostureStore
+    from lanxang.posture.store import PostureStore
 
     store, sent = PostureStore(temp_db), []
     settings = AtlasConfig(uptime={"heartbeats": [{"name": "Backup", "every_minutes": 60, "grace_minutes": 15}]})
@@ -44,9 +44,9 @@ def test_late_failed_and_back_alert_once_each(temp_db):
 
 
 def test_ping_address_needs_no_sign_in_and_rejects_bad_tokens(temp_db, isolated_cwd):
-    from atlas.posture.store import PostureStore
-    from atlas.web.auth import Auth
-    from atlas.web.server import AtlasWebHandler
+    from lanxang.posture.store import PostureStore
+    from lanxang.web.auth import Auth
+    from lanxang.web.server import AtlasWebHandler
 
     (isolated_cwd / "atlas.yaml").write_text("uptime:\n  heartbeats:\n    - name: Backup\n")
     handler = type("Handler", (AtlasWebHandler,), {"auth": Auth(isolated_cwd / "auth.json")})
@@ -80,7 +80,7 @@ def test_uptime_page_adds_lists_and_removes_heartbeats(isolated_cwd):
     assert handle_post("/api/uptime/heartbeat/add", {"name": "Backup", "every": 1440}) == (200, {"ok": True})
     assert handle_post("/api/uptime/heartbeat/add", {"name": "Backup", "every": 1440})[0] == 400
     assert handle_post("/api/uptime/heartbeat/add", {"name": "x", "every": 7})[0] == 400
-    from atlas.config.loader import load_config
+    from lanxang.config.loader import load_config
     beats = load_config().uptime.heartbeats
     assert [(b.name, b.every_minutes, b.grace_minutes) for b in beats] == [("Backup", 1440, 60)]
     now = datetime(2026, 11, 17, 12)

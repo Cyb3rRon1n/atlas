@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine, inspect, text
 
-from atlas.config.models import AtlasConfig
-from atlas.database.engine import enable_wal
-from atlas.database.models import Base
-from atlas.devices import Sighting
+from lanxang.config.models import AtlasConfig
+from lanxang.database.engine import enable_wal
+from lanxang.database.models import Base
+from lanxang.devices import Sighting
 
 
 def test_new_tables_exist(temp_db):

@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 
-from atlas.config.models import AtlasConfig
-from atlas.monitoring import internet
-from atlas.monitoring.uptime import UptimeStore
-from atlas.web.uptime_page import internet_data, render_uptime_page
+from lanxang.config.models import AtlasConfig
+from lanxang.monitoring import internet
+from lanxang.monitoring.uptime import UptimeStore
+from lanxang.web.uptime_page import internet_data, render_uptime_page
 
 
 def test_checks_count_a_refused_router_as_up_and_need_one_internet_answer():
@@ -48,6 +48,6 @@ def test_run_alerts_on_the_drop_and_the_way_back(temp_db):
 
 
 def test_internet_and_router_names_are_reserved(isolated_cwd):
-    from atlas.web.uptime_page import handle_post
+    from lanxang.web.uptime_page import handle_post
     status, body = handle_post("/api/uptime/add", {"name": "Internet", "target": "https://example.org"})
     assert status == 400 and "built-in" in body["error"]

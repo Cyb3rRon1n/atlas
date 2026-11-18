@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
-from atlas.alerts import AlertStore, issue, report, report_event
-from atlas.web.alerts_page import render_alerts_page
-from atlas.web.home_page import attention_items
-from atlas.clock import utcnow
+from lanxang.alerts import AlertStore, issue, report, report_event
+from lanxang.web.alerts_page import render_alerts_page
+from lanxang.web.home_page import attention_items
+from lanxang.clock import utcnow
 
 NOW = datetime(2026, 11, 16, 12, 0)
 
@@ -59,10 +59,10 @@ def test_page_and_home_show_the_same_problems(temp_db):
 
 
 def test_cabling_scan_reports_into_alerts(temp_db):
-    from atlas.config.models import AtlasConfig
-    from atlas.wiring import WiringError
-    from atlas.wiring.scan import run_scan
-    from atlas.wiring.store import WiringStore
+    from lanxang.config.models import AtlasConfig
+    from lanxang.wiring import WiringError
+    from lanxang.wiring.scan import run_scan
+    from lanxang.wiring.store import WiringStore
 
     settings = AtlasConfig(wiring={"enabled": True, "switches": [{"name": "sw1", "host": "192.0.2.2"}]})
 
@@ -76,7 +76,7 @@ def test_cabling_scan_reports_into_alerts(temp_db):
 
 
 def test_ack_mute_pause_and_allowed(temp_db):
-    from atlas.alerts import Text
+    from lanxang.alerts import Text
 
     store = AlertStore(temp_db)
     store.sync("lan", [issue("rogue_dhcp", "192.0.2.9", "Another DHCP server", href="/posture")], NOW)
@@ -108,9 +108,9 @@ def test_ack_mute_pause_and_allowed(temp_db):
 
 
 def test_a_muted_problem_is_listed_but_not_sent(temp_db):
-    from atlas.config.models import AtlasConfig
-    from atlas.devices import lanwatch
-    from atlas.posture.store import PostureStore
+    from lanxang.config.models import AtlasConfig
+    from lanxang.devices import lanwatch
+    from lanxang.posture.store import PostureStore
 
     posture = PostureStore(temp_db)
     settings = AtlasConfig()
@@ -133,10 +133,10 @@ def test_a_muted_problem_is_listed_but_not_sent(temp_db):
 
 
 def test_alerts_api_and_page_controls(temp_db, monkeypatch):
-    from atlas.web import alerts_page
+    from lanxang.web import alerts_page
 
     store = AlertStore(temp_db)
-    monkeypatch.setattr("atlas.alerts.engine", temp_db)
+    monkeypatch.setattr("lanxang.alerts.engine", temp_db)
     store.sync("certs", [issue("cert", "example.org", "Certificate expires in 3 days: example.org")], NOW)
     alert_id = store.listing(NOW)["open"][0]["id"]
 
@@ -158,7 +158,7 @@ def test_alerts_api_and_page_controls(temp_db, monkeypatch):
 def test_old_alerts_table_gets_the_new_column(tmp_path):
     from sqlalchemy import create_engine, inspect, text
 
-    from atlas.database import initialize_database
+    from lanxang.database import initialize_database
 
     engine = create_engine(f"sqlite:///{tmp_path / 'old.db'}")
     with engine.begin() as connection:

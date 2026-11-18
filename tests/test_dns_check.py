@@ -3,9 +3,9 @@ import struct
 import threading
 from datetime import datetime, timedelta
 
-from atlas.config.models import AtlasConfig, InternetConfig
-from atlas.monitoring import internet
-from atlas.monitoring.uptime import UptimeStore
+from lanxang.config.models import AtlasConfig, InternetConfig
+from lanxang.monitoring import internet
+from lanxang.monitoring.uptime import UptimeStore
 
 REAL_ASK = internet._ask          # conftest swaps the module's copy for a stub; this is the real one
 

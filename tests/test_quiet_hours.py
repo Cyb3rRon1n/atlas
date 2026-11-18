@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from atlas.alerts import Text, allowed
-from atlas.alerts.quiet import active, describe, minutes
-from atlas.config.models import QuietHours
-from atlas.web.alerts_page import handle_post, render_alerts_page
+from lanxang.alerts import Text, allowed
+from lanxang.alerts.quiet import active, describe, minutes
+from lanxang.config.models import QuietHours
+from lanxang.web.alerts_page import handle_post, render_alerts_page
 
 
 def test_windows_by_day_over_midnight_and_time_zone():
@@ -33,7 +33,7 @@ def test_messages_are_held_in_quiet_hours(isolated_cwd):
 
 
 def test_alerts_page_adds_shows_and_removes_quiet_hours(isolated_cwd, temp_db):
-    from atlas.config import load_config
+    from lanxang.config import load_config
 
     body = {"start": "03:00", "end": "06:00", "days": ["sun"], "timezone": "America/Detroit"}
     assert handle_post("/api/alerts/quiet-hours/add", body) == (200, {"ok": True})

@@ -1,4 +1,4 @@
-from atlas.wiring.health import alerts, assess
+from lanxang.wiring.health import alerts, assess
 
 
 def counters(**values):

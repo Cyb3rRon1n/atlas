@@ -1,12 +1,12 @@
 import copy
 
-from atlas.config.models import AtlasConfig
-from atlas.web.cabling_page import render_cabling_page
-from atlas.wiring.build import build_wiring
-from atlas.wiring.scan import run_scan
-from atlas.wiring.snmp import parse_switch
-from atlas.wiring.store import WiringStore
-from atlas.wiring.unifi import parse_unifi
+from lanxang.config.models import AtlasConfig
+from lanxang.web.cabling_page import render_cabling_page
+from lanxang.wiring.build import build_wiring
+from lanxang.wiring.scan import run_scan
+from lanxang.wiring.snmp import parse_switch
+from lanxang.wiring.store import WiringStore
+from lanxang.wiring.unifi import parse_unifi
 from tests.test_web_cabling import _latest
 from tests.test_wiring_build import CABLING, CLIENTS, DEVICES, INVENTORY, SWITCH
 from tests.test_wiring_snmp import WALKS

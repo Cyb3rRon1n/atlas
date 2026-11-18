@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from atlas.config.models import MapHost
-from atlas.database.models import DeviceRecord
-from atlas.devices import Sighting
-from atlas.devices.store import CONNECTIONS, KINDS, InventoryStore
+from lanxang.config.models import MapHost
+from lanxang.database.models import DeviceRecord
+from lanxang.devices import Sighting
+from lanxang.devices.store import CONNECTIONS, KINDS, InventoryStore
 
 
 T0 = datetime(2026, 9, 30, 12, 0)

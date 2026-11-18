@@ -1,4 +1,4 @@
-from atlas.intelligence.providers.base import (
+from lanxang.intelligence.providers.base import (
     ACTION_INSTRUCTIONS,
     ACTION_OBJECT_SCHEMA,
     ACTION_SCHEMA,

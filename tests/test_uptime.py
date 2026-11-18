@@ -5,11 +5,11 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
-from atlas.alerts import AlertStore
-from atlas.config.models import AtlasConfig
-from atlas.monitoring import uptime
-from atlas.monitoring.uptime import UptimeStore, probe, run, valid_target
-from atlas.web import uptime_page
+from lanxang.alerts import AlertStore
+from lanxang.config.models import AtlasConfig
+from lanxang.monitoring import uptime
+from lanxang.monitoring.uptime import UptimeStore, probe, run, valid_target
+from lanxang.web import uptime_page
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -108,7 +108,7 @@ def test_add_and_remove_from_the_page(isolated_cwd):
     assert "host:port" in post("/api/uptime/add", {"name": "SSH", "target": "nope"})[1]["error"]
     assert post("/api/uptime/add", {"name": "NAS", "target": "192.0.2.5:445"})[0] == 200
 
-    from atlas.config.loader import load_config
+    from lanxang.config.loader import load_config
     assert [c.name for c in load_config().uptime.checks] == ["Media", "NAS"]
     assert post("/api/uptime/remove", {"name": "Media"})[0] == 200
     assert [c.name for c in load_config().uptime.checks] == ["NAS"]

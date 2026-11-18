@@ -1,4 +1,4 @@
-from atlas.inventory import load_inventory, save_inventory
+from lanxang.inventory import load_inventory, save_inventory
 
 
 SAMPLE_DATA = {

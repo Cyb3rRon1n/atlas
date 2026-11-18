@@ -1,4 +1,4 @@
-from atlas.reporting.generator import generate_report
+from lanxang.reporting.generator import generate_report
 
 
 SAMPLE_INVENTORY = {

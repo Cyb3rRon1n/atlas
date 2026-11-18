@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from atlas.posture.store import PostureStore, asn_key
+from lanxang.posture.store import PostureStore, asn_key
 
 
 NOW = datetime(2026, 10, 8, 13, 42, 10)

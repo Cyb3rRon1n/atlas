@@ -1,4 +1,4 @@
-from atlas.web.render import render_history_page, render_overview_page
+from lanxang.web.render import render_history_page, render_overview_page
 
 
 class FakeEvent:
@@ -62,7 +62,7 @@ def test_render_overview_page_flattens_containers_dict():
     """
     containers is keyed by plugin name, not container name - each
     entry is {"available": bool, "containers": [...]} (see
-    atlas.plugins.AtlasPlugin.category). A real container's own name
+    lanxang.plugins.AtlasPlugin.category). A real container's own name
     lives inside that nested list, not as the dict key.
     """
 
@@ -186,10 +186,10 @@ def test_render_history_page_no_events_shows_hint():
 def test_render_history_page_shows_events():
 
     from datetime import date
-    events = [FakeEvent("2026-01-02 09:30:00", "atlas.proxmox.changes_detected", "ProxmoxScan", '{"x": "<b>"}'),
-              FakeEvent("2026-01-02 09:15:00", "atlas.proxmox.changes_detected", "ProxmoxScan", "{}"),
-              FakeEvent("2026-01-01 08:00:00", "atlas.discovery.completed", "Discovery", "{}"),
-              FakeEvent("2026-01-01 07:00:00", "atlas.action.container_restarted", "PlanStep", "{}")]
+    events = [FakeEvent("2026-01-02 09:30:00", "lanxang.proxmox.changes_detected", "ProxmoxScan", '{"x": "<b>"}'),
+              FakeEvent("2026-01-02 09:15:00", "lanxang.proxmox.changes_detected", "ProxmoxScan", "{}"),
+              FakeEvent("2026-01-01 08:00:00", "lanxang.discovery.completed", "Discovery", "{}"),
+              FakeEvent("2026-01-01 07:00:00", "lanxang.action.container_restarted", "PlanStep", "{}")]
 
     html = render_history_page(events, today=date(2026, 1, 2))
 
@@ -203,7 +203,7 @@ def test_render_history_page_shows_events():
 
 def test_every_page_gets_the_chat_drawer_except_chat():
 
-    from atlas.web.render import render_page
+    from lanxang.web.render import render_page
 
     html = render_page("Devices", "", active="devices")
 
@@ -212,7 +212,7 @@ def test_every_page_gets_the_chat_drawer_except_chat():
 
 
 def test_summary_posture_block():
-    from atlas.web.render import build_summary
+    from lanxang.web.render import build_summary
     posture = {"strip": [
         {"key": "ingress", "state": "ok", "value": "Tunnel up", "label": "Ingress", "detail": ""},
         {"key": "vpn", "state": "ok", "value": "Verified", "label": "VPN egress", "detail": ""},
@@ -228,7 +228,7 @@ def test_summary_posture_block():
 
 
 def test_no_chat_panel_or_ask_chips_while_ai_is_off(monkeypatch):
-    from atlas.web import render
+    from lanxang.web import render
 
     monkeypatch.setattr(render, "AI_ON", False)
     html = render.render_page("Home", render.ask_chips(["What changed?"]))
@@ -242,7 +242,7 @@ def test_server_turns_the_chat_off_with_the_setting(temp_db, isolated_cwd):
     import urllib.request
     from http.server import ThreadingHTTPServer
 
-    from atlas.web.server import AtlasWebHandler
+    from lanxang.web.server import AtlasWebHandler
 
     (isolated_cwd / "atlas.yaml").write_text("web:\n  auth: proxy\n")
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), AtlasWebHandler)

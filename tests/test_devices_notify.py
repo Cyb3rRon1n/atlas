@@ -1,8 +1,8 @@
 import json
 
-import atlas.devices.notify as notify
-import atlas.notify as channels
-from atlas.config.models import NotifyConfig, SignalNotifyConfig
+import lanxang.devices.notify as notify
+import lanxang.notify as channels
+from lanxang.config.models import NotifyConfig, SignalNotifyConfig
 
 
 ITEMS = [{"id": 1, "device": "Pixel-7", "ip": "192.168.50.88", "last_seen": "2026-09-29T12:00:00"},

@@ -1,8 +1,8 @@
 import pytest
 from pydantic import ValidationError
 
-from atlas.config.models import AtlasConfig, WiringConfig
-from atlas.wiring import env_key, is_virtual_mac, normalize_mac
+from lanxang.config.models import AtlasConfig, WiringConfig
+from lanxang.wiring import env_key, is_virtual_mac, normalize_mac
 
 
 def test_wiring_config_defaults_off():

@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
-from atlas.access.collect import jellyfin_logins
-from atlas.access.parse import parse_line, read_new
-from atlas.access.store import AccessStore
-from atlas.web.access_page import render_access_page
+from lanxang.access.collect import jellyfin_logins
+from lanxang.access.parse import parse_line, read_new
+from lanxang.access.store import AccessStore
+from lanxang.web.access_page import render_access_page
 
 LINE = ('9.9.9.9 - - [11/Oct/2026:02:23:12 +0000] "GET /web/index.html HTTP/1.1" {status} 7 "-" "Mozilla" '
         '148676 "jellyfin@docker" "http://172.18.0.6:8096" 9ms')
@@ -65,8 +65,8 @@ def test_store_summary_page_map_people_and_anonymous(temp_db):
 
 
 def test_places_learn_then_review_confirm_and_alert(temp_db):
-    from atlas.access.collect import AccessCollector
-    from atlas.config.models import AccessConfig, PostureConfig, NotifyConfig, SignalNotifyConfig
+    from lanxang.access.collect import AccessCollector
+    from lanxang.config.models import AccessConfig, PostureConfig, NotifyConfig, SignalNotifyConfig
     store = AccessStore(temp_db)
     t0 = datetime(2026, 10, 1)
     geo = {"9.9.9.9": {"cc": "US", "country": "United States", "city": "Tampa", "region": "Florida", "org": "Spectrum"},
@@ -96,13 +96,13 @@ def test_places_learn_then_review_confirm_and_alert(temp_db):
 
 def test_ipv6_place_uses_the_providers_prefix_not_the_city():
     from types import SimpleNamespace
-    from atlas.access.store import place_of
+    from lanxang.access.store import place_of
     row = lambda city: SimpleNamespace(ip="2601:201:8f01:f52b::1", org="", asn=None, city=city, region="CA", cc="US", country="US")
     assert place_of(row("Fresno"))[0] == place_of(row("Clovis"))[0] == "US/IPv6 2601:201::/32"
 
 
 def test_proxied_logins_match_app_log_users_by_time():
-    from atlas.access.collect import app_user_events, proxied_logins
+    from lanxang.access.collect import app_user_events, proxied_logins
     kav = ("2026-10-11T01:37:07.044632849Z [Kavita] [Information] Kavita.Server.Controllers.AccountController alice attempting to login\n"
            "2026-10-11T01:37:07.182Z [Kavita] [Information] Kavita.Server.Controllers.AccountController alice logged in\n"
            "garbage line\n")
@@ -122,7 +122,7 @@ def test_proxied_logins_match_app_log_users_by_time():
 
 
 def test_authelia_logins_from_debug_log():
-    from atlas.access.collect import authelia_logins
+    from lanxang.access.collect import authelia_logins
     text = ('2026-10-11T13:45:16.441Z time="x" level=debug msg="Mark 1FA authentication attempt made by user \'\'" remote_ip=1.1.1.1\n'
             '2026-10-11T13:45:16.447Z time="x" level=error msg="Unsuccessful 1FA authentication attempt by user \'bob\'" '
             'error="user not found" method=POST path=/api/firstfactor remote_ip=149.112.112.112 stack="..."\n'

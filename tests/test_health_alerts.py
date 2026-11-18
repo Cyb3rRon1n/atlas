@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from atlas.config.models import AtlasConfig, HealthConfig
-from atlas.health.alerts import alerts, assess, container_problem, container_state, run
-from atlas.posture.store import PostureStore
-from atlas.web.home_page import build_hosts
+from lanxang.config.models import AtlasConfig, HealthConfig
+from lanxang.health.alerts import alerts, assess, container_problem, container_state, run
+from lanxang.posture.store import PostureStore
+from lanxang.web.home_page import build_hosts
 
 
 NOW = datetime(2026, 11, 15, 12, 0)

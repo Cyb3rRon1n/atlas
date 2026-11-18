@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
-from atlas.devices import Sighting
-from atlas.devices.linking import match
-from atlas.devices.status import device_status
+from lanxang.devices import Sighting
+from lanxang.devices.linking import match
+from lanxang.devices.status import device_status
 
 
 def known(device_id, name, source, ip=None, mac=None, hostname=None):

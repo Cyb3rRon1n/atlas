@@ -1,4 +1,4 @@
-from atlas.proxmox.changes import diff_virtualization, format_change
+from lanxang.proxmox.changes import diff_virtualization, format_change
 
 
 def test_no_changes_when_no_previous_baseline():

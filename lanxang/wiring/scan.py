@@ -1,7 +1,7 @@
 """
 One wired-map pass: collect every source on its own, fall back to a failed
 source's last good raw input (marked stale), build, save. Shared by
-`atlas wiring scan` and the web Refresh button; a module lock keeps two
+`lanxang wiring scan` and the web Refresh button; a module lock keeps two
 clicks (or a click during a CLI run in the same process) from overlapping.
 """
 
@@ -101,7 +101,7 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
             before = set(previous[0]["snapshot"].get("loops") or [])
             for pair in sorted(set(snapshot["loops"]) - before):
                 _send(settings, Text(f"**🔁 Possible network loop: {pair}**\n• more than one cable between them "
-                                     "carries traffic\n\nSee Atlas → Network → Cabling.", f"wiring:loop:{pair}"), send, store)
+                                     "carries traffic\n\nSee Lanxang → Network → Cabling.", f"wiring:loop:{pair}"), send, store)
             for pair in sorted(before - set(snapshot["loops"])):
                 _send(settings, Text(f"**✅ Resolved: loop between {pair}**\n• only one cable carries traffic now",
                                      f"wiring:loop:{pair}"), send, store)

@@ -334,7 +334,7 @@ def _open_ports(ports):
     from lanxang.devices.ports import port_label
 
     if not ports:
-        return ('<div class="card"><h2>Open ports</h2><p class="muted">Not checked yet: atlas ports check '
+        return ('<div class="card"><h2>Open ports</h2><p class="muted">Not checked yet: lanxang ports check '
                 'runs on devices that are online during a scan.</p></div>')
     items = "".join(f"<li>{_esc(port_label(port))}</li>" for port in ports["open"])
 
@@ -438,7 +438,7 @@ def render_device_page(device, devices, ports=None, wiring=None, suggestion=None
         + _wired(wiring_node(device, wiring)) + _login_hint(suggestion) +
         f"<div class=\"card\"><h2>Details</h2>{form}</div>"
         + _open_ports(ports) +
-        "<div class=\"card\"><h2>Where atlas saw it</h2><table><thead><tr><th>source</th><th>id</th><th>ip</th>"
+        "<div class=\"card\"><h2>Where Lanxang saw it</h2><table><thead><tr><th>source</th><th>id</th><th>ip</th>"
         f"<th>mac</th><th>hostname</th><th>last seen</th><th></th></tr></thead><tbody>{sighting_rows}</tbody></table>"
         f"{merge}</div>"
     )
@@ -453,7 +453,7 @@ def _login_hint(suggestion):
     query = urlencode({"add": suggestion["ip"], "name": suggestion["suggested_name"] or ""})
 
     return (f'<div class="card"><h2>Could show its ports</h2><p>This looks like a managed switch or router '
-            f'({_esc("; ".join(suggestion["why"]))}). With a read-only SNMPv3 login atlas can draw every port. '
+            f'({_esc("; ".join(suggestion["why"]))}). With a read-only SNMPv3 login Lanxang can draw every port. '
             f'<a href="/settings?{query}#switches">Add it on the Setup tab \u2192</a></p></div>')
 
 

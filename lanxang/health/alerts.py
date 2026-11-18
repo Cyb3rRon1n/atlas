@@ -1,5 +1,5 @@
 """
-Host health alerts: one pure assess() over what `atlas sample` already reads
+Host health alerts: one pure assess() over what `lanxang sample` already reads
 (temperatures with each sensor's own limit, memory, disks, containers, JSON
 status feeds) and alerts() that fire once per new problem and once on recovery.
 
@@ -9,7 +9,6 @@ problem: only crashes, restart loops and failing health checks count.
 """
 
 TEMP_RUNS = 2         # scans in a row near the limit before it alerts (one busy minute is not a problem)
-ON_DEMAND_LABEL = "lanxang.on-demand"
 
 REASONS = {
     "temperature": "Running hot",
@@ -99,7 +98,7 @@ def alerts(previous_issues, issues):
     new = {key(i): i for i in issues}
     from lanxang.alerts import Text
     tag = lambda k: f"host:{k[0]}:{k[1]}"
-    texts = [Text(f"**🖥️ {i['reason']}**\n• {i['detail']}\n\nSee Atlas → Home.", tag(k))
+    texts = [Text(f"**🖥️ {i['reason']}**\n• {i['detail']}\n\nSee Lanxang → Home.", tag(k))
              for k, i in new.items() if k not in old]
     texts += [Text(f"**✅ Resolved: {i['reason'].lower()}**\n• {i['subject']}", tag(k)) for k, i in old.items() if k not in new]
 

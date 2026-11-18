@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class AtlasPlugin(ABC):
     """
-    Base class for all Atlas plugins.
+    Base class for all Lanxang plugins.
     """
 
     name = "Unknown Plugin"
@@ -19,7 +19,7 @@ class AtlasPlugin(ABC):
 
     @abstractmethod
     def initialize(self, runtime):
-        """Initialize the plugin with the Atlas runtime."""
+        """Initialize the plugin with the Lanxang runtime."""
         raise NotImplementedError
 
     @abstractmethod

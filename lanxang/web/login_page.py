@@ -36,15 +36,15 @@ def render_login_page(error="", next_path="/"):
         "<input id=\"password\" name=\"password\" type=\"password\" autocomplete=\"current-password\" required autofocus>"
         + (f"<p class=\"error\" role=\"alert\">{_esc(error)}</p>" if error else "") +
         "<button type=\"submit\">Sign in</button></form>"
-        "<p class=\"hint\">Forgot it? On the host: <code>docker compose exec -it atlas atlas auth password</code></p>"))
+        "<p class=\"hint\">Forgot it? On the host: <code>docker compose exec -it atlas lanxang auth password</code></p>"))
 
 
 def render_setup_page(error=""):
 
     return _page("Set up", (
         "<h1>Welcome to Lanxang</h1>"
-        "<p class=\"hint\">Set the admin password. The setup code is in the atlas log "
-        "(<code>docker compose logs atlas</code>) or from <code>docker compose exec atlas atlas auth setup-code</code>.</p>"
+        "<p class=\"hint\">Set the admin password. The setup code is in the Lanxang log "
+        "(<code>docker compose logs atlas</code>) or from <code>docker compose exec atlas lanxang auth setup-code</code>.</p>"
         "<form method=\"post\" action=\"/setup\">"
         "<label for=\"code\">Setup code</label>"
         "<input id=\"code\" name=\"code\" autocomplete=\"off\" required autofocus>"

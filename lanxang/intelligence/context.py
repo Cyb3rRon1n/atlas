@@ -4,7 +4,7 @@ from lanxang.clock import utcnow
 
 class AtlasEnvironmentContext:
     """
-    Represents Atlas' current understanding
+    Represents Lanxang' current understanding
     of an environment.
     """
 

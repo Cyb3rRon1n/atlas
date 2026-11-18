@@ -121,7 +121,7 @@ def test_chat_route(temp_db, monkeypatch):
     monkeypatch.setattr(api, "_agent", lambda: StubAgent())
 
     status, payload = api.handle("POST", "/api/chat", {"message": "hi"})
-    assert status == 200 and payload["text"] == "you said hi" and payload["action"]["command"] == "atlas restart sonarr"
+    assert status == 200 and payload["text"] == "you said hi" and payload["action"]["command"] == "lanxang restart sonarr"
 
     again = api.handle("POST", "/api/chat", {"message": "again", "session": payload["session"]})[1]
     assert again["session"] == payload["session"]

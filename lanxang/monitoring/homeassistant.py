@@ -1,5 +1,5 @@
 """
-Home Assistant, read with every `atlas scan` (and `atlas ha check`) through its REST API with a long-lived access
+Home Assistant, read with every `lanxang scan` (and `lanxang ha check`) through its REST API with a long-lived access
 token: is HA up, which smart devices it has lost, which batteries are low, which updates wait. Read-only.
 
   offline   a device whose sensors, cameras, locks, switches, lights... (WATCHED) are all "unavailable" for at

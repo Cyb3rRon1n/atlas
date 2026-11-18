@@ -130,7 +130,7 @@ class AnthropicProvider(AIProvider):
             )
 
         raise AIProviderError(
-            "Atlas gave up after too many tool calls without a final answer."
+            "Lanxang gave up after too many tool calls without a final answer."
         )
 
     def _request(self, messages, schema, system_prompt, anthropic_tools):

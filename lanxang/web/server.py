@@ -1,5 +1,5 @@
 """
-A local HTTP server over Atlas's existing stored data - no new
+A local HTTP server over Lanxang's existing stored data - no new
 dependency, stdlib http.server only, matching this project's
 "lightweight" scoping for this feature. The server is read-only except
 for the device inventory's /api/* POST routes: those are gated by a
@@ -92,7 +92,7 @@ def safe_next(value):
 
 
 def _notify_settings():
-    """notify: settings for the Alerts page's quiet hours, or None if atlas.yaml can't be read."""
+    """notify: settings for the Alerts page's quiet hours, or None if the config file can't be read."""
 
     try:
         return load_config().notify
@@ -145,7 +145,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             if path == "/setup":
                 self._send(200, "text/html; charset=utf-8", render_setup_page())
             elif path.startswith("/api/"):
-                self._send(401, "application/json", json.dumps({"error": "atlas is not set up yet"}))
+                self._send(401, "application/json", json.dumps({"error": "Lanxang is not set up yet"}))
             else:
                 self._redirect("/setup")
             return False
@@ -598,7 +598,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
 def run_server(host="127.0.0.1", port=8420, auth=None):
     """
     Blocks until interrupted (Ctrl+C) - on-demand like every other
-    Atlas command, not a background/daemon process; the user starts
+    Lanxang command, not a background/daemon process; the user starts
     it explicitly in a foreground terminal and stops it the same way.
     auth: an lanxang.web.auth.Auth to require sign-in, None when a proxy does it.
     """

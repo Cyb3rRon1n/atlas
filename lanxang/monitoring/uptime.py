@@ -1,5 +1,5 @@
 """
-Uptime checks (atlas uptime check, once a minute in atlas-scan -> web Servers > Uptime): is each service you
+Uptime checks (lanxang uptime check, once a minute in atlas-scan -> web Servers > Uptime): is each service you
 list answering? A web address counts as up when it answers at all below HTTP 500 - a login redirect or a 401
 still means the service is running; certificate trouble is the certificate watch's job, so it isn't verified
 here. host:port is a plain TCP connect. A check is down after uptime.fail_after failures in a row: one alert
@@ -169,7 +169,7 @@ def run(settings, store, now, *, check=probe, send=None):
         if down:
             found.append(issue("down", c.name, f"{c.name} is down", f"{c.target}: {detail}", href="/uptime"))
         if down and not was_down[c.name]:
-            texts.append(Text(f"**🔴 {c.name} is down**\n• {c.target}\n• {detail}\n\nSee Atlas → Servers → Uptime.",
+            texts.append(Text(f"**🔴 {c.name} is down**\n• {c.target}\n• {detail}\n\nSee Lanxang → Servers → Uptime.",
                               f"uptime:down:{c.name}"))
         elif was_down[c.name] and not down:
             since = store.outage_start(c.name, now)

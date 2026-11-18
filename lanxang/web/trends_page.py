@@ -1,5 +1,5 @@
 """
-/trends (Hosts > Trends): line charts over 24h / 7d / 30d from Atlas's own
+/trends (Hosts > Trends): line charts over 24h / 7d / 30d from Lanxang's own
 history - atlas.host.sample events (this host, every scan) and
 atlas.proxmox.scan.completed events (the Proxmox node, its ZFS pools and
 guests). Plain inline SVG, no dependencies. Pure renderer.

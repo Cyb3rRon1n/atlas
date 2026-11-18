@@ -130,7 +130,7 @@ def _session(config, env, timeout, opener_factory, read):
 
     user, password = env.get("LANXANG_UNIFI_USER"), env.get("LANXANG_UNIFI_PASS")
     if not user or not password:
-        raise WiringError("set LANXANG_UNIFI_USER and LANXANG_UNIFI_PASS in the atlas env file")
+        raise WiringError("set LANXANG_UNIFI_USER and LANXANG_UNIFI_PASS in .env")
 
     opener = (opener_factory or (lambda: _default_opener(config.verify_ssl)))()
     base = config.url.rstrip("/")

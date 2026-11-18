@@ -81,3 +81,63 @@ def test_migrate_devices_table_tolerates_a_concurrent_migration(tmp_path, monkey
 
     columns = {column["name"] for column in inspect(engine).get_columns("devices")}
     assert {"connection", "uplink_id"} <= columns
+
+
+
+def _statements(engine):
+
+    from sqlalchemy import event
+
+    seen = []
+    event.listen(engine, "before_cursor_execute", lambda conn, cur, statement, *rest: seen.append(statement))
+    return seen
+
+
+def test_initialize_database_renames_lanxang_event_types_back(tmp_path, monkeypatch):
+    """Images built from main before 1.0 wrote lanxang.* event types; the stored names stay atlas.*."""
+
+    monkeypatch.setattr(database_module, "_HEALED", set())
+    engine = create_engine(f"sqlite:///{tmp_path / 'events.db'}")
+    initialize_database(engine)
+    monkeypatch.setattr(database_module, "_HEALED", set())
+
+    with engine.begin() as connection:
+        for kind in ("lanxang.proxmox.scan.completed", "atlas.monitor.completed"):
+            connection.execute(text("INSERT INTO events (event_type, source, payload, created_at) "
+                                    "VALUES (:kind, 'test', '{}', '2026-11-01')"), {"kind": kind})
+
+    seen = _statements(engine)
+    initialize_database(engine)
+    monkeypatch.setattr(database_module, "_HEALED", set())
+    initialize_database(engine)  # second run is harmless
+
+    with engine.connect() as connection:
+        kinds = sorted(connection.execute(text("SELECT event_type FROM events")).scalars())
+
+    assert kinds == ["atlas.monitor.completed", "atlas.proxmox.scan.completed"]
+    assert sum(s.startswith("UPDATE events") for s in seen) == 1      # the second run found nothing to heal
+
+
+def test_event_heal_never_writes_when_nothing_matches_and_runs_once(tmp_path, monkeypatch):
+    """The check is an index read: no UPDATE (no write lock) without lanxang.* rows, and once per process."""
+
+    monkeypatch.setattr(database_module, "_HEALED", set())
+    engine = create_engine(f"sqlite:///{tmp_path / 'quiet.db'}")
+    seen = _statements(engine)
+    initialize_database(engine)
+    initialize_database(engine)
+
+    assert not any(s.startswith("UPDATE events") for s in seen)
+    assert sum("FROM events WHERE event_type >=" in s for s in seen) == 1
+
+    # a writer holding the lock does not block the next store read
+    import sqlite3
+    writer = sqlite3.connect(tmp_path / "quiet.db", timeout=0)
+    writer.execute("BEGIN IMMEDIATE")
+    try:
+        busy = create_engine(f"sqlite:///{tmp_path / 'quiet.db'}", connect_args={"timeout": 0})
+        monkeypatch.setattr(database_module, "_HEALED", set())
+        initialize_database(busy)
+    finally:
+        writer.rollback()
+        writer.close()

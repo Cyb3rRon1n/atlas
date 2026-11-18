@@ -19,8 +19,8 @@ def guest_metric_trend(records, vmid, metric_name):
     records is KnowledgeQueries.environment_history()'s most-recent-
     first result - same input host_metric_trend()/container_metric_
     trend() take. Guest data lives under "virtualization" (populated
-    by atlas proxmox scan), a completely separate save schedule from
-    "monitoring" (atlas monitor) - skips any row without virtualization
+    by lanxang proxmox scan), a completely separate save schedule from
+    "monitoring" (lanxang monitor) - skips any row without virtualization
     data at all, same "not every row is a full snapshot" rule the
     monitoring trend functions already follow for exactly this reason.
     Matches guests by vmid (str), not name - the same stable-identifier

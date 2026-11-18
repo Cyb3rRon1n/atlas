@@ -343,3 +343,16 @@ def test_setup_manages_an_old_atlas_keyed_install(env, receiver, isolated_cwd):
     assert stored == {"LANXANG_WEBHOOK_1": f"{url}/three"}
     load_config()
     assert "LANXANG_NTFY_TOKEN" not in env and "ATLAS_NTFY_TOKEN" not in env
+
+
+def test_messages_name_the_config_file_in_use(env, isolated_cwd):
+    from typer.testing import CliRunner
+
+    from lanxang.cli.main import app
+
+    for name in ("atlas.yaml", "lanxang.yaml"):                # only atlas.yaml, then both: lanxang.yaml wins
+        (isolated_cwd / name).write_text("notify:\n  ntfy:\n    topic: mine\nsecurity:\n  port_watch: false\n")
+        assert local.config_name() == name
+        assert f"set in {name}" in render_settings_page()
+        out = CliRunner().invoke(app, ["ports", "check"]).output
+        assert f"security.port_watch is false in {name}" in out

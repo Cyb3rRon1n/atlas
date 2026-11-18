@@ -1,5 +1,5 @@
 """
-Built-in sign-in for atlas web (web.auth: builtin, the default). One admin
+Built-in sign-in for lanxang web (web.auth: builtin, the default). One admin
 password, hashed with scrypt; a signed, expiring session cookie (no session
 store, so a restart keeps people signed in and a password change signs
 everyone out); a read-only API token for dashboards such as Homepage; and a
@@ -81,7 +81,7 @@ class Auth:
         return bool(self._load().get("password"))
 
     def setup_code(self):
-        """The one-time code /setup asks for; printed in the log and by `atlas auth setup-code`."""
+        """The one-time code /setup asks for; printed in the log and by `lanxang auth setup-code`."""
 
         with self._lock:
             data = self._load()

@@ -17,6 +17,11 @@ ALERT_COLUMN_MIGRATIONS = {
     "acked_at": "DATETIME",
 }
 
+# Images built from main between the rename and 1.0 wrote lanxang.* event types; stored names stay atlas.*.
+# A range (not LIKE, which is case-insensitive) so the check reads ix_events_type_time and takes no write lock.
+LANXANG_EVENTS = "event_type >= 'lanxang.' AND event_type < 'lanxang/'"
+_HEALED = set()     # database URLs checked by this process: every store read calls initialize_database()
+
 
 def _migrate_table(engine, table, migrations):
 
@@ -40,6 +45,22 @@ def _migrate_table(engine, table, migrations):
                 # means the column is already there - not a real failure.
                 if "duplicate column name" not in str(error).lower():
                     raise
+
+
+def _heal_event_types(engine):
+
+    url = str(engine.url)
+    if url in _HEALED:
+        return
+
+    with engine.connect() as connection:
+        found = connection.execute(text(f"SELECT 1 FROM events WHERE {LANXANG_EVENTS} LIMIT 1")).first()
+
+    if found:
+        with engine.begin() as connection:
+            connection.execute(text(f"UPDATE events SET event_type = 'atlas.' || substr(event_type, 9) "
+                                    f"WHERE {LANXANG_EVENTS}"))
+    _HEALED.add(url)
 
 
 def initialize_database(engine=None):
@@ -79,6 +100,8 @@ def initialize_database(engine=None):
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_events_time ON events (created_at)"))
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_environment_time ON environment (created_at)"))
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_uptime_name_time ON uptime (name, checked_at)"))
+
+    _heal_event_types(engine)
 
 
 __all__ = [

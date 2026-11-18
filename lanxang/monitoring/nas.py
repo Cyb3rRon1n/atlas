@@ -1,5 +1,5 @@
 """
-NAS health from TrueNAS or Synology, read with every `atlas scan` (and `atlas nas check`): pool or volume
+NAS health from TrueNAS or Synology, read with every `lanxang scan` (and `lanxang nas check`): pool or volume
 health and how full it is, and each disk's health and temperature. Read-only.
 
   TrueNAS   JSON-RPC over a websocket (wss://<nas>/api/current; its REST API goes away in TrueNAS 26) with an

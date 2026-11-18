@@ -13,7 +13,7 @@ from lanxang.database.models import (
 
 class KnowledgeQueries:
     """
-    Query Atlas historical knowledge.
+    Query Lanxang historical knowledge.
     """
 
     def recent_events(
@@ -151,7 +151,7 @@ class KnowledgeQueries:
     def latest_topology(self):
         """
         Newest saved network map. Every command saves only its own categories,
-        so the newest row overall is usually not the one atlas map wrote.
+        so the newest row overall is usually not the one lanxang map wrote.
         """
 
         for row in self.environment_history(limit=200):

@@ -1,5 +1,5 @@
 """
-Open-port watch (atlas ports check, every atlas-scan pass). Three read-only views:
+Open-port watch (lanxang ports check, every atlas-scan pass). Three read-only views:
 
   internet  port forwards and UPnP on the router: the UniFi console when it is
             set up, and the standard UPnP IGD port-mapping list that most home
@@ -188,7 +188,7 @@ def assess(previous, current):
             ports = "\n".join(f"• {port_label(port)}" for port in new)
             from lanxang.alerts import Text
             texts.append(Text(f"**🔓 New open port{'s' * (len(new) > 1)} on {device['name']}** ({device['ip']})\n"
-                              f"{ports}\n\nExpected (a new app or update)? Nothing to do. Otherwise see Atlas → Network.",
+                              f"{ports}\n\nExpected (a new app or update)? Nothing to do. Otherwise see Lanxang → Network.",
                               "", int(device_id) if str(device_id).isdigit() else None))
         devices[device_id] = {"name": device["name"], "ip": device["ip"], "open": device["open"],
                               "known": sorted(known | set(device["open"]))}
@@ -202,7 +202,7 @@ def assess(previous, current):
     if listeners is not None:
         new = [port for port in listeners if port not in known]
         if new and previous.get("listeners") and not learning:
-            texts.append(f"**🔓 New listening port on {current.get('host') or 'the atlas host'}**\n"
+            texts.append(f"**🔓 New listening port on {current.get('host') or 'the Lanxang host'}**\n"
                          + "\n".join(f"• {port_label(port)}" for port in new))
         state["listeners"] = {"open": listeners, "known": sorted(known | set(listeners))}
     else:

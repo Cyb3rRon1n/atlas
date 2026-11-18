@@ -303,7 +303,7 @@ class TestAnthropicProvider:
             reply = provider.converse(messages)
 
             _, kwargs = mock_client.messages.create.call_args
-            assert kwargs["system"].startswith("You are Atlas, an infrastructure assistant")
+            assert kwargs["system"].startswith("You are Lanxang, an infrastructure assistant")
 
             assert reply.text == "Everything looks fine right now."
             assert reply.action is None

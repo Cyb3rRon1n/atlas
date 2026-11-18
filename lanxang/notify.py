@@ -1,5 +1,5 @@
 """
-Alerts to every channel set under notify: in atlas.yaml - Signal, ntfy,
+Alerts to every channel set under notify: in the config file — Signal, ntfy,
 webhooks (Discord / Slack / plain JSON), email, and Apprise URLs when the
 apprise package is installed (it is in the Docker image).
 
@@ -7,7 +7,7 @@ Messages are written once in light Markdown: the first line is the
 headline, **bold** marks names. Each channel gets the form it understands.
 A channel that fails never stops the others; send() reports success when
 at least one channel took the message, so callers mark it delivered once.
-Secrets can come from the environment instead of atlas.yaml:
+Secrets can come from the environment instead of the config file:
 LANXANG_NTFY_TOKEN, LANXANG_SMTP_PASSWORD.
 """
 
@@ -18,6 +18,7 @@ import smtplib
 import urllib.request
 from email.message import EmailMessage
 
+from lanxang.config.local import config_name
 from lanxang.devices.notify import send_signal
 
 
@@ -31,7 +32,7 @@ def _plain(text):
 
 def _title(text):
 
-    return _plain(text.strip().splitlines()[0]).strip() if text.strip() else "Atlas"
+    return _plain(text.strip().splitlines()[0]).strip() if text.strip() else "Lanxang"
 
 
 def _body(text):
@@ -76,7 +77,7 @@ def send_webhook(url, text):
 def send_email(config, text):
 
     message = EmailMessage()
-    message["Subject"] = f"Atlas: {_title(text)}"
+    message["Subject"] = f"Lanxang: {_title(text)}"
     message["From"] = config.sender or config.user
     message["To"] = ", ".join(config.to)
     message.set_content(_plain(text))
@@ -153,6 +154,6 @@ def send(config, text):
     errors = [f"{name}: {error}" for name, ok, error in results if not ok]
 
     if not results:
-        return False, "no alert channels set (notify: in atlas.yaml)"
+        return False, f"no alert channels set (notify: in {config_name()})"
 
     return any(ok for _, ok, _ in results), "; ".join(errors)

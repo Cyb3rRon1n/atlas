@@ -19,7 +19,7 @@ def _trend_summary(points):
 def build_trends_payload(limit=20):
     """
     Pure function returning the exact {"host", "containers", "guests"}
-    shape `atlas trends --json` already prints - single source of
+    shape `lanxang trends --json` already prints - single source of
     truth for both the CLI's --json path and the read-only web view,
     so the two can never compute different numbers from the same
     underlying history. Metric iteration order is fixed (same tuples

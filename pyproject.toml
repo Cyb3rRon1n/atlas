@@ -58,10 +58,10 @@ docs = ["mkdocs-material"]
 alerts = ["apprise>=1.9"]   # notify.apprise URLs; the Docker image installs it
 
 [project.urls]
-Homepage = "https://github.com/Cyb3rRon1n/atlas"
-Repository = "https://github.com/Cyb3rRon1n/atlas"
-Documentation = "https://cyb3rron1n.github.io/atlas/"
-"Issue Tracker" = "https://github.com/Cyb3rRon1n/atlas/issues"
+Homepage = "https://github.com/Cyb3rRon1n/lanxang"
+Repository = "https://github.com/Cyb3rRon1n/lanxang"
+Documentation = "https://cyb3rron1n.github.io/lanxang/"
+"Issue Tracker" = "https://github.com/Cyb3rRon1n/lanxang/issues"
 
 [project.scripts]
 lanxang = "lanxang.cli:app"

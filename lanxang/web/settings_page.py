@@ -1,10 +1,10 @@
 """
 The Setup page (/settings): connect alerts, an AI model, switches, UniFi and Proxmox from the browser instead of
-editing atlas.yaml.
+editing the config file.
 
 Each card is one integration: Test checks the values as typed without saving them (alerts send a real test
 message; the AI card only lists models, which costs nothing; switches, UniFi and Proxmox get one read-only request), Save stores them through lanxang.config.local,
-Turn off removes them. A field atlas.yaml sets is shown read-only ("set in atlas.yaml") and never written; a
+Turn off removes them. A field the config file sets is shown read-only ("set in lanxang.yaml") and never written; a
 secret the real environment (.env) sets is shown as "set in .env". Secret values are never put in the page.
 """
 
@@ -16,6 +16,7 @@ from collections import namedtuple
 
 from pydantic import ValidationError
 
+from lanxang.config.local import config_name
 from lanxang.config import local
 from lanxang.config.loader import build_config, load_config
 from lanxang.web.render import _esc, render_page
@@ -102,7 +103,7 @@ CARDS = {
     "nas": ("TrueNAS or Synology", "Shows each pool's health and how full it is, and each disk's health and "
             "temperature; alerts when a pool isn't healthy or a disk fails, runs hot or wears out. TrueNAS: an API "
             "key (top-right user menu > API Keys; give its user the read-only admin role) and the https address. "
-            "Synology: DSM only lets administrators read storage - make an admin account for atlas, deny it every "
+            "Synology: DSM only lets administrators read storage - make an admin account for Lanxang, deny it every "
             "folder and app, and leave two-factor off for it. Read-only.", [
                 Field("kind", "Which one", "select", ("nas", "kind"), options=("truenas", "synology")),
                 Field("url", "Web address", "text", ("nas", "url"), hint="https://192.168.1.20 (Synology: ...:5001)"),
@@ -175,7 +176,7 @@ def _gear_html(chosen, detected):
             'every device by itself. Tick what you have and Setup shows the matching cards - each one adds detail, '
             'like switch ports or your VMs. Nothing here is required.</p>'
             f'<div class="gear-list">{boxes}</div><p class="muted gear-plain" hidden>Nothing more to connect: '
-            'atlas maps your network from its own scan. Turn on alerts below, and add the services you care about '
+            'Lanxang maps your network from its own scan. Turn on alerts below, and add the services you care about '
             'under <a href="/uptime">Servers → Uptime</a>.</p></section>')
 
 
@@ -232,12 +233,12 @@ def _saved(name):
 
 
 def _switch_changes(body, off):
-    """Add, update (same name) or remove one switch; the list is the Setup page's own, atlas.yaml's locks it."""
+    """Add, update (same name) or remove one switch; the list is the Setup page's own, the config file's locks it."""
 
     from lanxang.wiring import env_key
 
     if local.locked(("wiring", "switches")):
-        raise ValueError("The switches are set in atlas.yaml - edit them there.")
+        raise ValueError(f"The switches are set in {config_name()} — edit them there.")
     name = str(body.get("name") or "").strip()
     if not name:
         raise ValueError("Enter the switch name.")
@@ -428,7 +429,7 @@ def _test(card, body):
 
     from lanxang import notify
 
-    if card == "switches" and local.locked(("wiring", "switches")):    # test the atlas.yaml switch by name
+    if card == "switches" and local.locked(("wiring", "switches")):    # test the config file's switch by name
         config, environ = load_config(), dict(os.environ)
     else:
         config, environ = _candidate(card, body)
@@ -554,7 +555,7 @@ def _dismiss(card, body):
     if card != "switches" or not re.fullmatch(r"[0-9a-f.:]{3,39}", key):
         return 400, {"error": "Nothing to dismiss."}
     if local.locked(("wiring", "not_managed")):
-        return 400, {"error": "wiring.not_managed is set in atlas.yaml - add it there."}
+        return 400, {"error": f"wiring.not_managed is set in {config_name()} — add it there."}
     current = _get(local.read_settings(), ("wiring", "not_managed")) or []
     if key not in current:
         local.save_settings({"wiring": {"not_managed": current + [key]}})
@@ -579,7 +580,7 @@ def _field_html(card, field, config):
 
     name = f"{card}-{field.key}"
     locked = _locked(field)
-    note = ' <span class="lock">set in atlas.yaml</span>' if locked else ""
+    note = f' <span class="lock">set in {config_name()}</span>' if locked else ""
     disabled = " disabled" if locked else ""
     value = _get(config.model_dump(), field.path) if field.path else None
 
@@ -749,7 +750,7 @@ def render_settings_page():
         hidden = card in HARDWARE_CARDS and card not in wanted and not on
         saved = _found_html(suggested) if card == "switches" else ""
         if card == "switches" and config.wiring.switches:
-            where = " (from atlas.yaml)" if local.locked(("wiring", "switches")) else ""
+            where = f" (from {config_name()})" if local.locked(("wiring", "switches")) else ""
             saved += '<ul class="saved">' + "".join(
                 f"<li><b>{_esc(s.name)}</b> {_esc(s.host)} - "
                 + (f"SNMPv2c (community){where}</li>" if s.version == "2c" else f"user {_esc(s.snmp_user)}, {s.priv}{where}</li>")
@@ -765,7 +766,7 @@ def render_settings_page():
                if on else "") + '</div></form></section>')
 
     body = (STYLE + '<p class="muted">Changes here take effect within a minute, no restart. Anything set in '
-            'atlas.yaml or .env stays read-only here - edit it there. Passwords and keys are stored privately '
+            f'{config_name()} or .env stays read-only here — edit it there. Passwords and keys are stored privately '
             'on this machine and never shown again.</p>' + _gear_html(chosen, detected)
             + '<div class="setup">' + "".join(cards) + "</div>"
             '<p class="muted"><a href="#" id="show-all">Show every integration</a></p>' + SCRIPT)

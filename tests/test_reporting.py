@@ -18,7 +18,7 @@ def test_generate_report_writes_expected_sections(isolated_cwd):
 
     content = output.read_text()
 
-    assert "# Atlas Infrastructure Report" in content
+    assert "# Lanxang Infrastructure Report" in content
     assert "## System" in content
     assert "**hostname**: homelab" in content
     assert "## Hardware" in content

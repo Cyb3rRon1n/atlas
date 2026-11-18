@@ -130,4 +130,4 @@ def test_network_page_lanes_tree_chips_and_escaping():
     assert "<script>x</script>" not in page and "&lt;script&gt;" in page
     assert "1 unnamed devices" in page and page.index("1 unnamed devices") < page.index('href="/devices/3"')
     assert "cytoscape" not in page
-    assert "atlas map" in render_network_page(None, [], None)
+    assert "lanxang map" in render_network_page(None, [], None)

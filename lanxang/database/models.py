@@ -314,7 +314,7 @@ class AccessPlaceRecord(Base):
 
 
 class UptimeRecord(Base):
-    """One uptime check result (atlas uptime check, once a minute), kept 30 days."""
+    """One uptime check result (lanxang uptime check, once a minute), kept 30 days."""
 
     __tablename__ = "uptime"
 
@@ -340,7 +340,7 @@ class PortTrafficRecord(Base):
 
 
 class WiringSnapshotRecord(Base):
-    """One wired-map scan (atlas wiring scan): the built snapshot + raw per-source input, as JSON text."""
+    """One wired-map scan (lanxang wiring scan): the built snapshot + raw per-source input, as JSON text."""
 
     __tablename__ = "wiring_snapshots"
 

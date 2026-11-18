@@ -16,7 +16,7 @@ def test_render_overview_page_no_environment_shows_hint():
     html = render_overview_page(None, None)
 
     assert "No inventory found" in html
-    assert "atlas discover" in html
+    assert "lanxang discover" in html
 
 
 def test_render_overview_page_shows_system_and_hardware():
@@ -42,7 +42,7 @@ def test_render_overview_page_renders_real_storage_shape():
     # collect_storage() (atlas/discovery/storage.py) always returns a list
     # of per-mount dicts, never a dict - every other test in this file seeds
     # "storage": {}, which masked a real crash (_kv_table called .items() on
-    # this list) that only surfaced running `atlas discover` for real.
+    # this list) that only surfaced running `lanxang discover` for real.
     environment = {
         "timestamp": "2026-01-01 00:00:00",
         "system": {}, "hardware": {}, "network": {},
@@ -104,7 +104,7 @@ def test_render_overview_page_shows_plugin_sourced_guests():
     """
     A non-Proxmox virtualization plugin (e.g. LibvirtPlugin) lands
     under "virtualization" keyed by plugin name, the same shape as
-    "containers" - distinct from atlas proxmox scan's flat
+    "containers" - distinct from lanxang proxmox scan's flat
     {"nodes": [...], "guests": [...]}.
     """
 

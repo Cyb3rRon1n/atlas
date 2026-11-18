@@ -1,5 +1,5 @@
 """
-Port-level wired topology (atlas wiring scan -> web /cabling). Shared helpers
+Port-level wired topology (lanxang wiring scan -> web /cabling). Shared helpers
 live here; each source has its own module so a vendor adapter (UniFi) stays
 optional and the vendor-neutral path (SNMP standard MIBs) stands alone.
 """

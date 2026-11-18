@@ -157,7 +157,7 @@ class OllamaProvider(AIProvider):
             if not fallback:
 
                 raise AIProviderError(
-                    "Atlas gave up after too many tool calls without a final answer."
+                    "Lanxang gave up after too many tool calls without a final answer."
                 )
 
         return self._parse(self._request(messages, schema, None))

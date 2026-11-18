@@ -4,7 +4,7 @@ from lanxang.libvirt import collect_guests
 
 class LibvirtPlugin(AtlasPlugin):
     """
-    Atlas libvirt/KVM Plugin
+    Lanxang libvirt/KVM Plugin
     """
 
     name = "Libvirt"

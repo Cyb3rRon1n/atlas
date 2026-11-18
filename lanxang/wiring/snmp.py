@@ -280,12 +280,12 @@ def _snmp(switch, env, which, tool="snmpbulkwalk"):
     if getattr(switch, "version", "3") == "2c":
         community = env.get(f"LANXANG_SNMP_{key}_COMMUNITY")
         if not community:
-            raise WiringError(f"set LANXANG_SNMP_{key}_COMMUNITY (the read-only community) in the atlas env file")
+            raise WiringError(f"set LANXANG_SNMP_{key}_COMMUNITY (the read-only community) in .env")
         settings = f"defVersion 2c\ndefCommunity {community}\n"
     else:
         auth, priv = env.get(f"LANXANG_SNMP_{key}_AUTH"), env.get(f"LANXANG_SNMP_{key}_PRIV")
         if not auth or not priv:
-            raise WiringError(f"set LANXANG_SNMP_{key}_AUTH and LANXANG_SNMP_{key}_PRIV in the atlas env file")
+            raise WiringError(f"set LANXANG_SNMP_{key}_AUTH and LANXANG_SNMP_{key}_PRIV in .env")
         settings = (f"defVersion 3\ndefSecurityName {switch.snmp_user}\ndefSecurityLevel authPriv\n"
                     f"defAuthType SHA\ndefPrivType {switch.priv.upper()}\n"
                     f"defAuthPassphrase {auth}\ndefPrivPassphrase {priv}\n")

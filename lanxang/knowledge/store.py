@@ -21,7 +21,7 @@ ROUTINE_KEEP = timedelta(days=7)
 
 class KnowledgeStore:
     """
-    Stores Atlas knowledge permanently.
+    Stores Lanxang knowledge permanently.
     """
 
     def save_event(

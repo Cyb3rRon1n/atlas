@@ -114,7 +114,7 @@ def refresh(now, path=OUI_PATH, url=OUI_URL, get=None):
         tmp.write_text(response.text, encoding="utf-8")
         tmp.replace(path)
         from lanxang.posture.collectors.asn import remember_download
-        remember_download(url, "atlas: MAC maker list download")
+        remember_download(url, "Lanxang: MAC maker list download")
         return True
     except Exception:
         return False

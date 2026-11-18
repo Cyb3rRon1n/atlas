@@ -1,5 +1,5 @@
 """
-Disk health from Proxmox (read by `atlas proxmox scan`, every 15 minutes in atlas-scan): each disk's SMART result,
+Disk health from Proxmox (read by `lanxang proxmox scan`, every 15 minutes in atlas-scan): each disk's SMART result,
 how much life an SSD has left, its temperature and its bad-sector count.
 
   failed     SMART says the disk is failing

@@ -72,7 +72,7 @@ def test_summary_counts_and_status():
     bad = build_summary(_topology(down=True, unhealthy=True))
     assert bad["status"] == "degraded" and bad["hosts_down"] == ["tv"] and bad["containers_unhealthy"] == ["jellyfin"]
 
-    assert "atlas map" in build_summary(None)["status"]
+    assert "lanxang map" in build_summary(None)["status"]
 
 
 def test_compose_has_host_network_scanner():

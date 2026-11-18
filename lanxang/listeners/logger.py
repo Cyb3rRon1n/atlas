@@ -3,7 +3,7 @@ from lanxang.events import EventBus
 
 class EventLogger:
     """
-    Basic Atlas event logger.
+    Basic Lanxang event logger.
     """
 
     def register(self, bus: EventBus):

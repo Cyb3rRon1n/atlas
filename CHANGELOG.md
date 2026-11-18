@@ -3,9 +3,13 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
-## Unreleased
+## 0.12.0 - 2026-11-18
 
 ### Added
+- **Router DHCP names** (Setup → *OpenWrt router*): every scan reads the names your OpenWrt router's DHCP
+  server gave each device, and who is on which Wi-Fi, and links them to devices by MAC - so Devices can tell you
+  what an unknown address is. Read-only, through the router's web interface (the one LuCI uses); a router that
+  doesn't answer never fails the scan.
 - **Home Assistant** (Setup → *Home Assistant*): a *Smart home* tile and card on Home with the devices that
   dropped out (all their sensors, switches, locks... unavailable for hours - TVs and players that are just off
   don't count), low batteries and updates waiting. Alerts when Home Assistant stops answering, a device drops out

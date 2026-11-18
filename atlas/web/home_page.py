@@ -503,7 +503,7 @@ def _checklist(steps):
 
 
 def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=None, ups=None, internet=None,
-                dns=None):
+                dns=None, ha=None):
     """The number tiles along the top of Home: [(label, value, sub, href, tone)]; a source that's missing is left out.
     devices: InventoryStore().devices(); uptime: [7-day % per check]; ups: the UPS watch's saved detail."""
 
@@ -524,6 +524,14 @@ def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=Non
         share = f'{info["percent"]:.0f}% of queries blocked' if info.get("percent") is not None else ""
         tiles.append(("Ad blocking", "On" if on else "Off", share if on else "every device sees ads", "/#dns",
                       "good" if on else "bad"))
+    home = (ha or {}).get("info") or {}
+    if ha and (home or ha.get("error")):          # Home Assistant
+        lost, low = len(home.get("offline") or []), len(home.get("batteries") or [])
+        problems = ([f"{lost} offline"] if lost else []) + ([f"{low} low batteries"] if low else [])
+        tiles.append(("Smart home", "Down" if ha.get("failures", 0) >= 2 else "Fine" if not problems else
+                      f"{lost + low} to check", ", ".join(problems) or (f"{len(home.get('updates') or [])} updates "
+                      "waiting" if home.get("updates") else "all devices answering"), "/#homeassistant",
+                      "bad" if ha.get("failures", 0) >= 2 or lost else "warn" if low else "good"))
     if hosts and hosts["rows"]:
         fine = sum(not row["problems"] for row in hosts["rows"])
         tiles.append(("Servers", f"{fine} / {len(hosts['rows'])}", "healthy" if fine == len(hosts["rows"]) else
@@ -575,6 +583,31 @@ def _dns_card(dns, names):
     return f'<div id="dns" style="display:contents">{_card("/settings#dnsfilter", info.get("kind") or "Ad blocking", state, inner)}</div>'
 
 
+def _ha_card(ha):
+    """Home Assistant: version, devices that dropped out, low batteries, updates waiting."""
+
+    info = (ha or {}).get("info") or {}
+    if not info and not (ha or {}).get("error"):
+        return ""
+    offline, batteries, updates = info.get("offline") or [], info.get("batteries") or [], info.get("updates") or []
+    state = "warn" if (ha or {}).get("failures", 0) >= 2 or offline else "review" if batteries or updates else "ok"
+    rows = "".join(f'<div class="row warn"><span>{_esc(d["name"])}</span><span class="muted">offline '
+                   f'{d["hours"]} h</span></div>' for d in offline[:6])
+    rows += "".join(f'<div class="row"><span>{_esc(b["name"])}</span><span class="muted">battery '
+                    f'{b["level"]}%</span></div>' if b["level"] is not None else
+                    f'<div class="row"><span>{_esc(b["name"])}</span><span class="muted">battery low</span></div>'
+                    for b in batteries[:6])
+    inner = (f'<p class="muted">Home Assistant {_esc(info.get("version") or "")} · {len(offline)} offline · '
+             f'{len(batteries)} low batteries</p>' + (rows or '<p class="muted">Every device is answering.</p>'))
+    if updates:
+        inner += (f'<p class="muted" style="margin:10px 0 4px">{len(updates)} update{"s" if len(updates) != 1 else ""} '
+                  'waiting</p>' + "".join(f'<div class="row"><span>{_esc(u["title"])}</span><span class="muted">'
+                                          f'{_esc(u["latest"] or "")}</span></div>' for u in updates[:4]))
+    if (ha or {}).get("error"):
+        inner += f'<p class="bad">{_esc(ha["error"])}</p>'
+    return f'<div id="homeassistant" style="display:contents">{_card("/settings#homeassistant", "Smart home", state, inner)}</div>'
+
+
 def _kpis(stats):
 
     if not stats:
@@ -608,7 +641,7 @@ def _issues(items):
 
 
 def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=(),
-                     steps=None, open_alerts=(), stats=None, dns=None, names=None):
+                     steps=None, open_alerts=(), stats=None, dns=None, names=None, ha=None):
     """
     posture: render._posture_block() output or None; hosts: build_hosts()
     output; events: interesting_events() pairs; storage: build_storage()
@@ -623,7 +656,7 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
     body = (HOME_STYLE + _checklist(steps) + _kpis(stats) + (_issues(items) if items else "")
             + ask_chips(ASK_SHORTCUTS) + '<div class="cards">'
             + _posture_card(posture, "posture" in flagged) + _hosts_card(hosts, "hosts" in flagged)
-            + _storage_card(storage, "storage" in flagged) + _dns_card(dns, names or {})
+            + _storage_card(storage, "storage" in flagged) + _dns_card(dns, names or {}) + _ha_card(ha)
             + _trends_card(trends) + _analysis_card(analysis, now or utcnow())
             + _activity_card(events) + "</div>")
 

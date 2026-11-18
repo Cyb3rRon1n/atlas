@@ -10,6 +10,8 @@ inventory/
 reports/
 logs/
 atlas.yaml
+lanxang.yaml
+demo/
 
 .env
 .env.*

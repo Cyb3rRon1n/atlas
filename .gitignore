@@ -163,6 +163,8 @@ site/
 # ==========================
 
 atlas.yaml
+lanxang.yaml
+demo/
 
 # Operator cabling map (site-specific)
 cabling.yaml

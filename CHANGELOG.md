@@ -1,7 +1,7 @@
 # Changelog
 
-All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
-Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
+All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
+Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
 ## 0.12.1 - 2026-11-18
 

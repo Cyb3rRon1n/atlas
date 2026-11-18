@@ -20,3 +20,15 @@ def test_config_file_prefers_lanxang_yaml(isolated_cwd):
     assert local.config_file() == Path("atlas.yaml")       # existing install keeps reading its file
     Path("lanxang.yaml").write_text("name: new\n")
     assert local.config_file() == Path("lanxang.yaml")     # both: the new file wins
+
+
+def test_atlas_command_still_runs_with_a_notice(monkeypatch, capsys):
+    import sys
+    from lanxang import cli
+
+    called = []
+    monkeypatch.setattr(cli, "app", lambda: called.append(True))
+    monkeypatch.setattr(sys, "argv", ["atlas", "status"])
+    cli.legacy()
+    assert called == [True]
+    assert "atlas is now lanxang" in capsys.readouterr().err

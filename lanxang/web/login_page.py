@@ -22,14 +22,14 @@ def _page(title, body):
 
     return ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-            f"<title>Atlas - {_esc(title)}</title>{FAVICON}<style>{PAGE_STYLE}{CARD_STYLE}</style></head><body>"
+            f"<title>Lanxang - {_esc(title)}</title>{FAVICON}<style>{PAGE_STYLE}{CARD_STYLE}</style></head><body>"
             f"<main class=\"auth\">{body}</main></body></html>")
 
 
 def render_login_page(error="", next_path="/"):
 
     return _page("Sign in", (
-        "<h1>Sign in to Atlas</h1>"
+        "<h1>Sign in to Lanxang</h1>"
         "<form method=\"post\" action=\"/login\">"
         f"<input type=\"hidden\" name=\"next\" value=\"{_esc(next_path)}\">"
         "<label for=\"password\">Password</label>"
@@ -42,7 +42,7 @@ def render_login_page(error="", next_path="/"):
 def render_setup_page(error=""):
 
     return _page("Set up", (
-        "<h1>Welcome to Atlas</h1>"
+        "<h1>Welcome to Lanxang</h1>"
         "<p class=\"hint\">Set the admin password. The setup code is in the atlas log "
         "(<code>docker compose logs atlas</code>) or from <code>docker compose exec atlas atlas auth setup-code</code>.</p>"
         "<form method=\"post\" action=\"/setup\">"

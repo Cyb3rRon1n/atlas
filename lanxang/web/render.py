@@ -18,25 +18,27 @@ from lanxang.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE, DRAWER_HTML, DRAWER
 
 # Colours are tokens: light by default, dark when the system asks for it or the viewer picks it (the sidebar's
 # Theme button, kept in localStorage). Pages use var(--...) only, never a raw colour.
-LIGHT = """--bg:#f6f7fb; --surface:#ffffff; --surface2:#f1f3f8; --deep:#eceff5; --line:#e3e6ee; --line2:#cdd2de;
-  --text:#0f1222; --muted:#535a6b; --blue:#2563eb; --accent:#4338ca; --on-accent:#ffffff;
+LIGHT = """--bg:#f7fbf9; --surface:#ffffff; --surface2:#f1f3f8; --deep:#eceff5; --line:#e3e6ee; --line2:#cdd2de;
+  --text:#0f1222; --muted:#535a6b; --blue:#1e7f66; --accent:#1e7f66; --gold:#c9a227; --on-accent:#ffffff;
   --green:#15803d; --orange:#b45309; --red:#c42b2b; --purple:#7c3aed; --teal:#0f766e; --yellow:#a16207;
   --ok-text:#166534; --ok-line:#86d6a4; --warn-text:#92400e; --warn-line:#f2c97a; --warn-bg:#fff7eb;
   --bad-text:#991b1b; --bad-line:#f3a8a8; --bad-bg:#fef2f2; --lane:#c7cdf7;
-  --nav-bg:#1a1e3a; --nav-text:#c9cde3; --nav-muted:#9ba1c2; --nav-on:#2c3160; color-scheme:light;"""
-DARK = """--bg:#0e131a; --surface:#131a23; --surface2:#1b2430; --deep:#0b1016; --line:#232d3a; --line2:#2f3b4c;
-  --text:#e7edf3; --muted:#a3b0bd; --blue:#5aa7f0; --accent:#4f5bd5; --on-accent:#ffffff;
+  --nav-bg:#0e1a19; --nav-text:#cfe3dc; --nav-muted:#8fb0a6; --nav-on:#16302c; color-scheme:light;"""
+DARK = """--bg:#0e1a19; --surface:#13231f; --surface2:#182c27; --deep:#0b1513; --line:#1f3631; --line2:#2a4740;
+  --text:#e7edf3; --muted:#a3b0bd; --blue:#5ec2a4; --accent:#5ec2a4; --gold:#e9b44c; --on-accent:#ffffff;
   --green:#43c08f; --orange:#f0a23a; --red:#f47a5c; --purple:#b48cf2; --teal:#3ccfb4; --yellow:#d9b44a;
   --ok-text:#7fdcb5; --ok-line:#2f6b55; --warn-text:#ffd08a; --warn-line:#6b5530; --warn-bg:#1d1810;
   --bad-text:#ffb4a2; --bad-line:#6b3030; --bad-bg:#2a1d1a; --lane:#2c4560;
-  --nav-bg:#0a0e14; --nav-text:#c3cad4; --nav-muted:#8792a0; --nav-on:#1d2633; color-scheme:dark;"""
+  --nav-bg:#08110f; --nav-text:#c3cad4; --nav-muted:#8792a0; --nav-on:#16302c; color-scheme:dark;"""
 
 PAGE_STYLE = f"""
 :root {{ {LIGHT} }}
 @media (prefers-color-scheme: dark) {{ :root:not([data-theme="light"]) {{ {DARK} }} }}
 :root[data-theme="dark"] {{ {DARK} }}
 """ + """
-  body { font-family: Inter, "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg);
+  @font-face { font-family:"Lexend"; src:url("/static/fonts/Lexend.woff2") format("woff2"); font-weight:100 900; font-display:swap; }
+  @font-face { font-family:"Noto Sans Lao"; src:url("/static/fonts/NotoSansLao-Medium.woff2") format("woff2"); font-weight:500; font-display:swap; }
+  body { font-family: Lexend, system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg);
          color:var(--text); margin:0; line-height:1.5; }
   a { color:var(--blue); text-decoration:none; }
   a:hover { text-decoration:underline; }
@@ -77,10 +79,12 @@ SHELL_STYLE = """
 .side .brand { display:flex; align-items:center; gap:10px; padding:4px 14px 18px; color:#fff; font-weight:700;
         font-size:17px; }
 .side .brand:hover { background:none; }
+.side .brand .name { display:flex; flex-direction:column; line-height:1.1; }
+.side .brand small { font:500 11px "Noto Sans Lao", sans-serif; color:var(--gold); }
 .side ul { list-style:none; margin:0; padding:0; }
 .side nav.main > ul > li > a[aria-current="page"] { background:var(--nav-on); color:#fff; font-weight:600; }
 .side .tabs a { padding:6px 14px 6px 30px; font-size:13px; color:var(--nav-muted); }
-.side .tabs a[aria-current="page"] { color:#fff; font-weight:600; box-shadow:inset 2px 0 0 #a5b4fc; background:none; }
+.side .tabs a[aria-current="page"] { color:#fff; font-weight:600; box-shadow:inset 2px 0 0 var(--accent); background:none; }
 .side .foot { margin-top:auto; padding-top:16px; }
 .theme-btn .to-light { display:none; }
 :root[data-theme="dark"] .theme-btn .to-light { display:inline; } :root[data-theme="dark"] .theme-btn .to-dark { display:none; }
@@ -115,8 +119,7 @@ function atlasTheme(){var d=document.documentElement,dark=d.dataset.theme?d.data
 matchMedia("(prefers-color-scheme: dark)").matches;d.dataset.theme=dark?"light":"dark";
 try{localStorage.setItem("atlas-theme",d.dataset.theme);}catch(e){}}</script>"""
 
-LOGO = ('<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2" aria-hidden="true">'
-        '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>')
+LOGO = ('<svg width="26" height="26" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.4" stroke="#5ec2a4" stroke-width="1.8" fill="none"/><g transform="translate(4.8 4.8) scale(.6)"><g transform="translate(1.2 2.6) scale(.9)"><path d="M3 6.6C3 4.9 4.2 4 6 4h2.6v9.8C6.4 13.8 4.9 13.2 4 12.1 3.3 11.2 3 10 3 8.8z" fill="#5ec2a4"/><path d="M21 6.6C21 4.9 19.8 4 18 4h-2.6v9.8c2.2 0 3.7-.6 4.6-1.7.7-.9 1-2.1 1-3.3z" fill="#5ec2a4"/><path d="M8.2 5.2C9.3 3.9 10.6 3.3 12 3.3s2.7.6 3.8 1.9v8.1c0 1.3-.8 2.2-2 2.5l-.6 5.1c-.1.8-.6 1.2-1.2 1.2s-1.1-.4-1.2-1.2l-.6-5.1c-1.2-.3-2-1.2-2-2.5z" fill="#5ec2a4"/><circle cx="10.2" cy="8.6" r=".95" fill="#0e1a19"/><circle cx="13.8" cy="8.6" r=".95" fill="#0e1a19"/></g><g transform="translate(9 -.6) scale(.25)"><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(0 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(72 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(144 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(216 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(288 12 12)"/><circle cx="12" cy="12" r="2.6" fill="#e9b44c" stroke="#0e1a19" stroke-width=".7"/></g></g></svg>')
 
 
 def _esc(value):
@@ -151,11 +154,9 @@ def _hosts_tabs(current):
     return section_tabs("trends" if current == "/trends" else "hosts")
 
 
-# The sidebar's globe as the browser-tab icon (inline, so no extra request and no 404 for /favicon.ico).
+# The Lanxang mark (light variant) as the browser-tab icon, inline: no extra request, no 404 for /favicon.ico.
 FAVICON = ('<link rel="icon" href="data:image/svg+xml,'
-           "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234338ca' "
-           "stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E"
-           "%3Cpath d='M3 12h18M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18'/%3E%3C/svg%3E\">")
+           "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10.4' stroke='%231e7f66' stroke-width='1.8' fill='none'/%3E%3Cg transform='translate(4.8 4.8) scale(.6)'%3E%3Cg transform='translate(1.2 2.6) scale(.9)'%3E%3Cpath d='M3 6.6C3 4.9 4.2 4 6 4h2.6v9.8C6.4 13.8 4.9 13.2 4 12.1 3.3 11.2 3 10 3 8.8z' fill='%231e7f66'/%3E%3Cpath d='M21 6.6C21 4.9 19.8 4 18 4h-2.6v9.8c2.2 0 3.7-.6 4.6-1.7.7-.9 1-2.1 1-3.3z' fill='%231e7f66'/%3E%3Cpath d='M8.2 5.2C9.3 3.9 10.6 3.3 12 3.3s2.7.6 3.8 1.9v8.1c0 1.3-.8 2.2-2 2.5l-.6 5.1c-.1.8-.6 1.2-1.2 1.2s-1.1-.4-1.2-1.2l-.6-5.1c-1.2-.3-2-1.2-2-2.5z' fill='%231e7f66'/%3E%3Ccircle cx='10.2' cy='8.6' r='.95' fill='%23f7fbf9'/%3E%3Ccircle cx='13.8' cy='8.6' r='.95' fill='%23f7fbf9'/%3E%3C/g%3E%3Cg transform='translate(9 -.6) scale(.25)'%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(0 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(72 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(144 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(216 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(288 12 12)'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%23c9a227' stroke='%23f7fbf9' stroke-width='.7'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\">")
 
 
 def render_page(title, body_html, active="", tabs=None, drawer=True, heading=None):
@@ -184,9 +185,9 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
         "<!doctype html>\n"
         "<html lang=\"en\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-        f"<title>Atlas - {_esc(title)}</title>{FAVICON}{THEME_SCRIPT}"
+        f"<title>Lanxang - {_esc(title)}</title>{FAVICON}{THEME_SCRIPT}"
         f"<style>{PAGE_STYLE}</style></head><body><div class=\"app\">"
-        f"<aside class=\"side\"><a class=\"brand\" href=\"/\">{LOGO}Atlas</a>"
+        f"<aside class=\"side\"><a class=\"brand\" href=\"/\">{LOGO}<span class=\"name\">Lanxang<small lang=\"lo\">ລ້ານຊ້າງ</small></span></a>"
         f"<nav class=\"main\" aria-label=\"Main\"><ul>{''.join(items)}</ul></nav>"
         f"<div class=\"foot\">{chat_link}"
         "<button type=\"button\" class=\"theme-btn\" onclick=\"atlasTheme()\" aria-label=\"Switch between light and dark\">"
@@ -207,7 +208,7 @@ def ask_chips(questions):
 
     if not AI_ON:
         return ""
-    return '<div class="chips" aria-label="Ask Atlas">' + "".join(
+    return '<div class="chips" aria-label="Ask Lanxang">' + "".join(
         f'<button data-ask="{_esc(q)}">{_esc(q)}</button>' for q in questions) + "</div>" + (
         # Delegated, so [data-ask] buttons rendered AFTER the chips (e.g. Access page "Investigate") work too.
         "<script>if (!window.atlasAskBound) { window.atlasAskBound = true;"

@@ -188,11 +188,11 @@ def render_network_page(topology, routes, graph):
         + f'<p class="muted">Snapshot {_esc(topology.get("generated_at", ""))}. Click a service for details.'
         + (f' <strong>{down} not healthy</strong> (listed first in each lane).' if down else "") + "</p>"
         + '<section class="nlane"><h2>' + icon("globe") + 'From the internet</h2><p class="why">Reachable by anyone through the '
-          'Cloudflare tunnel. Every request passes CrowdSec (bans bad IPs) and is logged; Atlas watches it.</p>'
+          'Cloudflare tunnel. Every request passes CrowdSec (bans bad IPs) and is logged; Lanxang watches it.</p>'
         + f'<h3 class="sub">{icon("lock")}Behind Authelia ({len(guarded)})</h3><p class="why">Authelia\'s login comes first - '
           'nobody reaches the app without your account.</p>' + grid("internet", guarded)
         + f'<h3 class="sub">{icon("shield")}Own login only ({len(own)})</h3><p class="why">Not behind Authelia (their '
-          'phone/TV apps can\'t pass it) - the app\'s own login is the gate, CrowdSec and Atlas still watch.</p>'
+          'phone/TV apps can\'t pass it) - the app\'s own login is the gate, CrowdSec and Lanxang still watch.</p>'
         + grid("internet", own) + "</section>"
         + '<section class="nlane"><h2>' + icon("home") + 'Home network only</h2><p class="why">A web page or port, but no '
           'route from the internet.</p>' + grid("home") + "</section>"

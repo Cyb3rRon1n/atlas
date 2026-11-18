@@ -287,7 +287,7 @@ async function select(id) {
   const ul = el("ul");
   d.sources.forEach((s) => ul.append(el("li", s.source + " · " + fmt(s.bytes))));
   panel.append(ul);
-  const ask = el("button", "Ask Atlas about this", "primary");
+  const ask = el("button", "Ask Lanxang about this", "primary");
   ask.id = "ask-atlas";
   ask.dataset.prefill = "Why is " + d.sources.map((s) => s.source).join(", ") + " talking to " + (d.org || d.asn_key) +
     " (" + d.asn_key + ", " + (d.cc || "?") + ", ports " + d.ports.join(",") + ")? Is this expected?";

@@ -263,7 +263,7 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
                + '<p id="up-msg"></p></section>')
 
     body = (STYLE
-            + '<p class="up-intro">Is each service answering? Atlas tries every check once a minute. A web address '
+            + '<p class="up-intro">Is each service answering? Lanxang tries every check once a minute. A web address '
               'is up when it answers at all (a login page counts); <code>host:port</code> is up when the port accepts '
               f'a connection. After {fail_after} failures in a row it is <strong>down</strong>: you get one alert, and '
               'another when it is back.</p>'

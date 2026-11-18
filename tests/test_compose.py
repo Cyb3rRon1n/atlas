@@ -54,8 +54,8 @@ def test_atlas_scan_runs_posture_watch_with_net_admin():
     data = yaml.safe_load(open("docker-compose.yml"))
     scan = data["services"]["atlas-scan"]
     assert "NET_ADMIN" in scan["cap_add"]
-    assert "while :; do atlas posture watch; sleep 30; done &" in "\n".join(scan["command"])   # restarts if it dies
-    assert "atlas uptime check" in "\n".join(scan["command"]) and "atlas ups check" in "\n".join(scan["command"])
+    assert "while :; do lanxang posture watch; sleep 30; done &" in "\n".join(scan["command"])   # restarts if it dies
+    assert "lanxang uptime check" in "\n".join(scan["command"]) and "lanxang ups check" in "\n".join(scan["command"])
 
 
 def test_docker_proxy_allows_what_the_container_list_reads():
@@ -63,4 +63,46 @@ def test_docker_proxy_allows_what_the_container_list_reads():
     env = yaml.safe_load(open("docker-compose.yml"))["services"]["docker-proxy"]["environment"]
     # collect_containers() reads container.image.tags -> GET /images/<id>/json
     assert env["CONTAINERS"] == 1 and env["IMAGES"] == 1
-    assert env["POST"] == "${ATLAS_DOCKER_WRITE:-0}"   # writes stay off by default
+    assert env["POST"] == "${LANXANG_DOCKER_WRITE:-${ATLAS_DOCKER_WRITE:-0}}"   # writes stay off by default
+
+
+def test_service_names_and_old_env_names_survive_the_rename():
+    import yaml
+    data = yaml.safe_load(open("docker-compose.yml"))
+    assert {"atlas", "atlas-scan"} <= set(data["services"])   # existing overrides name these
+    web = data["services"]["atlas"]
+    assert web["image"] == "ghcr.io/cyb3rron1n/lanxang:${LANXANG_TAG:-${ATLAS_TAG:-latest}}"
+    assert "${LANXANG_PORT:-${ATLAS_PORT:-8420}}" in web["ports"][0]
+
+
+def _mount_sources(tmp_path, env_text):
+    import json
+    import shutil
+    import subprocess
+    import pytest
+    if not shutil.which("docker"):
+        pytest.skip("needs docker")
+    shutil.copy("docker-compose.yml", tmp_path / "docker-compose.yml")
+    (tmp_path / ".env").write_text(env_text)
+    out = subprocess.run(["docker", "compose", "config", "--format", "json"], cwd=tmp_path, capture_output=True,
+                         text=True, check=True).stdout
+    return {v["source"].rsplit("/", 1)[1] for v in json.loads(out)["services"]["atlas"]["volumes"]
+            if v.get("type") == "bind"}
+
+
+def test_clone_with_only_atlas_yaml_mounts_it(tmp_path):
+    # a git clone that never runs install.sh: old .env names, no config variable
+    (tmp_path / "atlas.yaml").write_text("name: mine\n")
+    sources = _mount_sources(tmp_path, "ATLAS_PORT=8420\n")
+    assert "atlas.yaml" in sources and "lanxang.yaml" not in sources
+
+
+def test_config_variable_switches_the_mounted_file(tmp_path):
+    assert "lanxang.yaml" in _mount_sources(tmp_path, "LANXANG_CONFIG=lanxang.yaml\n")
+
+
+def test_an_atlas_scan_minutes_override_is_not_shadowed():
+    import yaml
+    scan = yaml.safe_load(open("docker-compose.yml"))["services"]["atlas-scan"]
+    assert not any("SCAN_MINUTES" in k for k in scan["environment"])
+    assert "${LANXANG_SCAN_MINUTES:-$${ATLAS_SCAN_MINUTES:-15}}" in "\n".join(scan["command"])

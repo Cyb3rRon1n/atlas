@@ -1,17 +1,20 @@
+# Project, service and container names stay `atlas` / `atlas-scan` so existing installs, their volumes and
+# their docker-compose.override.yml keep working after the rename to Lanxang.
 name: atlas
 
 # Easiest: the installer writes this folder for you (see README):
-#   curl -fsSL https://raw.githubusercontent.com/Cyb3rRon1n/atlas/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Cyb3rRon1n/lanxang/main/install.sh | bash
 # By hand:
-#   cp atlas.yaml.example atlas.yaml   # edit: Proxmox/Prometheus/AI config
-#   docker compose up -d               # pulls ghcr.io/cyb3rron1n/atlas (or builds it)
+#   cp lanxang.yaml.example atlas.yaml   # edit: Proxmox/Prometheus/AI config (the file is atlas.yaml until 1.2;
+#                                        # LANXANG_CONFIG=lanxang.yaml in .env switches to the new name)
+#   docker compose up -d               # pulls ghcr.io/cyb3rron1n/lanxang (or builds it)
 #   docker compose logs atlas          # first run: the setup code for the admin password
 #
 # atlas-scan (below) keeps the device inventory and network map fresh - the
 # explicit, visible equivalent of a host cron line, for stacks without one.
 
-x-atlas: &atlas
-  image: ghcr.io/cyb3rron1n/atlas:${ATLAS_TAG:-latest}
+x-lanxang: &lanxang
+  image: ghcr.io/cyb3rron1n/lanxang:${LANXANG_TAG:-${ATLAS_TAG:-latest}}
   build:
     context: .
     dockerfile: Dockerfile
@@ -22,7 +25,9 @@ x-atlas: &atlas
     - path: .env
       required: false
   volumes:
-    - ./atlas.yaml:/data/atlas.yaml:ro
+    # The config file's name: atlas.yaml until 1.2, so a clone that only has atlas.yaml (and never runs
+    # install.sh) keeps working. LANXANG_CONFIG=lanxang.yaml in .env switches to the new name.
+    - ./${LANXANG_CONFIG:-${ATLAS_CONFIG:-atlas.yaml}}:/data/${LANXANG_CONFIG:-${ATLAS_CONFIG:-atlas.yaml}}:ro
     - data:/data/inventory
     - reports:/data/reports
     - logs:/data/logs
@@ -30,7 +35,7 @@ x-atlas: &atlas
 services:
   # Docker access goes through this proxy instead of mounting docker.sock into
   # atlas (root-equivalent host access). Read-only by default: atlas can list
-  # containers, networks and logs, nothing else. ATLAS_DOCKER_WRITE=1 in .env
+  # containers, networks and logs, nothing else. LANXANG_DOCKER_WRITE=1 in .env
   # lets the chat's approved stop/restart/resize actions through - the proxy
   # can't narrow writes further, so that is full container control again.
   docker-proxy:
@@ -41,66 +46,65 @@ services:
       NETWORKS: 1
       INFO: 1
       IMAGES: 1      # read-only: the container list shows each image's tags
-      POST: ${ATLAS_DOCKER_WRITE:-0}
+      POST: ${LANXANG_DOCKER_WRITE:-${ATLAS_DOCKER_WRITE:-0}}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       # loopback only, for atlas-scan (host networking can't use the service name)
-      - "127.0.0.1:${ATLAS_DOCKER_PROXY_PORT:-23750}:2375"
+      - "127.0.0.1:${LANXANG_DOCKER_PROXY_PORT:-${ATLAS_DOCKER_PROXY_PORT:-23750}}:2375"
 
   atlas:
-    <<: *atlas
+    <<: *lanxang
     depends_on: [docker-proxy]
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       DOCKER_HOST: tcp://docker-proxy:2375
     ports:
-      # This machine only by default. ATLAS_BIND=0.0.0.0 in .env opens it to the
+      # This machine only by default. LANXANG_BIND=0.0.0.0 in .env opens it to the
       # LAN - atlas asks for its admin password (web.auth: builtin), so that is
       # safe; behind an auth proxy, set web.auth: proxy and keep this on loopback.
-      - "${ATLAS_BIND:-127.0.0.1}:${ATLAS_PORT:-8420}:8420"
+      - "${LANXANG_BIND:-${ATLAS_BIND:-127.0.0.1}}:${LANXANG_PORT:-${ATLAS_PORT:-8420}}:8420"
 
   # Finds every device on the LAN and refreshes discover / Proxmox / map every
-  # ATLAS_SCAN_MINUTES (default 15). Host networking is what lets it see the
+  # LANXANG_SCAN_MINUTES (default 15). Host networking is what lets it see the
   # LAN's MAC addresses (it reads the host's ARP table); it needs NET_ADMIN
   # only for the posture collector's read-only conntrack listing. Writes the
   # same database the atlas web container reads.
   atlas-scan:
-    <<: *atlas
+    <<: *lanxang
     network_mode: host
     cap_add:
       - NET_ADMIN   # conntrack -L only (posture page); atlas never writes netfilter state
     depends_on: [docker-proxy]
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ATLAS_SCAN_MINUTES: ${ATLAS_SCAN_MINUTES:-15}
-      DOCKER_HOST: tcp://127.0.0.1:${ATLAS_DOCKER_PROXY_PORT:-23750}
+      DOCKER_HOST: tcp://127.0.0.1:${LANXANG_DOCKER_PROXY_PORT:-${ATLAS_DOCKER_PROXY_PORT:-23750}}
     healthcheck:
       disable: true
     command:
       - sh
       - -c
       - |
-        while :; do atlas posture watch; sleep 30; done &
-        while :; do atlas uptime check >/dev/null 2>&1; atlas ups check >/dev/null 2>&1; sleep 60; done &   # no-ops until set up
+        while :; do lanxang posture watch; sleep 30; done &
+        while :; do lanxang uptime check >/dev/null 2>&1; lanxang ups check >/dev/null 2>&1; sleep 60; done &   # no-ops until set up
         while :; do
-          atlas scan
-          atlas lan check >/dev/null 2>&1        # rogue DHCP / gateway ARP spoofing (Posture page)
-          atlas ports check >/dev/null 2>&1      # new open ports: LAN devices, this host, router forwards/UPnP
-          atlas certs check >/dev/null 2>&1      # daily: TLS expiry of public hostnames (Posture page)
-          atlas discover >/dev/null 2>&1
-          atlas proxmox scan >/dev/null 2>&1
-          atlas map >/dev/null 2>&1 && echo "$$(date -u +%FT%TZ) map refreshed"
-          atlas wiring scan >/dev/null 2>&1     # no-op unless wiring.enabled; cable health compares scans
-          atlas access collect >/dev/null 2>&1   # no-op unless access.enabled
-          atlas sample >/dev/null 2>&1           # host history for the Trends charts
-          atlas vpn check >/dev/null 2>&1        # no-op unless vpn.clients is set
+          lanxang scan
+          lanxang lan check >/dev/null 2>&1        # rogue DHCP / gateway ARP spoofing (Posture page)
+          lanxang ports check >/dev/null 2>&1      # new open ports: LAN devices, this host, router forwards/UPnP
+          lanxang certs check >/dev/null 2>&1      # daily: TLS expiry of public hostnames (Posture page)
+          lanxang discover >/dev/null 2>&1
+          lanxang proxmox scan >/dev/null 2>&1
+          lanxang map >/dev/null 2>&1 && echo "$$(date -u +%FT%TZ) map refreshed"
+          lanxang wiring scan >/dev/null 2>&1     # no-op unless wiring.enabled; cable health compares scans
+          lanxang access collect >/dev/null 2>&1   # no-op unless access.enabled
+          lanxang sample >/dev/null 2>&1           # host history for the Trends charts
+          lanxang vpn check >/dev/null 2>&1        # no-op unless vpn.clients is set
           # Daily AI check-up for the home page (skipped quietly while the model is unreachable).
           day=$$(date -u +%F)
-          if [ "$$(cat /data/logs/.analyzed 2>/dev/null)" != "$$day" ] && atlas analyze --json >/dev/null 2>&1; then
+          if [ "$$(cat /data/logs/.analyzed 2>/dev/null)" != "$$day" ] && lanxang analyze --json >/dev/null 2>&1; then
             echo "$$day" > /data/logs/.analyzed; echo "$$(date -u +%FT%TZ) AI check-up saved"
           fi
-          sleep "$${ATLAS_SCAN_MINUTES:-15}m"
+          sleep "$${LANXANG_SCAN_MINUTES:-$${ATLAS_SCAN_MINUTES:-15}}m"
         done
 
 volumes:

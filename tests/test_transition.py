@@ -32,3 +32,10 @@ def test_atlas_command_still_runs_with_a_notice(monkeypatch, capsys):
     cli.legacy()
     assert called == [True]
     assert "atlas is now lanxang" in capsys.readouterr().err
+
+
+def test_config_file_ignores_a_directory_named_lanxang_yaml(isolated_cwd):
+    # Docker creates an empty directory when a bind-mount source is missing
+    Path("lanxang.yaml").mkdir()
+    Path("atlas.yaml").write_text("name: old\n")
+    assert local.config_file() == Path("atlas.yaml")

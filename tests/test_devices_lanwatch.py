@@ -176,7 +176,7 @@ def test_helper_used_when_port_68_is_privileged(monkeypatch):
         calls.append(args)
         return SimpleNamespace(returncode=0, stdout='[{"server": "192.0.2.1"}]', stderr="")
     assert lanwatch.probe_with_helper(1.0, run=fake_run) == [{"server": GW}]
-    assert calls[0][:4] == ["/usr/local/bin/atlas-dhcp-python", "-I", "-m", "lanxang.devices.lanwatch"]
+    assert calls[0][:4] == ["/usr/local/bin/lanxang-dhcp-python", "-I", "-m", "lanxang.devices.lanwatch"]
     monkeypatch.setattr(lanwatch.shutil, "which", lambda name: None)
     with pytest.raises(PermissionError, match="helper"):
         lanwatch.probe_with_helper(1.0, run=fake_run)

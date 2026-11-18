@@ -89,7 +89,7 @@ def initialize_database(engine=None):
             exist_ok=True
         )
 
-    # atlas-web and atlas-scan start together on a fresh volume; create_all checks then creates, one
+    # The web and scan containers start together on a fresh volume; create_all checks then creates, one
     # table at a time, so the loser can hit a table the winner just made - and again on the next one
     # while the winner is still going. Retry until it sees them all; anything but "already exists" is real.
     for attempt in range(CREATE_ATTEMPTS):

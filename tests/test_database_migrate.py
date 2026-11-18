@@ -146,7 +146,7 @@ def test_event_heal_never_writes_when_nothing_matches_and_runs_once(tmp_path, mo
 
 def test_initialize_database_tolerates_a_concurrent_create_all(tmp_path, monkeypatch):
     """
-    On a fresh data volume atlas-web and atlas-scan both call
+    On a fresh data volume the web and scan containers both call
     initialize_database() at once; create_all() is check-then-create, so the
     loser's CREATE TABLE can hit "table events already exists". That means
     the other process made it - initialization has to retry, not crash.
@@ -162,6 +162,8 @@ def test_initialize_database_tolerates_a_concurrent_create_all(tmp_path, monkeyp
 
         if len(calls) == 1:
             real_create_all(bind)     # the "winner" gets there first
+
+        if len(calls) <= 2:           # and is still creating tables when the retry runs
             raise OperationalError("CREATE TABLE events (...)", {}, Exception("table events already exists"))
 
         return real_create_all(bind, *args, **kwargs)
@@ -170,7 +172,7 @@ def test_initialize_database_tolerates_a_concurrent_create_all(tmp_path, monkeyp
 
     initialize_database(engine)
 
-    assert len(calls) == 2
+    assert len(calls) == 3
     assert "events" in inspect(engine).get_table_names()
 
     with engine.begin() as connection:

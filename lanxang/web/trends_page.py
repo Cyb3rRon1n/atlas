@@ -1,7 +1,7 @@
 """
 /trends (Hosts > Trends): line charts over 24h / 7d / 30d from Atlas's own
-history - lanxang.host.sample events (this host, every scan) and
-lanxang.proxmox.scan.completed events (the Proxmox node, its ZFS pools and
+history - atlas.host.sample events (this host, every scan) and
+atlas.proxmox.scan.completed events (the Proxmox node, its ZFS pools and
 guests). Plain inline SVG, no dependencies. Pure renderer.
 """
 
@@ -106,7 +106,7 @@ def _pct(used, total):
 
 def render_trends_page(samples, scans, window, now, host_name="this host", node_names=None):
     """
-    samples: [(time, lanxang.host.sample payload)]; scans: [(time, lanxang.proxmox.scan.completed payload)],
+    samples: [(time, atlas.host.sample payload)]; scans: [(time, atlas.proxmox.scan.completed payload)],
     both oldest first and already limited to the window.
     """
 

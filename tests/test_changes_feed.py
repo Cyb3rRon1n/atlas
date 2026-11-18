@@ -20,9 +20,9 @@ SOURCES = {
     "devices": lambda: [{"name": "Den TV", "ip": "192.0.2.41", "sightings": [{"first_seen": (NOW - timedelta(hours=3)).isoformat()}]},
                         {"name": "nas", "ip": "192.0.2.10", "sightings": [{"first_seen": "2026-01-01T00:00:00"}]}],
     "changes": lambda since: [
-        (NOW - timedelta(hours=4), "lanxang.proxmox.changes_detected",
+        (NOW - timedelta(hours=4), "atlas.proxmox.changes_detected",
          {"changes": [{"type": "guest_removed", "vmid": 110, "name": "old-vm", "guest_type": "qemu"}]}),
-        (NOW - timedelta(hours=6), "lanxang.proxmox.changes_detected",
+        (NOW - timedelta(hours=6), "atlas.proxmox.changes_detected",
          {"changes": [{"type": "guest_removed", "vmid": 110, "name": "old-vm", "guest_type": "qemu"}]})]}
 
 

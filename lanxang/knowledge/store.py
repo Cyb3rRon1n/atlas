@@ -15,7 +15,7 @@ from lanxang.clock import utcnow
 ENVIRONMENT_KEEP = timedelta(days=7)
 EVENTS_KEEP = timedelta(days=90)
 # Routine bookkeeping with no history reader (each repeats the system snapshot every scan): a week is plenty.
-ROUTINE_EVENTS = ("lanxang.discovery.completed", "lanxang.plugins.discovery.completed", "lanxang.plugin.loaded")
+ROUTINE_EVENTS = ("atlas.discovery.completed", "atlas.plugins.discovery.completed", "atlas.plugin.loaded")
 ROUTINE_KEEP = timedelta(days=7)
 
 

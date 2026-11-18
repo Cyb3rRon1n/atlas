@@ -238,7 +238,7 @@ def monitor(
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.monitoring.scan.completed",
+            event_type="atlas.monitoring.scan.completed",
             source="MonitoringScan",
             payload=data
         )
@@ -248,7 +248,7 @@ def monitor(
 
         runtime.events.publish(
             AtlasEvent(
-                event_type="lanxang.monitoring.threshold_exceeded",
+                event_type="atlas.monitoring.threshold_exceeded",
                 source="MonitoringScan",
                 payload={
                     "metrics": metrics,
@@ -264,7 +264,7 @@ def monitor(
 
         runtime.events.publish(
             AtlasEvent(
-                event_type="lanxang.monitoring.changes_detected",
+                event_type="atlas.monitoring.changes_detected",
                 source="MonitoringScan",
                 payload={"changes": changes}
             )
@@ -423,7 +423,7 @@ def restart(
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.action.container_restarted",
+            event_type="atlas.action.container_restarted",
             source="RestartAction",
             payload={
                 "container": name,
@@ -508,7 +508,7 @@ def stop(
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.action.container_stopped",
+            event_type="atlas.action.container_stopped",
             source="StopAction",
             payload={
                 "container": name,
@@ -627,7 +627,7 @@ def resize(
 
     runtime.events.publish(
         AtlasEvent(
-            event_type="lanxang.action.container_resized",
+            event_type="atlas.action.container_resized",
             source="ResizeAction",
             payload={
                 "container": name,

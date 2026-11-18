@@ -22,7 +22,7 @@ PVE = {"nodes": [{"name": "proxmox", "status": "online", "cpu": 0.051, "mem": 4,
                   "disk": 30, "maxdisk": 100}]}
 POSTURE_OK = {"state": "ok", "message": "All good", "vpn": "up", "routes": 12, "blocked": "3",
               "review_count": 0, "link": "/posture"}
-EVENTS = [(SimpleNamespace(created_at="2026-10-10 12:00", event_type="lanxang.proxmox.changes_detected",
+EVENTS = [(SimpleNamespace(created_at="2026-10-10 12:00", event_type="atlas.proxmox.changes_detected",
                            source="<b>x</b>"), 3)]
 
 
@@ -40,9 +40,9 @@ def test_build_hosts_local_and_proxmox_rows():
 
 def test_interesting_events_skips_routine_bookkeeping():
     events = [SimpleNamespace(event_type=t) for t in
-              ("lanxang.plugin.loaded", "lanxang.proxmox.changes_detected", "lanxang.discovery.completed", "device.new")]
-    events.append(SimpleNamespace(event_type="lanxang.proxmox.changes_detected"))
-    assert [(e.event_type, n) for e, n in interesting_events(events, 1)] == [("lanxang.proxmox.changes_detected", 2)]
+              ("atlas.plugin.loaded", "atlas.proxmox.changes_detected", "atlas.discovery.completed", "device.new")]
+    events.append(SimpleNamespace(event_type="atlas.proxmox.changes_detected"))
+    assert [(e.event_type, n) for e, n in interesting_events(events, 1)] == [("atlas.proxmox.changes_detected", 2)]
     assert len(interesting_events(events)) == 2
 
 

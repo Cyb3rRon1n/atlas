@@ -186,10 +186,10 @@ def test_render_history_page_no_events_shows_hint():
 def test_render_history_page_shows_events():
 
     from datetime import date
-    events = [FakeEvent("2026-01-02 09:30:00", "lanxang.proxmox.changes_detected", "ProxmoxScan", '{"x": "<b>"}'),
-              FakeEvent("2026-01-02 09:15:00", "lanxang.proxmox.changes_detected", "ProxmoxScan", "{}"),
-              FakeEvent("2026-01-01 08:00:00", "lanxang.discovery.completed", "Discovery", "{}"),
-              FakeEvent("2026-01-01 07:00:00", "lanxang.action.container_restarted", "PlanStep", "{}")]
+    events = [FakeEvent("2026-01-02 09:30:00", "atlas.proxmox.changes_detected", "ProxmoxScan", '{"x": "<b>"}'),
+              FakeEvent("2026-01-02 09:15:00", "atlas.proxmox.changes_detected", "ProxmoxScan", "{}"),
+              FakeEvent("2026-01-01 08:00:00", "atlas.discovery.completed", "Discovery", "{}"),
+              FakeEvent("2026-01-01 07:00:00", "atlas.action.container_restarted", "PlanStep", "{}")]
 
     html = render_history_page(events, today=date(2026, 1, 2))
 

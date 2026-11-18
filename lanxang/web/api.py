@@ -133,10 +133,10 @@ def _post(path, body):
             return 400, {"error": result["error"]}
 
         try:
-            application.runtime.events.publish(AtlasEvent(event_type="lanxang.posture.marked_known", source="AtlasWeb",
+            application.runtime.events.publish(AtlasEvent(event_type="atlas.posture.marked_known", source="AtlasWeb",
                                                            payload={"source": body["source"], "asn_key": body["asn_key"]}))
         except Exception as error:
-            print(f"lanxang.web.api: event publish failed for lanxang.posture.marked_known: {error!r}", file=sys.stderr)
+            print(f"lanxang.web.api: event publish failed for atlas.posture.marked_known: {error!r}", file=sys.stderr)
 
         return 200, result
 
@@ -152,10 +152,10 @@ def _post(path, body):
             return 400, {"error": result["error"]}
 
         try:
-            application.runtime.events.publish(AtlasEvent(event_type="lanxang.access.place_confirmed", source="AtlasWeb",
+            application.runtime.events.publish(AtlasEvent(event_type="atlas.access.place_confirmed", source="AtlasWeb",
                                                            payload={"user": body["user"], "place_key": body["place_key"]}))
         except Exception as error:
-            print(f"lanxang.web.api: event publish failed for lanxang.access.place_confirmed: {error!r}", file=sys.stderr)
+            print(f"lanxang.web.api: event publish failed for atlas.access.place_confirmed: {error!r}", file=sys.stderr)
 
         return 200, result
 
@@ -184,7 +184,7 @@ def _post(path, body):
 
     if match:
         device_id = int(match.group(1))
-        return _result(store.set_fields(device_id, body), "lanxang.devices.updated",
+        return _result(store.set_fields(device_id, body), "atlas.devices.updated",
                        {"device_id": device_id, "fields": body})
 
     match = MERGE.match(path)
@@ -197,11 +197,11 @@ def _post(path, body):
             return 400, {"error": "into must be a device id"}
 
         device_id = int(match.group(1))
-        return _result(store.merge(device_id, into), "lanxang.devices.merged", {"device_id": device_id, "into": into})
+        return _result(store.merge(device_id, into), "atlas.devices.merged", {"device_id": device_id, "into": into})
 
     sighting_id = int(SPLIT.match(path).group(1))
 
-    return _result(store.split(sighting_id), "lanxang.devices.split", {"sighting_id": sighting_id})
+    return _result(store.split(sighting_id), "atlas.devices.split", {"sighting_id": sighting_id})
 
 
 def handle(method, path, body=None):
@@ -247,10 +247,10 @@ def _wiring_refresh():
     snapshot = result["snapshot"]
     try:
         application.runtime.events.publish(AtlasEvent(
-            event_type="lanxang.wiring.scanned", source="AtlasWeb",
+            event_type="atlas.wiring.scanned", source="AtlasWeb",
             payload={"links": len(snapshot["links"]), "warnings": len(snapshot["warnings"]),
                      "sources": {name: source["ok"] for name, source in result["sources"].items()}}))
     except Exception as error:
-        print(f"lanxang.web.api: event publish failed for lanxang.wiring.scanned: {error!r}", file=sys.stderr)
+        print(f"lanxang.web.api: event publish failed for atlas.wiring.scanned: {error!r}", file=sys.stderr)
 
     return 200, {"ok": True, "taken_at": result["taken_at"].isoformat(), "sources": result["sources"]}

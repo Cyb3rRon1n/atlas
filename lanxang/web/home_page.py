@@ -9,7 +9,7 @@ import re
 from datetime import datetime
 
 from lanxang.health.alerts import container_problem, container_state
-from lanxang.web.render import _esc, ask_chips, render_page
+from lanxang.web.render import _esc, ask_chips, event_label, render_page
 from lanxang.clock import utcnow
 
 
@@ -157,11 +157,6 @@ def interesting_events(events, limit=8):
             seen.setdefault(event.event_type, [event, 0])[1] += 1
 
     return [tuple(pair) for pair in list(seen.values())[:limit]]
-
-
-def _event_label(event_type):
-
-    return event_type.removeprefix("lanxang.").replace(".", " ").replace("_", " ")
 
 
 WARN_PERCENT = 90
@@ -467,7 +462,7 @@ def _activity_card(events):
         return _card("/history", "Recent activity", "unknown", '<p class="muted">No events yet.</p>')
 
     inner = "<ul>" + "".join(
-        f'<li><span class="muted">{_esc(str(e.created_at)[:16])}</span> {_esc(_event_label(e.event_type))}'
+        f'<li><span class="muted">{_esc(str(e.created_at)[:16])}</span> {_esc(event_label(e.event_type))}'
         + (f' <span class="muted">&times;{count}</span>' if count > 1 else "")
         + f' <span class="muted">({_esc(e.source)})</span></li>'
         for e, count in events

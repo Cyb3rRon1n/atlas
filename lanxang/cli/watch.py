@@ -188,7 +188,7 @@ def lan_scan(
 
     if result["new"] or result["offline"] or result["notify_errors"]:
         application.runtime.events.publish(
-            AtlasEvent(event_type="lanxang.devices.scan.completed", source="LanScan", payload=result)
+            AtlasEvent(event_type="atlas.devices.scan.completed", source="LanScan", payload=result)
         )
 
     if json_output:
@@ -371,7 +371,7 @@ app.add_typer(
 def sample():
     """
     Record one host sample (CPU load %, RAM %, root disk %, hottest sensor,
-    configured storage_paths usage, container counts) as an lanxang.host.sample
+    configured storage_paths usage, container counts) as an atlas.host.sample
     event for the Trends charts. atlas-scan runs it every cycle.
     """
 
@@ -409,7 +409,7 @@ def sample():
             containers.append({"name": c.name, "status": state.get("Status", c.status),
                                "health": (state.get("Health") or {}).get("Status", ""),
                                "exit_code": state.get("ExitCode"),
-                               "on_demand": str(labels.get("lanxang.on-demand", "")).lower() in ("1", "true", "yes")})
+                               "on_demand": str(labels.get("lanxang.on-demand", labels.get("atlas.on-demand", ""))).lower() in ("1", "true", "yes")})
         states = [container_state(c) for c in containers]
         payload["containers"] = {
             "total": len(containers),
@@ -418,7 +418,7 @@ def sample():
             "unhealthy": sum(c["health"] == "unhealthy" for c in containers),
         }
 
-    application.runtime.events.publish(AtlasEvent(event_type="lanxang.host.sample", source="HostSample", payload=payload))
+    application.runtime.events.publish(AtlasEvent(event_type="atlas.host.sample", source="HostSample", payload=payload))
     console.print(json.dumps(payload))
 
     # host health alerts: temperatures near their limit, memory/disks nearly full, crashed containers

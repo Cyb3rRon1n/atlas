@@ -10,7 +10,7 @@ from datetime import timedelta
 from lanxang.web.render import _esc
 
 WINDOWS = {"24h": timedelta(hours=24), "7d": timedelta(days=7)}
-CHANGE_EVENTS = ("lanxang.proxmox.changes_detected", "lanxang.monitoring.changes_detected")
+CHANGE_EVENTS = ("atlas.proxmox.changes_detected", "atlas.monitoring.changes_detected")
 
 
 def collect(now, window, sources):
@@ -50,7 +50,7 @@ def collect(now, window, sources):
         if key in shown:                                 # the same list again (before the fix, every Proxmox scan
             continue                                     # said the whole cluster was added): once is enough
         shown.add(key)
-        proxmox = event_type.startswith("lanxang.proxmox")
+        proxmox = event_type.startswith("atlas.proxmox")
         for change in ((payload or {}).get("changes") or [])[:20]:
             text = (proxmox_change if proxmox else container_change)(change).lstrip("!✓?+-~ ").strip()
             found.append((at, "🖥️" if proxmox else "📦", text, "/overview"))

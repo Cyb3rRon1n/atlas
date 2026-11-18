@@ -431,7 +431,7 @@ def test_analyze_json_with_plan_reports_it_without_running_it(isolated_cwd, temp
 
     event_types = [e.event_type for e in KnowledgeQueries().recent_events()]
 
-    assert "lanxang.action.container_stopped" not in event_types
+    assert "atlas.action.container_stopped" not in event_types
 
 
 def test_analyze_prints_suggested_action_for_known_container_only(
@@ -737,8 +737,8 @@ def test_analyze_confirms_plan_executes_all_steps_and_logs_events(
     plan_events = [e for e in events if e.source == "PlanStep"]
     assert len(plan_events) == 2
     assert {e.event_type for e in plan_events} == {
-        "lanxang.action.container_stopped",
-        "lanxang.action.container_restarted",
+        "atlas.action.container_stopped",
+        "atlas.action.container_restarted",
     }
 
 
@@ -1049,7 +1049,7 @@ def test_chat_saves_transcript_as_a_single_event_on_exit(isolated_cwd, temp_db):
     events = KnowledgeQueries().recent_events(10)
     transcript_events = [
         event for event in events
-        if event.event_type == "lanxang.chat.transcript_saved"
+        if event.event_type == "atlas.chat.transcript_saved"
     ]
 
     assert len(transcript_events) == 1
@@ -1090,7 +1090,7 @@ def test_chat_exiting_immediately_does_not_save_a_transcript(
     events = KnowledgeQueries().recent_events(10)
     transcript_events = [
         event for event in events
-        if event.event_type == "lanxang.chat.transcript_saved"
+        if event.event_type == "atlas.chat.transcript_saved"
     ]
 
     assert transcript_events == []
@@ -1471,7 +1471,7 @@ def test_proxmox_scan_second_run_reports_changes(isolated_cwd, temp_db):
         event.event_type for event in KnowledgeQueries().recent_events()
     ]
 
-    assert "lanxang.proxmox.changes_detected" in event_types
+    assert "atlas.proxmox.changes_detected" in event_types
 
 
 def test_proxmox_scan_ignores_other_commands_saving_an_empty_virtualization(isolated_cwd, temp_db):
@@ -1579,7 +1579,7 @@ def test_proxmox_restart_confirmed_restarts_guest_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "lanxang.action.guest_restarted"
+    assert events[0].event_type == "atlas.action.guest_restarted"
 
 
 def test_proxmox_stop_when_disabled_does_not_attempt_connection(isolated_cwd):
@@ -1641,7 +1641,7 @@ def test_proxmox_stop_confirmed_stops_guest_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "lanxang.action.guest_stopped"
+    assert events[0].event_type == "atlas.action.guest_stopped"
 
 
 def test_proxmox_resize_requires_cpus_or_memory(isolated_cwd):
@@ -1732,7 +1732,7 @@ def test_proxmox_resize_confirmed_resizes_guest_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "lanxang.action.guest_resized"
+    assert events[0].event_type == "atlas.action.guest_resized"
 
 
 def test_monitor_when_disabled_does_not_attempt_connection(isolated_cwd):
@@ -1911,7 +1911,7 @@ def test_monitor_flags_metric_over_threshold_and_publishes_event(
         event.event_type for event in KnowledgeQueries().recent_events()
     ]
 
-    assert "lanxang.monitoring.threshold_exceeded" in event_types
+    assert "atlas.monitoring.threshold_exceeded" in event_types
 
 
 def test_monitor_does_not_publish_threshold_event_when_nothing_exceeds(
@@ -1945,7 +1945,7 @@ def test_monitor_does_not_publish_threshold_event_when_nothing_exceeds(
         event.event_type for event in KnowledgeQueries().recent_events()
     ]
 
-    assert "lanxang.monitoring.threshold_exceeded" not in event_types
+    assert "atlas.monitoring.threshold_exceeded" not in event_types
 
 
 def test_monitor_flags_container_over_its_own_allocation_threshold(
@@ -2106,7 +2106,7 @@ def test_monitor_publishes_changes_detected_event_when_metric_crosses_since_last
         event.event_type for event in KnowledgeQueries().recent_events()
     ]
 
-    assert "lanxang.monitoring.changes_detected" in event_types
+    assert "atlas.monitoring.changes_detected" in event_types
 
 
 def test_discover_persists_both_builtin_and_plugin_data(isolated_cwd, temp_db):
@@ -2197,7 +2197,7 @@ def test_restart_confirmed_restarts_container_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "lanxang.action.container_restarted"
+    assert events[0].event_type == "atlas.action.container_restarted"
 
 
 def test_restart_with_unknown_node_refuses(isolated_cwd, temp_db):
@@ -2290,7 +2290,7 @@ def test_libvirt_restart_confirmed_restarts_guest_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "lanxang.action.libvirt_guest_restarted"
+    assert events[0].event_type == "atlas.action.libvirt_guest_restarted"
 
 
 def test_libvirt_restart_with_node_uses_connect_uri_and_logs_node(
@@ -2381,7 +2381,7 @@ def test_libvirt_stop_confirmed_stops_guest_and_logs_event(isolated_cwd, temp_db
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "lanxang.action.libvirt_guest_stopped"
+    assert events[0].event_type == "atlas.action.libvirt_guest_stopped"
 
 
 def test_libvirt_resize_requires_at_least_one_flag(isolated_cwd, temp_db):
@@ -2423,7 +2423,7 @@ def test_libvirt_resize_confirmed_resizes_guest_and_logs_event(isolated_cwd, tem
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "lanxang.action.libvirt_guest_resized"
+    assert events[0].event_type == "atlas.action.libvirt_guest_resized"
 
     payload = json.loads(events[0].payload)
 
@@ -2695,7 +2695,7 @@ def test_stop_confirmed_stops_container_and_logs_event(
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "lanxang.action.container_stopped"
+    assert events[0].event_type == "atlas.action.container_stopped"
 
 
 def _fake_container_with_limits(**host_config):
@@ -2756,7 +2756,7 @@ def test_resize_confirmed_with_cpus_only(isolated_cwd, temp_db):
 
     events = KnowledgeQueries().recent_events()
 
-    assert events[0].event_type == "lanxang.action.container_resized"
+    assert events[0].event_type == "atlas.action.container_resized"
 
 
 def test_resize_confirmed_with_memory_only(isolated_cwd, temp_db):

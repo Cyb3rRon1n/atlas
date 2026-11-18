@@ -362,12 +362,18 @@ def render_overview_page(environment, analysis, summary=""):
     return render_page("Overview", summary + raw, active="hosts", tabs=overview_tabs)
 
 
+def event_label(event_type):
+    """'atlas.proxmox.changes_detected' -> 'proxmox changes detected'. Event types stay atlas.* (stored data)."""
+
+    return event_type.removeprefix("atlas.").replace(".", " ").replace("_", " ")
+
+
 HISTORY_CHIPS = ("Summarize what happened in the last 24 hours.", "Anything unusual in recent events?",
                  "What changed on Proxmox this week?", "Were any actions run, and did they work?")
 
 # (category, icon, matcher) - first match wins; filter buttons use the category
 EVENT_CATEGORIES = (("alert", icon("alert"), ("threshold", "alert", "down", "failed", "error", "warn")),
-                    ("action", icon("tool"), ("lanxang.action.", "restart", "stopped", "resized", "plan")),
+                    ("action", icon("tool"), ("atlas.action.", "restart", "stopped", "resized", "plan")),
                     ("change", icon("refresh"), ("changes_detected", "device.", ".new", "changed")),
                     ("chat", icon("chat"), ("chat",)),
                     ("scan", icon("search"), (".completed", ".loaded", "scan", "discover")))
@@ -423,7 +429,7 @@ def render_history_page(events, today=None, changes=""):
         rows = ""
         for event, count in items.values():
             cat, mark = _event_category(event.event_type)
-            label = event.event_type.removeprefix("lanxang.").replace(".", " ").replace("_", " ")
+            label = event_label(event.event_type)
             rows += (f'<div class="ev" data-cat="{cat}"{" hidden" if cat == "scan" else ""}><span class="time">{_esc(str(event.created_at)[11:16])}</span>'
                      f"<span>{mark}</span><details><summary>{_esc(label)}"
                      + (f' <span class="count">\u00d7{count} today, latest</span>' if count > 1 and names.get(day) == "Today"

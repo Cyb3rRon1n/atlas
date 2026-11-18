@@ -20,7 +20,8 @@ trap cleanup EXIT
 "$CHROME" --headless=new --disable-gpu --hide-scrollbars --no-first-run --user-data-dir="$TMP/chrome" \
   --remote-debugging-port=$DEBUG --window-size=1280,800 about:blank >/dev/null 2>&1 & PIDS+=($!)
 for url in http://127.0.0.1:$PORT/ http://127.0.0.1:$((PORT + 1))/ http://127.0.0.1:$DEBUG/json/version; do
-  until curl -s -o /dev/null "$url"; do sleep 0.5; done
+  for _ in $(seq 60); do curl -s -o /dev/null "$url" && continue 2; sleep 0.5; done
+  echo "screenshots: no answer from $url after 30 s" >&2; exit 1
 done
 
 "$PY" - "$OUT" $PORT $DEBUG <<'EOF'

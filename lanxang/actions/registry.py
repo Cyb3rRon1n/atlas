@@ -135,14 +135,14 @@ ACTIONS: dict[str, ActionDefinition] = {
 
 
 PLAN_STEP_EVENT_TYPES = {
-    "restart_container": "lanxang.action.container_restarted",
-    "stop_container": "lanxang.action.container_stopped",
-    "resize_container": "lanxang.action.container_resized",
-    "restart_guest": "lanxang.action.guest_restarted",
-    "stop_guest": "lanxang.action.guest_stopped",
-    "resize_guest": "lanxang.action.guest_resized",
-    "restart_libvirt_guest": "lanxang.action.libvirt_guest_restarted",
-    "stop_libvirt_guest": "lanxang.action.libvirt_guest_stopped",
+    "restart_container": "atlas.action.container_restarted",
+    "stop_container": "atlas.action.container_stopped",
+    "resize_container": "atlas.action.container_resized",
+    "restart_guest": "atlas.action.guest_restarted",
+    "stop_guest": "atlas.action.guest_stopped",
+    "resize_guest": "atlas.action.guest_resized",
+    "restart_libvirt_guest": "atlas.action.libvirt_guest_restarted",
+    "stop_libvirt_guest": "atlas.action.libvirt_guest_stopped",
 }
 
 

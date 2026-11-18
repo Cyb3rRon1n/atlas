@@ -69,7 +69,7 @@ def test_scan_with_nothing_new_or_offline_does_not_publish_event(temp_db, isolat
 
     assert result.exit_code == 0
     event_types = [event.event_type for event in KnowledgeQueries().recent_events()]
-    assert "lanxang.devices.scan.completed" not in event_types
+    assert "atlas.devices.scan.completed" not in event_types
 
 
 def test_scan_disabled_does_nothing(temp_db, isolated_cwd):

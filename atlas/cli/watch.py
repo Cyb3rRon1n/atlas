@@ -162,6 +162,14 @@ def lan_scan(
         except Exception as error:                      # NAS trouble never fails the LAN scan
             console.print(f"[yellow]NAS check failed: {error}[/yellow]")
 
+    if settings.router.enabled:
+        from atlas.devices import router
+        try:
+            store.record_run("router", router.sightings(router.fetch(settings.router)))
+        except Exception as error:                      # router trouble never fails the LAN scan
+            store.record_run("router", [], ok=False, error=str(error))
+            console.print(f"[yellow]Router check failed: {error}[/yellow]")
+
     if settings.homeassistant.enabled:
         try:
             from atlas.monitoring.homeassistant import run as ha_run

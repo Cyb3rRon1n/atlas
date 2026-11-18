@@ -10,6 +10,7 @@ metadata"). Two bad checks in a row -> one Signal message; another on recovery.
 import json
 
 import requests
+from atlas.clock import utcnow
 
 FAILS_TO_ALERT = 2
 STATE_KEY = "vpn_watch"
@@ -88,6 +89,6 @@ def check(clients, store, send=None, session=None):
     from atlas.alerts import issue, report
     report("vpn", [issue("vpn", name, f"Torrent client {name} isn't behind its VPN", problem,
                          "problem" if state[name]["fails"] >= FAILS_TO_ALERT else "watch", "/posture")
-                   for name, problem in results.items() if problem], datetime.utcnow(), store)
+                   for name, problem in results.items() if problem], utcnow(), store)
 
     return results

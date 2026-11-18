@@ -9,6 +9,7 @@ from atlas.database.engine import engine
 from atlas.database.models import EventRecord, EnvironmentRecord, AnalysisRecord
 from atlas.events import AtlasEvent
 from atlas.intelligence.providers import AnalysisResult
+from atlas.clock import utcnow
 
 
 ENVIRONMENT_KEEP = timedelta(days=7)
@@ -64,7 +65,7 @@ class KnowledgeStore:
 
             session.commit()
 
-        self.prune(datetime.utcnow())
+        self.prune(utcnow())
 
 
     def prune(self, now):

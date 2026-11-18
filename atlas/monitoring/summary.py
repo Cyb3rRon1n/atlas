@@ -7,6 +7,7 @@ also tells you atlas itself is alive. Off with notify.weekly_summary: false. Qui
 from datetime import timedelta
 
 from atlas.alerts import Text
+from atlas.clock import utcnow
 
 SEND_AT_HOUR = 18                     # Sunday, local time
 
@@ -117,7 +118,7 @@ def _sources():
         return [(at, ok, router.get(at)) for at, ok in uptime.history(internet.INTERNET, since)]
 
     from datetime import datetime
-    return {**base, "uptime_summary": lambda names: uptime.summary(names, datetime.utcnow()),
+    return {**base, "uptime_summary": lambda names: uptime.summary(names, utcnow()),
             "internet_rows": internet_rows}
 
 

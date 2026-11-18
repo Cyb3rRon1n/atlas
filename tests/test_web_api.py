@@ -6,6 +6,7 @@ from atlas.devices.store import InventoryStore
 from atlas.intelligence.providers.base import AIProviderError, ChatReply, SuggestedAction
 from atlas.knowledge.queries import KnowledgeQueries
 from atlas.web import api
+from atlas.clock import utcnow
 
 
 def two_devices():
@@ -180,7 +181,7 @@ def test_posture_endpoints(temp_db):
     from atlas.posture.store import PostureStore
     from atlas.web import api
     store = PostureStore(temp_db)
-    store.set_status("conntrack", True, {"flows": 1}, datetime.utcnow())
+    store.set_status("conntrack", True, {"flows": 1}, utcnow())
     status, body = api.handle("GET", "/api/posture?window=1h")
     assert status == 200 and {"strip", "nodes", "edges", "bands", "exposure", "review"} <= set(body)
     assert api.handle("GET", "/api/posture?window=bogus")[0] == 400

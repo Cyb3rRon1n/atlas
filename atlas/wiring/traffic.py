@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from atlas.database.models import PortTrafficRecord
 from atlas.wiring.health import _delta, _ports
+from atlas.clock import utcnow
 
 KEEP = timedelta(days=7)
 BUSY, HOT = 0.5, 0.8        # share of link speed: drawn thicker / red on the map
@@ -58,7 +59,7 @@ def history(engine, since=None):
     """{(device, port): [(taken_at, in_bps, out_bps), ...]} oldest first (default: the last 24 h); {} when there's
     no table yet."""
 
-    since = since or datetime.utcnow() - timedelta(hours=24)
+    since = since or utcnow() - timedelta(hours=24)
     try:
         with Session(engine) as session:
             rows = session.scalars(select(PortTrafficRecord).where(PortTrafficRecord.taken_at >= since)

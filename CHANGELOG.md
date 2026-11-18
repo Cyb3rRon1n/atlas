@@ -12,6 +12,8 @@ Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every rele
 ### Fixed
 - **Smaller database**: routine discovery and plugin events (a copy of the system snapshot every scan, read by
   nothing after the latest) are kept 7 days instead of 90 - on a live install they were over half the database.
+- **Ready for newer Python**: `datetime.utcnow()` (deprecated, to be removed) replaced everywhere by one helper
+  that returns the same naive-UTC time; the test run went from ~600 warnings to none.
 - **Browser tab icon**: pages now carry atlas's globe as their icon (inline), so tabs and bookmarks show it and
   browsers stop asking for a missing `/favicon.ico`.
 

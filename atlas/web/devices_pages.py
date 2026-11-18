@@ -13,6 +13,7 @@ from atlas.devices.store import CONNECTIONS, KINDS, STATES
 from atlas.web.icons import icon
 from atlas.web.cabling_page import _ago
 from atlas.web.render import section_tabs, ask_chips, _esc, render_page
+from atlas.clock import utcnow
 
 
 ACTIONS_SCRIPT = """
@@ -70,7 +71,7 @@ function doneInPlace(row, button) {
     + " - it moves to its group next time the page loads.";
   row.replaceWith(note);
   const heading = document.querySelector(".attn h2");
-  if (heading) heading.textContent = heading.textContent.replace(/\((\d+)\)/, (_, n) => "(" + Math.max(0, n - 1) + ")");
+  if (heading) heading.textContent = heading.textContent.replace(/\\((\\d+)\\)/, (_, n) => "(" + Math.max(0, n - 1) + ")");
   if (more) {
     const left = more.querySelectorAll(".attn-row").length;
     more.querySelector("summary").textContent = left ? "Show " + left + " more" : "All handled";
@@ -117,7 +118,7 @@ def _when(iso, now=None):
         seen = datetime.fromisoformat(str(iso).replace("Z", ""))
     except ValueError:
         return _esc(iso)
-    return f'<time datetime="{_esc(iso)}" title="{_esc(str(iso)[:16].replace("T", " "))} UTC">{_ago(seen, now or datetime.utcnow())}</time>'
+    return f'<time datetime="{_esc(iso)}" title="{_esc(str(iso)[:16].replace("T", " "))} UTC">{_ago(seen, now or utcnow())}</time>'
 
 
 def _sources(device):

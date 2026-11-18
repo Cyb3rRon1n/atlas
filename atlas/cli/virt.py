@@ -29,6 +29,7 @@ from atlas.knowledge.store import KnowledgeStore
 from atlas.core.application import application
 
 from atlas.cli.app import app, console, _resolve_fleet_node, _print_trend_summaries
+from atlas.clock import utcnow
 
 
 proxmox_app = typer.Typer(
@@ -183,7 +184,7 @@ CPU / Memory:
         from datetime import datetime
         from atlas.monitoring.disks import run as disks_run
         from atlas.posture.store import PostureStore
-        disks_run(settings, PostureStore(), datetime.utcnow(), nodes)
+        disks_run(settings, PostureStore(), utcnow(), nodes)
     except Exception as error:
         console.print(f"[yellow]Disk health check failed:[/yellow] {error}")
 

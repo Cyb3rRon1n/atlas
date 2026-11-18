@@ -161,7 +161,7 @@ def interesting_events(events, limit=8):
 
 def _event_label(event_type):
 
-    return event_type.removeprefix("atlas.").replace(".", " ").replace("_", " ")
+    return event_type.removeprefix("lanxang.").replace(".", " ").replace("_", " ")
 
 
 WARN_PERCENT = 90

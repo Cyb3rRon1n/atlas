@@ -5,8 +5,8 @@
 <circle cx="26" cy="23.0" r="7" fill="#e0645a" opacity="0.85"/>
 <circle cx="48" cy="23.0" r="7" fill="#e0b04a" opacity="0.85"/>
 <circle cx="70" cy="23.0" r="7" fill="#5fb87a" opacity="0.85"/>
-<text x="540.0" y="28.0" text-anchor="middle" font-family="JetBrains Mono" font-size="15" fill="#8a99a2">atlas doctor</text>
-<text x="24" y="84" font-family="JetBrains Mono" font-size="20" fill="#5cb3c4" xml:space="preserve">Atlas Doctor</text>
+<text x="540.0" y="28.0" text-anchor="middle" font-family="JetBrains Mono" font-size="15" fill="#8a99a2">lanxang doctor</text>
+<text x="24" y="84" font-family="JetBrains Mono" font-size="20" fill="#5cb3c4" xml:space="preserve">Lanxang Doctor</text>
 <text x="24" y="144" font-family="JetBrains Mono" font-size="20" fill="#5fb87a" xml:space="preserve">✓ Python: 3.14.6</text>
 <text x="24" y="174" font-family="JetBrains Mono" font-size="20" fill="#5fb87a" xml:space="preserve">✓ Memory: 6.1% used</text>
 <text x="24" y="204" font-family="JetBrains Mono" font-size="20" fill="#5fb87a" xml:space="preserve">✓ Storage: 5.8% used</text>

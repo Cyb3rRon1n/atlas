@@ -423,7 +423,7 @@ def render_history_page(events, today=None, changes=""):
         rows = ""
         for event, count in items.values():
             cat, mark = _event_category(event.event_type)
-            label = event.event_type.removeprefix("atlas.").replace(".", " ").replace("_", " ")
+            label = event.event_type.removeprefix("lanxang.").replace(".", " ").replace("_", " ")
             rows += (f'<div class="ev" data-cat="{cat}"{" hidden" if cat == "scan" else ""}><span class="time">{_esc(str(event.created_at)[11:16])}</span>'
                      f"<span>{mark}</span><details><summary>{_esc(label)}"
                      + (f' <span class="count">\u00d7{count} today, latest</span>' if count > 1 and names.get(day) == "Today"

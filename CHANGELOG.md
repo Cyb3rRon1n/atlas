@@ -3,7 +3,7 @@
 All notable changes to atlas. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/atlas:<version>` for every release.
 
-## Unreleased
+## 0.11.2 - 2026-11-18
 
 ### Changed
 - **No chat panel or "ask" chips while AI is off** (`intelligence.provider: none`, the default): they only led to

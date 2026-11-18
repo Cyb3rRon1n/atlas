@@ -1,4 +1,4 @@
-"""The `atlas` Typer app and helpers the command modules share."""
+"""The `lanxang` Typer app and helpers the command modules share."""
 
 
 import typer
@@ -8,7 +8,7 @@ from rich.console import Console
 
 
 app = typer.Typer(
-    name="atlas",
+    name="lanxang",
     help="Self-hosted watchdog for your home network: devices, cabling, security and alerts."
 )
 

@@ -1,16 +1,16 @@
 # Supported hardware
 
-Atlas works on **any** home network with no logins at all: it finds every device from its own LAN scan, watches
+Lanxang works on **any** home network with no logins at all: it finds every device from its own LAN scan, watches
 for rogue DHCP servers and spoofed gateways, lists open ports, checks your public certificates, and runs uptime
-checks. Connecting your gear adds detail - switch ports, Wi-Fi access points, VMs. Everything atlas reads is
+checks. Connecting your gear adds detail - switch ports, Wi-Fi access points, VMs. Everything lanxang reads is
 read-only, and it never changes a device's settings.
 
-On the **Setup** tab, *What's on your network?* asks what you have and shows only the matching cards. Gear atlas
+On the **Setup** tab, *What's on your network?* asks what you have and shows only the matching cards. Gear lanxang
 has already found is ticked for you.
 
 ## What works today
 
-| You have | How atlas reads it | What it adds | Set up on |
+| You have | How lanxang reads it | What it adds | Set up on |
 |---|---|---|---|
 | **Any router** (ISP box, ASUS, Netgear, eero, Fritz!Box, Deco...) | Nothing to connect | Devices, DHCP/ARP watch, open ports, router port forwards via UPnP where it's on | - |
 | **Managed switch** (Cisco SG/CBS, Netgear Smart, TP-Link JetStream, Zyxel GS1900, Aruba Instant On, MikroTik...) | SNMPv3, or v2c | Every port on the Cabling map: what's plugged in, speed, PoE, VLANs, spanning tree, cable health, traffic | Setup → Switches and routers |
@@ -29,16 +29,16 @@ has already found is ticked for you.
 
 <p align="center">
   <img src="images/screenshots/nas-degraded.png" alt="A TrueNAS mirror with a disk dropped out: the alert on the Alerts page and the Storage card on Home, both saying the pool is DEGRADED" style="max-width: 100%; width: 800px;"><br>
-  <em>A TrueNAS mirror losing a disk, as atlas shows it.</em>
+  <em>A TrueNAS mirror losing a disk, as lanxang shows it.</em>
 </p>
 
 **SNMPv3 or v2c?** Use v3 whenever the device offers it (a read-only user, SHA + AES). Many cheaper switches,
-routers and NAS boxes only speak v2c: atlas reads them with a read-only *community*, which travels unencrypted,
+routers and NAS boxes only speak v2c: lanxang reads them with a read-only *community*, which travels unencrypted,
 so give it no write access. Unmanaged switches and "Easy Smart" / "Plus" switches with no SNMP can't show their
-ports - atlas still sees every device behind them, and lists them on the port of the managed switch they hang off.
+ports - lanxang still sees every device behind them, and lists them on the port of the managed switch they hang off.
 
 **Not supported:** mesh systems and routers that are only managed from a phone app or vendor cloud (eero,
-Google/Nest Wifi, Deco, Orbi, Firewalla) have no local interface atlas can read. Your devices still show up from
+Google/Nest Wifi, Deco, Orbi, Firewalla) have no local interface lanxang can read. Your devices still show up from
 the LAN scan.
 
 ## Coming next

@@ -10,7 +10,7 @@ def get_client(node=None):
     ssh:// transport (requires paramiko; use_ssh_client=True makes it
     shell out to the system ssh binary for the actual connection
     rather than paramiko's own implementation, matching how the rest
-    of atlas/fleet/ already connects).
+    of lanxang/fleet/ already connects).
     """
 
     try:

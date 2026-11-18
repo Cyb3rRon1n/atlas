@@ -1,20 +1,20 @@
-# Contributing to Atlas
+# Contributing to Lanxang
 
-First off, thank you for your interest in contributing to Atlas!
+First off, thank you for your interest in contributing to Lanxang!
 
 Whether you're fixing a typo, improving documentation, adding a new feature, or helping shape the project's direction, your contributions are appreciated.
 
-Atlas is built on the idea that self-hosted infrastructure should be easier to understand, document, and manage. Every contribution helps move that vision forward.
+Lanxang is built on the idea that self-hosted infrastructure should be easier to understand, document, and manage. Every contribution helps move that vision forward.
 
 ---
 
 # Our Mission
 
-Atlas exists to help people understand and operate their homelabs through safe, explainable, and AI-assisted tooling.
+Lanxang exists to help people understand and operate their homelabs through safe, explainable, and AI-assisted tooling.
 
 Before proposing a feature, ask yourself:
 
-> **Does this help Atlas better understand the infrastructure?**
+> **Does this help Lanxang better understand the infrastructure?**
 
 If the answer is "yes," it likely aligns with the project's goals.
 
@@ -46,7 +46,7 @@ There are many ways to contribute, including:
 
 ## Testing
 
-Help test Atlas across different environments:
+Help test Lanxang across different environments:
 
 * Fedora
 * Ubuntu
@@ -88,7 +88,7 @@ This helps avoid duplicate work.
 
 # Development Philosophy
 
-Atlas follows several guiding principles.
+Lanxang follows several guiding principles.
 
 ## Documentation First
 
@@ -100,7 +100,7 @@ If a feature cannot be explained clearly, it likely needs refinement.
 
 ## Explainability
 
-Atlas should be able to explain:
+Lanxang should be able to explain:
 
 * What it is doing
 * Why it is doing it
@@ -113,7 +113,7 @@ This philosophy should be reflected in both code and documentation.
 
 ## Local-First
 
-Whenever practical, Atlas prioritizes self-hosted and local solutions.
+Whenever practical, Lanxang prioritizes self-hosted and local solutions.
 
 Examples include:
 
@@ -125,7 +125,7 @@ Examples include:
 
 ## Safety
 
-Atlas should never encourage unsafe automation.
+Lanxang should never encourage unsafe automation.
 
 Changes affecting infrastructure should be:
 
@@ -141,8 +141,8 @@ Changes affecting infrastructure should be:
 Clone the repository:
 
 ```bash
-git clone https://github.com/<your-username>/atlas.git
-cd atlas
+git clone https://github.com/<your-username>/lanxang.git
+cd lanxang
 ```
 
 Create a virtual environment:
@@ -152,12 +152,12 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-Install atlas with its development extras, then run the tests (CI runs them on Python 3.11 and 3.12):
+Install lanxang with its development extras, then run the tests (CI runs them on Python 3.11 and 3.12):
 
 ```bash
 pip install -e ".[dev]"            # not `pip install -r requirements.txt` - that is a pip-freeze lockfile
 python -m pytest tests/
-python -m atlas.cli.main <command> # the CLI from source; `atlas web` serves the pages
+python -m lanxang.cli.main <command> # the CLI from source; `lanxang web` serves the pages
 ```
 
 No linter or formatter is configured. Match the style of the file you are editing. The history of design
@@ -168,19 +168,19 @@ area you are changing before you change it.
 
 | Path | What lives there |
 |---|---|
-| `atlas/cli/` | The CLI (Typer + Rich): `app.py` the shared app, `main.py` setup/status/web commands, `watch.py` what atlas-scan runs, `virt.py` Proxmox/libvirt/fleet, `containers.py` Docker, `ai.py` the AI model |
-| `atlas/web/` | `atlas web`: stdlib `http.server`, one `*_page.py` per page, `api.py` for the write routes |
-| `atlas/devices/` | Device inventory: LAN scan, sightings merged into devices, open-port watch, LAN (DHCP/ARP) watch |
-| `atlas/wiring/` | Cabling map: SNMP + UniFi collectors, `build.py` turns them into nodes and links, cable health |
-| `atlas/posture/` | Egress/exposure collectors, certificate watch, the Posture page's data |
-| `atlas/access/` | Who reaches the public services (Traefik access log + GeoIP) |
-| `atlas/docker`, `proxmox`, `libvirt`, `fleet` | Integrations; mutating calls are pure functions returning result dicts |
-| `atlas/intelligence/` | AI providers (Ollama, Anthropic), read-only chat tools, the agent |
-| `atlas/actions/` | Registry of actions the AI may suggest; each one still asks before it runs |
-| `atlas/notify.py` | Alert fan-out (ntfy, webhooks, email, Signal, Apprise) |
-| `atlas/config/models.py` | Every `atlas.yaml` setting (pydantic); add a section by adding a model |
-| `atlas/config/local.py` | Settings and secrets saved from the web Setup tab (`inventory/`); `atlas.yaml` and `.env` always win |
-| `atlas/web/settings_page.py` | The Setup tab: one card per integration, read-only Test, Save / Turn off |
+| `lanxang/cli/` | The CLI (Typer + Rich): `app.py` the shared app, `main.py` setup/status/web commands, `watch.py` what atlas-scan runs, `virt.py` Proxmox/libvirt/fleet, `containers.py` Docker, `ai.py` the AI model |
+| `lanxang/web/` | `lanxang web`: stdlib `http.server`, one `*_page.py` per page, `api.py` for the write routes |
+| `lanxang/devices/` | Device inventory: LAN scan, sightings merged into devices, open-port watch, LAN (DHCP/ARP) watch |
+| `lanxang/wiring/` | Cabling map: SNMP + UniFi collectors, `build.py` turns them into nodes and links, cable health |
+| `lanxang/posture/` | Egress/exposure collectors, certificate watch, the Posture page's data |
+| `lanxang/access/` | Who reaches the public services (Traefik access log + GeoIP) |
+| `lanxang/docker`, `proxmox`, `libvirt`, `fleet` | Integrations; mutating calls are pure functions returning result dicts |
+| `lanxang/intelligence/` | AI providers (Ollama, Anthropic), read-only chat tools, the agent |
+| `lanxang/actions/` | Registry of actions the AI may suggest; each one still asks before it runs |
+| `lanxang/notify.py` | Alert fan-out (ntfy, webhooks, email, Signal, Apprise) |
+| `lanxang/config/models.py` | Every `lanxang.yaml` setting (pydantic); add a section by adding a model |
+| `lanxang/config/local.py` | Settings and secrets saved from the web Setup tab (`inventory/`); `lanxang.yaml` and `.env` always win |
+| `lanxang/web/settings_page.py` | The Setup tab: one card per integration, read-only Test, Save / Turn off |
 
 ## Ground Rules
 
@@ -224,7 +224,7 @@ refactor/cli
 
 # Commit Messages
 
-Atlas follows the Conventional Commits specification.
+Lanxang follows the Conventional Commits specification.
 
 Examples:
 
@@ -281,7 +281,7 @@ Future coding standards will be documented as the project grows.
 
 # Documentation Standards
 
-Documentation is a core feature of Atlas.
+Documentation is a core feature of Lanxang.
 
 Whenever appropriate, include:
 
@@ -300,7 +300,7 @@ Well-written documentation is just as valuable as code.
 When reporting an issue, please include:
 
 * Operating system
-* Atlas version
+* Lanxang version
 * Python version
 * Relevant logs
 * Steps to reproduce
@@ -330,7 +330,7 @@ Please follow the project's Code of Conduct.
 
 Be respectful, constructive, and welcoming to others.
 
-Atlas is intended to be a friendly and inclusive open-source community.
+Lanxang is intended to be a friendly and inclusive open-source community.
 
 ---
 
@@ -338,7 +338,7 @@ Atlas is intended to be a friendly and inclusive open-source community.
 
 Every contribution matters.
 
-Whether you improve a single sentence, fix a bug, or implement a major feature, you are helping Atlas become a better project.
+Whether you improve a single sentence, fix a bug, or implement a major feature, you are helping Lanxang become a better project.
 
 Thank you for contributing.
 
@@ -346,7 +346,7 @@ Thank you for contributing.
 
 # Our Philosophy
 
-Atlas is guided by three simple ideas:
+Lanxang is guided by three simple ideas:
 
 **Understand first.**
 
@@ -360,6 +360,6 @@ Documentation should evolve alongside the system.
 
 Automation should be transparent, explainable, and under the user's control.
 
-If your contribution supports those principles, you're helping move Atlas in the right direction.
+If your contribution supports those principles, you're helping move Lanxang in the right direction.
 
 Welcome aboard!

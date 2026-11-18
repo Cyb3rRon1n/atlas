@@ -1,10 +1,10 @@
 # Service Catalog
 
-`atlas services` matches running Docker container names against a small catalog of known homelab applications, so a container isn't just a name — it's an application with a category and a purpose.
+`lanxang services` matches running Docker container names against a small catalog of known homelab applications, so a container isn't just a name — it's an application with a category and a purpose.
 
 ## Currently recognized
 
-This table matches `atlas/services/catalog.py` exactly — the actual list `atlas services` recognizes today, not an aspirational one.
+This table matches `lanxang/services/catalog.py` exactly — the actual list `lanxang services` recognizes today, not an aspirational one.
 
 | Service | Category | Purpose |
 |---|---|---|
@@ -32,8 +32,8 @@ graph LR
     E --> G[Bazarr - subtitles]
 ```
 
-Atlas doesn't manage this stack — `atlas services` identifies which pieces of it are present and running, which feeds into `atlas analyze`'s recommendations (e.g. flagging a `sonarr` container with no matching `prowlarr`).
+Lanxang doesn't manage this stack — `lanxang services` identifies which pieces of it are present and running, which feeds into `lanxang analyze`'s recommendations (e.g. flagging a `sonarr` container with no matching `prowlarr`).
 
 ## Adding a service
 
-New entries go in `atlas/services/catalog.py`'s `SERVICES` dict — a name, category, and purpose. No detector code changes are needed; `detect_services()` matches against whatever's in the catalog.
+New entries go in `lanxang/services/catalog.py`'s `SERVICES` dict — a name, category, and purpose. No detector code changes are needed; `detect_services()` matches against whatever's in the catalog.

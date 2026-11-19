@@ -23,7 +23,7 @@ PROXMOX_ATLAS_YAML = (
 
 def test_scan_records_devices_and_devices_lists_them(temp_db, isolated_cwd, monkeypatch):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "map:\n  hosts:\n    - name: fileserver\n      address: 192.168.50.57\n")
     monkeypatch.setattr(lan, "scan", lambda subnets, timeout: (
         ["192.168.50.0/24"], [Sighting("lan", "aa:57", ip="192.168.50.57", mac="aa:57")]))
@@ -43,7 +43,7 @@ def test_scan_failure_is_recorded_and_exits_1(temp_db, isolated_cwd, monkeypatch
     def boom(subnets, timeout):
         raise RuntimeError("no subnet to scan")
 
-    (isolated_cwd / "atlas.yaml").write_text("name: test\n")
+    (isolated_cwd / "lanxang.yaml").write_text("name: test\n")
     monkeypatch.setattr(lan, "scan", boom)
 
     result = runner.invoke(app, ["scan"])
@@ -60,7 +60,7 @@ def test_scan_with_nothing_new_or_offline_does_not_publish_event(temp_db, isolat
 
     from lanxang.knowledge.queries import KnowledgeQueries
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "map:\n  hosts:\n    - name: fileserver\n      address: 192.168.50.57\n")
     monkeypatch.setattr(lan, "scan", lambda subnets, timeout: (
         ["192.168.50.0/24"], [Sighting("lan", "aa:57", ip="192.168.50.57", mac="aa:57")]))
@@ -74,7 +74,7 @@ def test_scan_with_nothing_new_or_offline_does_not_publish_event(temp_db, isolat
 
 def test_scan_disabled_does_nothing(temp_db, isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text("scan:\n  enabled: false\n")
+    (isolated_cwd / "lanxang.yaml").write_text("scan:\n  enabled: false\n")
 
     result = runner.invoke(app, ["scan"])
 
@@ -87,7 +87,7 @@ def test_map_records_failed_proxmox_run_when_discover_resources_raises(temp_db, 
     is where a down Proxmox actually surfaces, and atlas map must still record
     (and survive) that failure rather than crashing before anything is saved."""
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ATLAS_YAML)
 
     monkeypatch.setattr(cli_main, "connect", lambda *args, **kwargs: object())
 
@@ -107,7 +107,7 @@ def test_map_records_failed_proxmox_run_when_discover_resources_raises(temp_db, 
 
 def test_map_only_sights_running_guests(temp_db, isolated_cwd, monkeypatch):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ATLAS_YAML)
 
     monkeypatch.setattr(cli_main, "connect", lambda *args, **kwargs: object())
     monkeypatch.setattr(cli_main, "discover_resources", lambda client: [
@@ -123,7 +123,7 @@ def test_map_only_sights_running_guests(temp_db, isolated_cwd, monkeypatch):
 
 def test_map_stopped_guest_does_not_refresh_last_seen(temp_db, isolated_cwd, monkeypatch):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ATLAS_YAML)
     monkeypatch.setattr(cli_main, "connect", lambda *args, **kwargs: object())
 
     guest = {"vmid": 100, "name": "plex", "type": "lxc", "status": "running", "template": None}

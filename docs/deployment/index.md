@@ -72,7 +72,7 @@ Then the tile, in Homepage's `services.yaml` - with live counts from Lanxang's `
         url: http://lanxang:8420/api/summary
         refreshInterval: 60000
         headers:                       # only with web.auth: builtin - the token is `lanxang auth token`
-          Authorization: Bearer {{HOMEPAGE_VAR_ATLAS_TOKEN}}
+          Authorization: Bearer {{HOMEPAGE_VAR_LANXANG_TOKEN}}
         mappings:
           - field: status
             label: Status

@@ -5,8 +5,7 @@ name: atlas
 # Easiest: the installer writes this folder for you (see README):
 #   curl -fsSL https://raw.githubusercontent.com/Cyb3rRon1n/lanxang/main/install.sh | bash
 # By hand:
-#   cp lanxang.yaml.example atlas.yaml   # edit: Proxmox/Prometheus/AI config (the file is atlas.yaml until 1.2;
-#                                        # LANXANG_CONFIG=lanxang.yaml in .env switches to the new name)
+#   cp lanxang.yaml.example lanxang.yaml   # edit: Proxmox/Prometheus/AI config
 #   docker compose up -d               # pulls ghcr.io/cyb3rron1n/lanxang (or builds it)
 #   docker compose logs atlas          # first run: the setup code for the admin password
 #
@@ -14,7 +13,7 @@ name: atlas
 # explicit, visible equivalent of a host cron line, for stacks without one.
 
 x-lanxang: &lanxang
-  image: ghcr.io/cyb3rron1n/lanxang:${LANXANG_TAG:-${ATLAS_TAG:-latest}}
+  image: ghcr.io/cyb3rron1n/lanxang:${LANXANG_TAG:-latest}
   build:
     context: .
     dockerfile: Dockerfile
@@ -25,9 +24,7 @@ x-lanxang: &lanxang
     - path: .env
       required: false
   volumes:
-    # The config file's name: atlas.yaml until 1.2, so a clone that only has atlas.yaml (and never runs
-    # install.sh) keeps working. LANXANG_CONFIG=lanxang.yaml in .env switches to the new name.
-    - ./${LANXANG_CONFIG:-${ATLAS_CONFIG:-atlas.yaml}}:/data/${LANXANG_CONFIG:-${ATLAS_CONFIG:-atlas.yaml}}:ro
+    - ./lanxang.yaml:/data/lanxang.yaml:ro
     - data:/data/inventory
     - reports:/data/reports
     - logs:/data/logs
@@ -46,12 +43,12 @@ services:
       NETWORKS: 1
       INFO: 1
       IMAGES: 1      # read-only: the container list shows each image's tags
-      POST: ${LANXANG_DOCKER_WRITE:-${ATLAS_DOCKER_WRITE:-0}}
+      POST: ${LANXANG_DOCKER_WRITE:-0}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       # loopback only, for atlas-scan (host networking can't use the service name)
-      - "127.0.0.1:${LANXANG_DOCKER_PROXY_PORT:-${ATLAS_DOCKER_PROXY_PORT:-23750}}:2375"
+      - "127.0.0.1:${LANXANG_DOCKER_PROXY_PORT:-23750}:2375"
 
   atlas:
     <<: *lanxang
@@ -63,7 +60,7 @@ services:
       # This machine only by default. LANXANG_BIND=0.0.0.0 in .env opens it to the
       # LAN - atlas asks for its admin password (web.auth: builtin), so that is
       # safe; behind an auth proxy, set web.auth: proxy and keep this on loopback.
-      - "${LANXANG_BIND:-${ATLAS_BIND:-127.0.0.1}}:${LANXANG_PORT:-${ATLAS_PORT:-8420}}:8420"
+      - "${LANXANG_BIND:-127.0.0.1}:${LANXANG_PORT:-8420}:8420"
 
   # Finds every device on the LAN and refreshes discover / Proxmox / map every
   # LANXANG_SCAN_MINUTES (default 15). Host networking is what lets it see the
@@ -78,7 +75,7 @@ services:
     depends_on: [docker-proxy]
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      DOCKER_HOST: tcp://127.0.0.1:${LANXANG_DOCKER_PROXY_PORT:-${ATLAS_DOCKER_PROXY_PORT:-23750}}
+      DOCKER_HOST: tcp://127.0.0.1:${LANXANG_DOCKER_PROXY_PORT:-23750}
     healthcheck:
       disable: true
     command:
@@ -104,7 +101,7 @@ services:
           if [ "$$(cat /data/logs/.analyzed 2>/dev/null)" != "$$day" ] && lanxang analyze --json >/dev/null 2>&1; then
             echo "$$day" > /data/logs/.analyzed; echo "$$(date -u +%FT%TZ) AI check-up saved"
           fi
-          sleep "$${LANXANG_SCAN_MINUTES:-$${ATLAS_SCAN_MINUTES:-15}}m"
+          sleep "$${LANXANG_SCAN_MINUTES:-15}m"
         done
 
 volumes:

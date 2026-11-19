@@ -114,5 +114,5 @@ def test_add_and_remove_from_the_page(isolated_cwd):
     assert [c.name for c in load_config().uptime.checks] == ["NAS"]
     assert post("/api/uptime/remove", {"name": "Media"})[0] == 404
 
-    (isolated_cwd / "atlas.yaml").write_text("uptime:\n  checks: []\n")
-    assert "atlas.yaml" in post("/api/uptime/add", {"name": "X", "target": "192.0.2.1:22"})[1]["error"]
+    (isolated_cwd / "lanxang.yaml").write_text("uptime:\n  checks: []\n")
+    assert "lanxang.yaml" in post("/api/uptime/add", {"name": "X", "target": "192.0.2.1:22"})[1]["error"]

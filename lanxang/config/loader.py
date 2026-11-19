@@ -62,9 +62,12 @@ def load_config():
     """The config file, with settings saved from the web Setup page filling in what it leaves out (lanxang.config.local)."""
 
     local.apply_secrets()
-    if local.config_file() == local.OLD_CONFIG and not getattr(load_config, "_noticed", False):
+    old = local.old_names()
+    if old and not getattr(load_config, "_noticed", False):
         import logging
-        logging.getLogger("lanxang").info("Reading atlas.yaml — rename it to lanxang.yaml before 1.2")
+        logging.getLogger("lanxang").warning(
+            "No longer read since 1.3: %s — rename atlas.yaml to lanxang.yaml and ATLAS_ to LANXANG_ in .env "
+            "and the config file (re-running install.sh does all of it)", ", ".join(old))
         load_config._noticed = True
 
     return build_config(local.read_settings())

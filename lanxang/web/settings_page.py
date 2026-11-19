@@ -210,7 +210,7 @@ def _put(settings, path, value):
 def _from_env(name):
     """A secret the real environment sets - .env wins over the Setup page, so the page can't change it."""
 
-    applied = name in local._APPLIED or local._counterpart(name) in local._APPLIED     # mirrored copies count too
+    applied = name in local._APPLIED
 
     return bool(name) and bool(os.environ.get(name)) and not applied
 

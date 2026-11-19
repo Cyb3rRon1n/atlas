@@ -244,13 +244,13 @@ def test_server_turns_the_chat_off_with_the_setting(temp_db, isolated_cwd):
 
     from lanxang.web.server import AtlasWebHandler
 
-    (isolated_cwd / "atlas.yaml").write_text("web:\n  auth: proxy\n")
+    (isolated_cwd / "lanxang.yaml").write_text("web:\n  auth: proxy\n")
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), AtlasWebHandler)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     try:
         page = lambda: urllib.request.urlopen(f"http://127.0.0.1:{httpd.server_port}/alerts").read().decode()
         assert 'id="chat-toggle"' not in page()                                     # provider: none (default)
-        (isolated_cwd / "atlas.yaml").write_text("web:\n  auth: proxy\nintelligence:\n  provider: ollama\n")
+        (isolated_cwd / "lanxang.yaml").write_text("web:\n  auth: proxy\nintelligence:\n  provider: ollama\n")
         assert 'id="chat-toggle"' in page()
     finally:
         httpd.shutdown()

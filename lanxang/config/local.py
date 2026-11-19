@@ -15,7 +15,7 @@ from pathlib import Path
 
 import yaml
 
-from lanxang.config.env import NEW as NEW_PREFIX, OLD as OLD_PREFIX, mirror
+from lanxang.config.env import old_variables
 
 SETTINGS_FILE = Path("inventory/settings.yaml")
 SECRETS_FILE = Path("inventory/secrets.json")
@@ -26,21 +26,37 @@ _APPLIED = set()     # environment keys this process set from secrets.json (so a
 
 
 def config_file():
-    """lanxang.yaml, or an existing install's atlas.yaml when only that exists (read until 1.2)."""
 
-    return OLD_CONFIG if OLD_CONFIG.is_file() and not NEW_CONFIG.is_file() else NEW_CONFIG
+    return NEW_CONFIG
 
 
 def config_name():
-    """The config file's name for messages: lanxang.yaml, or atlas.yaml on an install that still has only that."""
+    """The config file's name, for messages."""
 
-    return config_file().name
+    return NEW_CONFIG.name
 
 
-def _read_yaml(path):
+def old_names(environ=None):
+    """What an install from before 1.3 still has that is no longer read: atlas.yaml, ATLAS_* variables and
+    ${ATLAS_*} references in the config file."""
+
+    found = old_variables(environ)
+    if OLD_CONFIG.is_file() and not NEW_CONFIG.is_file():
+        found.insert(0, OLD_CONFIG.name)
+    try:
+        if NEW_CONFIG.is_file() and "${ATLAS_" in NEW_CONFIG.read_text():
+            found.append("${ATLAS_...} in lanxang.yaml")
+    except OSError:
+        pass
+    return found
+
+
+def _read_yaml(path, old_refs=False):
 
     try:
-        data = yaml.safe_load(path.read_text()) if path.exists() else {}
+        text = path.read_text() if path.exists() else ""
+        # settings saved before 1.0 reference their secrets as ${ATLAS_*}; those secrets now load as LANXANG_*
+        data = yaml.safe_load(text.replace("${ATLAS_", "${LANXANG_") if old_refs else text) or {}
     except (OSError, yaml.YAMLError):
         return {}
 
@@ -86,7 +102,7 @@ def layered(user, web):
 
 def read_settings():
 
-    return _read_yaml(SETTINGS_FILE)
+    return _read_yaml(SETTINGS_FILE, old_refs=True)
 
 
 def save_settings(patch):
@@ -113,51 +129,32 @@ def _read_secrets():
     except (OSError, ValueError):
         return {}
 
-    return {k: v for k, v in data.items() if isinstance(v, str)} if isinstance(data, dict) else {}
-
-
-def _counterpart(name):
-    """The same setting under the other prefix (LANXANG_X <-> ATLAS_X); None for any other name."""
-
-    if name.startswith(NEW_PREFIX):
-        return OLD_PREFIX + name[len(NEW_PREFIX):]
-    if name.startswith(OLD_PREFIX):
-        return NEW_PREFIX + name[len(OLD_PREFIX):]
-
-
-def _normal(name):
-
-    return NEW_PREFIX + name[len(OLD_PREFIX):] if name.startswith(OLD_PREFIX) else name
+    if not isinstance(data, dict):
+        return {}
+    # secrets saved before 1.0 are keyed ATLAS_*: they read as LANXANG_* (and are written that way on the next save)
+    old = {"LANXANG_" + k[6:]: v for k, v in data.items() if isinstance(v, str) and k.startswith("ATLAS_")}
+    return {**old, **{k: v for k, v in data.items() if isinstance(v, str) and not k.startswith("ATLAS_")}}
 
 
 def secret_names():
-    """Which secrets are saved - never their values. An old install's ATLAS_ keys are listed as LANXANG_."""
+    """Which secrets are saved - never their values."""
 
-    return {_normal(name) for name in _read_secrets()}
+    return set(_read_secrets())
 
 
 def save_secrets(values):
-    """{ENV_NAME: value}; None or "" removes one (under either prefix, so an old ATLAS_ key never lingers)."""
+    """{ENV_NAME: value}; None or "" removes one."""
 
     for name in values:
         if not ENV_NAME.match(name):
             raise ValueError(f"not an environment variable name: {name!r}")
     current = _read_secrets()
     for name, value in values.items():
-        current.pop(_counterpart(name), None)
         if value:
             current[name] = value
         else:
             current.pop(name, None)
     _write(SECRETS_FILE, json.dumps(current, indent=1), 0o600)
-
-
-def _drop_copy(environ, name, was):
-    """Remove the mirrored copy of name - only while it still holds the value mirror() gave it."""
-
-    other = _counterpart(name)
-    if other and environ.get(other) == was:
-        environ.pop(other, None)
 
 
 def apply_secrets(environ=None):
@@ -167,13 +164,9 @@ def apply_secrets(environ=None):
     stored = _read_secrets()
     for name in list(_APPLIED):
         if name not in stored:
-            was = environ.pop(name, None)
-            _drop_copy(environ, name, was)      # the mirrored copy, or it would bring the secret back
+            environ.pop(name, None)
             _APPLIED.discard(name)
     for name, value in stored.items():
         if name in _APPLIED or not environ.get(name):      # an empty variable (compose's ${X:-}) counts as unset
-            _drop_copy(environ, name, environ.get(name))
             environ[name] = value
             _APPLIED.add(name)
-
-    mirror(environ)

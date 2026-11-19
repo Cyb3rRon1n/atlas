@@ -21,13 +21,13 @@ def env(isolated_cwd, monkeypatch):
 
 
 def test_web_settings_fill_in_what_atlas_yaml_leaves_out(env, isolated_cwd):
-    (isolated_cwd / "atlas.yaml").write_text("name: mine\nnotify:\n  ntfy:\n    topic: from-yaml\n")
+    (isolated_cwd / "lanxang.yaml").write_text("name: mine\nnotify:\n  ntfy:\n    topic: from-yaml\n")
     local.save_settings({"notify": {"ntfy": {"url": "https://ntfy.example.org", "topic": "from-web"}},
                          "proxmox": {"enabled": True, "host": "192.0.2.5"}})
 
     config = load_config()
     assert config.name == "mine"
-    assert config.notify.ntfy.topic == "from-yaml"                     # atlas.yaml wins
+    assert config.notify.ntfy.topic == "from-yaml"                     # lanxang.yaml wins
     assert config.notify.ntfy.url == "https://ntfy.example.org"        # the web fills the gap
     assert config.proxmox.enabled is True and config.proxmox.host == "192.0.2.5"
     assert local.locked(("notify", "ntfy", "topic")) and not local.locked(("notify", "ntfy", "url"))
@@ -81,27 +81,26 @@ def test_secret_values_never_reach_the_settings_file(env, isolated_cwd):
     assert "pw" not in json.dumps(local.read_settings())
 
 
-def test_apply_secrets_with_counterparts(env):
+def test_apply_secrets_follows_changes(env):
     local.save_secrets({"LANXANG_UNIFI_PASS": "old"})
     local.apply_secrets()
-    assert env["LANXANG_UNIFI_PASS"] == env["ATLAS_UNIFI_PASS"] == "old"
+    assert env["LANXANG_UNIFI_PASS"] == "old"
     local.save_secrets({"LANXANG_UNIFI_PASS": "new"})
     local.apply_secrets()
-    assert env["LANXANG_UNIFI_PASS"] == env["ATLAS_UNIFI_PASS"] == "new"      # the mirrored copy follows
+    assert env["LANXANG_UNIFI_PASS"] == "new"
     local.save_secrets({"LANXANG_UNIFI_PASS": None})
     local.apply_secrets()
-    assert "LANXANG_UNIFI_PASS" not in env and "ATLAS_UNIFI_PASS" not in env  # nothing resurrects it
+    assert "LANXANG_UNIFI_PASS" not in env                                  # nothing resurrects it
 
 
 def test_apply_secrets_never_touches_a_real_variable(env):
-    env["ATLAS_NTFY_TOKEN"] = "real"
-    local.mirror()
+    env["LANXANG_NTFY_TOKEN"] = "real"
     local.save_secrets({"LANXANG_NTFY_TOKEN": "saved", "LANXANG_UNIFI_PASS": "x"})
     local.apply_secrets()
-    assert env["LANXANG_NTFY_TOKEN"] == env["ATLAS_NTFY_TOKEN"] == "real"
+    assert env["LANXANG_NTFY_TOKEN"] == "real"
     local.save_secrets({"LANXANG_NTFY_TOKEN": None, "LANXANG_UNIFI_PASS": None})
     local.apply_secrets()
-    assert env["LANXANG_NTFY_TOKEN"] == env["ATLAS_NTFY_TOKEN"] == "real"
+    assert env["LANXANG_NTFY_TOKEN"] == "real"
 
 
 def test_an_old_atlas_keyed_secrets_file_can_be_replaced_and_cleared(env, isolated_cwd):
@@ -113,7 +112,8 @@ def test_an_old_atlas_keyed_secrets_file_can_be_replaced_and_cleared(env, isolat
     local.save_secrets({"LANXANG_UNIFI_PASS": "new"})
     assert json.loads(path.read_text()) == {"LANXANG_UNIFI_PASS": "new"}
     load_config()
-    assert env["LANXANG_UNIFI_PASS"] == env["ATLAS_UNIFI_PASS"] == "new"
+    assert env["LANXANG_UNIFI_PASS"] == "new"
     local.save_secrets({"LANXANG_UNIFI_PASS": None})
     load_config()
-    assert json.loads(path.read_text()) == {} and "LANXANG_UNIFI_PASS" not in env and "ATLAS_UNIFI_PASS" not in env
+    assert json.loads(path.read_text()) == {} and "LANXANG_UNIFI_PASS" not in env
+

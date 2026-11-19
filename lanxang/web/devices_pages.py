@@ -399,12 +399,13 @@ MERGE_SCRIPT = """
   const box = document.getElementById("merge-confirm");
   if (!pick) return;
   const close = () => { box.hidden = true; ask.hidden = false; };
+  box.addEventListener("keydown", (event) => { if (event.key === "Escape") { close(); ask.focus(); } });
   pick.addEventListener("change", () => { ask.disabled = !pick.value; close(); });
   ask.addEventListener("click", () => {
     if (!pick.value) return;
     document.getElementById("merge-target").textContent = pick.options[pick.selectedIndex].text;
     box.hidden = false; ask.hidden = true;
-    box.querySelector("button.danger").focus();
+    document.getElementById("merge-cancel").focus();     // the safe choice has focus, not "Yes, merge"
   });
   document.getElementById("merge-cancel").addEventListener("click", () => { close(); ask.focus(); });
 })();
@@ -495,7 +496,7 @@ def render_device_page(device, devices, ports=None, wiring=None, suggestion=None
         '<div class="actions"><select id="merge-into" aria-label="Device to merge into">'
         f'<option value="" selected disabled>Choose a device\u2026</option>{others}</select>'
         '<button type="button" class="danger" id="merge-ask" disabled>Merge\u2026</button></div>'
-        f'<div class="confirm" id="merge-confirm" role="alertdialog" aria-labelledby="merge-q" hidden>'
+        f'<div class="confirm" id="merge-confirm" role="group" aria-label="Confirm merge" hidden>'
         f'<p id="merge-q">Merge <b>{_esc(device["name"])}</b> into <b id="merge-target"></b>? This device is removed.</p>'
         '<div class="actions">'
         + _button("Yes, merge", f"/api/devices/{device['id']}/merge", {}, "danger", into_from="merge-into", after="goto")

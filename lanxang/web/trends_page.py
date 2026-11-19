@@ -7,7 +7,7 @@ guests). Plain inline SVG, no dependencies. Pure renderer.
 
 from datetime import timedelta
 
-from lanxang.web.render import _esc, ask_chips, empty_state, segmented, render_page, section_tabs
+from lanxang.web.render import WINDOW_LABELS, _esc, ask_chips, empty_state, segmented, render_page, section_tabs
 
 WINDOWS = {"24h": 1, "7d": 7, "30d": 30}
 MAX_POINTS = 240
@@ -105,10 +105,11 @@ def _pct(used, total):
     return used / total * 100 if used is not None and total else None
 
 
-def render_trends_page(samples, scans, window, now, host_name="this host", node_names=None):
+def render_trends_page(samples, scans, window, now, host_name="this host", node_names=None, longer=None):
     """
     samples: [(time, atlas.host.sample payload)]; scans: [(time, atlas.proxmox.scan.completed payload)],
-    both oldest first and already limited to the window.
+    both oldest first and already limited to the window. longer: a longer window key that has enough
+    history, suggested when this one doesn't.
     """
 
     since = now - timedelta(days=WINDOWS[window])
@@ -169,9 +170,14 @@ def render_trends_page(samples, scans, window, now, host_name="this host", node_
     note = ('<p class="muted">Lanxang keeps its own history (every 15 min). The 24h view fills after a day, 7d after a week.</p>')
     if max(len(samples), len(scans)) < MIN_POINTS:
         # Too little history: one explanation in place of charts that would each show a lone dot.
-        body = (TRENDS_STYLE + f'<div class="windows">{win}</div>' + empty_state(
-            "refresh", "Collecting history", "Lanxang records a sample every 15 minutes; the first charts appear "
-            "after the first hour or so of scans.", ("/overview", "See current status")))
+        if longer:
+            state = empty_state("refresh", "Not enough history in this window",
+                                "Lanxang records a sample every 15 minutes; a longer window already has enough to chart.",
+                                (f"/trends?window={longer}", f"Try {WINDOW_LABELS[longer]}"))
+        else:
+            state = empty_state("refresh", "Collecting history", "Lanxang records a sample every 15 minutes; the first "
+                                "charts appear after the first hour or so of scans.", ("/overview", "See current status"))
+        body = TRENDS_STYLE + f'<div class="windows">{win}</div>' + state
         return render_page("Trends", body, active="hosts", tabs=tabs)
 
     body = (TRENDS_STYLE + ask_chips(TRENDS_CHIPS) + f'<div class="windows">{win}</div>'

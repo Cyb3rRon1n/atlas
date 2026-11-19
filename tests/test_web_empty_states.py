@@ -53,6 +53,8 @@ def test_trends_with_too_little_history_shows_collecting_not_a_dot():
     assert 'class="empty"' in html and "Collecting history" in html and "<ellipse" not in html
     lone = _chart("CPU", [("CPU", [(NOW, 10)])], NOW - timedelta(days=1), NOW)
     assert "<svg" not in lone and "collecting" in lone
+    hinted = render_trends_page(few, [], "24h", NOW, longer="7d")
+    assert "Not enough history in this window" in hinted and '<a class="btn primary" href="/trends?window=7d">Try 7 days' in hinted
     enough = [(NOW - timedelta(minutes=15 * i), {"cpu": 10}) for i in range(8)]
     assert 'class="empty"' not in render_trends_page(enough, [], "24h", NOW)
 

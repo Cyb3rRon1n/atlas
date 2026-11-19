@@ -218,7 +218,9 @@ def test_device_page_danger_zone_merge_starts_unchosen_and_confirms_in_page():
     assert '<option value="" selected disabled>Choose a device\u2026</option><option value="2">router</option>' in zone
     assert '<button type="button" class="danger" id="merge-ask" disabled>Merge\u2026</button>' in zone
     confirm = zone.split('id="merge-confirm"')[1].split("</section>")[0]
-    assert 'role="alertdialog"' in confirm and " hidden>" in confirm.split(">")[0] + ">"
+    assert 'role="group" aria-label="Confirm merge" hidden>' in zone and "alertdialog" not in html
+    assert 'getElementById("merge-cancel").focus()' in html and 'button.danger").focus()' not in html
+    assert 'event.key === "Escape") { close(); ask.focus(); }' in html
     assert 'data-post="/api/devices/1/merge"' in confirm and 'data-into-from="merge-into"' in confirm
     assert 'data-after="goto"' in confirm and ">Yes, merge</button>" in confirm and 'id="merge-cancel"' in confirm
     assert 'ask.disabled = !pick.value' in html and "box.hidden = false" in html

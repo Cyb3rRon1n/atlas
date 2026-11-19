@@ -100,6 +100,23 @@ def test_trends_route_with_no_data(running_server):
     assert "Collecting history" in body
 
 
+def test_trends_suggests_a_longer_window_that_has_history(running_server, temp_db):
+
+    from datetime import timedelta
+    from sqlalchemy.orm import Session
+    from lanxang.clock import utcnow
+    from lanxang.database.models import EventRecord
+
+    then = utcnow() - timedelta(days=3)
+    with Session(temp_db) as session:       # a week-old run of samples, nothing in the last 24 h
+        session.add_all([EventRecord(event_type="atlas.host.sample", source="x", payload='{"cpu": 5}',
+                                     created_at=then + timedelta(minutes=15 * i)) for i in range(8)])
+        session.commit()
+
+    status, body = _get(running_server + "/trends")
+    assert status == 200 and "Not enough history in this window" in body and 'href="/trends?window=7d">Try 7 days' in body
+
+
 def test_unknown_route_returns_404(running_server):
 
     with pytest.raises(urllib.error.HTTPError) as exc_info:

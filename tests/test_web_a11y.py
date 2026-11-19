@@ -4,7 +4,7 @@ import json
 import re
 import shutil
 import subprocess
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 
@@ -234,6 +234,21 @@ def test_activity_groups_by_the_chosen_zone_day(monkeypatch):
     assert render.DAY_SCRIPT in html and '!=="browser")return;' in render.DAY_SCRIPT
 
 
+def test_activity_uses_the_zone_the_browser_reported(monkeypatch):
+    monkeypatch.setattr(render, "DISPLAY", None)                  # "this browser"
+    events = [Event(datetime(2026, 11, 19, 3)), Event(datetime(2026, 11, 18, 23))]
+    html = render_history_page(events, today=date(2026, 11, 18), viewer_zone="America/New_York")
+    assert html.count('<section class="day">') == 1 and 'data-zone="America/New_York"' in html
+    assert "\u00d72 today, latest" in html                       # both are 18 Nov in New York: one row, counted
+    monkeypatch.setattr(render, "DISPLAY", DisplayConfig(time_zone="UTC"))
+    assert "data-zone" not in render_history_page(events, viewer_zone="America/New_York")   # a chosen zone wins
+
+
+def test_the_head_script_reports_the_browser_zone():
+    assert 'document.cookie="lanxang-tz="' in render.THEME_SCRIPT
+    assert "log.dataset.zone===" in render.DAY_SCRIPT
+
+
 DAY_HARNESS = r"""
 const [script, rows] = JSON.parse(process.argv[1]);
 let replaced = false;
@@ -263,3 +278,11 @@ def test_day_script_regroups_by_local_day_and_never_drops_rows():
 
 def test_saving_the_time_zone_reloads_activity():
     assert 'if(document.getElementById("ev-log"))location.reload();' in render.TIME_PREFS_SCRIPT
+
+
+def test_viewer_zone_cookie_must_name_a_real_zone():
+    from types import SimpleNamespace
+    from lanxang.web.server import AtlasWebHandler
+    zone = lambda cookie: AtlasWebHandler._viewer_zone(SimpleNamespace(headers={"Cookie": cookie}))
+    assert zone("lanxang-tz=America%2FNew_York") == "America/New_York"
+    assert zone("lanxang-tz=Not%2FA_Zone") is None and zone("lanxang-tz=..%2F..%2Fetc") is None and zone("") is None

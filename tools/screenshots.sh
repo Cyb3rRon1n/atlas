@@ -7,7 +7,11 @@ cd "$(dirname "$0")/.."
 OUT=$PWD/docs/images/screenshots
 PY=$PWD/.venv/bin/python; [ -x "$PY" ] || PY=python3
 CHROME=${CHROME:-google-chrome}
-PORT=18499; DEBUG=18498
+# three free ports (demo page, degraded page, Chrome DevTools), so another run or service on 18499 never collides
+read -r PORT PORT2 DEBUG < <("$PY" -c 'import socket
+s = [socket.socket() for _ in range(3)]
+[x.bind(("127.0.0.1", 0)) for x in s]
+print(*(x.getsockname()[1] for x in s))')
 TMP=$(mktemp -d)
 PIDS=()
 cleanup() { for pid in "${PIDS[@]}"; do kill "$pid" 2>/dev/null || true; done; wait 2>/dev/null || true; rm -rf "$TMP"; }
@@ -16,19 +20,19 @@ trap cleanup EXIT
 "$PY" tools/demo_data.py "$TMP/demo"
 "$PY" tools/demo_data.py "$TMP/degraded" --degraded
 ( cd "$TMP/demo" && exec "$PY" -m lanxang.cli.main web --port $PORT >/dev/null 2>&1 ) & PIDS+=($!)
-( cd "$TMP/degraded" && exec "$PY" -m lanxang.cli.main web --port $((PORT + 1)) >/dev/null 2>&1 ) & PIDS+=($!)
+( cd "$TMP/degraded" && exec "$PY" -m lanxang.cli.main web --port $PORT2 >/dev/null 2>&1 ) & PIDS+=($!)
 "$CHROME" --headless=new --disable-gpu --hide-scrollbars --no-first-run --user-data-dir="$TMP/chrome" \
   --remote-debugging-port=$DEBUG --window-size=1280,800 about:blank >/dev/null 2>&1 & PIDS+=($!)
-for url in http://127.0.0.1:$PORT/ http://127.0.0.1:$((PORT + 1))/ http://127.0.0.1:$DEBUG/json/version; do
+for url in http://127.0.0.1:$PORT/ http://127.0.0.1:$PORT2/ http://127.0.0.1:$DEBUG/json/version; do
   for _ in $(seq 60); do curl -s -o /dev/null "$url" && continue 2; sleep 0.5; done
   echo "screenshots: no answer from $url after 30 s" >&2; exit 1
 done
 
-"$PY" - "$OUT" $PORT $DEBUG <<'EOF'
+"$PY" - "$OUT" $PORT $PORT2 $DEBUG <<'EOF'
 import base64, json, sys, time, urllib.request
 import websocket
 
-out, port, debug = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+out, port, port2, debug = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
 target = next(t for t in json.load(urllib.request.urlopen(f"http://127.0.0.1:{debug}/json")) if t["type"] == "page")
 ws = websocket.create_connection(target["webSocketDebuggerUrl"], suppress_origin=True)
 ids = iter(range(1, 10**6))
@@ -67,5 +71,5 @@ def shoot(name, url, scheme, script=""):
 for name, path, script in SHOTS:
     for scheme in ("light", "dark"):
         shoot(f"{name}-{scheme}", f"http://127.0.0.1:{port}{path}", scheme, script)
-shoot("nas-degraded", f"http://127.0.0.1:{port + 1}/", "light")
+shoot("nas-degraded", f"http://127.0.0.1:{port2}/", "light")
 EOF

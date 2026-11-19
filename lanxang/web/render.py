@@ -253,6 +253,7 @@ PAGE_STYLE += SHELL_STYLE
 THEME_SCRIPT = """<script>(function(){var d=document.documentElement;
 function g(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 var t=g("atlas-theme");if(t==="light"||t==="dark"||t==="system")d.dataset.theme=t;
+try{document.cookie="lanxang-tz="+encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)+";path=/;max-age=31536000;samesite=lax";}catch(e){}
 var V={motion:["on","off"],contrast:["on"],text:["s","l"],density:["compact"],sidebar:["on"]};
 for(var k in V){var v=g("lanxang-pref-"+k);if(V[k].indexOf(v)>=0)d.setAttribute("data-"+k,v);}
 window.lanxangReduced=function(){var m=d.getAttribute("data-motion");
@@ -818,6 +819,7 @@ HISTORY_STYLE = """
 # ponytail: rows were folded per UTC day, so a fold near midnight can still count both days; fine for a log.
 DAY_SCRIPT = """<script>(function(){var R=document.documentElement,log=document.getElementById("ev-log");
 if(!log||(R.dataset.tz||"browser")!=="browser")return;
+try{if(log.dataset.zone&&log.dataset.zone===Intl.DateTimeFormat().resolvedOptions().timeZone)return;}catch(e){}   // already grouped by this zone
 var groups=[],by={},rows=log.querySelectorAll(".ev");
 for(var i=0;i<rows.length;i++)if(!rows[i].querySelector("time[datetime]"))return;   // never drop a row: keep the server's days
 rows.forEach(function(ev){var t=ev.querySelector("time[datetime]");
@@ -835,7 +837,7 @@ def _event_category(event_type):
     return next(((cat, icon) for cat, icon, keys in EVENT_CATEGORIES if any(k in lowered for k in keys)), ("other", icon("info")))
 
 
-def render_history_page(events, today=None, changes=""):
+def render_history_page(events, today=None, changes="", viewer_zone=None):
     """
     events is KnowledgeQueries().recent_events()'s return value - a
     list of EventRecord ORM objects, same as `lanxang history` prints.
@@ -851,14 +853,20 @@ def render_history_page(events, today=None, changes=""):
         )
 
     from datetime import timedelta
-    # Day groups follow the display zone; with "browser" (UTC here) DAY_SCRIPT regroups by the viewer's own day.
-    today = today or local(utcnow(), DISPLAY)[0].date()
+    from lanxang.clock import _display
+    # Day groups (and "x3 today") follow the display zone. With "browser", the zone the browser reported in its
+    # lanxang-tz cookie; without one, UTC here and DAY_SCRIPT regroups by the viewer's own day.
+    display, zone = _display(DISPLAY), ""
+    if display.time_zone == "browser" and viewer_zone:
+        display, zone = display.model_copy(update={"time_zone": viewer_zone}), viewer_zone
+    zone_attr = f' data-zone="{_esc(zone)}"' if zone else ""
+    today = today or local(utcnow(), display)[0].date()
     names = {today: "Today", today - timedelta(days=1): "Yesterday"}
 
     days = {}
     for event in events:   # newest first; one row per event type per day (newest kept, the rest counted)
         moment = _moment(event.created_at)
-        items = days.setdefault(local(moment, DISPLAY)[0].date() if moment else str(event.created_at)[:10], {})
+        items = days.setdefault(local(moment, display)[0].date() if moment else str(event.created_at)[:10], {})
         items.setdefault(event.event_type, [event, 0])[1] += 1
 
     sections = ""
@@ -890,7 +898,7 @@ def render_history_page(events, today=None, changes=""):
 
     body = (HISTORY_STYLE + changes + ask_chips(HISTORY_CHIPS) + f'<div class="filters seg" role="group" aria-label="Show">{buttons}</div>'
             + '<p class="muted">Routine scans (every 15 min) are hidden under Important — pick All or Scans to see them.</p>'
-            + f'<div id="ev-log">{sections}</div>' + DAY_SCRIPT + script + "<script>document.querySelectorAll('.day').forEach((d) => {"
+            + f'<div id="ev-log"{zone_attr}>{sections}</div>' + DAY_SCRIPT + script + "<script>document.querySelectorAll('.day').forEach((d) => {"
               " d.hidden = !d.querySelector('.ev:not([hidden])'); });</script>")
 
     return render_page("Activity", body, active="history")

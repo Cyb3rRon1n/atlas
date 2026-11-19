@@ -3,6 +3,13 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
+## Unreleased
+
+### Fixed
+- Activity, with the time zone set to "this browser": days and "×N today" counts now follow the viewer's own day
+  (the browser tells Lanxang its zone), so repeats near midnight are no longer counted into the wrong day.
+- `tools/screenshots.sh` picks free ports instead of fixed ones, so it runs beside another copy or service.
+
 ## 1.3.0 - 2026-11-19
 
 The old Atlas names are gone; re-running the installer moves an older install over.

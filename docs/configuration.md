@@ -242,6 +242,8 @@ changes), public routes added or removed since the snapshot a day earlier, and k
 with nothing to tell sends nothing. Empty (the default) is off; the Setup page's Daily summary card sets it. Quiet
 hours and **Pause alerts** hold it until the next scan after they end. A time close to midnight (say `"23:55"`) is
 skipped on a day when no scan runs between it and midnight, so pick one at least one scan interval before midnight.
+After the summary has been off for more than two days, the next one doesn't list devices as "gone quiet" (it can't
+tell which ones went quiet yesterday); it starts tracking again from that day.
 
 ```yaml
 notify:
@@ -566,10 +568,11 @@ posture:
 Each open port that isn't in `expected_ports` raises one alert ("Port 22 is open to the internet"), cleared with
 one more message when Shodan no longer sees it or when you add the port to `expected_ports` (saving the Setup card
 rechecks the last answer straight away, without asking Shodan again); each reported CVE raises one alert too. The Security page's **Public exposure** tab shows
-**What the internet sees**: each port marked expected or not, the CVEs, and when Shodan was last asked. This is
+**What the internet sees**: each port marked expected or not, the CVEs, the software Shodan detected, and when Shodan was last asked. This is
 Shodan's last scan, not a live test: a port you just closed can still show for a while. A failed lookup keeps the
 last answer and the open alerts, and so does an empty answer from Shodan after it had data for your IP (shown as
-"Shodan has no current data for this IP"). A new public IP starts from nothing. `lanxang internet check --force`
+"Shodan has no current data for this IP"); a failed lookup is tried again an hour later rather than the next day.
+A new public IP starts from nothing. `lanxang internet check --force`
 looks up right away.
 
 ## `notify`

@@ -99,3 +99,10 @@ def test_tools_say_not_set_up(isolated_cwd, temp_db):
     assert run(config(), "get_disks")["status"] == "not set up"
     empty = AtlasConfig()
     assert run(empty, "get_uptime")["status"] == "not set up"
+
+
+def test_tool_limits_tolerate_junk_and_long_details_are_cut(isolated_cwd, temp_db):
+    assert run(config(), "get_devices", {"limit": "lots"})["more"] == 0       # junk limit = the default, no error
+    AlertStore().event("ports", "New open port 22", detail="x" * 2000, now=utcnow())
+    detail = run(config(), "get_alerts")["open"]["items"][0]["detail"]
+    assert len(detail) <= 300 and detail.endswith("…")

@@ -4,7 +4,7 @@ import requests
 
 from lanxang.alerts import AlertStore
 from lanxang.config.models import AtlasConfig
-from lanxang.posture.internet_view import lookup, run
+from lanxang.posture.internet_view import lookup, reassess, run
 from lanxang.posture.model import build_posture
 from lanxang.posture.store import PostureStore
 
@@ -110,12 +110,75 @@ def test_failed_lookup_keeps_alerts_and_last_ports(temp_db):
     assert store.statuses()["internet_view"]["ok"] is False
 
 
-def test_404_clears_alerts(temp_db):
+def test_404_with_nothing_known_before_is_a_clean_answer(temp_db):
+    store = home(temp_db)
+    texts, detail = run(ON, store, NOW, get=lambda url, timeout: Reply(404, {}), send=lambda text: None)
+    assert detail["ok"] is True and detail["known"] is False and detail["ports"] == []
+    assert open_alerts(temp_db) == [] and store.statuses()["internet_view"]["ok"] is True
+
+
+def test_404_after_a_known_answer_keeps_ports_and_alerts(temp_db):
+    store, sent = home(temp_db), []
+    run(ON, store, NOW, get=shodan([22], ["CVE-2023-0001"]), send=sent.append)
+    texts, detail = run(ON, store, NOW + timedelta(days=1), get=lambda url, timeout: Reply(404, {}),
+                        send=sent.append)
+    assert texts == [] and len(sent) == 2                   # no "no longer seen" / "no longer reported"
+    assert detail["ok"] is False and detail["error"] == "Shodan has no current data for this IP"
+    assert detail["known"] is True and detail["ports"] == [{"port": 22, "expected": False}]
+    assert detail["vulns"] == ["CVE-2023-0001"]
+    assert sorted(a["key"] for a in open_alerts(temp_db)) == ["internet_view:internet_cve:CVE-2023-0001",
+                                                             "internet_view:internet_port:22"]
+    assert store.statuses()["internet_view"]["ok"] is False
+
+
+def test_failed_lookup_after_an_ip_change_starts_fresh(temp_db):
+    store = home(temp_db)
+    run(ON, store, NOW, get=shodan([22], ["CVE-2023-0001"]), send=lambda text: None)
+    store.set_status("public_ip", True, {"ip": "203.0.113.8"}, NOW)
+    texts, detail = run(ON, store, NOW + timedelta(hours=1), get=failing, send=lambda text: None)
+    assert detail["ip"] == "203.0.113.8" and detail["ok"] is False
+    assert detail["ports"] == [] and detail["vulns"] == [] and detail["cpes"] == [] and detail["known"] is None
+    assert len(open_alerts(temp_db)) == 2                   # a failure leaves the open alerts alone
+
+
+def test_404_after_an_ip_change_is_a_clean_answer(temp_db):
     store = home(temp_db)
     run(ON, store, NOW, get=shodan([22]), send=lambda text: None)
-    texts, detail = run(ON, store, NOW + timedelta(days=1), get=lambda url, timeout: Reply(404, {}),
+    store.set_status("public_ip", True, {"ip": "203.0.113.8"}, NOW)
+    texts, detail = run(ON, store, NOW + timedelta(hours=1), get=lambda url, timeout: Reply(404, {}),
                         send=lambda text: None)
-    assert detail["ok"] is True and detail["known"] is False and detail["ports"] == []
+    assert detail["ok"] is True and detail["known"] is False and open_alerts(temp_db) == []
+
+
+def test_reassess_resolves_a_newly_expected_port_without_a_lookup(temp_db):
+    store, sent = home(temp_db), []
+    run(ON, store, NOW, get=shodan([443, 22]), send=sent.append)
+    later = AtlasConfig(posture={"internet_view": True, "expected_ports": [22, 80, 443]})
+    texts, detail = reassess(later, store, NOW + timedelta(hours=1), send=sent.append)
+    assert texts == ["**✓ Port 22 is now expected**"] and sent[-1] == texts[0]
+    assert detail["ports"] == [{"port": 22, "expected": True}, {"port": 443, "expected": True}]
+    assert detail["checked_at"] == NOW.isoformat(timespec="minutes")       # still the last lookup's time
+    assert open_alerts(temp_db) == [] and store.statuses()["internet_view"]["ok"] is True
+    assert reassess(later, store, NOW + timedelta(hours=2), send=sent.append)[0] == []     # nothing moved
+
+
+def test_reassess_without_a_stored_answer_does_nothing(temp_db):
+    store = home(temp_db)
+    assert reassess(ON, store, NOW) == ([], {}) and "internet_view" not in store.statuses()
+
+
+def test_setup_save_rechecks_the_stored_answer(temp_db, isolated_cwd, monkeypatch):
+    from lanxang.config import local
+    from lanxang.web import settings_page
+
+    store = home(temp_db)
+    run(ON, store, NOW, get=shodan([443, 22]), send=lambda text: None)
+    assert open_alerts(temp_db)
+    saved = {}
+    monkeypatch.setattr(local, "save_settings", lambda settings: saved.update(settings))
+    monkeypatch.setattr(local, "read_settings", lambda: saved)
+    monkeypatch.setattr("lanxang.notify.configured", lambda config: False)
+    assert settings_page.handle_post("/api/settings/internet/save", {"expected_ports": "22, 443"})[0] == 200
     assert open_alerts(temp_db) == []
 
 

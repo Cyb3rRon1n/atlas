@@ -48,6 +48,17 @@ def test_build_daily_lists_changes():
     assert quiet == [2]
 
 
+def test_build_daily_lists_an_internet_view_alert():
+    row = {"source": "internet_view", "key": "internet_view:internet_port:22", "opened_at": NOW - timedelta(hours=6),
+           "resolved_at": NOW - timedelta(hours=2), "level": "problem", "title": "Port 22 is open to the internet",
+           "href": "/posture"}
+    same = [{"name": "media", "hosts": ["media.example.org"]}]
+    sources = _sources(NOW, routes_then=same, routes_now=same, devices=[],
+                       alerts={"open": [], "watch": [], "resolved": [row]})
+    text, _ = summary.build_daily(AtlasConfig(), NOW, sources, [])
+    assert "Port 22 is open to the internet" in text and "Cleared: Port 22 is open to the internet" in text
+
+
 def test_build_daily_quiet_day_returns_none():
     same = [{"name": "media", "hosts": ["media.example.org"]}]
     sources = _sources(NOW, routes_then=same, routes_now=same, alerts={"open": [], "watch": [], "resolved": []},

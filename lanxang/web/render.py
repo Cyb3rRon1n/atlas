@@ -21,7 +21,7 @@ from lanxang.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE, DRAWER_HTML, DRAWER
 # Colours are tokens: light by default; dark, or the system's choice, when the viewer picks it (the header's theme
 # button or Preferences, kept in localStorage). Pages use var(--...) only, never a raw colour.
 LIGHT = """--bg:#f7fbf9; --surface:#ffffff; --surface2:#eef5f2; --deep:#e6efeb; --line:#dde8e3; --line2:#c4d4cd;
-  --text:#10201c; --muted:#4f5f5a; --blue:#1e7f66; --accent:#1e7f66; --gold:#c9a227; --gold-text:#8a6a0c; --on-accent:#ffffff;
+  --text:#10201c; --muted:#4f5f5a; --blue:#1e7f66; --accent:#1e7f66; --gold:#c9a227; --gold-text:#876808; --on-accent:#ffffff;
   --green:#15803d; --orange:#b45309; --red:#c42b2b; --purple:#7c3aed; --teal:#0f766e; --yellow:#a16207;
   --ok-text:#166534; --ok-line:#86d6a4; --warn-text:#92400e; --warn-line:#f2c97a; --warn-bg:#fff7eb;
   --bad-text:#991b1b; --bad-line:#f3a8a8; --bad-bg:#fef2f2; --lane:#a9d6c7;
@@ -127,10 +127,11 @@ PAGE_STYLE = f"""
   /* Status is never colour alone: every status dot also carries a glyph (ok ✓, warning !, down ×, unknown –). */
   :root :is(.dot, .ddot) { width:14px; height:14px; border-radius:50%; display:inline-flex; align-items:center;
          justify-content:center; flex:none; color:var(--surface); font:700 10px/1 system-ui, sans-serif; }
-  :is(.dot, .ddot)::after { content:"\\2013"; }
-  :is(.dot.ok, .ddot.seen)::after { content:"\\2713"; }
-  :is(.dot.warn, .dot.review, .ddot.quiet)::after { content:"!"; }
-  .dot.down::after { content:"\\00d7"; }
+  /* The glyph is visual only (alt text ""): the dot's label or row already says the status in words. */
+  :is(.dot, .ddot)::after { content:"\\2013"; content:"\\2013" / ""; }
+  :is(.dot.ok, .ddot.seen)::after { content:"\\2713"; content:"\\2713" / ""; }
+  :is(.dot.warn, .dot.review, .ddot.quiet)::after { content:"!"; content:"!" / ""; }
+  .dot.down::after { content:"\\00d7"; content:"\\00d7" / ""; }
   .skip { position:absolute; left:8px; top:-60px; z-index:60; padding:8px 14px; border-radius:6px;
           background:var(--accent); color:var(--on-accent); font-weight:600; }
   .skip:focus { top:8px; text-decoration:none; }
@@ -317,7 +318,8 @@ function save(change){var body=cur();for(var k in change)body[k]=change[k];say.t
     body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return[r.ok,j];});}).then(function(a){
     if(!a[0]){say.textContent=a[1].error||"Couldn't save.";return;}
     var s=a[1].display;R.dataset.clock=s.clock;R.dataset.datefmt=s.date_format;R.dataset.tz=s.time_zone;other=false;
-    if(window.atlasTimes)window.atlasTimes();sync();say.textContent="Saved.";},function(){say.textContent="Couldn't reach Lanxang.";});}
+    if(window.atlasTimes)window.atlasTimes();sync();say.textContent="Saved.";
+    if(document.getElementById("ev-log"))location.reload();},function(){say.textContent="Couldn't reach Lanxang.";});}
 document.addEventListener("click",function(e){var b=e.target.closest("[data-spref] button");if(!b)return;
   var k=b.parentNode.dataset.spref,v=b.dataset.v;
   if(k!=="zone")save(k==="clock"?{clock:v}:{date_format:v});
@@ -516,7 +518,7 @@ PREFS_PANEL = (
 
 # Keyboard shortcuts: (keys, what). The sheet (press ?) and KEYS_SCRIPT both follow this table.
 SHORTCUTS = ((("g", "h"), "Home"), (("g", "d"), "Devices"), (("g", "a"), "Alerts"), (("g", "s"), "Setup"),
-             (("/",), "Search or filter this page"), (("?",), "Show this list"), (("Esc",), "Close it"))
+             (("/",), "Focus the search box (where there is one)"), (("?",), "Show this list"), (("Esc",), "Close it"))
 
 KEYS_SHEET = (
     '<div id="keys-back" class="prefs-back" hidden></div>'
@@ -816,8 +818,9 @@ HISTORY_STYLE = """
 # ponytail: rows were folded per UTC day, so a fold near midnight can still count both days; fine for a log.
 DAY_SCRIPT = """<script>(function(){var R=document.documentElement,log=document.getElementById("ev-log");
 if(!log||(R.dataset.tz||"browser")!=="browser")return;
-var groups=[],by={};
-log.querySelectorAll(".ev").forEach(function(ev){var t=ev.querySelector("time[datetime]");if(!t)return;
+var groups=[],by={},rows=log.querySelectorAll(".ev");
+for(var i=0;i<rows.length;i++)if(!rows[i].querySelector("time[datetime]"))return;   // never drop a row: keep the server's days
+rows.forEach(function(ev){var t=ev.querySelector("time[datetime]");
   var d=new Date(t.getAttribute("datetime")),k=d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate();
   if(!by[k]){by[k]=[];groups.push([t.getAttribute("datetime"),by[k]]);}by[k].push(ev);});
 if(!groups.length)return;

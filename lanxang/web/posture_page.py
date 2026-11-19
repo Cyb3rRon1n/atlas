@@ -24,8 +24,10 @@ POSTURE_STYLE = """
 #strip .chip.review { border-color:var(--orange); background:var(--warn-bg); } #strip .chip.review .v { color:var(--warn-text); }
 #strip .chip.unknown .v { color:var(--muted); }
 #strip .chip .v::before { margin-right:6px; font-size:.9em; }   /* status is never colour alone */
-#strip .chip.ok .v::before { content:"\\2713"; } #strip .chip.warn .v::before { content:"!"; }
-#strip .chip.review .v::before { content:"?"; } #strip .chip.unknown .v::before { content:"\\2013"; }
+#strip .chip.ok .v::before { content:"\\2713"; content:"\\2713" / ""; }
+#strip .chip.warn .v::before { content:"!"; content:"!" / ""; }
+#strip .chip.review .v::before { content:"?"; content:"?" / ""; }
+#strip .chip.unknown .v::before { content:"\\2013"; content:"\\2013" / ""; }
 .box.warn .badge { color:var(--bad-text); }
 .posture { display:flex; flex-wrap:wrap; gap:20px; }
 .posture .mapcard { flex:999 1 720px; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; }

@@ -40,8 +40,8 @@ def test_every_status_dot_state_has_a_glyph():
     for state, glyph in ((".dot.ok", "2713"), (".ddot.seen", "2713"), (".dot.warn", '"!"'), (".dot.review", '"!"'),
                          (".ddot.quiet", '"!"'), (".dot.down", "00d7")):
         rule = next(line for line in css.splitlines() if state in line and "::after" in line)
-        assert glyph in rule, state
-    assert re.search(r':is\(\.dot, \.ddot\)::after \{ content:"\\2013"; \}', css)   # unknown / no state
+        assert glyph in rule and '/ ""' in rule, state     # alt text "": the label already says it in words
+    assert ':is(.dot, .ddot)::after { content:"\\2013"; content:"\\2013" / ""; }' in css   # unknown / no state
 
 
 def _alert(id, title):
@@ -59,7 +59,7 @@ def test_posture_strip_and_boxes_carry_a_mark_besides_colour():
     from lanxang.web import posture_page
     css = posture_page.POSTURE_STYLE
     for state in ("ok", "warn", "review", "unknown"):
-        assert re.search(rf"#strip \.chip\.{state} \.v::before \{{ content:", css), state
+        assert re.search(rf'#strip \.chip\.{state} \.v::before \{{ content:"[^"]+"; content:"[^"]+" / ""; \}}', css), state
     assert 'n.state === "warn") box.append(el("span", "problem", "badge"))' in posture_page.POSTURE_SCRIPT
 
 
@@ -76,9 +76,10 @@ def test_gold_text_meets_4_5_to_1_on_light_surfaces():
     for name, light, need in (("light", render.LIGHT, 4.5), ("high contrast", render.LIGHT + render.LIGHT_HC, 7)):
         t = {**tokens(render.LIGHT), **tokens(light)}
         for bg in ("bg", "surface", "surface2"):
-            assert ratio(t["gold-text"], t[bg]) >= need, (name, bg, ratio(t["gold-text"], t[bg]))
-    dark = tokens(render.DARK)
-    assert ratio(dark["gold-text"], dark["surface"]) >= 4.5
+            assert ratio(t["gold-text"], t[bg]) >= need + .1, (name, bg, ratio(t["gold-text"], t[bg]))   # with margin
+    for dark, need in ((tokens(render.DARK), 4.5), ({**tokens(render.DARK), **tokens(render.DARK_HC)}, 7)):
+        for bg in ("bg", "surface", "surface2"):
+            assert ratio(dark["gold-text"], dark[bg]) >= need, (bg, ratio(dark["gold-text"], dark[bg]))
     from lanxang.web import login_page
     assert "var(--gold-text)" in login_page.CARD_STYLE and "color:var(--gold)" not in login_page.CARD_STYLE
 
@@ -231,3 +232,34 @@ def test_activity_groups_by_the_chosen_zone_day(monkeypatch):
     html = render_history_page(events)
     assert html.count('<section class="day">') == 2 and '<div id="ev-log">' in html
     assert render.DAY_SCRIPT in html and '!=="browser")return;' in render.DAY_SCRIPT
+
+
+DAY_HARNESS = r"""
+const [script, rows] = JSON.parse(process.argv[1]);
+let replaced = false;
+const evs = rows.map((iso) => ({iso, querySelector: () => iso ? {getAttribute: () => iso} : null}));
+const log = {querySelectorAll: () => Object.assign(evs, {forEach: Array.prototype.forEach}),
+             replaceChildren(...sections) { replaced = sections.map((s) => s.kids.map((e) => e.iso)); }};
+global.document = {documentElement: {dataset: {tz: "browser"}}, getElementById: () => log,
+  createElement: () => ({kids: [], dataset: {}, setAttribute() {}, appendChild(c) { if (c.iso !== undefined) this.kids.push(c); }})};
+eval(script);
+console.log(JSON.stringify(replaced));
+"""
+
+
+def run_days(rows):
+    if not shutil.which("node"):
+        pytest.skip("node not installed")
+    script = render.DAY_SCRIPT.removeprefix("<script>").removesuffix("</script>")
+    return json.loads(subprocess.run(["node", "-e", DAY_HARNESS, json.dumps([script, rows])],
+                                     capture_output=True, text=True, check=True).stdout)
+
+
+def test_day_script_regroups_by_local_day_and_never_drops_rows():
+    a, b = "2026-11-19T12:00:00Z", "2026-11-17T12:00:00Z"
+    assert run_days([a, a, b]) == [[a, a], [b]]          # every row kept, two days
+    assert run_days([a, None, b]) is False               # a row without a time: keep the server's grouping
+
+
+def test_saving_the_time_zone_reloads_activity():
+    assert 'if(document.getElementById("ev-log"))location.reload();' in render.TIME_PREFS_SCRIPT

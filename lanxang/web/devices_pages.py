@@ -10,7 +10,7 @@ from urllib.parse import quote, urlencode
 
 from lanxang.devices.store import CONNECTIONS, KINDS, STATES
 from lanxang.web.icons import icon
-from lanxang.web.render import section_tabs, ask_chips, _esc, render_page, when
+from lanxang.web.render import section_tabs, ask_chips, _esc, empty_state, render_page, when
 
 
 ACTIONS_SCRIPT = """
@@ -115,11 +115,6 @@ def _when(iso, now=None):
 def _sources(device):
 
     return ", ".join(sorted({sighting["source"] for sighting in device["sightings"]}))
-
-
-def _status(device):
-
-    return f'<span class="status-{_esc(device["status"])}">{_esc(device["status"])}</span>'
 
 
 def device_tabs(current):
@@ -315,9 +310,11 @@ def render_devices_page(devices, hints=None):
     return _page(f"Devices ({len(devices)})", body, device_tabs("devices"))
 
 
-def _options(values, selected):
+def _options(values, selected, labels=None):
+    """Options whose value is the stored word and whose text is its proper-case label."""
 
-    return "".join(f"<option{' selected' if value == selected else ''}>{_esc(value)}</option>" for value in values)
+    return "".join(f'<option value="{_esc(value)}"{" selected" if value == selected else ""}>'
+                   f'{_esc((labels or {}).get(value, value.capitalize()))}</option>' for value in values)
 
 
 def _open_ports(ports):
@@ -325,8 +322,8 @@ def _open_ports(ports):
     from lanxang.devices.ports import port_label
 
     if not ports:
-        return ('<div class="card"><h2>Open ports</h2><p class="muted">Not checked yet: lanxang ports check '
-                'runs on devices that are online during a scan.</p></div>')
+        return ('<div class="card"><h2>Open ports</h2><p class="muted">Not checked yet. Lanxang checks open '
+                'ports on online devices during each scan.</p></div>')
     items = "".join(f"<li>{_esc(port_label(port))}</li>" for port in ports["open"])
 
     return ('<div class="card"><h2>Open ports</h2>'
@@ -355,16 +352,83 @@ def wiring_node(device, snapshot):
 
 
 def _wired(node):
+    """(model, href, button label) for this device's place on the Cabling page, or None."""
 
     if not node:
-        return ""
-    model = f"{_esc(node['model'])} — " if node.get("model") else ""
-
+        return None
     box = node["id"].startswith(("s:", "u:"))          # switches/gateways/APs get a front panel there
     href = f"/cabling#fp-{quote(node['id'])}" if box else "/cabling"
 
-    return (f"<p class=\"muted\">{model}<a href=\"{_esc(href)}\">"
-            f"{'front panel' if box else 'where it plugs in'} on the Cabling page</a></p>")
+    return node.get("model") or "", href, "View on front panel" if box else "Where it plugs in"
+
+
+STATUS_NAMES = {"seen": ("ok", "Online"), "quiet": ("warn", "Gone quiet"), "invisible": ("muted", "Never seen")}
+
+DEVICE_STYLE = """
+<style>
+.dhead { display:flex; flex-wrap:wrap; gap:12px 20px; align-items:center; justify-content:space-between; }
+.dhead .facts { display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; font-size:14px; min-width:0; }
+.dhead .model { flex-basis:100%; font-size:13px; color:var(--muted); }
+.mono { font-family:ui-monospace, "IBM Plex Mono", Menlo, monospace; font-size:13px; }
+.schip { display:inline-flex; align-items:center; gap:6px; padding:2px 10px; border-radius:999px; font-size:13px;
+         font-weight:600; border:1px solid var(--line2); color:var(--muted); }
+.schip::before { content:""; width:8px; height:8px; border-radius:50%; background:currentColor; }
+.schip.ok { color:var(--ok-text); border-color:var(--ok-line); } .schip.warn { color:var(--warn-text); border-color:var(--warn-line); background:var(--warn-bg); }
+.dform { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:4px 24px; }
+.dform .field > input, .dform .field > select, .dform textarea { width:100%; }
+.dform .full { grid-column:1 / -1; }
+.dform label.check { display:flex; gap:8px; align-items:center; color:var(--text); font-size:14px; margin-top:12px; }
+.dform .hint { font-size:12px; color:var(--muted); }
+.dform .actions { margin-top:12px; }
+@media (max-width: 700px) { .dform { grid-template-columns:1fr; } }
+.danger-zone { border-color:var(--bad-line); }
+.danger-zone h2 { color:var(--bad-text); border-color:var(--bad-line); }
+.danger-zone .why { margin:0 0 10px; font-size:14px; }
+.danger-zone select { min-width:0; flex:1 1 220px; max-width:22rem; }
+.confirm { margin-top:12px; padding:12px 14px; border:1px solid var(--bad-line); border-radius:8px; background:var(--bad-bg); }
+.confirm p { margin:0 0 10px; font-size:14px; }
+.confirm .danger { background:var(--red); border-color:var(--red); color:var(--on-accent); font-weight:600; }
+.danger-zone [hidden] { display:none; }   /* the shared button display would otherwise beat [hidden] */
+</style>
+"""
+
+MERGE_SCRIPT = """
+<script>
+(() => {
+  const pick = document.getElementById("merge-into"), ask = document.getElementById("merge-ask");
+  const box = document.getElementById("merge-confirm");
+  if (!pick) return;
+  const close = () => { box.hidden = true; ask.hidden = false; };
+  pick.addEventListener("change", () => { ask.disabled = !pick.value; close(); });
+  ask.addEventListener("click", () => {
+    if (!pick.value) return;
+    document.getElementById("merge-target").textContent = pick.options[pick.selectedIndex].text;
+    box.hidden = false; ask.hidden = true;
+    box.querySelector("button.danger").focus();
+  });
+  document.getElementById("merge-cancel").addEventListener("click", () => { close(); ask.focus(); });
+})();
+</script>
+"""
+
+
+def _status_header(device, wired):
+
+    tone, word = STATUS_NAMES.get(device["status"], ("muted", device["status"]))
+    mac = next((s["mac"] for s in device["sightings"] if s.get("mac")), None)
+    seen = _when(device["last_seen"]) if device["last_seen"] else "never"
+    facts = [f'<span class="schip {tone}">{_esc(word)}</span>',
+             f'<span>{_esc(KIND_NAMES.get(device["kind"], device["kind"]))}</span>',
+             f'<span class="mono">{_esc(device["ip"] or "no IP")}</span>']
+    if mac:
+        facts.append(f'<span class="mono">{_esc(mac)}</span>')
+    facts.append(f'<span class="muted">last seen {seen}</span>')
+    model, button = "", ""
+    if wired:
+        model = f'<div class="model">{_esc(wired[0])}</div>' if wired[0] else ""
+        button = f'<a class="btn secondary" href="{_esc(wired[1])}">{_esc(wired[2])}</a>'
+
+    return f'<div class="card dhead"><div class="facts">{"".join(facts)}{model}</div>{button}</div>'
 
 
 def render_device_page(device, devices, ports=None, wiring=None, suggestion=None):
@@ -387,24 +451,28 @@ def render_device_page(device, devices, ports=None, wiring=None, suggestion=None
         if other["id"] != device["id"] and (other["kind"] in ("network", "server")
                                              or other["id"] == device["uplink_id"] or is_router(other))
     )
-    guess = "guessed wireless" if device["connection_guessed"] else ""
+    guess = '<div class="hint">Guessed wireless</div>' if device["connection_guessed"] else ""
+
+    def field(label, name, control, full=False):
+        return (f'<div class="field{" full" if full else ""}"><label for="dev-{name}">{label}</label>{control}</div>')
 
     form = (
-        f"<form id=\"edit\" data-original=\"{original}\" "
+        f"<form id=\"edit\" class=\"dform\" data-original=\"{original}\" "
         "onsubmit=\"this.querySelector('[data-form]').click(); return false\">"
-        f"<label>Name</label><input class=\"wide\" name=\"name\" value=\"{_esc(device['name'])}\">"
-        f"<label>Kind</label><select name=\"kind\">{_options(KINDS, device['kind'])}</select>"
-        f"<label>State</label><select name=\"state\">{_options(STATES, device['state'])}</select>"
-        f"<label>Connection</label><select name=\"connection\">{_options(CONNECTIONS, connection)}</select> "
-        f"<span class=\"muted\">{_esc(guess)}</span>"
-        "<label>Connected to</label><select name=\"uplink\">"
-        f"<option value=\"\"{'' if device['uplink_id'] is not None else ' selected'}>router / not set</option>{uplinks}</select>"
-        f"<label>Tags (comma separated)</label><input class=\"wide\" name=\"tags\" value=\"{_esc(', '.join(device['tags']))}\">"
-        f"<label>Notes</label><textarea name=\"notes\">{_esc(device['notes'])}</textarea>"
-        f"<label><input type=\"checkbox\" name=\"important\"{' checked' if device['important'] else ''}> "
-        "Important: alert me when it goes quiet</label><p>"
+        + field("Name", "name", f"<input id=\"dev-name\" name=\"name\" value=\"{_esc(device['name'])}\">")
+        + field("Kind", "kind", f"<select id=\"dev-kind\" name=\"kind\">{_options(KINDS, device['kind'], KIND_NAMES)}</select>")
+        + field("State", "state", f"<select id=\"dev-state\" name=\"state\">{_options(STATES, device['state'])}</select>")
+        + field("Connection", "connection",
+                f"<select id=\"dev-connection\" name=\"connection\">{_options(CONNECTIONS, connection)}</select>{guess}")
+        + field("Connected to", "uplink", "<select id=\"dev-uplink\" name=\"uplink\">"
+                f"<option value=\"\"{'' if device['uplink_id'] is not None else ' selected'}>Router / not set</option>{uplinks}</select>")
+        + field("Tags (comma separated)", "tags",
+                f"<input id=\"dev-tags\" name=\"tags\" value=\"{_esc(', '.join(device['tags']))}\">")
+        + field("Notes", "notes", f"<textarea id=\"dev-notes\" name=\"notes\">{_esc(device['notes'])}</textarea>", full=True)
+        + f"<label class=\"check full\"><input type=\"checkbox\" name=\"important\"{' checked' if device['important'] else ''}> "
+        "Important: alert me when it goes quiet</label><div class=\"actions full\">"
         + _button("Save", f"/api/devices/{device['id']}", {}, "primary", form="edit")
-        + "</p></form>"
+        + "</div></form>"
     )
 
     several = len(device["sightings"]) > 1
@@ -412,26 +480,35 @@ def render_device_page(device, devices, ports=None, wiring=None, suggestion=None
         f"<tr><td>{_esc(sighting['source'])}</td><td>{_esc(sighting['external_id'])}</td>"
         f"<td>{_esc(sighting['ip'] or '-')}</td><td>{_esc(sighting['mac'] or '-')}</td>"
         f"<td>{_esc(sighting['hostname'] or '-')}</td><td>{_when(sighting['last_seen'])}</td><td>"
-        + (_button("Split out", f"/api/sightings/{sighting['id']}/split", {}, after="goto") if several else "")
+        + (_button("Split out", f"/api/sightings/{sighting['id']}/split", {}, "sm", after="goto") if several else "")
         + "</td></tr>"
         for sighting in device["sightings"]
     )
 
     others = "".join(f"<option value=\"{other['id']}\">{_esc(other['name'])}</option>"
                      for other in devices if other["id"] != device["id"])
-    merge = (f"<p>Merge this device into <select id=\"merge-into\">{others}</select> "
-             + _button("Merge", f"/api/devices/{device['id']}/merge", {}, "danger", into_from="merge-into", after="goto")
-             + "</p>") if others else ""
+    # Merge deletes this device, so: nothing chosen at first, and an in-page "are you sure" (no browser dialogs).
+    danger = (
+        '<section class="card danger-zone"><h2>Danger zone</h2>'
+        '<p class="why"><b>Merge into another device.</b> <span class="muted">Every sighting and queued alert moves to '
+        'the device you choose, and this page goes away. Split out a sighting to undo it.</span></p>'
+        '<div class="actions"><select id="merge-into" aria-label="Device to merge into">'
+        f'<option value="" selected disabled>Choose a device\u2026</option>{others}</select>'
+        '<button type="button" class="danger" id="merge-ask" disabled>Merge\u2026</button></div>'
+        f'<div class="confirm" id="merge-confirm" role="alertdialog" aria-labelledby="merge-q" hidden>'
+        f'<p id="merge-q">Merge <b>{_esc(device["name"])}</b> into <b id="merge-target"></b>? This device is removed.</p>'
+        '<div class="actions">'
+        + _button("Yes, merge", f"/api/devices/{device['id']}/merge", {}, "danger", into_from="merge-into", after="goto")
+        + '<button type="button" id="merge-cancel">Cancel</button></div></div></section>' + MERGE_SCRIPT
+    ) if others else ""
 
     body = (
-        f"<p>{_status(device)} <span class=\"muted\">· {_esc(device['ip'] or 'no ip')} · last seen "
-        f"{_when(device['last_seen']) if device['last_seen'] else 'never'}</span></p>"
-        + _wired(wiring_node(device, wiring)) + _login_hint(suggestion) +
-        f"<div class=\"card\"><h2>Details</h2>{form}</div>"
+        DEVICE_STYLE + _status_header(device, _wired(wiring_node(device, wiring))) + _login_hint(suggestion)
+        + f"<div class=\"card\"><h2>Details</h2>{form}</div>"
         + _open_ports(ports) +
-        "<div class=\"card\"><h2>Where Lanxang saw it</h2><div class=\"table-wrap\"><table><thead><tr><th>source</th><th>id</th><th>ip</th>"
-        f"<th>mac</th><th>hostname</th><th>last seen</th><th></th></tr></thead><tbody>{sighting_rows}</tbody></table></div>"
-        f"{merge}</div>"
+        "<div class=\"card\"><h2>Where Lanxang saw it</h2><div class=\"table-wrap\"><table><thead><tr><th>Source</th><th>ID</th><th>IP</th>"
+        f"<th>MAC</th><th>Hostname</th><th>Last seen</th><th></th></tr></thead><tbody>{sighting_rows}</tbody></table></div></div>"
+        + danger
     )
 
     return _page(device["name"], body)
@@ -464,13 +541,20 @@ def render_coverage_page(coverage):
                                 f"<span class=\"muted\">{_esc(device['ip'] or '')}</span></li>"
                                 for device in devices) + "</ul>"
 
-    body = (
-        "<div class=\"card\"><h2>Sources</h2><div class=\"table-wrap\"><table><thead><tr><th>source</th><th>last run</th><th>at</th>"
+    sources = (
+        "<div class=\"table-wrap\"><table><thead><tr><th>source</th><th>last run</th><th>at</th>"
         f"<th>devices seen</th><th>last success</th><th>error</th></tr></thead><tbody>{source_rows}</tbody></table></div>"
-        "<p class=\"muted\">A failed run never makes devices look quiet — they keep their last status.</p></div>"
+        "<p class=\"muted\">A failed run never makes devices look quiet — they keep their last status.</p>"
+    ) if source_rows else empty_state("refresh", "No scans yet", "Each source appears here after its first scan, "
+                                      "which runs within a few minutes of starting.")
+    body = (
+        f"<div class=\"card\"><h2>Sources</h2>{sources}</div>"
         f"<div class=\"card\"><h2>Gone quiet</h2>{listing(coverage['quiet'], 'None — everything is being seen.')}</div>"
-        "<div class=\"card\"><h2>Known but invisible</h2><p class=\"muted\">In your config, never seen by a scan.</p>"
-        f"{listing(coverage['invisible'], 'None.')}</div>"
+        "<div class=\"card\"><h2>Known but invisible</h2>"
+        + ("<p class=\"muted\">In your config, never seen by a scan.</p>" + listing(coverage["invisible"], "")
+           if coverage["invisible"] else
+           empty_state("check", "Nothing invisible", "Every device in your config has been seen by a scan."))
+        + "</div>"
     )
 
     return _page("Coverage", body, device_tabs("coverage"))

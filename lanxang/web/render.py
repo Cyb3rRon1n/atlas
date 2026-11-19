@@ -95,6 +95,13 @@ PAGE_STYLE = f"""
   .seg > a:not([aria-current]):hover, .seg > button:not([aria-pressed="true"]):hover { color:var(--text); background:var(--surface2); text-decoration:none; }
   .seg > [aria-current], .seg > [aria-pressed="true"] { background:color-mix(in srgb, var(--accent) 14%, var(--surface));
          color:var(--accent); font-weight:600; }
+  /* Empty state: what a page or card shows before it has data, with the one step that fills it. */
+  .empty { display:flex; gap:14px; align-items:flex-start; padding:18px 20px; border:1px dashed var(--line2);
+           border-radius:10px; background:var(--surface); margin:0 0 16px; }
+  .empty > .ic { width:28px; height:28px; margin:2px 0 0; color:var(--accent); }
+  .empty p { margin:0 0 4px; font-size:14px; } .empty .empty-title { font-size:15px; font-weight:600; color:var(--text); }
+  .empty .btn { margin-top:10px; } .empty details { margin-top:10px; font-size:13px; }
+  :is(.card, .hcard) .empty { border:0; padding:4px 0 0; margin:0; background:none; }   /* already inside a box */
   label { display:block; margin:0.5rem 0 0.2rem; color:var(--muted); font-size:0.85rem; }
   .ic { width:1.1em; height:1.1em; vertical-align:-0.2em; margin-right:.4em; flex:none; }
   :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
@@ -298,7 +305,7 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
 
     chat_link = (
         '<button id="chat-toggle" class="chat-link" aria-controls="chat-drawer">Chat</button>' if drawer
-        else "<a class=\"chat-link\" href=\"/chat\">Chat</a>"
+        else "<a class=\"chat-link\" href=\"/chat\">Chat</a>" if AI_ON else ""   # no AI: /chat says how to set it up
     )
     drawer_html = CHAT_STYLE + DRAWER_STYLE + DRAWER_HTML + CHAT_SCRIPT if drawer else ""
 
@@ -582,6 +589,15 @@ def plural(number, word, many=None):
     """'1 device', '3 devices'; many: the plural when it isn't word + 's' ('batteries')."""
 
     return f"{number} {word if number == 1 else many or word + 's'}"
+
+
+def empty_state(icon_name, title, why, action=None, extra=""):
+    """The shared "nothing here yet" block: an icon, a one-line title, one sentence on why, and an optional
+    action (href, label) such as ("/settings#ai", "Turn on in Setup"). extra: trusted HTML after the action."""
+
+    link = f'<a class="btn primary" href="{_esc(action[0])}">{_esc(action[1])} →</a>' if action else ""
+    return (f'<div class="empty" role="status">{icon(icon_name)}<div><p class="empty-title">{_esc(title)}</p>'
+            f'<p class="muted">{_esc(why)}</p>{link}{extra}</div></div>')
 
 
 # One set of labels for the same window everywhere it can be picked.

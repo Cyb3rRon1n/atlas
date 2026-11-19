@@ -7,10 +7,11 @@ guests). Plain inline SVG, no dependencies. Pure renderer.
 
 from datetime import timedelta
 
-from lanxang.web.render import _esc, ask_chips, segmented, render_page, section_tabs
+from lanxang.web.render import _esc, ask_chips, empty_state, segmented, render_page, section_tabs
 
 WINDOWS = {"24h": 1, "7d": 7, "30d": 30}
 MAX_POINTS = 240
+MIN_POINTS = 6          # fewer samples than this draw a dot between the guide lines, not a chart
 
 TRENDS_CHIPS = ("When was the server busiest this week?", "Will any disk or pool fill up soon?",
                 "Did anything crash or go unhealthy recently?", "Which VM uses the most memory over time?")
@@ -48,8 +49,9 @@ def _chart(title, series, since, now, unit="%", ymax=100.0, thresholds=(75, 90),
 
     series = [(label, [(t, v) for t, v in pts if v is not None]) for label, pts in series]
     main = series[0][1] if series else []
-    if not main:
-        return f'<div class="chart"><h3>{_esc(title)}<span class="now muted">no data yet</span></h3></div>'
+    if len(main) < 2:
+        return (f'<div class="chart"><h3>{_esc(title)}<span class="now muted">collecting</span></h3>'
+                '<div class="stats">Needs a few more samples to draw a line.</div></div>')
 
     top = max(ymax, max(v for _, pts in series for _, v in pts) * 1.1)
     span = max(1.0, (now - since).total_seconds())
@@ -164,11 +166,15 @@ def render_trends_page(samples, scans, window, now, host_name="this host", node_
         _chart(name, [("CPU", d["cpu"]), ("RAM", d["mem"])], since, now) for name, d in sorted(guests.items()))
         + "</div></section>") if guests else ""
 
-    empty = ("" if samples or scans else
-             '<p class="muted">No history yet — atlas-scan records a sample every 15 minutes; charts fill in as it runs.</p>')
     note = ('<p class="muted">Lanxang keeps its own history (every 15 min). The 24h view fills after a day, 7d after a week.</p>')
+    if max(len(samples), len(scans)) < MIN_POINTS:
+        # Too little history: one explanation in place of charts that would each show a lone dot.
+        body = (TRENDS_STYLE + f'<div class="windows">{win}</div>' + empty_state(
+            "refresh", "Collecting history", "Lanxang records a sample every 15 minutes; the first charts appear "
+            "after the first hour or so of scans.", ("/overview", "See current status")))
+        return render_page("Trends", body, active="hosts", tabs=tabs)
 
     body = (TRENDS_STYLE + ask_chips(TRENDS_CHIPS) + f'<div class="windows">{win}</div>'
-            + note + empty + host + nodes + storage + containers + vms)
+            + note + host + nodes + storage + containers + vms)
 
     return render_page("Trends", body, active="hosts", tabs=tabs)

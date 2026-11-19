@@ -97,7 +97,7 @@ def test_trends_route_with_no_data(running_server):
     status, body = _get(running_server + "/trends")
 
     assert status == 200
-    assert "No history yet" in body
+    assert "Collecting history" in body
 
 
 def test_unknown_route_returns_404(running_server):
@@ -175,7 +175,15 @@ def test_post_rejects_bad_json_big_bodies_and_unknown_paths(running_server):
     connection.close()
 
 
-def test_chat_page_and_device_prefill(running_server):
+@pytest.fixture
+def ai_set_up(tmp_path, monkeypatch):
+    """/chat shows the Setup empty state while no AI is set up; these tests need the real chat page."""
+
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "lanxang.yaml").write_text("intelligence: {provider: ollama}\n")
+
+
+def test_chat_page_and_device_prefill(running_server, ai_set_up):
 
     _, device_id = _seed_device()
 
@@ -186,7 +194,14 @@ def test_chat_page_and_device_prefill(running_server):
     assert status == 200 and "Tell me about router" in body
 
 
-def test_chat_prefill_falls_back_to_ip_then_id_when_name_is_none(running_server, monkeypatch):
+def test_chat_page_without_ai_points_to_setup(running_server, tmp_path, monkeypatch):
+
+    monkeypatch.chdir(tmp_path)
+    status, body = _get(running_server + "/chat")
+    assert status == 200 and 'href="/settings#ai"' in body and 'id="ask"' not in body
+
+
+def test_chat_prefill_falls_back_to_ip_then_id_when_name_is_none(running_server, monkeypatch, ai_set_up):
     """
     device['name'] is normally always set, but the prefill must not assume
     that: a nameless device used to render "Tell me about None".

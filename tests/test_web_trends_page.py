@@ -23,7 +23,7 @@ def test_trends_charts_from_samples_and_proxmox_scans():
 
 def test_trends_empty_and_growth_estimates():
     html = render_trends_page([], [], "7d", NOW)
-    assert "No history yet" in html and 'aria-current=page>7d' in html
+    assert "No history yet" in html and 'href="/trends?window=7d" aria-current="page">7 days</a>' in html
     rising = [(NOW - timedelta(days=d), 90 - d) for d in range(10, -1, -1)]     # +1%/day from 90%
     assert "full in ~10 days" in _growth(rising) and "soon" in _growth(rising)
     assert "not growing" in _growth([(NOW - timedelta(hours=h), 50) for h in range(11, -1, -1)])

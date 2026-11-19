@@ -13,6 +13,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 - Setup's hints suggest the account name `lanxang` (SNMPv3 user, Proxmox user and token, NAS user); a new switch saved with a blank SNMPv3 user gets `lanxang`. Saved switches and settings keep their names.
 - The device page's *Important* box no longer names Signal: alerts go to whichever channels are set up.
 - Copy: spaced hyphens in sentences are now em dashes; counts say "1 service", "1 unnamed device", "1 low battery".
+- One control system in the web UI: buttons, inputs and selects share one height (36 px), border, radius and a jade focus ring, with primary, secondary and danger (destructive: Turn off, Remove, Merge) buttons, a compact size for table and alert rows, and a clear disabled state. Uptime's, Cabling's and the sign-in page's own button and input styles are gone.
+- Every time window and view switch is the same segmented control with the same labels: Activity, Trends and Visitors ("24 hours / 7 days / 30 days"), Exposure ("This hour / 1 hour / 24 hours"), Activity's filters and Cabling's Front panels / Map. URLs and query parameters are unchanged.
+- Setup cards line their buttons up along the bottom, in the order Turn off (left), Test, Save. Alerts' Investigate is a button; Cabling's CSV link is "Export CSV".
 
 ### Fixed
 - Activity rendered an empty page when a saved change event held plain text instead of the usual fields; a row that can't be read is now shown as-is or left out. The demo data writes the real format.

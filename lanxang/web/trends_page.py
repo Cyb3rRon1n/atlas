@@ -7,7 +7,7 @@ guests). Plain inline SVG, no dependencies. Pure renderer.
 
 from datetime import timedelta
 
-from lanxang.web.render import _esc, ask_chips, render_page, section_tabs
+from lanxang.web.render import _esc, ask_chips, segmented, render_page, section_tabs
 
 WINDOWS = {"24h": 1, "7d": 7, "30d": 30}
 MAX_POINTS = 240
@@ -17,8 +17,7 @@ TRENDS_CHIPS = ("When was the server busiest this week?", "Will any disk or pool
 
 TRENDS_STYLE = """
 <style>
-.windows { display:flex; gap:4px; margin:0 0 14px; } .windows a { padding:6px 12px; border-radius:8px; color:var(--muted); }
-.windows a[aria-current="page"] { background:var(--surface2); color:var(--text); }
+.windows { margin:0 0 14px; }
 .tcard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:16px; }
 .tcard > h2 { margin:0 0 10px; font-size:16px; border:0; padding:0; }
 .tgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
@@ -111,7 +110,7 @@ def render_trends_page(samples, scans, window, now, host_name="this host", node_
     """
 
     since = now - timedelta(days=WINDOWS[window])
-    win = "".join(f'<a href="/trends?window={w}"{" aria-current=page" if w == window else ""}>{w}</a>' for w in WINDOWS)
+    win = segmented(WINDOWS, window, "/trends?window={key}")
     tabs = section_tabs("trends")
     s = lambda key: [(t, p.get(key)) for t, p in samples]
 
@@ -169,7 +168,7 @@ def render_trends_page(samples, scans, window, now, host_name="this host", node_
              '<p class="muted">No history yet — atlas-scan records a sample every 15 minutes; charts fill in as it runs.</p>')
     note = ('<p class="muted">Lanxang keeps its own history (every 15 min). The 24h view fills after a day, 7d after a week.</p>')
 
-    body = (TRENDS_STYLE + ask_chips(TRENDS_CHIPS) + f'<nav class="windows" aria-label="Time window">{win}</nav>'
+    body = (TRENDS_STYLE + ask_chips(TRENDS_CHIPS) + f'<div class="windows">{win}</div>'
             + note + empty + host + nodes + storage + containers + vms)
 
     return render_page("Trends", body, active="hosts", tabs=tabs)

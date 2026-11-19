@@ -55,16 +55,49 @@ PAGE_STYLE = f"""
   code, pre { font-family: ui-monospace, "IBM Plex Mono", Menlo, monospace; background:var(--deep);
               border:1px solid var(--line); border-radius:4px; padding:0.15rem 0.4rem; font-size:0.85rem; }
   pre { padding:0.75rem; overflow-x:auto; white-space:pre-wrap; word-break:break-word; }
-  button { background:var(--surface); color:var(--text); border:1px solid var(--line2); border-radius:6px;
-           padding:0.3rem 0.75rem; margin:0 0.25rem 0.25rem 0; cursor:pointer; font:inherit; }
-  button:hover { border-color:var(--blue); }
-  button.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
-  input, select, textarea { background:var(--surface); color:var(--text); border:1px solid var(--line2);
-           border-radius:6px; padding:0.3rem 0.5rem; font:inherit; }
-  textarea { width:100%; min-height:4rem; box-sizing:border-box; }
+  /* One control system: buttons, inputs and selects share a height, border, radius and focus ring. Plain
+     <button> is the secondary look; .primary, .danger (destructive) and .btn (a link styled as a button) add to it.
+     :where() keeps these at zero specificity, so composite buttons (ports, map boxes, tabs, nav) restyle freely. */
+  :root { --control-h:36px; --control-r:6px; }
+  :where(button:not(.port, .box, .chip, [role=tab], .side button), .btn) { display:inline-flex; align-items:center;
+           justify-content:center; gap:6px; min-height:var(--control-h); box-sizing:border-box; padding:0 14px;
+           margin:0; background:var(--surface); color:var(--text); border:1px solid var(--line2);
+           border-radius:var(--control-r); font:inherit; font-size:14px; line-height:1.2; cursor:pointer;
+           text-decoration:none; white-space:nowrap; vertical-align:middle; }
+  :where(button, .btn):not(:disabled):hover { border-color:var(--accent); text-decoration:none; }
+  .btn { color:var(--text); } .btn:hover { text-decoration:none; }   /* beat the a / a:hover link styles */
+  .primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600; }
+  .primary:not(:disabled):hover { background:color-mix(in srgb, var(--accent) 86%, var(--text)); }
+  .secondary { background:var(--surface); border-color:var(--line2); color:var(--text); }
+  .danger { background:var(--surface); border-color:var(--bad-line); color:var(--bad-text); }
+  .danger:not(:disabled):hover { background:var(--red); border-color:var(--red); color:var(--on-accent); }
+  :where(button, .btn):disabled, :where(button, .btn)[aria-disabled="true"] { opacity:.55; cursor:not-allowed; }
+  .sm { min-height:30px; padding:0 10px; font-size:13px; }   /* compact: table rows, alert rows, suggestion chips */
+  :where(input:not([type=checkbox], [type=radio], [type=hidden], [type=range], [type=file], [type=color]), select,
+         textarea) { background:var(--surface); color:var(--text); border:1px solid var(--line2);
+           border-radius:var(--control-r); padding:0 10px; font:inherit; font-size:14px; box-sizing:border-box;
+           max-width:100%; }
+  :where(input:not([type=checkbox], [type=radio], [type=hidden], [type=range], [type=file], [type=color]), select)
+         { min-height:var(--control-h); }
+  :where(input, select, textarea):focus-visible { border-color:var(--accent); outline:2px solid var(--accent);
+           outline-offset:1px; }
+  :where(input, select, textarea):disabled { opacity:.55; cursor:not-allowed; }
+  textarea { width:100%; min-height:4rem; padding:8px 10px; }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  /* Segmented control: every time window or view switch. Links (aria-current) or buttons (aria-pressed). */
+  .seg { display:inline-flex; flex-wrap:wrap; gap:2px; padding:3px; box-sizing:border-box;
+         min-height:var(--control-h); border:1px solid var(--line2); border-radius:8px; background:var(--surface);
+         vertical-align:middle; }
+  .seg > a, .seg > button { display:inline-flex; align-items:center; min-height:calc(var(--control-h) - 8px);
+         padding:0 12px; margin:0; border:0; border-radius:var(--control-r); background:transparent;
+         color:var(--muted); font:inherit; font-size:13px; font-weight:500; line-height:1.2; cursor:pointer;
+         text-decoration:none; white-space:nowrap; }
+  .seg > a:not([aria-current]):hover, .seg > button:not([aria-pressed="true"]):hover { color:var(--text); background:var(--surface2); text-decoration:none; }
+  .seg > [aria-current], .seg > [aria-pressed="true"] { background:color-mix(in srgb, var(--accent) 14%, var(--surface));
+         color:var(--accent); font-weight:600; }
   label { display:block; margin:0.5rem 0 0.2rem; color:var(--muted); font-size:0.85rem; }
   .ic { width:1.1em; height:1.1em; vertical-align:-0.2em; margin-right:.4em; flex:none; }
-  :focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
   .status-seen { color:var(--green); } .status-quiet { color:var(--orange); } .status-invisible { color:var(--muted); }
   time[data-when] { white-space:nowrap; }
   #msg { color:var(--red); min-height:1.2rem; } #msg:empty { display:none; }
@@ -96,7 +129,8 @@ SHELL_STYLE = """
 .page { padding:24px 32px 40px; min-width:0; }
 .shell { flex:1; min-width:0; }
 .chips { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px; }
-.chips button { font:inherit; font-size:13px; padding:6px 12px; border-radius:999px; margin:0; }
+.chips button { font:inherit; font-size:13px; min-height:32px; padding:4px 12px; border-radius:999px; margin:0;
+                white-space:normal; text-align:left; }
 @media (max-width: 900px) {
   .app { display:block; }
   .side { padding:10px 12px; flex-direction:row; flex-wrap:wrap; align-items:center; gap:4px; }
@@ -467,8 +501,7 @@ EVENT_CATEGORIES = (("alert", icon("alert"), ("threshold", "alert", "down", "fai
 
 HISTORY_STYLE = """
 <style>
-.filters { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 14px; }
-.filters button[aria-pressed="true"] { background:var(--blue); border-color:var(--blue); color:var(--on-accent); }
+.filters { margin:0 0 14px; }
 .day { margin:0 0 18px; } .day > h2 { font-size:14px; color:var(--muted); border:0; margin:0 0 6px; }
 .ev { display:grid; grid-template-columns:76px 26px 1fr; gap:6px; align-items:start; padding:6px 0;
       border-top:1px solid var(--line); font-size:14px; }
@@ -526,7 +559,7 @@ def render_history_page(events, today=None, changes=""):
         heading = when(newest, clock="day", text=names.get(day, day))
         sections += f'<section class="day"><h2>{heading}</h2>{rows}</section>'
 
-    buttons = "".join(f'<button data-filter="{cat}" aria-pressed="{str(cat == "important").lower()}">{label}</button>'
+    buttons = "".join(f'<button type="button" data-filter="{cat}" aria-pressed="{str(cat == "important").lower()}">{label}</button>'
                       for cat, label in (("important", "Important"), ("all", "All"), ("change", icon("refresh") + "Changes"), ("alert", icon("alert") + "Alerts"),
                                          ("action", icon("tool") + "Actions"), ("scan", icon("search") + "Scans"),
                                          ("chat", icon("chat") + "Chats"), ("other", "Other")))
@@ -538,7 +571,7 @@ def render_history_page(events, today=None, changes=""):
               " document.querySelectorAll('.day').forEach((d) => { d.hidden = !d.querySelector('.ev:not([hidden])'); });"
               " }));</script>")
 
-    body = (HISTORY_STYLE + changes + ask_chips(HISTORY_CHIPS) + f'<div class="filters">{buttons}</div>'
+    body = (HISTORY_STYLE + changes + ask_chips(HISTORY_CHIPS) + f'<div class="filters seg" role="group" aria-label="Show">{buttons}</div>'
             + '<p class="muted">Routine scans (every 15 min) are hidden under Important — pick All or Scans to see them.</p>'
             + sections + script + "<script>document.querySelectorAll('.day').forEach((d) => {"
               " d.hidden = !d.querySelector('.ev:not([hidden])'); });</script>")
@@ -549,6 +582,22 @@ def plural(number, word, many=None):
     """'1 device', '3 devices'; many: the plural when it isn't word + 's' ('batteries')."""
 
     return f"{number} {word if number == 1 else many or word + 's'}"
+
+
+# One set of labels for the same window everywhere it can be picked.
+WINDOW_LABELS = {"live": "This hour", "1h": "1 hour", "24h": "24 hours", "7d": "7 days", "30d": "30 days"}
+
+
+def segmented(options, current, href, label="Time window"):
+    """The shared .seg switch as links: options are keys (labelled from WINDOW_LABELS) or (key, text) pairs;
+    href formats a key into its URL. The current one carries aria-current."""
+
+    links = ""
+    for option in options:
+        key, text = option if isinstance(option, tuple) else (option, WINDOW_LABELS.get(option, option))
+        here = ' aria-current="page"' if key == current else ""
+        links += f'<a href="{_esc(href.format(key=key))}"{here}>{_esc(text)}</a>'
+    return f'<div class="seg" role="group" aria-label="{_esc(label)}">{links}</div>'
 
 
 def _status_color(ok):

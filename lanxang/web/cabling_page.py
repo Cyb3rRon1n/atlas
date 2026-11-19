@@ -32,13 +32,11 @@ CABLING_STYLE = """
 .chip { font-size:12px; padding:2px 9px; border-radius:999px; border:1px solid var(--line); }
 .chip.ok { color:var(--ok-text); border-color:var(--ok-line); } .chip.stale { color:var(--warn-text); border-color:var(--warn-line); }
 .chip.error { color:var(--bad-text); border-color:var(--bad-line); }
-.cab-btn { background:var(--accent); color:var(--on-accent); border:0; border-radius:6px; padding:6px 12px; cursor:pointer; font:inherit; }
-.cab-btn.ghost { background:transparent; border:1px solid var(--line); color:inherit; }
-.cab-btn[disabled] { opacity:.6; cursor:wait; }
+#wiring-refresh:disabled { cursor:wait; }
 .warn { margin:6px 0 12px; padding:8px 12px 8px 28px; border:1px solid var(--warn-line); border-radius:8px; color:var(--warn-text); font-size:14px; }
 #diagram .frame { overflow:auto; border:1px solid var(--line); border-radius:10px; background:var(--deep); max-height:78vh; }
 #wiring-svg { display:block; min-width:100%; }
-.legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); margin:6px 0; }
+.legend { display:flex; flex-wrap:wrap; align-items:center; gap:14px; font-size:12px; color:var(--muted); margin:6px 0; }
 .legend i { display:inline-block; width:22px; height:3px; vertical-align:middle; margin-right:5px; }
 .fp-wrap { overflow-x:auto; padding:8px 0 14px; }
 .fp { --pw:62px; --ph:44px; position:relative; }
@@ -71,15 +69,13 @@ CABLING_STYLE = """
 .portmap th, .portmap td { text-align:left; padding:4px 8px; border-bottom:1px solid var(--line); }
 .portmap td.down { color:var(--bad-text); }
 .cab-tools { display:flex; gap:8px; align-items:center; margin:8px 0; }
-.cab-tools input { background:var(--deep); color:inherit; border:1px solid var(--line); border-radius:6px; padding:5px 8px; min-width:240px; }
+.cab-tools input { flex:0 1 20rem; min-width:0; }
 #changes li { font-size:14px; }
 .spark { vertical-align:middle; margin-right:6px; } .spark polyline { fill:none; stroke:var(--blue); stroke-width:1.5; }
 .spark.busy polyline { stroke:var(--orange); } .spark.hot polyline { stroke:var(--red); }
 .portmap td.rate { white-space:nowrap; color:var(--muted); }
 .fp .port.sel { outline:3px solid var(--blue); outline-offset:2px; opacity:1; }
-.views { display:inline-flex; border:1px solid var(--line2); border-radius:8px; overflow:hidden; margin-left:auto; }
-.views button { margin:0; border:0; border-radius:0; padding:7px 14px; background:var(--surface); }
-.views button[aria-pressed="true"] { background:var(--accent); color:var(--on-accent); font-weight:600; }
+.views { margin-left:auto; }
 .cab-sum { color:var(--muted); font-size:14px; }
 .fp-layout { display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; }
 .fp-layout > div { flex:999 1 400px; min-width:0; }
@@ -630,7 +626,7 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
                 'and copy cabling.example.yaml to cabling.yaml for patch panels.</p>' + suggestion_banner(suggested))
         return render_page("Cabling", CABLING_STYLE + body, active="cabling")
 
-    refresh = '<button class="cab-btn" id="wiring-refresh" type="button">Refresh map</button>'
+    refresh = '<button class="primary" id="wiring-refresh" type="button">Refresh map</button>'
 
     if not latest:
         body = (f'<div class="cab-head">{refresh}</div><p id="msg"></p>'
@@ -683,7 +679,7 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
         + (f'<ul class="warn">{warnings}</ul>' if warnings else "")
         + (f'<ul class="notes">{notes}</ul>' if notes else "")
         + '<div class="cab-head"><span class="cab-sum">' + _esc(_summary(snapshot, latest.get("raw") or {})) + '</span>'
-        '<div class="views" role="group" aria-label="View"><button type="button" data-view="faceplates" '
+        '<div class="views seg" role="group" aria-label="View"><button type="button" data-view="faceplates" '
         'aria-pressed="true">Front panels</button><button type="button" data-view="diagram" aria-pressed="false">'
         'Map</button></div></div>'
         f'<section id="faceplates"><h2>Front panels</h2>{_faceplates(snapshot, latest.get("raw") or {}, faceplates)}</section>'
@@ -692,13 +688,13 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
         '<span><i style="background:var(--blue)"></i>1G</span><span><i style="background:var(--teal)"></i>2.5G</span>'
         '<span><i style="background:var(--purple)"></i>10G</span><span>thick orange = over half full, red = over 80%</span><span>dashed = down</span><span>dotted grey = standby</span>'
         '<span>click a box for its ports</span>'
-        '<button class="cab-btn ghost" id="wiring-export" type="button">Export SVG</button></div>'
+        '<button id="wiring-export" type="button">Export SVG</button></div>'
         f'<div class="frame"><svg id="wiring-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>'
         f'<script type="application/json" id="wiring-data">{data}</script></section>'
         + _health(snapshot) +
         '<section id="portmap"><h2>Port map</h2><div class="cab-tools">'
         '<input id="portmap-filter" type="search" placeholder="Filter: device, port, label…" aria-label="Filter port map">'
-        '<a class="cab-btn ghost" href="/cabling.csv" download>CSV</a></div>'
+        '<a class="btn" href="/cabling.csv" download>Export CSV</a></div>'
         '<div class="table-wrap"><table class="portmap"><thead><tr><th>Switch</th><th>Port</th><th>Device</th><th>Device port</th>'
         f'<th>Link</th><th>Patch</th><th>Traffic (24 h)</th><th>Label</th><th>Source</th></tr></thead><tbody>{rows}</tbody></table></div></section>'
         f'<section id="patch"><h2>Patch panels</h2>{panel_html}</section>'

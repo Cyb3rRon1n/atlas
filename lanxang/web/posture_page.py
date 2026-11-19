@@ -27,17 +27,13 @@ POSTURE_STYLE = """
 .posture .mapcard { flex:999 1 720px; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; }
 .posture aside { flex:1 1 320px; min-width:0; display:flex; flex-direction:column; gap:16px; }
 .posture aside .pcard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; }
-.ptabs { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--line); }
-.ptabs button { font:inherit; font-size:13px; padding:8px 10px; border:0; margin:0; border-radius:0; background:transparent;
+.ptabs { display:flex; flex-wrap:nowrap; overflow-x:auto; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--line); }
+.ptabs button { font:inherit; font-size:13px; padding:8px 10px; white-space:nowrap; border:0; margin:0; border-radius:0; background:transparent;
                 color:var(--muted); border-bottom:2px solid transparent; cursor:pointer; }
 .ptabs button[aria-selected="true"] { color:var(--text); border-bottom-color:var(--blue); }
 #posture-panel > h2:first-child { display:none; }
 .pcard [role=tabpanel] { max-height:600px; overflow-y:auto; }
 .mapbar { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:12px; }
-.mapbar .windows { display:flex; gap:4px; padding:3px; border:1px solid var(--line); border-radius:8px; }
-.mapbar .windows button { font:inherit; font-size:13px; padding:8px 12px; border:0; border-radius:6px;
-                          background:transparent; color:var(--muted); cursor:pointer; }
-.mapbar .windows button[aria-pressed="true"] { background:var(--surface2); color:var(--text); }
 .legend { margin-left:auto; display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); }
 .legend i { display:inline-block; width:18px; height:3px; margin-right:6px; vertical-align:middle; }
 #posture-map { display:flex; flex-direction:column; gap:12px; }
@@ -72,7 +68,7 @@ POSTURE_STYLE = """
 #review li { padding:8px 0; border-top:1px solid var(--line); font-size:13px; }
 #review li:first-child { border-top:0; }
 #review li.all { padding:0 0 8px; }
-#review button { margin-top:6px; }
+#review button { margin:6px 6px 0 0; }
 </style>
 """
 
@@ -336,10 +332,11 @@ def render_posture_page():
         + '<section id="strip" aria-label="Posture summary"><p class="muted">Loading...</p></section>'
         + '<div class="posture"><section class="mapcard">'
         + '<div class="mapbar"><h2 style="margin:0;font-size:16px">Network posture</h2>'
-        + '<div class="windows" role="group" aria-label="Time window">'
-        + '<button data-window="live" aria-pressed="false">This hour</button>'
-        + '<button data-window="1h" aria-pressed="false">1 h</button>'
-        + '<button data-window="24h" aria-pressed="true">24 h</button></div>'
+        + '<div class="windows seg" role="group" aria-label="Time window">'
+        + '<button type="button" data-window="live" aria-pressed="false" title="The current hour, refreshed every 30 seconds">'
+          'This hour</button>'
+        + '<button type="button" data-window="1h" aria-pressed="false" title="Since one hour ago">1 hour</button>'
+        + '<button type="button" data-window="24h" aria-pressed="true" title="Since 24 hours ago">24 hours</button></div>'
         + '<div class="legend"><span><i style="background:var(--blue)"></i>Inbound</span>'
         + '<span><i style="background:var(--muted)"></i>Outbound</span>'
         + '<span><i style="background:var(--green)"></i>Via VPN</span>'

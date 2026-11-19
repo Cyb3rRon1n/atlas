@@ -42,7 +42,7 @@ from lanxang.web.graph import build_graph
 from lanxang.web.network_page import render_network_page
 from lanxang.web.cabling_page import cabling_csv, render_cabling_page
 from lanxang.web.render import _posture_block, build_summary, render_history_page, render_overview_page
-from lanxang.web.trends_page import WINDOWS as TREND_WINDOWS, render_trends_page
+from lanxang.web.trends_page import MIN_POINTS, WINDOWS as TREND_WINDOWS, render_trends_page
 from lanxang.clock import utcnow
 
 
@@ -369,8 +369,16 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             node_set = {n["name"] for _, p in scans for n in p.get("nodes", [])}
             # a single-node install is the LAN host at the Proxmox address - show the name people use (as on Home)
             names = {next(iter(node_set)): lan[pve]} if len(node_set) == 1 and pve in lan else {}
-            body = render_trends_page(query.events_since(["atlas.host.sample"], since), scans, window, now,
-                                      topology.get("host") or "this host", names)
+            samples = query.events_since(["atlas.host.sample"], since)
+            longer = None
+            if max(len(samples), len(scans)) < MIN_POINTS:    # too little here: does a longer window have enough?
+                for key in [k for k in TREND_WINDOWS if TREND_WINDOWS[k] > TREND_WINDOWS[window]]:
+                    start = now - timedelta(days=TREND_WINDOWS[key])
+                    if max(len(query.events_since(["atlas.host.sample"], start)),
+                           len(query.events_since(["atlas.proxmox.scan.completed"], start))) >= MIN_POINTS:
+                        longer = key
+                        break
+            body = render_trends_page(samples, scans, window, now, topology.get("host") or "this host", names, longer)
         elif path == "/map":
             topology = query.latest_topology()
             body = render_network_page(topology, PostureStore().latest_routes(),

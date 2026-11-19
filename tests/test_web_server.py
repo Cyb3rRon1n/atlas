@@ -97,7 +97,24 @@ def test_trends_route_with_no_data(running_server):
     status, body = _get(running_server + "/trends")
 
     assert status == 200
-    assert "No history yet" in body
+    assert "Collecting history" in body
+
+
+def test_trends_suggests_a_longer_window_that_has_history(running_server, temp_db):
+
+    from datetime import timedelta
+    from sqlalchemy.orm import Session
+    from lanxang.clock import utcnow
+    from lanxang.database.models import EventRecord
+
+    then = utcnow() - timedelta(days=3)
+    with Session(temp_db) as session:       # a week-old run of samples, nothing in the last 24 h
+        session.add_all([EventRecord(event_type="atlas.host.sample", source="x", payload='{"cpu": 5}',
+                                     created_at=then + timedelta(minutes=15 * i)) for i in range(8)])
+        session.commit()
+
+    status, body = _get(running_server + "/trends")
+    assert status == 200 and "Not enough history in this window" in body and 'href="/trends?window=7d">Try 7 days' in body
 
 
 def test_unknown_route_returns_404(running_server):
@@ -175,7 +192,15 @@ def test_post_rejects_bad_json_big_bodies_and_unknown_paths(running_server):
     connection.close()
 
 
-def test_chat_page_and_device_prefill(running_server):
+@pytest.fixture
+def ai_set_up(tmp_path, monkeypatch):
+    """/chat shows the Setup empty state while no AI is set up; these tests need the real chat page."""
+
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "lanxang.yaml").write_text("intelligence: {provider: ollama}\n")
+
+
+def test_chat_page_and_device_prefill(running_server, ai_set_up):
 
     _, device_id = _seed_device()
 
@@ -186,7 +211,14 @@ def test_chat_page_and_device_prefill(running_server):
     assert status == 200 and "Tell me about router" in body
 
 
-def test_chat_prefill_falls_back_to_ip_then_id_when_name_is_none(running_server, monkeypatch):
+def test_chat_page_without_ai_points_to_setup(running_server, tmp_path, monkeypatch):
+
+    monkeypatch.chdir(tmp_path)
+    status, body = _get(running_server + "/chat")
+    assert status == 200 and 'href="/settings#ai"' in body and 'id="ask"' not in body
+
+
+def test_chat_prefill_falls_back_to_ip_then_id_when_name_is_none(running_server, monkeypatch, ai_set_up):
     """
     device['name'] is normally always set, but the prefill must not assume
     that: a nameless device used to render "Tell me about None".

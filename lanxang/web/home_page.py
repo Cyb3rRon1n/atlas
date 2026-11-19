@@ -8,7 +8,7 @@ failed, which renders as a muted "unavailable" line instead of a 500.
 import re
 
 from lanxang.health.alerts import container_problem, container_state
-from lanxang.web.render import _esc, ask_chips, event_label, plural, render_page, when
+from lanxang.web.render import _esc, ask_chips, empty_state, event_label, plural, render_page, when
 from lanxang.clock import utcnow
 
 
@@ -301,6 +301,12 @@ def _trends_card(trends):
                      wide=True)
 
     hours, days = trends["hours"], trends["new_per_day"]
+    if not any(h["direct"] or h["vpn"] for h in hours) and not any(d["count"] for d in days):
+        # No traffic counted yet: one short explanation instead of an empty two-row chart card.
+        return _card("/posture", "Security trends", "unknown", empty_state(
+            "shield", "No traffic data yet", "Charts of outbound traffic and new destinations appear here after "
+            "the first scans that see traffic leave this host.",
+            extra='<span class="btn primary">Open Exposure \u2192</span>'))   # the card is the link: no <a> in <a>
     # Separate scales: VPN (torrents) is often 100x direct and would flatten it.
     traffic = "".join(
         f'<div class="lbl">{label} <span class="muted">peak {_size(max(h[key] for h in hours))}/h</span></div>'
@@ -312,7 +318,8 @@ def _trends_card(trends):
     total_new = sum(d["count"] for d in days)
     inner = (
         '<div class="chart"><h3>Outbound traffic per hour, last 24 h</h3>' + traffic + "</div>"
-        + f'<div class="chart"><h3>New destinations per day, last 7 days ({total_new} total)</h3>{new}</div>'
+        + (f'<div class="chart"><h3>New destinations per day, last 7 days ({total_new} total)</h3>{new}</div>'
+           if total_new else '<p class="muted">No new destinations in the last 7 days.</p>')
     )
 
     return _card("/posture", "Security trends", "review" if days[-1]["count"] else "ok", inner, wide=True)

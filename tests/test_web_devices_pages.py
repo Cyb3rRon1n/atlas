@@ -94,8 +94,8 @@ def test_device_page_connection_and_uplink_fields():
 
     html = render_device_page(dev, [dev, switch, nas, phone])
 
-    assert '<select name="connection">' in html and "<option selected>wired</option>" in html
-    assert '<select name="uplink">' in html and '<option value="">router / not set</option>' in html
+    assert 'name="connection">' in html and '<option value="wired" selected>Wired</option>' in html
+    assert 'name="uplink">' in html and '<option value="">Router / not set</option>' in html
     assert '<option value="2" selected>switch</option>' in html and '<option value="3">nas</option>' in html
     assert '<option value="4">phone</option>' not in html.split('name="uplink"')[1].split("</select>")[0]
     assert '<option value="1"' not in html.split('name="uplink"')[1].split("</select>")[0]
@@ -111,8 +111,8 @@ def test_device_page_shows_stored_connection_when_guessed():
 
     html = render_device_page(dev, [dev])
 
-    assert "<option selected>unknown</option>" in html and "guessed wireless" in html
-    assert '<option value="" selected>router / not set</option>' in html
+    assert '<option value="unknown" selected>Unknown</option>' in html and "Guessed wireless" in html
+    assert '<option value="" selected>Router / not set</option>' in html
 
 
 def test_device_page_uplink_choices_include_the_router_regardless_of_kind():
@@ -167,16 +167,17 @@ def test_device_page_shows_wiring_model_and_links_its_front_panel():
                            "mac": "AA:00:00:00:00:02"}]}
 
     html = render_device_page(dev, [dev], wiring=snapshot)
-    assert "ACME-28 28-Port Gigabit Managed Switch — " in html and 'href="/cabling#fp-s%3Acore-switch"' in html
+    assert '<div class="model">ACME-28 28-Port Gigabit Managed Switch</div>' in html
+    assert '<a class="btn secondary" href="/cabling#fp-s%3Acore-switch">View on front panel</a>' in html
 
     nas = device(2, "nas", sightings=[{"id": 20, "source": "lan", "external_id": "x", "ip": "192.168.50.9",
                                         "mac": "aa-00-00-00-00-02", "hostname": None, "detail": {},
                                         "first_seen": None, "last_seen": None}])
     html = render_device_page(nas, [nas], wiring=snapshot)
-    assert 'href="/cabling"' in html and "where it plugs in" in html          # matched by MAC, no front panel
+    assert 'href="/cabling"' in html and "Where it plugs in" in html          # matched by MAC, no front panel
 
-    assert "Cabling page" not in render_device_page(device(3, "pixel"), [device(3, "pixel")], wiring=snapshot)
-    assert "Cabling page" not in render_device_page(dev, [dev])
+    assert 'class="btn secondary" href="/cabling' not in render_device_page(device(3, "pixel"), [device(3, "pixel")], wiring=snapshot)
+    assert 'class="btn secondary" href="/cabling' not in render_device_page(dev, [dev])
 
 
 def test_device_page_matches_the_gateway_by_role():
@@ -187,3 +188,44 @@ def test_device_page_matches_the_gateway_by_role():
     snapshot = {"nodes": [{"id": "u:aa:00:00:00:00:68", "name": "gw", "kind": "gateway", "ip": "",
                            "mac": "aa:00:00:00:00:68"}]}
     assert 'href="/cabling#fp-u%3Aaa%3A00%3A00%3A00%3A00%3A68"' in render_device_page(router, [router], wiring=snapshot)
+
+
+def test_device_page_status_header_grid_and_proper_case_labels():
+
+    dev = device(1, "pixel", state="known", kind="container-host", status="quiet")
+    html = render_device_page(dev, [dev])
+
+    head = html.split('class="card dhead"')[1].split("</div></div>")[0]
+    assert '<span class="schip warn">Gone quiet</span>' in head and "Container host" in head
+    assert '<span class="mono">192.168.50.1</span>' in head and '<span class="mono">aa:1</span>' in head
+    assert 'class="dform"' in html and ".dform { display:grid; grid-template-columns:repeat(2" in html
+    assert "@media (max-width: 700px) { .dform { grid-template-columns:1fr; } }" in html
+    assert '<div class="field full"><label for="dev-notes">Notes</label><textarea id="dev-notes" name="notes">' in html
+    # labels proper case, stored values unchanged
+    assert '<option value="container-host" selected>Container host</option>' in html
+    assert '<option value="known" selected>Known</option>' in html and '<option value="new">New</option>' in html
+    assert '<option value="wireless">Wireless</option>' in html
+    for name in ("name", "kind", "state", "connection", "uplink", "tags", "notes", "important"):
+        assert f'name="{name}"' in html, name
+
+
+def test_device_page_danger_zone_merge_starts_unchosen_and_confirms_in_page():
+
+    dev, other = device(1, "pixel"), device(2, "router")
+    html = render_device_page(dev, [dev, other])
+    zone = html.split('class="card danger-zone"')[1]
+
+    assert '<option value="" selected disabled>Choose a device\u2026</option><option value="2">router</option>' in zone
+    assert '<button type="button" class="danger" id="merge-ask" disabled>Merge\u2026</button>' in zone
+    confirm = zone.split('id="merge-confirm"')[1].split("</section>")[0]
+    assert 'role="group" aria-label="Confirm merge" hidden>' in zone and "alertdialog" not in html
+    assert 'getElementById("merge-cancel").focus()' in html and 'button.danger").focus()' not in html
+    assert 'event.key === "Escape") { close(); ask.focus(); }' in html
+    assert 'data-post="/api/devices/1/merge"' in confirm and 'data-into-from="merge-into"' in confirm
+    assert 'data-after="goto"' in confirm and ">Yes, merge</button>" in confirm and 'id="merge-cancel"' in confirm
+    assert 'ask.disabled = !pick.value' in html and "box.hidden = false" in html
+    assert "confirm(" not in html                                         # no browser dialogs in the viewer
+    assert 'data-post="/api/devices/1/merge"' not in html.split('class="card danger-zone"')[0]
+
+    alone = render_device_page(dev, [dev])
+    assert 'class="card danger-zone"' not in alone and 'id="merge-into"' not in alone

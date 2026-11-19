@@ -6,10 +6,17 @@ previous one succeeded. Text only ever goes in via textContent.
 """
 
 from lanxang.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE
-from lanxang.web.render import _esc, render_page
+from lanxang.web import render
+from lanxang.web.render import _esc, empty_state, render_page
 
 
 def render_chat_page(prefill=""):
+
+    if not render.AI_ON:
+        return render_page("Chat", empty_state(
+            "chat", "No AI assistant set up", "Chat answers questions about your network once an AI model is "
+            "connected: Ollama on your own hardware, or Claude with an API key.",
+            ("/settings#ai", "Set up in Setup")), drawer=False)
 
     body = (
         CHAT_STYLE

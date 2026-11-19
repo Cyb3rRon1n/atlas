@@ -9,7 +9,7 @@ import math
 from lanxang.config.local import config_name
 from lanxang.access.parse import is_private
 from lanxang.web.icons import icon
-from lanxang.web.render import _esc, ask_chips, segmented, plural, render_page
+from lanxang.web.render import _esc, ask_chips, empty_state, segmented, plural, render_page
 from lanxang.web.world_land import LAND_PATH
 
 WINDOWS = {"24h": 1, "7d": 7, "30d": 30}
@@ -61,9 +61,12 @@ def _xy(v):
 def render_access_page(summary, window, home_ips=(), enabled=True, user_places=()):
 
     if not enabled:
-        return render_page("Visitors", '<p class="muted">Access tracking is off — set <code>access.enabled: true</code> '
-                           f'in {config_name()}; atlas-scan then runs <code>lanxang access collect</code> every cycle.</p>',
-                           active="access")
+        how = (f'<details><summary>How to turn it on</summary><p class="muted">Set <code>access.enabled: true</code> '
+               f'in {_esc(config_name())}. The scan service then reads the Traefik access log on every cycle.</p></details>')
+        return render_page("Visitors", empty_state(
+            "shield", "Visitor tracking is off", "When it is on, this page shows who reached your public services "
+            "and from where: sign-ins, anonymous visitors and failed attempts on a world map.", extra=how),
+            active="access")
 
     home = set(home_ips)
     is_home = lambda v: v["ip"] in home or is_private(v["ip"]) or v.get("country") == "Home network"

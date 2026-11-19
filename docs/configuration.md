@@ -528,6 +528,29 @@ security:
 
 One alert per hostname each time things get worse (14 days left, then 3 days or expired), one when a browser would refuse the certificate (wrong name, untrusted issuer), and a "Resolved" once it is renewed. A hostname that can't be reached is only shown, not alerted: outages are the health checks' job. The Posture page's **Public exposure** tab shows days left next to each route, yellow inside the warning window and red when urgent or untrusted. `lanxang certs check --force` checks right away.
 
+### Internet view
+
+`lanxang internet check` (run by atlas-scan, but only once a day, or sooner when your public IP changes) asks
+Shodan's free [InternetDB](https://internetdb.shodan.io) what it last saw on your home's public IP: open ports and
+any CVEs it reports for that IP. The IP is the one posture collection already reads, so `posture.enabled` must be on.
+No account or key is needed.
+
+**Privacy:** this sends your home IP to Shodan once a day, so it is off until you turn it on (here, or on the Setup
+page's **Internet view** card).
+
+```yaml
+posture:
+  internet_view: true       # off by default
+  expected_ports: [80, 443] # open ports that don't alert (port numbers, any protocol)
+  internet_view_url: https://internetdb.shodan.io/{ip}
+```
+
+Each open port that isn't in `expected_ports` raises one alert ("Port 22 is open to the internet") and one when
+Shodan no longer sees it; each reported CVE raises one alert too. The Security page's **Public exposure** tab shows
+**What the internet sees**: each port marked expected or not, the CVEs, and when Shodan was last asked. This is
+Shodan's last scan, not a live test: a port you just closed can still show for a while. A failed lookup keeps the
+last answer and the open alerts. `lanxang internet check --force` looks up right away.
+
 ## `notify`
 
 Where alerts go: new devices, important devices gone offline, VPN/torrent clients disconnected, and sign-ins from new places. Set any number of channels — every one that is set gets each alert, and one failing never stops the others. Check your setup with `lanxang notify test`.

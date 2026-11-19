@@ -60,6 +60,9 @@ POSTURE_STYLE = """
 .box.warn { border-color:var(--red); background:var(--bad-bg); } .box.unknown { border-style:dashed; color:var(--muted); }
 .box.selected { outline:2px solid var(--blue); }
 .box .badge { margin-left:auto; font-size:.6875rem; color:var(--warn-text); text-transform:uppercase; letter-spacing:.05em; }
+#internet h3 { margin:0 0 4px; font-size:.875rem; } #internet p { margin:0 0 6px; font-size:.8125rem; }
+#internet ul { list-style:none; margin:0 0 6px; padding:0; } #internet li { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
+#internet { padding-bottom:8px; margin-bottom:8px; border-bottom:1px solid var(--line); }
 #exposure li { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
 .prot-authelia { color:var(--ok-text); } .prot-public { color:var(--warn-text); } .cert-soon { color:var(--warn-text); } .cert-bad { color:var(--bad-text); font-weight:600; }
 @media (max-width: 900px) { #strip { grid-template-columns:repeat(2,minmax(0,1fr)); }  }
@@ -146,6 +149,26 @@ function renderExposure(routes, router, certs) {
     head.after(li);
   });
   router.recent.forEach((r) => exposure.append(el("li", r.at + " · " + r.text, "muted")));
+}
+
+function renderInternet(info) {
+  const box = document.getElementById("internet");
+  box.hidden = !info;
+  if (!info) return;
+  const list = el("ul");
+  info.ports.forEach((p) => {
+    const li = el("li");
+    li.append(el("span", p.label), el("span", p.expected ? "expected" : "! not expected", p.expected ? "muted" : "cert-bad"));
+    list.append(li);
+  });
+  (info.vulns || []).forEach((cve) => { const li = el("li"); li.append(el("span", cve), el("span", "! reported", "cert-bad")); list.append(li); });
+  if (info.known === false) list.append(el("li", "Nothing known about this IP.", "muted"));
+  else if (info.known && !info.ports.length && !(info.vulns || []).length) list.append(el("li", "No open ports seen.", "muted"));
+  const when = info.checked_at ? new Date(info.checked_at + "Z").toLocaleString() : "never";
+  const parts = [el("h3", "What the internet sees"), el("p", info.ip + " · Shodan, last checked " + when, "muted")];
+  if (!info.ok) parts.push(el("p", "The last check failed: " + info.error, "cert-bad"));
+  parts.push(list, el("p", "Shodan's last scan, not a live test. Sends your home IP to Shodan once a day.", "muted"));
+  box.replaceChildren(...parts);
 }
 
 async function markExpected(button, source, asnKey) {
@@ -312,7 +335,7 @@ async function load() {
     const data = await response.json();
     msg.textContent = DEFAULT_MSG;
     off.hidden = data.enabled !== false;
-    renderStrip(data.strip); renderExposure(data.exposure, data.router, data.certs); renderReview(data.review); draw(data);
+    renderStrip(data.strip); renderExposure(data.exposure, data.router, data.certs); renderInternet(data.internet); renderReview(data.review); draw(data);
   } catch (error) { msg.textContent = "Could not load posture data: " + error; }
 }
 
@@ -357,7 +380,8 @@ def render_posture_page():
         + '<button role="tab" data-tab="review-tab" aria-selected="false">Needs review '
           '<span id="review-count"></span></button></div>'
         + '<section id="posture-panel" role="tabpanel"><p class="muted">Select a destination on the map.</p></section>'
-        + '<section id="exposure-tab" role="tabpanel" hidden><ul id="exposure" '
+        + '<section id="exposure-tab" role="tabpanel" hidden>'
+          '<div id="internet" aria-label="What the internet sees" hidden></div><ul id="exposure" '
           'style="list-style:none;margin:0;padding:0"></ul></section>'
         + '<section id="review-tab" role="tabpanel" hidden><ul id="review"></ul></section>'
         + '</div></aside></div>'

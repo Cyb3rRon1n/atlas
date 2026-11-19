@@ -185,6 +185,9 @@ class PostureConfig(BaseModel):
     ip_echo_url: str = "https://api.ipify.org"
     asn_url: str = "https://iptoasn.com/data/ip2asn-v4.tsv.gz"
     asn_path: str = "inventory/ip2asn-v4.tsv.gz"
+    internet_view: bool = False         # lanxang internet check: sends the home IP to Shodan once a day
+    expected_ports: list[int] = [80, 443]
+    internet_view_url: str = "https://internetdb.shodan.io/{ip}"
 
 
 class TorrentClientConfig(BaseModel):

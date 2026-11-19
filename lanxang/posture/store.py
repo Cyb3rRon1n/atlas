@@ -142,6 +142,11 @@ class PostureStore:
                 index_elements=["source"], set_={k: v for k, v in values.items() if k != "source"}))
             session.commit()
 
+    def clear_status(self, source):
+        with Session(self.engine) as session:
+            session.execute(delete(PostureStatusRecord).where(PostureStatusRecord.source == source))
+            session.commit()
+
     def statuses(self):
         with Session(self.engine) as session:
             return {r.source: {"ok": r.ok, "detail": json.loads(r.detail), "updated_at": r.updated_at}

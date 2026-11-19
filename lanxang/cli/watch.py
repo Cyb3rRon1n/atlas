@@ -635,6 +635,59 @@ app.add_typer(
 )
 
 
+internet_app = typer.Typer(
+    name="internet",
+    help="What Shodan sees on your public IP: open ports and reported CVEs (opt-in)"
+)
+
+
+@internet_app.command("check")
+def internet_check(
+    json_output: bool = typer.Option(False, "--json", help="Print the saved state as JSON"),
+    force: bool = typer.Option(False, "--force", help="Look up now even if checked in the last 24 hours")
+):
+    """
+    Asks Shodan's free InternetDB what it last saw on your home's public IP
+    (the one posture watch reads). Alerts on an open port that isn't in
+    posture.expected_ports and on reported CVEs. Sends the IP to Shodan, so
+    it is off unless posture.internet_view is true. atlas-scan runs it every
+    pass; it only looks up once a day, or when the IP changes.
+    """
+
+    from lanxang.posture.internet_view import run
+    from lanxang.posture.store import PostureStore
+
+    settings = load_config()
+    texts, detail = run(settings, PostureStore(), utcnow(), force=force)      # when off: only tidies up
+
+    if not settings.posture.internet_view:
+        console.print(f"Internet view is off (posture.internet_view: false in {config_name()}).")
+        return
+
+    if json_output:
+        print(json.dumps(detail, default=str))
+        return
+
+    if not detail:
+        console.print("No public IP yet — posture watch reads it (posture.enabled).")
+        return
+    if not detail["ok"]:
+        console.print(f"[yellow]Shodan lookup failed: {detail['error']}[/yellow]")
+    if detail["known"] is False:
+        console.print(f"Nothing known about {detail['ip']}.")
+    for port in detail["ports"]:
+        colour = "green" if port["expected"] else "yellow"
+        console.print(f"[{colour}]{port['port']}: {'expected' if port['expected'] else 'not expected'}[/{colour}]")
+    for cve in detail["vulns"]:
+        console.print(f"[yellow]{cve}[/yellow]")
+    console.print(f"[green]{detail['ip']} checked {detail['checked_at']}, {len(texts)} alert(s)[/green]")
+
+
+app.add_typer(
+    internet_app
+)
+
+
 uptime_app = typer.Typer(
     name="uptime",
     help="Uptime checks: is each listed service answering? (web Servers > Uptime)"

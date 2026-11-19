@@ -223,7 +223,8 @@ def test_summary_posture_block():
         "review": [{"source": "sonarr", "asn_key": "AS64500", "org": "EXAMPLE-NET", "cc": "US", "first_seen": ""}]}
     block = build_summary(None, (), posture)["posture"]
     assert block == {"state": "review", "tunnel": "Tunnel up", "vpn": "Verified", "routes": 14, "blocked": "37",
-                     "review_count": 1, "message": "sonarr reached EXAMPLE-NET (US)", "link": "/posture"}
+                     "review_count": 1, "message": "sonarr reached EXAMPLE-NET (US)", "internet": "",
+                     "internet_unexpected": 0, "link": "/posture"}
     assert "posture" not in build_summary(None, (), None)
 
 

@@ -102,10 +102,10 @@ def test_one_friendly_time_everywhere():
     said = lambda **ago: friendly_time(now - timedelta(**ago), now)
     assert said(seconds=20) == "just now" and said(minutes=5) == "5 min ago" and said(hours=3) == "3 h ago"
     assert said(hours=7) == "today 05:00 UTC" and said(hours=22) == "yesterday 14:00 UTC"
-    assert said(days=3) == "Sat 12:00 UTC" and said(days=20) == "28 Oct" and said(days=400) == "13 Oct 2025"
+    assert said(days=3) == "Sat 12:00 UTC" and said(days=20) == "2026-10-28" and said(days=400) == "2025-10-13"
     html = when("2026-11-17T09:02:01.035404", now)           # the raw stored form, microseconds and all
     assert html.startswith('<time datetime="2026-11-17T09:02:01Z" data-when="rel"') and ">2 h ago</time>" in html
     assert ">11:30 UTC</time>" in when(datetime(2026, 11, 17, 11, 30), now, clock=True)
-    assert ">Yesterday</time>" in when(datetime(2026, 11, 16, 23), now, clock="day") and friendly_time(now - timedelta(days=3), now, "day") == "Sat 14 Nov"
+    assert ">Yesterday</time>" in when(datetime(2026, 11, 16, 23), now, clock="day") and friendly_time(now - timedelta(days=3), now, "day") == "Sat 2026-11-14"
     assert when(None, never="never") == "never" and "time[data-when]" in TIME_SCRIPT
     assert ">2 h ago</time>" in when("2026-11-17T12:00:00+02:00", now) and ">2 h ago</time>" in when("2026-11-17T10:00:00Z", now)

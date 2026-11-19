@@ -43,6 +43,15 @@ def _body(text):
     return (rest[1].strip() if len(rest) > 1 else "") or _title(text)
 
 
+def test_text(display=None, now=None):
+    """The test alert (lanxang notify test, Setup's Send test), stamped in the display: settings' format."""
+
+    from lanxang.clock import stamp, utcnow
+
+    return ("**✅ Test alert from Lanxang**\nIf you can read this, alerts reach you here."
+            f"\n• sent {stamp(now or utcnow(), display)}")
+
+
 def _post_json(url, payload, headers=None):
 
     request = urllib.request.Request(url, data=json.dumps(payload).encode(),

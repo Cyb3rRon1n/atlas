@@ -245,6 +245,20 @@ notify:
 
 A window that ends before it starts runs over midnight and belongs to the day it starts. A schedule lanxang can't read never silences anything.
 
+## `display`
+
+How times read everywhere: every web page, alert messages, the test alert and the weekly summary. Usually set from
+the web UI (**Preferences > Time & date**, saved to `inventory/settings.yaml`); a value set here wins.
+
+```yaml
+display:
+  clock: 24h               # or 12h
+  time_zone: browser       # browser (each viewer's own), UTC, or an IANA name like America/New_York
+  date_format: iso         # iso 2026-11-19, dmy 19/11/2026, mdy 11/19/2026
+```
+
+With `browser`, pages show each viewer's own time zone; messages have no viewer, so they use UTC and say so.
+
 ## Prometheus metrics
 
 `/metrics` serves what lanxang already knows in Prometheus format, for Grafana or any Prometheus-compatible

@@ -49,7 +49,8 @@ dependencies = [
     "sqlalchemy",
     "paramiko",
     "maxminddb",
-    "websocket-client"          # TrueNAS: its API is JSON-RPC over a websocket
+    "websocket-client",         # TrueNAS: its API is JSON-RPC over a websocket
+    "tzdata>=2024.1"            # display.time_zone: IANA zones even where the OS has none (slim images, Windows)
 ]
 
 [project.optional-dependencies]

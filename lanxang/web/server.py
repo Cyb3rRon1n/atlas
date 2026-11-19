@@ -301,10 +301,11 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         if self.auth and not self._gate(path):
             return
 
-        try:                                           # no chat panel while no AI is set up
-            web_render.AI_ON = load_config().intelligence.provider != "none"
+        try:                                           # no chat panel while no AI is set up; times as Preferences says
+            settings = load_config()
+            web_render.AI_ON, web_render.DISPLAY = settings.intelligence.provider != "none", settings.display
         except Exception:
-            web_render.AI_ON = True
+            web_render.AI_ON, web_render.DISPLAY = True, None
 
         query = KnowledgeQueries()
 

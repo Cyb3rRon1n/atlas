@@ -144,9 +144,9 @@ def lan_scan(
     from lanxang.devices import identify
     identify.refresh(utcnow())     # the maker list for naming new devices; monthly, skipped offline
     result["offline"] = store.queue_offline()
-    result["notify_errors"] = deliver(store, settings.notify)
+    result["notify_errors"] = deliver(store, settings.notify, display=settings.display)
     from lanxang.devices.notify import report_alerts
-    report_alerts(store, store.devices(), utcnow())
+    report_alerts(store, store.devices(), utcnow(), display=settings.display)
     if settings.dns_filter.enabled:
         try:
             from lanxang.monitoring.dnsfilter import run as dns_run
@@ -823,8 +823,8 @@ def notify_test():
 
     from lanxang import notify
 
-    results = notify.send_each(load_config().notify,
-                               "**✅ Test alert from Lanxang**\nIf you can read this, alerts reach you here.")
+    settings = load_config()
+    results = notify.send_each(settings.notify, notify.test_text(settings.display))
 
     if not results:
         console.print(f"[yellow]No alert channels set — add one under notify: in {config_name()} "

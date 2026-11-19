@@ -37,7 +37,7 @@ def test_panel_markup_and_aria():
     assert '<h2 id="prefs-title">Preferences</h2>' in panel and "data-prefs-close" in panel
     for heading in ("Appearance", "Size &amp; density", "Navigation"):
         assert f"<h3>{heading}</h3>" in panel
-    assert "Time" not in panel                        # time & date comes with the server-side prefs
+    assert panel.index("<h3>Appearance</h3>") < panel.index("<h3>Time &amp; date</h3>") < panel.index("<h3>Size &amp; density</h3>")
     for pref, values in (("theme", "light dark system"), ("motion", "system on off"), ("contrast", "off on"),
                          ("text", "s m l"), ("density", "comfortable compact"), ("sidebar", "off on")):
         group = panel.split(f'data-pref="{pref}">')[1].split("</div>")[0]

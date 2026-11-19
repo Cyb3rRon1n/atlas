@@ -1,5 +1,7 @@
 from typing import Literal
-from pydantic import BaseModel
+from zoneinfo import ZoneInfo
+
+from pydantic import BaseModel, field_validator
 
 
 class DiscoveryConfig(BaseModel):
@@ -329,6 +331,38 @@ class UpsConfig(BaseModel):
     timeout: float = 5.0
 
 
+class DisplayConfig(BaseModel):
+    # How times read on every page and in every alert (web Preferences > Time & date saves these).
+    clock: Literal["24h", "12h"] = "24h"
+    time_zone: str = "browser"      # browser (each viewer's own; alerts then say UTC), UTC, or an IANA name
+    date_format: Literal["iso", "dmy", "mdy"] = "iso"     # 2026-11-19, 19/11/2026, 11/19/2026
+
+    @field_validator("time_zone")
+    @classmethod
+    def _known_zone(cls, value):
+        """A zone that can't be found (saved earlier, tzdata gone) never breaks loading: "browser", with a warning.
+        The web save checks zone_problem() first, so a new unknown zone is refused there."""
+        value = value.strip()
+        problem = zone_problem(value)
+        if problem:
+            import logging
+            logging.getLogger("lanxang").warning("display.time_zone: %s; using browser", problem)
+            return "browser"
+        return value
+
+
+def zone_problem(value):
+    """Why value isn't a usable display.time_zone, or None when it is."""
+
+    if value in ("browser", "UTC"):
+        return None
+    try:
+        ZoneInfo(value)
+    except (KeyError, ValueError, OSError):     # not found / not a zone name / a folder like "America"
+        return f"unknown time zone {value!r} - use an IANA name like America/New_York"
+    return None
+
+
 class AtlasConfig(BaseModel):
     name: str = "atlas-node"
     discovery: DiscoveryConfig = DiscoveryConfig()
@@ -356,3 +390,4 @@ class AtlasConfig(BaseModel):
     homeassistant: HomeAssistantConfig = HomeAssistantConfig()
     router: RouterConfig = RouterConfig()
     ups: UpsConfig = UpsConfig()
+    display: DisplayConfig = DisplayConfig()

@@ -9,7 +9,7 @@ import math
 from lanxang.config.local import config_name
 from lanxang.access.parse import is_private
 from lanxang.web.icons import icon
-from lanxang.web.render import _esc, ask_chips, empty_state, segmented, plural, render_page
+from lanxang.web.render import _esc, ask_chips, empty_state, segmented, plural, render_page, when
 from lanxang.web.world_land import LAND_PATH
 
 WINDOWS = {"24h": 1, "7d": 7, "30d": 30}
@@ -108,7 +108,7 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
         f'<tr><td>{_esc(p["user"])}</td><td>{_esc(p["app"])}</td><td>{_esc(_place(p))}'
         + (' <span class="tag home">home</span>' if is_home(p) else "") + f'</td><td>{_esc(p.get("org") or "-")}</td>'
         f'<td>{p["count"]}' + (f' <span class="tag bad">{p["failed"]} failed</span>' if p["failed"] else "")
-        + f'</td><td>{_esc(str(p["time"])[:16])}</td></tr>' for p in people.values())
+        + f'</td><td>{when(p["time"])}</td></tr>' for p in people.values())
 
     groups = {}
     for v in anonymous:
@@ -129,7 +129,7 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
     reviews = [p for p in user_places if p["status"] == "review"]
     review_rows = "".join(
         f'<div class="rv"><div><b>{_esc(p["user"])}</b> signed in to {_esc(p["app"])} from <b>{_esc(p["label"])}</b>'
-        f'<div class="muted">first {_esc(str(p["first_seen"])[:16])} \u00b7 latest {_esc(str(p["last_seen"])[:16])} \u00b7 {_esc(p["ip"])}</div></div>'
+        f'<div class="muted">first {when(p["first_seen"])} \u00b7 latest {when(p["last_seen"])} \u00b7 {_esc(p["ip"])}</div></div>'
         f'<button class="primary" data-confirm-user="{_esc(p["user"])}" data-confirm-key="{_esc(p["place_key"])}">That\'s them</button>'
         f'<button data-ask="Is this sign-in suspicious? {_esc(p["user"])} signed in to {_esc(p["app"])} from {_esc(p["label"])} '
         f'(IP {_esc(p["ip"])}) — a place and provider they have not used before. Their usual places: '
@@ -144,7 +144,7 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
         f'<details class="acard"><summary>Normal places ({len(normal)})</summary><table><thead><tr><th>User</th><th>Place'
         '</th><th>How</th><th>Last seen</th></tr></thead><tbody>' + "".join(
             f'<tr><td>{_esc(p["user"])}</td><td>{_esc(p["label"])}</td><td>{"you confirmed" if p["status"] == "confirmed" else "learned"}'
-            f'</td><td>{_esc(str(p["last_seen"])[:16])}</td></tr>' for p in normal) + "</tbody></table></details>") if normal else ""
+            f'</td><td>{when(p["last_seen"])}</td></tr>' for p in normal) + "</tbody></table></details>") if normal else ""
     confirm_js = ("<script>document.querySelectorAll('[data-confirm-user]').forEach((b) => b.addEventListener('click', async () => {"
                   " b.disabled = true; try { const r = await fetch('/api/access/known', {method: 'POST', credentials: 'same-origin',"
                   " headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user: b.dataset.confirmUser,"

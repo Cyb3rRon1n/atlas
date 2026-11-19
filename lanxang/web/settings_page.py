@@ -186,7 +186,6 @@ ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "e
 WIRING_CARDS = ("switches", "unifi")
 
 ACTIONS = re.compile(r"^/api/settings/([a-z]+)/(test|save|off|dismiss)$")
-TEST_TEXT = "**✅ Test alert from Lanxang**\nIf you can read this, alerts reach you here."
 
 
 def _get(data, path):
@@ -488,18 +487,18 @@ def _test(card, body):
     if card == "ntfy":
         if not (alerts.ntfy.url and alerts.ntfy.topic):
             return False, "Enter the server and topic."
-        notify.send_ntfy(alerts.ntfy, TEST_TEXT)
+        notify.send_ntfy(alerts.ntfy, notify.test_text(config.display))
         return True, f"Sent — it should appear on every device subscribed to {alerts.ntfy.topic}."
     if card == "webhooks":
         if not alerts.webhooks:
             return False, "Enter at least one webhook URL."
         for url in alerts.webhooks:
-            notify.send_webhook(url, TEST_TEXT)
+            notify.send_webhook(url, notify.test_text(config.display))
         return True, f"Sent to {len(alerts.webhooks)} webhook{'s' * (len(alerts.webhooks) != 1)}."
     if card == "email":
         if not (alerts.email.host and alerts.email.to):
             return False, "Enter the SMTP server and at least one address to send to."
-        notify.send_email(alerts.email, TEST_TEXT)
+        notify.send_email(alerts.email, notify.test_text(config.display))
         return True, f"Sent to {', '.join(alerts.email.to)} — check the inbox (and spam)."
 
     return _test_ai(config, environ)
@@ -519,6 +518,8 @@ def handle_post(path, body):
             return 400, {"error": "unknown gear"}
         local.save_settings({"setup": {"gear": sorted(set(gear))}})
         return 200, {"ok": True}
+    if card == "display" and action == "save":
+        return _save_display(body)
     if card not in CARDS:
         return 404, {"error": "no such setting"}
     body = body if isinstance(body, dict) else {}
@@ -549,6 +550,30 @@ def handle_post(path, body):
         local.save_settings(settings)
 
     return 200, {"ok": True, "message": "Turned off." if action == "off" else "Saved."}
+
+
+def _save_display(body):
+    """Preferences > Time & date: clock, time_zone, date_format into display: (the config file's values still win)."""
+
+    from lanxang.config.models import DisplayConfig, zone_problem
+
+    body = body if isinstance(body, dict) else {}
+    fields = {key: body[key] for key in DisplayConfig.model_fields if key in body}
+    if not fields or not all(isinstance(value, str) for value in fields.values()):
+        return 400, {"error": "Send clock, time_zone and date_format."}
+    if "time_zone" in fields and zone_problem(fields["time_zone"].strip()):
+        return 400, {"error": zone_problem(fields["time_zone"].strip())}
+    try:
+        chosen = DisplayConfig(**fields)
+    except ValidationError as error:
+        return 400, {"error": str(error.errors()[0]["msg"]).removeprefix("Value error, ")}
+    current = load_config().display
+    pinned = [key for key in fields if local.locked(("display", key)) and getattr(chosen, key) != getattr(current, key)]
+    if pinned:
+        return 400, {"error": f"display.{pinned[0]} is set in {config_name()} — change it there."}
+    local.save_settings({"display": {key: getattr(chosen, key) for key in fields}})
+
+    return 200, {"ok": True, "message": "Saved.", "display": load_config().display.model_dump()}
 
 
 def _dismiss(card, body):

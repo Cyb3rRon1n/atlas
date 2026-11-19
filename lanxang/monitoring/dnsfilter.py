@@ -14,6 +14,7 @@ Ad blocking off at two checks in a row (so not a 5-minute pause) is one alert, a
 import os
 
 from lanxang.alerts import Text
+from lanxang.clock import stamp_text
 
 PASSWORD_ENV = "LANXANG_DNS_PASSWORD"
 
@@ -134,10 +135,10 @@ def run(settings, store, now, *, get=fetch, send=None):
         off_since = (previous.get("off_since") or now.isoformat(timespec="seconds")) if off else None
         alerted = off and previous.get("off_since") is not None          # off at two checks in a row
         if alerted:
-            found.append(issue("blocking", kind, f"Ad blocking is off on {kind}", f"since {off_since[11:16]} UTC",
+            found.append(issue("blocking", kind, f"Ad blocking is off on {kind}", f"since {stamp_text(off_since, settings.display, date=False)}",
                                href="/settings#dnsfilter"))
         if alerted and not previous.get("alerted"):
-            texts.append(Text(f"**🛑 Ad blocking is off on {kind}**\n• it has been off since {off_since[11:16]} UTC"
+            texts.append(Text(f"**🛑 Ad blocking is off on {kind}**\n• it has been off since {stamp_text(off_since, settings.display, date=False)}"
                               "\n• every device on your network is seeing ads and trackers again", "dns:blocking"))
         elif not off and previous.get("alerted"):
             texts.append(Text(f"**✅ Ad blocking is back on ({kind})**", "dns:blocking"))

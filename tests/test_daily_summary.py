@@ -102,7 +102,23 @@ def test_run_daily_records_a_quiet_day_without_sending(temp_db, isolated_cwd):
     sources = _sources(NOW, routes_then=same, routes_now=same, alerts={"open": [], "watch": [], "resolved": []},
                        devices=[])
     assert summary.run_daily(on, store, NOW, send=sent.append, sources=sources) is None
-    assert not sent and store.statuses()["summary_daily"]["detail"]["date"] == "2026-11-19"
+    detail = store.statuses()["summary_daily"]["detail"]
+    assert not sent and detail["date"] == "2026-11-19" and detail["sent_at"] is None      # nothing went out
+
+
+def test_run_daily_drops_a_quiet_baseline_from_weeks_ago(temp_db, isolated_cwd):
+    from lanxang.posture.store import PostureStore
+
+    store, sent = PostureStore(temp_db), []
+    on = AtlasConfig(notify={"daily_summary": "08:00"})
+    same = [{"name": "media", "hosts": ["media.example.org"]}]
+    nas = [{"id": 2, "name": "nas", "state": "known", "status": "quiet", "sightings": []}]
+    store.set_status("summary_daily", True, {"sent_at": None, "date": "2026-10-01", "quiet": []}, NOW)
+    quiet_day = dict(routes_then=same, routes_now=same, alerts={"open": [], "watch": [], "resolved": []}, devices=nas)
+    assert summary.run_daily(on, store, NOW, send=sent.append, sources=_sources(NOW, **quiet_day)) is None
+    assert not sent                               # nas went quiet sometime in those weeks, not yesterday
+    store.set_status("summary_daily", True, {"sent_at": None, "date": "2026-11-18", "quiet": []}, NOW)
+    assert "Gone quiet: nas" in summary.run_daily(on, store, NOW, send=sent.append, sources=_sources(NOW, **quiet_day))
 
 
 def test_routes_at_reads_the_snapshot_of_that_moment(temp_db):

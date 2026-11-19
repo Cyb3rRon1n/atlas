@@ -4,7 +4,7 @@ service uptime, new devices, open alerts, heartbeats, disks. Sent from `lanxang 
 also tells you atlas itself is alive. Off with notify.weekly_summary: false. Quiet hours hold it like any alert.
 """
 
-from datetime import timedelta
+from datetime import date, timedelta
 
 from lanxang.alerts import Text
 from lanxang.clock import utcnow
@@ -165,6 +165,7 @@ def run(settings, store, now, *, send=None, sources=None):
 # removed, and devices that went quiet. Nothing changed = nothing sent. Off while daily_summary is empty.
 
 DAILY_LINES = 15                      # more than this folds into "... and N more"
+BASELINE_DAYS = 2                     # a "gone quiet" baseline older than this is dropped, not diffed
 
 
 def daily_due(now, tz, at, last_sent):
@@ -246,7 +247,9 @@ def run_daily(settings, store, now, *, send=None, sources=None):
     detail = ((store.statuses().get("summary_daily") or {}).get("detail")) or {}
     if not daily_due(now, tz, at, detail.get("date")):
         return None
-    body, quiet = build_daily(settings, now, sources or _daily_sources(), detail.get("quiet"))
+    today, last = local(now, tz).date(), detail.get("date")
+    fresh = last and (today - date.fromisoformat(last)).days <= BASELINE_DAYS      # off for weeks: start over
+    body, quiet = build_daily(settings, now, sources or _daily_sources(), detail.get("quiet") if fresh else None)
     text = Text(body, "summary:daily") if body else None
     if text is not None:
         if not allowed(store, text, now):
@@ -257,6 +260,6 @@ def run_daily(settings, store, now, *, send=None, sources=None):
             notify.send(settings.notify, text)
         else:
             return None
-    store.set_status("summary_daily", True, {"sent_at": now.isoformat(timespec="seconds"),
-                                             "date": local(now, tz).date().isoformat(), "quiet": quiet}, now)
+    sent_at = now.isoformat(timespec="seconds") if text is not None else detail.get("sent_at")
+    store.set_status("summary_daily", True, {"sent_at": sent_at, "date": today.isoformat(), "quiet": quiet}, now)
     return text

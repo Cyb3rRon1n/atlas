@@ -3,6 +3,20 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
+## 1.4.2 - 2026-11-19
+
+### Changed
+- Security page, What the internet sees: also lists the software Shodan detected on your IP (for example
+  "nginx 1.18.0").
+- Internet view: a failed Shodan lookup is tried again an hour later instead of the next day.
+- The chat column beside the page narrows on smaller windows (down to 280 px) so the page keeps room.
+
+### Fixed
+- Chat tools: a limit the model sends as text ("lots") falls back to the default instead of failing the tool, and
+  alert details are cut to 300 characters so a long one can't crowd out the answer.
+- Daily summary: after it was off for more than two days, the next one no longer lists every device that went
+  quiet in the meantime as "gone quiet" yesterday; a day with nothing to send no longer records a send time.
+
 ## 1.4.1 - 2026-11-19
 
 ### Fixed

@@ -113,7 +113,7 @@ def _jellyfin_handler(config: AtlasConfig, what):
         if what == "activity":
             return jellyfin.get_activity(
                 config.jellyfin,
-                limit=min(int(arguments.get("limit") or 50), 200),
+                limit=_limit(arguments.get("limit"), 50, 200),
                 search=arguments.get("search") or ""
             )
 
@@ -128,7 +128,7 @@ def _notes_handler(config: AtlasConfig):
 
         from lanxang.knowledge.notes import search_notes
 
-        limit = min(int(arguments.get("limit") or 5), 10)
+        limit = _limit(arguments.get("limit"), 5, 10)
 
         return search_notes(config.knowledge.notes_paths, arguments["query"], limit=limit)
 
@@ -188,6 +188,21 @@ def _monitoring_handler(config: AtlasConfig):
     return handler
 
 
+def _limit(value, default: int, top: int) -> int:
+    """A model's "limit" argument, clamped to 1..top; junk ("lots", None) means the default."""
+
+    try:
+        return max(1, min(int(value or default), top))
+    except (TypeError, ValueError):
+        return default
+
+
+def _short(text, size: int = 300) -> str:
+
+    text = text or ""
+    return text if len(text) <= size else text[:size - 1] + "…"
+
+
 def _cap(rows: list, limit: int = 40) -> dict:
     """Small local models choke on long lists: cap them and say how many were left out."""
 
@@ -239,7 +254,7 @@ def _devices_handler(config: AtlasConfig):
 
         from lanxang.devices.store import InventoryStore
 
-        limit = max(1, min(int(arguments.get("limit") or 40), 40))
+        limit = _limit(arguments.get("limit"), 40, 40)
         which = arguments.get("filter") or "all"
         devices = InventoryStore().devices()
 
@@ -265,7 +280,7 @@ def _alerts_handler(config: AtlasConfig):
         listing = AlertStore().listing(utcnow(), 7)
 
         def rows(alerts):
-            return [{"title": a["title"], "source": a["source"], "level": a["level"], "detail": a["detail"],
+            return [{"title": a["title"], "source": a["source"], "level": a["level"], "detail": _short(a["detail"]),
                      "opened_at": _when(a["opened_at"]), "acknowledged": a["acked_at"] is not None} for a in alerts]
 
         return {

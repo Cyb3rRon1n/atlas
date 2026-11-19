@@ -36,7 +36,7 @@ DRAWER_HTML = (
 
 DRAWER_STYLE = """
 <style>
-.shell.docked { display:grid; grid-template-columns:minmax(0,1fr) 380px; }
+.shell.docked { display:grid; grid-template-columns:minmax(0,1fr) clamp(280px, 30vw, 380px); }   /* narrower beside a small window */
 @media (min-width: 901px) {
   /* Desktop: the page scrolls inside <main>, so the chat column always fills the window beside it. */
   body:has(.shell.docked) { height:100vh; display:flex; flex-direction:column; overflow:hidden; }

@@ -163,6 +163,11 @@ function renderInternet(info) {
     list.append(li);
   });
   (info.vulns || []).forEach((cve) => { const li = el("li"); li.append(el("span", cve), el("span", "! reported", "cert-bad")); list.append(li); });
+  const software = (info.cpes || []).map((c) => {                  // cpe:/a:vendor:product:version -> "product version"
+    const f = c.replace(/^cpe:(2\\.3:|\\/)/, "").split(":");
+    return (f[2] || f[1] || c).replace(/_/g, " ") + (f[3] && f[3] !== "*" ? " " + f[3] : "");
+  });
+  if (software.length) list.append(el("li", "Software seen: " + software.join(", "), "muted"));
   if (info.known === false) list.append(el("li", "Nothing known about this IP.", "muted"));
   else if (info.known && !info.ports.length && !(info.vulns || []).length) list.append(el("li", "No open ports seen.", "muted"));
   const when = info.checked_at ? new Date(info.checked_at + "Z").toLocaleString() : "never";

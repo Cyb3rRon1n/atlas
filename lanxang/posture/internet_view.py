@@ -14,6 +14,7 @@ import requests
 from lanxang.alerts import Text
 
 CHECK_EVERY = timedelta(hours=24)
+RETRY_AFTER = timedelta(hours=1)           # a failed lookup is tried again sooner
 SOURCE = "internet_view"
 
 
@@ -34,10 +35,11 @@ def lookup(ip, url, get=requests.get):
 
 
 def due(detail, ip, now):
-    """24 hours since the last check, or the public IP changed since."""
+    """24 hours since the last check (1 hour after a failed one), or the public IP changed since."""
 
     checked = (detail or {}).get("checked_at")
-    return not checked or detail.get("ip") != ip or now - datetime.fromisoformat(checked) >= CHECK_EVERY
+    wait = RETRY_AFTER if detail and detail.get("ok") is False else CHECK_EVERY
+    return not checked or detail.get("ip") != ip or now - datetime.fromisoformat(checked) >= wait
 
 
 def _port_text(port, ip):

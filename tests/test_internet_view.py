@@ -328,3 +328,23 @@ def test_posture_block_says_when_nothing_is_seen():
     assert "Shodan has no data for this IP" in _posture_card(unknown)
     assert _posture_block(posture({"ok": True, "known": True, "ports": []}))["internet"] == "No open ports seen"
     assert _posture_block(posture({"ok": False, "known": False, "ports": []}))["internet"] == "Last check failed"
+
+
+def test_reassess_alerts_when_a_port_leaves_the_expected_list(temp_db):
+    store, sent = home(temp_db), []
+    wide = AtlasConfig(posture={"internet_view": True, "expected_ports": [22, 443]})
+    run(wide, store, NOW, get=shodan([443, 22]), send=sent.append)
+    assert open_alerts(temp_db) == []
+    texts, detail = reassess(ON, store, NOW + timedelta(hours=1), send=sent.append)
+    assert texts == ["**⚠️ Port 22 is open to the internet**\n22 (SSH) on 203.0.113.7, seen by Shodan"]
+    assert {"port": 22, "expected": False} in detail["ports"] and len(open_alerts(temp_db)) == 1
+    assert store.statuses()["internet_view"]["ok"] is False
+
+
+def test_a_failed_lookup_is_retried_after_an_hour_not_a_day(temp_db):
+    store = home(temp_db)
+    run(ON, store, NOW, get=failing)
+    get = shodan([443])
+    assert run(ON, store, NOW + timedelta(minutes=30), get=get)[1]["ok"] is False and get.calls == []
+    assert run(ON, store, NOW + timedelta(hours=1), get=get)[1]["ok"] is True and len(get.calls) == 1
+    assert run(ON, store, NOW + timedelta(hours=3), get=get) and len(get.calls) == 1     # good answer: a day

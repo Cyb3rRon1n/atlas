@@ -59,25 +59,25 @@ PAGE_STYLE = f"""
      <button> is the secondary look; .primary, .danger (destructive) and .btn (a link styled as a button) add to it.
      :where() keeps these at zero specificity, so composite buttons (ports, map boxes, tabs, nav) restyle freely. */
   :root { --control-h:36px; --control-r:6px; }
-  :where(button:not(.port, .box, .chip, [role=tab]), .btn) { display:inline-flex; align-items:center;
+  :where(button:not(.port, .box, .chip, [role=tab], .side button), .btn) { display:inline-flex; align-items:center;
            justify-content:center; gap:6px; min-height:var(--control-h); box-sizing:border-box; padding:0 14px;
            margin:0; background:var(--surface); color:var(--text); border:1px solid var(--line2);
            border-radius:var(--control-r); font:inherit; font-size:14px; line-height:1.2; cursor:pointer;
            text-decoration:none; white-space:nowrap; vertical-align:middle; }
-  :where(button, .btn):hover { border-color:var(--accent); text-decoration:none; }
+  :where(button, .btn):not(:disabled):hover { border-color:var(--accent); text-decoration:none; }
   .btn { color:var(--text); } .btn:hover { text-decoration:none; }   /* beat the a / a:hover link styles */
   .primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600; }
-  .primary:hover { background:color-mix(in srgb, var(--accent) 86%, var(--text)); }
+  .primary:not(:disabled):hover { background:color-mix(in srgb, var(--accent) 86%, var(--text)); }
   .secondary { background:var(--surface); border-color:var(--line2); color:var(--text); }
   .danger { background:var(--surface); border-color:var(--bad-line); color:var(--bad-text); }
-  .danger:hover { background:var(--red); border-color:var(--red); color:var(--on-accent); }
+  .danger:not(:disabled):hover { background:var(--red); border-color:var(--red); color:var(--on-accent); }
   :where(button, .btn):disabled, :where(button, .btn)[aria-disabled="true"] { opacity:.55; cursor:not-allowed; }
-  :where(button, .btn):disabled:hover { border-color:var(--line2); }
-  .primary:disabled:hover { background:var(--accent); border-color:var(--accent); }
+  .sm { min-height:30px; padding:0 10px; font-size:13px; }   /* compact: table rows, alert rows, suggestion chips */
   :where(input:not([type=checkbox], [type=radio], [type=hidden], [type=range], [type=file], [type=color]), select,
          textarea) { background:var(--surface); color:var(--text); border:1px solid var(--line2);
            border-radius:var(--control-r); padding:0 10px; font:inherit; font-size:14px; box-sizing:border-box;
            max-width:100%; }
+  .sm { min-height:30px; padding:0 10px; font-size:13px; }   /* compact: table rows, alert rows, suggestion chips */
   :where(input:not([type=checkbox], [type=radio], [type=hidden], [type=range], [type=file], [type=color]), select)
          { min-height:var(--control-h); }
   :where(input, select, textarea):focus-visible { border-color:var(--accent); outline:2px solid var(--accent);
@@ -93,7 +93,7 @@ PAGE_STYLE = f"""
          padding:0 12px; margin:0; border:0; border-radius:var(--control-r); background:transparent;
          color:var(--muted); font:inherit; font-size:13px; font-weight:500; line-height:1.2; cursor:pointer;
          text-decoration:none; white-space:nowrap; }
-  .seg > a:hover, .seg > button:hover { color:var(--text); background:var(--surface2); text-decoration:none; }
+  .seg > a:not([aria-current]):hover, .seg > button:not([aria-pressed="true"]):hover { color:var(--text); background:var(--surface2); text-decoration:none; }
   .seg > [aria-current], .seg > [aria-pressed="true"] { background:color-mix(in srgb, var(--accent) 14%, var(--surface));
          color:var(--accent); font-weight:600; }
   label { display:block; margin:0.5rem 0 0.2rem; color:var(--muted); font-size:0.85rem; }
@@ -130,7 +130,8 @@ SHELL_STYLE = """
 .page { padding:24px 32px 40px; min-width:0; }
 .shell { flex:1; min-width:0; }
 .chips { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px; }
-.chips button { font:inherit; font-size:13px; min-height:32px; padding:0 12px; border-radius:999px; margin:0; }
+.chips button { font:inherit; font-size:13px; min-height:32px; padding:4px 12px; border-radius:999px; margin:0;
+                white-space:normal; text-align:left; }
 @media (max-width: 900px) {
   .app { display:block; }
   .side { padding:10px 12px; flex-direction:row; flex-wrap:wrap; align-items:center; gap:4px; }

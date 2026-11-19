@@ -24,13 +24,18 @@ def _seg(html, label):
 def test_base_styles_define_one_control_system():
     css = PAGE_STYLE.replace("\n", " ")
     assert "--control-h:36px" in css
-    button = css.split(":where(button:not(.port, .box, .chip, [role=tab]), .btn) {")[1].split("}")[0]
+    button = css.split(":where(button:not(.port, .box, .chip, [role=tab], .side button), .btn) {")[1].split("}")[0]
     assert "min-height:var(--control-h)" in button and "margin:0" in button
-    for variant in (".primary {", ".secondary {", ".danger {", ".danger:hover {", ":disabled"):
+    for variant in (".primary {", ".secondary {", ".danger {", ":disabled"):
         assert variant in css, variant
     assert "{ min-height:var(--control-h); }" in css                   # inputs and selects share the height
     assert "outline:2px solid var(--accent)" in css                     # a brand-coloured focus ring
     assert ".seg > [aria-current], .seg > [aria-pressed=\"true\"]" in css
+    assert ".sm { min-height:30px;" in css
+    # a disabled button never takes a hover colour; hovering the current segment keeps its highlight
+    assert ".danger:not(:disabled):hover" in css and ".primary:not(:disabled):hover" in css
+    assert ".danger:hover" not in css and ".primary:hover" not in css
+    assert '.seg > a:not([aria-current]):hover, .seg > button:not([aria-pressed="true"]):hover' in css
 
 
 def test_segmented_links_mark_the_current_one():
@@ -44,7 +49,9 @@ def test_time_windows_share_the_control_and_labels():
     assert '<a href="/trends?window=30d" aria-current="page">30 days</a>' in trends and ">24 hours<" in trends
     access = _seg(render_access_page({"visitors": [], "logins": []}, "24h"), "Time window")
     assert '<a href="/access?window=24h" aria-current="page">24 hours</a>' in access
-    feed = _seg(changes_feed.render([], NOW, "24h"), "Time window")
+    feed_html = changes_feed.render([], NOW, "24h")
+    assert '<div class="changes-head"><h2>What changed</h2><div class="seg"' in feed_html   # switch beside, not inside, the h2
+    feed = _seg(feed_html, "Time window")
     assert '<a href="/history?changes=24h" aria-current="page">24 hours</a>' in feed and ">7 days<" in feed
     posture = _seg(render_posture_page(), "Time window")
     assert 'data-window="24h" aria-pressed="true"' in posture and ">1 hour<" in posture and ">1 h<" not in posture
@@ -62,6 +69,17 @@ def test_pages_use_the_shared_button_classes():
     cabling = render_cabling_page(_latest(), [], True, now=NOW)
     assert '<button class="primary" id="wiring-refresh"' in cabling and '<a class="btn" href="/cabling.csv"' in cabling
     uptime = render_uptime_page([], {}, NOW, suggestions=[("Photos", "https://photos.example.org")])
-    assert '<button class="primary" type="submit">Add</button>' in uptime and 'class="secondary" type="button"' in uptime
+    assert '<button class="primary" type="submit">Add</button>' in uptime
+    assert 'class="secondary sm" type="button" data-name="Photos"' in uptime
     for page in (cabling, uptime):
         assert "cab-btn" not in page and "up-btn" not in page
+
+
+def test_compact_controls_in_rows():
+    from lanxang.web.alerts_page import render_alerts_page
+    alert = {"id": 3, "title": "Printer is offline", "detail": "", "href": "/devices/1", "source": "devices",
+             "device_id": 1, "opened_at": NOW, "acked_at": None, "resolved_at": None, "kind": "problem"}
+    page = render_alerts_page({"open": [alert], "watch": [], "resolved": [], "muted": []}, NOW)
+    acts = page.split('<div class="acts">')[1].split("</div>")[0]
+    assert 'class="btn primary sm"' in acts and '<button class="sm" data-post="/api/alerts/3/ack"' in acts
+    assert '<select class="sm"' in acts and '<button class="sm" data-post="/api/alerts/3/mute"' in acts

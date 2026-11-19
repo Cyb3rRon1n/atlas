@@ -75,16 +75,16 @@ def _row(alert, now, kind):
 
     when = (f"resolved {_ago(alert['resolved_at'], now)}, after {_ago(alert['opened_at'], alert['resolved_at'])[:-4]}"
             if kind == "resolved" else f"since {_ago(alert['opened_at'], now)}")
-    link = (f'<a class="btn primary" href="{_esc(alert["href"])}">Investigate</a>' if alert["href"] and kind != "resolved" else "")
+    link = (f'<a class="btn primary sm" href="{_esc(alert["href"])}">Investigate</a>' if alert["href"] and kind != "resolved" else "")
     if kind != "resolved":
         pick = f"mute-{alert['id']}"
         what = "this device" if alert["device_id"] is not None else "this alert"
         link = (f'<div class="acts">{link}'
                 + ("" if alert["acked_at"] else
-                   f'<button data-post="/api/alerts/{alert["id"]}/ack">Acknowledge</button>')
-                + f'<select id="{pick}" name="days" aria-label="Mute {what} for"><option value="1">1 day</option>'
+                   f'<button class="sm" data-post="/api/alerts/{alert["id"]}/ack">Acknowledge</button>')
+                + f'<select class="sm" id="{pick}" name="days" aria-label="Mute {what} for"><option value="1">1 day</option>'
                   f'<option value="7">7 days</option><option value="0">always</option></select>'
-                  f'<button data-post="/api/alerts/{alert["id"]}/mute" data-pick="{pick}" '
+                  f'<button class="sm" data-post="/api/alerts/{alert["id"]}/mute" data-pick="{pick}" '
                   f'title="No messages about {what}; it still shows here">Mute {what}</button></div>')
     acked = '<span class="acked">acknowledged</span>' if alert["acked_at"] and kind != "resolved" else ""
 
@@ -149,7 +149,7 @@ def _controls(listing, now, notify=None):
     muted = "".join(
         f'<li class="watch"><span class="sev"></span><div class="body"><b>{_esc(rule["label"])}</b><div class="meta">'
         f'muted {"until " + _esc(_clock(rule["until"], now)) if rule["until"] else "always"}</div></div>'
-        f'<div class="acts"><button data-post="/api/alerts/quiet/{rule["id"]}/remove">Unmute</button></div></li>'
+        f'<div class="acts"><button class="sm" data-post="/api/alerts/quiet/{rule["id"]}/remove">Unmute</button></div></li>'
         for rule in rules)
 
     return bar + _quiet_hours(notify, now) + '<p id="alert-error" class="bad" role="status"></p>' + (

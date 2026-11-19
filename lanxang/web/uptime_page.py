@@ -30,7 +30,6 @@ STYLE = """<style>
 .up-add form, form.up-add { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .up-add input[name=name] { width:230px; max-width:100%; box-sizing:border-box; } .up-add input[name=target] { flex:1; min-width:min(240px, 100%); box-sizing:border-box; }
 .up-sugg { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; color:var(--muted); font-size:13px; }
-.up-sugg button { min-height:30px; padding:0 12px; border-radius:999px; font-size:13px; }
 .up-power { margin:.4rem 0; } .up-power .state { margin-right:.4rem; }
 #up-msg { color:var(--red); min-height:1.2em; }
 .outages { margin:4px 0 24px; padding-left:18px; font-size:14px; } .outages li { padding:2px 0; }
@@ -206,7 +205,7 @@ def _heartbeats(beats, now, locked):
         f'{hb.grace_minutes} min grace</span></td>'
         f'<td>{_esc(_ago(datetime.fromisoformat(st["at"]), now)) if st.get("at") else "never"}</td>'
         f'<td><code class="ping" data-ping="/ping/{_esc(token)}">curl -fsS -m 10 /ping/{_esc(token)}</code></td>'
-        f'<td>{"" if locked else f"""<button class="danger" type="button" data-beat-remove="{_esc(hb.name)}">Remove</button>"""}</td></tr>'
+        f'<td>{"" if locked else f"""<button class="danger sm" type="button" data-beat-remove="{_esc(hb.name)}">Remove</button>"""}</td></tr>'
         for hb, st, token in beats)
     table = ('<div class="table-wrap"><table class="uptime"><thead><tr><th>Status</th><th>Job</th><th>Last ping</th><th>Ping it with</th>'
              f'<th></th></tr></thead><tbody>{rows}</tbody></table></div>' if rows else "")
@@ -235,7 +234,7 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
         failure = info["last_failure"]
         problem = f"{_ago(failure[0], now)}: {failure[1]}" if failure else "none in 30 days"
         remove = ("" if locked else
-                  f'<button class="danger" type="button" data-remove="{_esc(check.name)}">Remove</button>')
+                  f'<button class="danger sm" type="button" data-remove="{_esc(check.name)}">Remove</button>')
         rows.append(
             f'<tr><td><span class="state {state}">{label}</span></td>'
             f'<td><strong>{_esc(check.name)}</strong><span class="target">{_esc(check.target)}</span></td>'
@@ -253,7 +252,7 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
         add = (f'<section class="up-add"><p class="up-intro">These checks are set in {config_name()} '
                '(<code>uptime.checks</code>) — edit them there.</p></section>')
     else:
-        chips = "".join(f'<button class="secondary" type="button" data-name="{_esc(name)}" data-fill="{_esc(target)}">'
+        chips = "".join(f'<button class="secondary sm" type="button" data-name="{_esc(name)}" data-fill="{_esc(target)}">'
                         f'{_esc(name)}</button>' for name, target in suggestions)
         add = ('<section class="up-add"><h2>Add a check</h2>'
                '<form id="up-form"><input name="name" placeholder="Name, e.g. Media server" aria-label="Name" required>'

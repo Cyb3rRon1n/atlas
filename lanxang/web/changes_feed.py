@@ -97,13 +97,15 @@ def render(items, now, window):
         lines.append(f'<li><span class="time">{when(at, now)}</span><span class="mark">{mark}</span>{line}</li>')
     rows = "".join(lines[:60])
     more = f'<p class="muted">and {len(lines) - 60} more</p>' if len(lines) > 60 else ""
-    return (STYLE + f'<section class="changes"><h2>What changed {switch}</h2>'
+    return (STYLE + f'<section class="changes"><div class="changes-head"><h2>What changed</h2>{switch}</div>'
             + (f"<ul>{rows}</ul>{more}" if rows else '<p class="muted">Nothing changed — all quiet.</p>')
             + "<p class=\"muted\">Times are in your local time. Everything Lanxang recorded is below.</p></section>")
 
 
 STYLE = """<style>
-.changes { margin:0 0 1.4rem; } .changes h2 { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.changes { margin:0 0 1.4rem; }
+.changes-head { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:.8rem 0 .4rem; padding-bottom:.3rem;
+                border-bottom:1px solid var(--line); } .changes-head h2 { margin:0; padding:0; border:0; }
 .changes ul { list-style:none; padding:0; margin:.4rem 0; }
 .changes li { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--line); align-items:baseline; }
 .changes .time { color:var(--muted); font-size:13px; flex:none; width:8.5em; font-variant-numeric:tabular-nums; }

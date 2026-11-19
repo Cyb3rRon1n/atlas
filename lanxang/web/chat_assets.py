@@ -55,7 +55,8 @@ body.chat-collapsed .shell.docked { grid-template-columns:minmax(0,1fr) 44px; }
 #chat-drawer .bubble { max-width:100%; }
 body.chat-collapsed #chat-drawer { padding:12px 4px; }
 body.chat-collapsed #chat-drawer > :not(.drawer-head), body.chat-collapsed #chat-drawer h2 { display:none; }
-#chat-fab { display:none; }
+#chat-close { width:32px; min-height:32px; padding:0; font-size:18px; line-height:1; }
+#chat-fab { display:none; box-shadow:0 2px 8px color-mix(in srgb, var(--text) 25%, transparent); }
 .sr-only { position:absolute; left:-9999px; }
 @media (max-width: 900px) {
   .shell.docked, body.chat-collapsed .shell.docked { display:block; }

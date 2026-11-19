@@ -188,7 +188,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             if not self.auth.check_setup_code(field("code")):
                 # wrong codes count against the same per-client limit as wrong passwords
                 self.auth.login("", client)
-                error = "Too many attempts - wait a few minutes." if self.auth.limited(client) else "That setup code is not right."
+                error = "Too many attempts — wait a few minutes." if self.auth.limited(client) else "That setup code is not right."
                 self._send(403, "text/html; charset=utf-8", render_setup_page(error))
                 return
             if field("password") != field("confirm"):
@@ -207,7 +207,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         result = self.auth.login(field("password"), client)
         if result == "limited":
             self._send(429, "text/html; charset=utf-8",
-                       render_login_page("Too many attempts - wait a few minutes.", next_path))
+                       render_login_page("Too many attempts — wait a few minutes.", next_path))
         elif result is None:
             self.log_message("failed sign-in from %s", client)
             self._send(401, "text/html; charset=utf-8", render_login_page("Wrong password.", next_path))

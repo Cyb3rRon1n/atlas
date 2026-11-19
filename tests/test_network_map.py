@@ -128,6 +128,15 @@ def test_network_page_lanes_tree_chips_and_escaping():
         assert text in page, text
     assert page.index('href="/devices/1"') < page.index('href="/devices/2"') < page.index(">vm<")
     assert "<script>x</script>" not in page and "&lt;script&gt;" in page
-    assert "1 unnamed devices" in page and page.index("1 unnamed devices") < page.index('href="/devices/3"')
+    assert "1 unnamed device —" in page and page.index("1 unnamed device —") < page.index('href="/devices/3"')
+    assert "Snapshot ." not in page and "Click a service for details." in page
     assert "cytoscape" not in page
     assert "lanxang map" in render_network_page(None, [], None)
+
+
+def test_counts_say_one_thing_and_many_things():
+    from lanxang.web.render import plural
+    assert plural(1, "service") == "1 service" and plural(0, "service") == "0 services"
+    assert plural(1, "low battery", "low batteries") == "1 low battery" and plural(2, "low battery", "low batteries") == "2 low batteries"
+    from lanxang.posture.model import _n
+    assert _n(1, "service") == "1 service" and _n(3, "route") == "3 routes"

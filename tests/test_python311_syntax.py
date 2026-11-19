@@ -1,4 +1,4 @@
-"""atlas supports Python 3.11, whose f-strings can't hold a backslash or reuse the outer quote inside {...}.
+"""Lanxang supports Python 3.11, whose f-strings can't hold a backslash or reuse the outer quote inside {...}.
 Python 3.12+ accepts both, so a developer on a newer Python only finds out from CI - this catches it everywhere."""
 
 import io
@@ -42,6 +42,6 @@ def test_the_checker_catches_what_python_311_rejects():
 def test_no_python_312_only_f_strings():
     if not hasattr(tokenize, "FSTRING_START"):
         return
-    found = [f"{path.relative_to(ROOT)}:{line} {what}" for folder in ("atlas", "tests")
+    found = [f"{path.relative_to(ROOT)}:{line} {what}" for folder in ("lanxang", "tools", "tests")
              for path in sorted((ROOT / folder).rglob("*.py")) for line, what in problems(path.read_text())]
     assert not found, "\n".join(found)

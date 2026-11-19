@@ -175,6 +175,15 @@ def test_switches_add_update_remove_and_turn_wiring_on(env, isolated_cwd):
     assert local.read_settings() == {} and local.secret_names() == set()      # last one out turns the map off
 
 
+def test_blank_snmp_user_suggests_lanxang_only_for_a_new_switch(env, isolated_cwd):
+    assert 'placeholder="lanxang"' in render_settings_page() and 'placeholder="lanxang@pve"' in render_settings_page()
+    handle_post("/api/settings/switches/save", SWITCH)                                  # saved earlier as "atlas"
+    handle_post("/api/settings/switches/save", {**SWITCH, "snmp_user": "", "auth": "", "priv_pass": ""})
+    handle_post("/api/settings/switches/save", {**SWITCH, "name": "new one", "host": "192.0.2.4", "snmp_user": ""})
+    users = {s.name: s.snmp_user for s in load_config().wiring.switches}
+    assert users == {"core switch": "atlas", "new one": "lanxang"}                      # never renames an existing one
+
+
 def test_switches_in_atlas_yaml_lock_the_card(env, isolated_cwd):
     (isolated_cwd / "atlas.yaml").write_text("wiring:\n  switches:\n    - name: core\n      host: 192.0.2.2\n")
     status, data = handle_post("/api/settings/switches/save", SWITCH)

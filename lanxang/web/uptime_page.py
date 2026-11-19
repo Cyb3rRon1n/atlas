@@ -10,7 +10,7 @@ import re
 from lanxang.config.local import config_name
 from lanxang.config import local
 from lanxang.web.cabling_page import _ago
-from lanxang.web.render import _esc, render_page
+from lanxang.web.render import _esc, plural, render_page
 
 STYLE = """<style>
 .up-intro { color:var(--muted); max-width:70ch; }
@@ -18,7 +18,8 @@ STYLE = """<style>
 .uptime th, .uptime td { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:middle; }
 .uptime th { color:var(--muted); font-weight:600; font-size:13px; }
 .uptime td.num { font-variant-numeric:tabular-nums; white-space:nowrap; }
-.uptime .target { display:block; color:var(--muted); font-size:12px; word-break:break-all; }
+.uptime .target { display:block; color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+@media (max-width: 600px) { .uptime .target { white-space:nowrap; } }   /* the table scrolls sideways instead */
 .state { display:inline-block; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:600; }
 .state.up { background:color-mix(in srgb, var(--green) 20%, transparent); color:var(--green); }
 .state.down { background:color-mix(in srgb, var(--red) 22%, transparent); color:var(--red); }
@@ -26,9 +27,9 @@ STYLE = """<style>
 .state.waiting { background:var(--line); color:var(--muted); }
 .ms polyline { fill:none; stroke:var(--blue); stroke-width:1.5; } .ms rect { fill:var(--red); }
 .up-add { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 16px; max-width:760px; }
-.up-add form { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.up-add form, form.up-add { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .up-add input { background:var(--bg); color:inherit; border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
-.up-add input[name=name] { width:180px; } .up-add input[name=target] { flex:1; min-width:240px; }
+.up-add input[name=name] { width:230px; max-width:100%; box-sizing:border-box; } .up-add input[name=target] { flex:1; min-width:min(240px, 100%); box-sizing:border-box; }
 .up-btn { background:var(--accent); color:var(--on-accent); border:0; border-radius:6px; padding:7px 14px; cursor:pointer; font:inherit; }
 .up-btn.ghost { background:transparent; color:inherit; border:1px solid var(--line); padding:4px 10px; font-size:13px; }
 .up-sugg { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; color:var(--muted); font-size:13px; }
@@ -116,7 +117,7 @@ def _power(power):
         return ""
     if power.get("error") and not power.get("upses"):
         return (f'<p class="up-power"><span class="state failing">UPS</span> Can\'t read the UPS server: '
-                f'{_esc(power["error"])} - <a href="/settings#ups">check Setup</a></p>')
+                f'{_esc(power["error"])} — <a href="/settings#ups">check Setup</a></p>')
     rows = []
     for name, info in (power.get("upses") or {}).items():
         state, label = {"online": ("up", "On mains"), "battery": ("down", "On battery"),
@@ -172,14 +173,14 @@ def _internet(data, now, fail_after):
                     + "".join(f'<td class="num">{_pct(info["uptime"].get(w))}</td>' for w in ("24 h", "7 days", "30 days"))
                     + "</tr>")
     outages = "".join(
-        f'<li><b>{_esc(start.strftime("%d %b %H:%M"))}</b> - '
+        f'<li><b>{_esc(start.strftime("%d %b %H:%M"))}</b> — '
         + (f'{_minutes(end - start)}' if end else "still down")
         + f' · {"internet provider (your router answered)" if router_ok else "router or local network"}</li>'
         for start, end, router_ok in data["outages"][:20])
 
-    return ('<h2>Internet</h2><table class="uptime"><thead><tr><th>Status</th><th>Check</th><th>Response</th>'
+    return ('<h2>Internet</h2><div class="table-wrap"><table class="uptime"><thead><tr><th>Status</th><th>Check</th><th>Response</th>'
             '<th>Last 24 h</th><th>24 h</th><th>7 days</th><th>30 days</th></tr></thead><tbody>' + "".join(rows)
-            + '</tbody></table>' + (f'<h3>Outages, last 30 days</h3><ul class="outages">{outages}</ul>' if outages else
+            + '</tbody></table></div>' + (f'<h3>Outages, last 30 days</h3><ul class="outages">{outages}</ul>' if outages else
                                    '<p class="up-intro">No outages in the last 30 days.</p>'))
 
 
@@ -209,15 +210,15 @@ def _heartbeats(beats, now, locked):
         f'<td><code class="ping" data-ping="/ping/{_esc(token)}">curl -fsS -m 10 /ping/{_esc(token)}</code></td>'
         f'<td>{"" if locked else f"""<button class="up-btn ghost" type="button" data-beat-remove="{_esc(hb.name)}">Remove</button>"""}</td></tr>'
         for hb, st, token in beats)
-    table = ('<table class="uptime"><thead><tr><th>Status</th><th>Job</th><th>Last ping</th><th>Ping it with</th>'
-             f'<th></th></tr></thead><tbody>{rows}</tbody></table>' if rows else "")
+    table = ('<div class="table-wrap"><table class="uptime"><thead><tr><th>Status</th><th>Job</th><th>Last ping</th><th>Ping it with</th>'
+             f'<th></th></tr></thead><tbody>{rows}</tbody></table></div>' if rows else "")
     options = "".join(f'<option value="{value}"{" selected" if value == 1440 else ""}>{label}</option>'
                       for label, value in EVERY)
     add = ("" if locked else
            '<form id="beat-form" class="up-add"><input name="name" placeholder="Name, e.g. Nightly backup" '
            f'aria-label="Name" required><select name="every" aria-label="How often">{options}</select>'
            '<button class="up-btn" type="submit">Add heartbeat</button></form>')
-    return ('<h2>Heartbeats</h2><p class="up-intro">For jobs Lanxang can\'t check from outside - a nightly backup, a '
+    return ('<h2>Heartbeats</h2><p class="up-intro">For jobs Lanxang can\'t check from outside — a nightly backup, a '
             'cron job. Add one, then have the job run the line shown when it finishes (add <code>/fail</code> to '
             'the address when it fails). If it doesn\'t check in on time you get one alert, and another when it '
             'does. If Lanxang sits behind a sign-in page, use its address on your network instead.</p>'
@@ -244,10 +245,10 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
             + "".join(f'<td class="num">{_pct(info["uptime"].get(w))}</td>' for w in ("24 h", "7 days", "30 days"))
             + f'<td>{_esc(problem)}</td><td>{remove}</td></tr>')
 
-    table = ('<table class="uptime"><thead><tr><th>Status</th><th>Check</th><th>Response</th><th>Last 24 h</th>'
+    table = ('<div class="table-wrap"><table class="uptime"><thead><tr><th>Status</th><th>Check</th><th>Response</th><th>Last 24 h</th>'
              '<th>24 h</th><th>7 days</th><th>30 days</th><th>Last problem</th><th></th></tr></thead>'
-             f'<tbody>{"".join(rows)}</tbody></table>' if rows else
-             '<p class="up-intro"><strong>No checks yet.</strong> Add the services you care about below - '
+             f'<tbody>{"".join(rows)}</tbody></table></div>' if rows else
+             '<p class="up-intro"><strong>No checks yet.</strong> Add the services you care about below — '
              'Lanxang tries each one every minute.</p>')
 
     if locked:
@@ -266,7 +267,7 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
     body = (STYLE
             + '<p class="up-intro">Is each service answering? Lanxang tries every check once a minute. A web address '
               'is up when it answers at all (a login page counts); <code>host:port</code> is up when the port accepts '
-              f'a connection. After {fail_after} failures in a row it is <strong>down</strong>: you get one alert, and '
+              f'a connection. After {plural(fail_after, "failure")} in a row it is <strong>down</strong>: you get one alert, and '
               'another when it is back.</p>'
             + _internet(internet, now, fail_after) + _power(power)
             + ("<h2>Services</h2>" if power or internet else "") + table + add
@@ -315,7 +316,7 @@ def handle_post(path, body):
     if not name:
         return 400, {"error": "Give the check a name."}
     if name.lower() in ("internet", "router", "dns") or name.lower().startswith("dns "):
-        return 400, {"error": f"{name} is the built-in internet check - pick another name."}
+        return 400, {"error": f"{name} is the built-in internet check — pick another name."}
     if len(others) != len(saved):
         return 400, {"error": f"There is already a check called {name}."}
     try:

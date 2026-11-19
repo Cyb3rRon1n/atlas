@@ -6,10 +6,9 @@ failed, which renders as a muted "unavailable" line instead of a 500.
 """
 
 import re
-from datetime import datetime
 
 from lanxang.health.alerts import container_problem, container_state
-from lanxang.web.render import _esc, ask_chips, event_label, render_page
+from lanxang.web.render import _esc, ask_chips, event_label, plural, render_page, when
 from lanxang.clock import utcnow
 
 
@@ -206,7 +205,7 @@ def build_storage(arrays, usage, feeds, pve_scan, topology=None, health=None, na
 
     for a in arrays:
         bad = a["state"] != "active" or a["degraded"] or a["failed"]
-        detail = f"{a['level'].upper()} · {a['disks']} disks · {a['state']}"
+        detail = f"{a['level'].upper()} · {plural(a['disks'], 'disk')} · {a['state']}"
         if a["degraded"] or a["failed"]:
             detail += f" · DEGRADED ({a['failed']} failed)"
         elif a["level"] == "raid0":
@@ -319,16 +318,6 @@ def _trends_card(trends):
     return _card("/posture", "Security trends", "review" if days[-1]["count"] else "ok", inner, wide=True)
 
 
-def _age(created_at, now):
-
-    try:
-        hours = (now - datetime.fromisoformat(str(created_at)[:19])).total_seconds() / 3600
-    except ValueError:
-        return str(created_at)
-
-    return f"{hours:.0f} h ago" if hours < 48 else f"{hours / 24:.0f} days ago"
-
-
 def _analysis_card(analysis, now):
 
     from lanxang.web import render
@@ -343,7 +332,7 @@ def _analysis_card(analysis, now):
     recs = [r if isinstance(r, dict) else {"title": str(r), "severity": ""} for r in analysis.get("recommendations") or []]
     worst = "warn" if any(r.get("severity") in ("high", "critical") for r in recs) else "ok"
     summary = (analysis.get("summary") or "")[:220].rsplit(" ", 1)[0] + "\u2026" if len(analysis.get("summary") or "") > 220 else (analysis.get("summary") or "")
-    inner = (f'<p class="muted">{_esc(_age(analysis.get("created_at"), now))} · {_esc(analysis.get("model"))}</p>'
+    inner = (f'<p class="muted">{when(analysis.get("created_at"), now)} · {_esc(analysis.get("model"))}</p>'
              f'<p class="summary">{_esc(summary)}</p><ul>'
              + "".join(f'<li><span class="sev-{_esc(r.get("severity"))}">{_esc(r.get("severity") or "")}</span> '
                        f'{_esc(r.get("title"))}</li>' for r in recs[:3]) + "</ul>")
@@ -462,7 +451,7 @@ def _activity_card(events):
         return _card("/history", "Recent activity", "unknown", '<p class="muted">No events yet.</p>')
 
     inner = "<ul>" + "".join(
-        f'<li><span class="muted">{_esc(str(e.created_at)[:16])}</span> {_esc(event_label(e.event_type))}'
+        f'<li><span class="muted">{when(e.created_at)}</span> {_esc(event_label(e.event_type))}'
         + (f' <span class="muted">&times;{count}</span>' if count > 1 else "")
         + f' <span class="muted">({_esc(e.source)})</span></li>'
         for e, count in events
@@ -537,9 +526,9 @@ def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=Non
     home = (ha or {}).get("info") or {}
     if ha and (home or ha.get("error")):          # Home Assistant
         lost, low = len(home.get("offline") or []), len(home.get("batteries") or [])
-        problems = ([f"{lost} offline"] if lost else []) + ([f"{low} low batteries"] if low else [])
+        problems = ([f"{lost} offline"] if lost else []) + ([f"{plural(low, 'low battery', 'low batteries')}"] if low else [])
         tiles.append(("Smart home", "Down" if ha.get("failures", 0) >= 2 else "Fine" if not problems else
-                      f"{lost + low} to check", ", ".join(problems) or (f"{len(home.get('updates') or [])} updates "
+                      f"{lost + low} to check", ", ".join(problems) or (f"{plural(len(home.get('updates') or []), 'update')} "
                       "waiting" if home.get("updates") else "all devices answering"), "/#homeassistant",
                       "bad" if ha.get("failures", 0) >= 2 or lost else "warn" if low else "good"))
     if hosts and hosts["rows"]:
@@ -608,7 +597,7 @@ def _ha_card(ha):
                     f'<div class="row"><span>{_esc(b["name"])}</span><span class="muted">battery low</span></div>'
                     for b in batteries[:6])
     inner = (f'<p class="muted">Home Assistant {_esc(info.get("version") or "")} · {len(offline)} offline · '
-             f'{len(batteries)} low batteries</p>' + (rows or '<p class="muted">Every device is answering.</p>'))
+             f'{plural(len(batteries), "low battery", "low batteries")}</p>' + (rows or '<p class="muted">Every device is answering.</p>'))
     if updates:
         inner += (f'<p class="muted" style="margin:10px 0 4px">{len(updates)} update{"s" if len(updates) != 1 else ""} '
                   'waiting</p>' + "".join(f'<div class="row"><span>{_esc(u["title"])}</span><span class="muted">'

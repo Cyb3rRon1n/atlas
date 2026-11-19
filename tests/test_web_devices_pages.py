@@ -167,7 +167,7 @@ def test_device_page_shows_wiring_model_and_links_its_front_panel():
                            "mac": "AA:00:00:00:00:02"}]}
 
     html = render_device_page(dev, [dev], wiring=snapshot)
-    assert "ACME-28 28-Port Gigabit Managed Switch - " in html and 'href="/cabling#fp-s%3Acore-switch"' in html
+    assert "ACME-28 28-Port Gigabit Managed Switch — " in html and 'href="/cabling#fp-s%3Acore-switch"' in html
 
     nas = device(2, "nas", sightings=[{"id": 20, "source": "lan", "external_id": "x", "ip": "192.168.50.9",
                                         "mac": "aa-00-00-00-00-02", "hostname": None, "detail": {},

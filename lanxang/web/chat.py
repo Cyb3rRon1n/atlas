@@ -100,7 +100,7 @@ def chat_turn(sessions, session_id, message, agent_factory, now=None, tools=True
         if session["turns"] >= sessions.max_turns:
             del sessions.sessions[session_id]
             session_id, session = sessions.get_or_create(None, now)
-            return 200, {"session": session_id, "text": "This conversation is full - starting a new one. Ask again.",
+            return 200, {"session": session_id, "text": "This conversation is full — starting a new one. Ask again.",
                          "action": None, "plan": None, "reset": True}
 
         messages = list(session["messages"]) + [{"role": "user", "content": message}]

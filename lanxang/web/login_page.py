@@ -1,11 +1,16 @@
-"""Sign-in and first-run setup pages: plain HTML forms, no script, no nav."""
+"""Sign-in and first-run setup pages: plain HTML forms and the brand, no nav (the only script is the theme pick)."""
 
 from lanxang.web.auth import MIN_PASSWORD
-from lanxang.web.render import FAVICON, PAGE_STYLE, _esc
+from lanxang.web.render import FAVICON, PAGE_STYLE, THEME_SCRIPT, _esc, logo
 
 
 CARD_STYLE = """
-.auth { max-width:360px; margin:12vh auto 0; padding:28px 24px; background:var(--surface);
+.brand { display:flex; align-items:center; justify-content:center; gap:12px; margin:10vh auto 20px;
+         font-size:24px; font-weight:700; color:var(--text); }
+.brand .name { display:flex; flex-direction:column; line-height:1.1; }
+.brand small { font:500 13px "Noto Sans Lao", sans-serif; color:var(--yellow); letter-spacing:.02em; }
+.brand .dk, :root[data-theme="dark"] .brand .lt { display:none; } :root[data-theme="dark"] .brand .dk { display:inline-flex; }
+.auth { max-width:360px; margin:0 auto 32px; padding:28px 24px; background:var(--surface);
         border:1px solid var(--line); border-radius:12px; }
 .auth h1 { margin:0 0 6px; font-size:1.3rem; }
 .auth label { display:block; margin:14px 0 6px; color:var(--muted); font-size:.9rem; }
@@ -22,7 +27,9 @@ def _page(title, body):
 
     return ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-            f"<title>Lanxang - {_esc(title)}</title>{FAVICON}<style>{PAGE_STYLE}{CARD_STYLE}</style></head><body>"
+            f"<title>Lanxang — {_esc(title)}</title>{FAVICON}{THEME_SCRIPT}<style>{PAGE_STYLE}{CARD_STYLE}</style></head><body>"
+            f"<div class=\"brand\"><span class=\"lt\">{logo(44, light=True)}</span><span class=\"dk\">{logo(44)}</span>"
+            "<span class=\"name\">Lanxang<small lang=\"lo\">ລ້ານຊ້າງ</small></span></div>"
             f"<main class=\"auth\">{body}</main></body></html>")
 
 

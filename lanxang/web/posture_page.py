@@ -152,8 +152,8 @@ async function markExpected(button, source, asnKey) {
     const r = await fetch("/api/posture/known", {method: "POST", credentials: "same-origin",
       headers: {"Content-Type": "application/json"}, body: JSON.stringify({source: source, asn_key: asnKey})});
     if (r.ok) { button.textContent = "Marked expected"; load(); return; }
-    button.textContent = "Failed (" + r.status + ") - try again";
-  } catch (error) { button.textContent = "Network error - try again"; }
+    button.textContent = "Failed (" + r.status + ") — try again";
+  } catch (error) { button.textContent = "Network error — try again"; }
   button.disabled = false;
 }
 

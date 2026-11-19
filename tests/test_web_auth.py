@@ -224,3 +224,10 @@ def test_vendored_fonts_are_served_and_the_allow_list_holds(secured):
 
     assert _call(base + "/static/fonts/../server.py")[0] == 404
     assert _call(base + "/static/fonts/x.woff2")[0] == 404
+
+
+def test_sign_in_and_setup_pages_carry_the_brand():
+    from lanxang.web.login_page import render_login_page, render_setup_page
+    for page in (render_login_page(), render_setup_page()):
+        assert 'class="brand"' in page and "Lanxang<small" in page and "ລ້ານຊ້າງ" in page and page.count("<svg") == 2
+        assert '<svg width="44" height="44" aria-hidden="true"' in page                  # the text names it

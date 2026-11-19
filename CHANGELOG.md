@@ -6,6 +6,20 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 ## Unreleased
 ### Changed
 - The web UI now opens in light mode whatever the system theme; dark is still one click away in the sidebar and is remembered.
+- Every time on Triage, Devices, Coverage, Home and Activity is written the same way and in the viewer's own time zone: "5 min ago", "today 14:32", "yesterday 14:32", "12 Nov". Activity no longer says "Times are UTC".
+- The light theme's greys (table headers, tiles, borders, the cabling canvas, the Services lanes) are now jade-tinted instead of blue-grey; dark mode's muted text and sidebar text too.
+- Activity's *What changed* list uses the app's line icons instead of emoji, and a run of new devices is one row that opens to list them ("37 new devices").
+- Sign-in and first-run setup show the Lanxang logo and name.
+- Setup's hints suggest the account name `lanxang` (SNMPv3 user, Proxmox user and token, NAS user); a new switch saved with a blank SNMPv3 user gets `lanxang`. Saved switches and settings keep their names.
+- The device page's *Important* box no longer names Signal: alerts go to whichever channels are set up.
+- Copy: spaced hyphens in sentences are now em dashes; counts say "1 service", "1 unnamed device", "1 low battery".
+
+### Fixed
+- Activity rendered an empty page when a saved change event held plain text instead of the usual fields; a row that can't be read is now shown as-is or left out. The demo data writes the real format.
+- No more empty gap under the page title on Devices, Triage, Coverage and Cabling (the message line takes no space until it has something to say).
+- Devices, the device page, Triage, Coverage, Uptime and Cabling no longer scroll sideways on a phone: inputs fit the screen and wide tables scroll inside their card.
+- Uptime's *Add heartbeat* form: the controls are spaced and the name placeholder is no longer cut off.
+- Services no longer says "Snapshot . Click…" when the snapshot has no time.
 
 ## 1.0.1 - 2026-11-18
 

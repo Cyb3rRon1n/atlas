@@ -80,18 +80,27 @@ def level(result, now, warn_days, urgent_days):
     return "ok", days
 
 
-def _text(host, entry):
+def _date(value, display):
+    """An expiry (ISO text) as a date in the display: format and zone."""
+
+    from lanxang.clock import day, local, parse
+
+    moment = parse(value)
+    return day(local(moment, display)[0], display) if moment else value[:10]
+
+
+def _text(host, entry, display=None):
 
     days = entry["days"]
     if entry["level"] == "invalid":
         return f"**🔒 Certificate not trusted: {host}**\n• {entry['error'][len('invalid: '):]}\n\nSee Lanxang → Security."
     when = "expired" if days < 0 else "expires today" if days == 0 else f"expires in {days} day{'s' * (days != 1)}"
     icon = "🔴" if entry["level"] == "urgent" else "🟡"
-    return (f"**{icon} Certificate {when}: {host}**\n• {entry['expires'][:10]}"
+    return (f"**{icon} Certificate {when}: {host}**\n• {_date(entry['expires'], display)}"
             + (f", issued by {entry['issuer']}" if entry["issuer"] else "") + "\n\nSee Lanxang → Security.")
 
 
-def assess(previous, results, now, warn_days, urgent_days):
+def assess(previous, results, now, warn_days, urgent_days, display=None):
     """(alert texts, {host: entry}) - alerts when a host's level gets worse, resolves when back to ok."""
 
     old, entries, texts = previous or {}, {}, []
@@ -102,7 +111,7 @@ def assess(previous, results, now, warn_days, urgent_days):
         before = (old.get(host) or {}).get("alerted")         # last level alerted about, kept while unreachable
         entries[host]["alerted"] = name if name in ALERTING else before if name == "unreachable" else None
         if name in ALERTING and RANK[name] > RANK.get(before or "ok", 0):
-            texts.append(Text(_text(host, entries[host]), f"certs:cert:{host}"))
+            texts.append(Text(_text(host, entries[host], display), f"certs:cert:{host}"))
         elif name == "ok" and before:
             texts.append(Text(f"**✅ Resolved: certificate for {host}**\n• valid for {days} more days", f"certs:cert:{host}"))
 
@@ -128,13 +137,14 @@ def run(settings, store, now, *, get=fetch, send=None, force=False):
     utc = now.replace(tzinfo=timezone.utc)
     results = {host: get(host, timeout=config.cert_timeout)
                for host in hosts(store.latest_routes(), config.cert_hosts)}
-    texts, entries = assess(previous.get("hosts"), results, utc, config.cert_warn_days, config.cert_urgent_days)
+    texts, entries = assess(previous.get("hosts"), results, utc, config.cert_warn_days, config.cert_urgent_days,
+                             settings.display)
     from lanxang.alerts import issue, report
     found = []
     for host, entry in entries.items():
         if entry["level"] in ALERTING:
-            title = _text(host, entry).split("\n", 1)[0].strip("*")
-            found.append(issue("cert", host, title.split(" ", 1)[1], entry["error"] or f"expires {entry['expires'][:10]}",
+            title = _text(host, entry, settings.display).split("\n", 1)[0].strip("*")
+            found.append(issue("cert", host, title.split(" ", 1)[1], entry["error"] or f"expires {_date(entry['expires'], settings.display)}",
                                href="/posture"))
         elif entry["level"] == "unreachable":
             found.append(issue("cert", host, f"Couldn't check the certificate for {host}", entry["error"],

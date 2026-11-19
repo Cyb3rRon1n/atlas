@@ -14,7 +14,7 @@ from html import escape
 from lanxang.devices.store import CONNECTIONS, KINDS, STATES
 from lanxang.health.alerts import container_state
 from lanxang.web.icons import icon
-from lanxang.clock import utcnow
+from lanxang.clock import day, hhmm, local, parse, stamp, utcnow
 from lanxang.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE, DRAWER_HTML, DRAWER_STYLE
 
 
@@ -278,6 +278,34 @@ document.addEventListener("keydown",function(e){if(panel.hidden)return;
 sync();})();</script>"""
 
 
+# Time & date: saved on the server (POST /api/settings/display/save, the same gated write path as Setup), then put
+# on <html> for TIME_SCRIPT and applied without a reload.
+TIME_PREFS_SCRIPT = """<script>(function(){
+var R=document.documentElement,row=document.getElementById("pref-zone-row"),box=document.getElementById("pref-zone"),
+  say=document.getElementById("pref-time-status"),other=false;
+function cur(){return{clock:R.dataset.clock||"24h",date_format:R.dataset.datefmt||"iso",time_zone:R.dataset.tz||"browser"};}
+function sync(){var c=cur(),z=other||(c.time_zone!=="browser"&&c.time_zone!=="UTC")?"other":c.time_zone,v={clock:c.clock,date_format:c.date_format,zone:z};
+  document.querySelectorAll("[data-spref]").forEach(function(g){g.querySelectorAll("button").forEach(function(b){
+    b.setAttribute("aria-pressed",String(b.dataset.v===v[g.dataset.spref]));});});
+  row.hidden=z!=="other";if(z==="other"&&document.activeElement!==box&&c.time_zone!=="UTC"&&c.time_zone!=="browser")box.value=c.time_zone;}
+function save(change){var body=cur();for(var k in change)body[k]=change[k];say.textContent="Saving...";
+  fetch("/api/settings/display/save",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return[r.ok,j];});}).then(function(a){
+    if(!a[0]){say.textContent=a[1].error||"Couldn't save.";return;}
+    var s=a[1].display;R.dataset.clock=s.clock;R.dataset.datefmt=s.date_format;R.dataset.tz=s.time_zone;other=false;
+    if(window.atlasTimes)window.atlasTimes();sync();say.textContent="Saved.";},function(){say.textContent="Couldn't reach Lanxang.";});}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-spref] button");if(!b)return;
+  var k=b.parentNode.dataset.spref,v=b.dataset.v;
+  if(k!=="zone")save(k==="clock"?{clock:v}:{date_format:v});
+  else if(v==="other"){other=true;sync();box.focus();}
+  else{other=false;save({time_zone:v});}});
+box.addEventListener("change",function(){if(box.value.trim())save({time_zone:box.value.trim()});});
+box.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();e.stopPropagation();if(box.value.trim())save({time_zone:box.value.trim()});}});
+box.addEventListener("focus",function(){var l=document.getElementById("pref-zones");if(l.options.length||!Intl.supportedValuesOf)return;
+  l.innerHTML=Intl.supportedValuesOf("timeZone").map(function(z){return '<option value="'+z+'">';}).join("");},{once:true});
+sync();})();</script>"""
+
+
 LOGO = ('<svg width="26" height="26" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.4" stroke="#5ec2a4" stroke-width="1.8" fill="none"/><g transform="translate(4.8 4.8) scale(.6)"><g transform="translate(1.2 2.6) scale(.9)"><path d="M3 6.6C3 4.9 4.2 4 6 4h2.6v9.8C6.4 13.8 4.9 13.2 4 12.1 3.3 11.2 3 10 3 8.8z" fill="#5ec2a4"/><path d="M21 6.6C21 4.9 19.8 4 18 4h-2.6v9.8c2.2 0 3.7-.6 4.6-1.7.7-.9 1-2.1 1-3.3z" fill="#5ec2a4"/><path d="M8.2 5.2C9.3 3.9 10.6 3.3 12 3.3s2.7.6 3.8 1.9v8.1c0 1.3-.8 2.2-2 2.5l-.6 5.1c-.1.8-.6 1.2-1.2 1.2s-1.1-.4-1.2-1.2l-.6-5.1c-1.2-.3-2-1.2-2-2.5z" fill="#5ec2a4"/><circle cx="10.2" cy="8.6" r=".95" fill="#0e1a19"/><circle cx="13.8" cy="8.6" r=".95" fill="#0e1a19"/></g><g transform="translate(9 -.6) scale(.25)"><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(0 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(72 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(144 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(216 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(288 12 12)"/><circle cx="12" cy="12" r="2.6" fill="#e9b44c" stroke="#0e1a19" stroke-width=".7"/></g></g></svg>')
 
 
@@ -298,23 +326,22 @@ def _esc(value):
 def _moment(value):
     """A stored time (naive UTC datetime, or its ISO text) as a datetime; None when there is none or it won't parse."""
 
-    try:
-        moment = value if isinstance(value, datetime) else datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    return moment.astimezone(timezone.utc).replace(tzinfo=None) if moment.tzinfo else moment
+    return parse(value)
 
 
-def friendly_time(moment, now, clock=False):
-    """The server's wording for a naive-UTC time: '5 min ago', 'today 14:32 UTC', 'yesterday 14:32 UTC', 'Mon 14:32 UTC',
-    '12 Nov', '12 Nov 2025'. TIME_SCRIPT redoes the same in the viewer's own time zone; this is what shows without it.
-    clock: just 'HH:MM UTC' (rows already grouped by day); clock="day": 'Today', 'Yesterday', 'Mon 16 Nov'."""
+def friendly_time(moment, now, clock=False, display=None):
+    """The server's wording for a naive-UTC time, in the display: settings (DISPLAY by default): '5 min ago',
+    'today 14:32 UTC', 'yesterday 2:32 PM EST', 'Mon 14:32 UTC', then the date ('2026-11-12', '11/12/2026').
+    TIME_SCRIPT redoes the same in the viewer's zone (or the chosen one); this is what shows without it.
+    clock: just the time and zone (rows already grouped by day); clock="day": 'Today', 'Yesterday', 'Mon 2026-11-16'."""
 
+    display = display or DISPLAY
+    here, zone = local(moment, display)
+    days = (local(now, display)[0].date() - here.date()).days
     if clock == "day":
-        days = (now.date() - moment.date()).days
-        return "Today" if days == 0 else "Yesterday" if days == 1 else f"{moment:%a} {moment.day} {moment:%b}"
+        return "Today" if days == 0 else "Yesterday" if days == 1 else f"{here:%a} {day(here, display)}"
     if clock:
-        return moment.strftime("%H:%M UTC")
+        return f"{hhmm(here, display)} {zone}"
     minutes = int((now - moment).total_seconds() // 60)
     if minutes < 1:
         return "just now"
@@ -322,51 +349,56 @@ def friendly_time(moment, now, clock=False):
         return f"{minutes} min ago"
     if minutes < 6 * 60:
         return f"{minutes // 60} h ago"
-    days = (now.date() - moment.date()).days
-    hhmm = moment.strftime("%H:%M")
     if days == 0:
-        return f"today {hhmm} UTC"
+        return f"today {hhmm(here, display)} {zone}"
     if days == 1:
-        return f"yesterday {hhmm} UTC"
+        return f"yesterday {hhmm(here, display)} {zone}"
     if days < 7:
-        return f"{moment:%a} {hhmm} UTC"
-    return f"{moment.day} {moment:%b}" + ("" if moment.year == now.year else f" {moment.year}")
+        return f"{here:%a} {hhmm(here, display)} {zone}"
+    return day(here, display)
 
 
 def when(value, now=None, clock=False, never="-", text=None):
     """One time on any page: <time datetime="...Z"> with friendly_time() inside, which TIME_SCRIPT rewrites in the
-    viewer's local time. never: what to show when there is no time; text: other server-side words."""
+    viewer's local time (or the chosen zone). never: what to show when there is no time; text: other server-side words."""
 
     moment = _moment(value)
     if moment is None:
         return _esc(value) if value else _esc(never)
-    stamp = moment.isoformat(timespec="seconds")
+    iso = moment.isoformat(timespec="seconds")
     mode = "day" if clock == "day" else "clock" if clock else "rel"
     shown = text if text is not None else friendly_time(moment, now or utcnow(), clock)
-    return (f'<time datetime="{stamp}Z" data-when="{mode}" title="{stamp[:16].replace("T", " ")} UTC">{_esc(shown)}</time>')
+    return f'<time datetime="{iso}Z" data-when="{mode}" title="{_esc(stamp(moment, DISPLAY))}">{_esc(shown)}</time>'
 
 
-# Last in <body>, so it runs at once. Turns every <time data-when> into the viewer's local time, in the same words as friendly_time(); refreshes each minute.
+# Last in <body>, so it runs at once. Turns every <time data-when> into the same words as friendly_time(), in the
+# viewer's own time zone or the one chosen in Preferences (<html data-tz/data-clock/data-datefmt>); refreshes each minute.
 TIME_SCRIPT = """<script>(function(){
-var two=function(n){return (n<10?"0":"")+n;};
-var hm=function(d){return two(d.getHours())+":"+two(d.getMinutes());};
-var M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],D=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var R=document.documentElement,D=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var two=function(n){return (n<10?"0":"")+n;},fmt,tz;
+function parts(d){if(!fmt)return{y:d.getFullYear(),m:d.getMonth()+1,d:d.getDate(),h:d.getHours(),i:d.getMinutes(),w:d.getDay()};
+  var o={};fmt.formatToParts(d).forEach(function(p){o[p.type]=p.value;});
+  return{y:+o.year,m:+o.month,d:+o.day,h:+o.hour%24,i:+o.minute,w:D.indexOf(o.weekday)};}
+function hm(p){return R.dataset.clock==="12h"?((p.h%12)||12)+":"+two(p.i)+" "+(p.h<12?"AM":"PM"):two(p.h)+":"+two(p.i);}
+function ymd(p){var f=R.dataset.datefmt;return f==="dmy"?two(p.d)+"/"+two(p.m)+"/"+p.y:f==="mdy"?two(p.m)+"/"+two(p.d)+"/"+p.y:p.y+"-"+two(p.m)+"-"+two(p.d);}
 function say(d,now,mode){
-  if(mode==="clock")return hm(d);
-  var a=new Date(d.getFullYear(),d.getMonth(),d.getDate()),b=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  var days=Math.round((b-a)/86400000),min=Math.floor((now-d)/60000);
-  if(mode==="day")return days===0?"Today":days===1?"Yesterday":D[d.getDay()]+" "+d.getDate()+" "+M[d.getMonth()];
+  var p=parts(d),q=parts(now),days=Math.round((Date.UTC(q.y,q.m-1,q.d)-Date.UTC(p.y,p.m-1,p.d))/86400000),min=Math.floor((now-d)/60000);
+  if(mode==="clock")return hm(p);
+  if(mode==="day")return days===0?"Today":days===1?"Yesterday":D[p.w]+" "+ymd(p);
   if(min<1)return "just now";
   if(min<60)return min+" min ago";
   if(min<360)return Math.floor(min/60)+" h ago";
-  if(days===0)return "today "+hm(d);
-  if(days===1)return "yesterday "+hm(d);
-  if(days<7)return D[d.getDay()]+" "+hm(d);
-  return d.getDate()+" "+M[d.getMonth()]+(d.getFullYear()===now.getFullYear()?"":" "+d.getFullYear());
+  if(days===0)return "today "+hm(p);
+  if(days===1)return "yesterday "+hm(p);
+  if(days<7)return D[p.w]+" "+hm(p);
+  return ymd(p);
 }
-function run(){var now=new Date();document.querySelectorAll("time[data-when]").forEach(function(t){
-  var d=new Date(t.getAttribute("datetime"));if(isNaN(d))return;
-  t.textContent=say(d,now,t.dataset.when);t.title=d.toLocaleString();});}
+function run(){var now=new Date(),z=R.dataset.tz||"browser";
+  if(z!==tz){tz=z;fmt=null;if(z!=="browser")try{fmt=new Intl.DateTimeFormat("en-US",{timeZone:z,year:"numeric",month:"numeric",
+    day:"numeric",hour:"numeric",minute:"numeric",weekday:"short",hourCycle:"h23"});}catch(e){fmt=null;}}
+  document.querySelectorAll("time[data-when]").forEach(function(t){
+  var d=new Date(t.getAttribute("datetime"));if(isNaN(d))return;var p=parts(d);
+  t.textContent=say(d,now,t.dataset.when);t.title=ymd(p)+" "+hm(p)+(fmt?" "+tz:"");});}
 window.atlasTimes=run;
 run();
 setInterval(run,60000);})();</script>"""
@@ -394,6 +426,7 @@ def section_tabs(page):
 
 SIGN_OUT = False    # set by run_server when atlas does its own sign-in (web.auth: builtin)
 AI_ON = True        # set per request by the server: no chat panel or "ask" chips while intelligence.provider is none
+DISPLAY = None      # set per request by the server: the display: settings (clock, time zone, date format); None = defaults
 
 def _hosts_tabs(current):
 
@@ -405,15 +438,16 @@ FAVICON = ('<link rel="icon" href="data:image/svg+xml,'
            "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10.4' stroke='%231e7f66' stroke-width='1.8' fill='none'/%3E%3Cg transform='translate(4.8 4.8) scale(.6)'%3E%3Cg transform='translate(1.2 2.6) scale(.9)'%3E%3Cpath d='M3 6.6C3 4.9 4.2 4 6 4h2.6v9.8C6.4 13.8 4.9 13.2 4 12.1 3.3 11.2 3 10 3 8.8z' fill='%231e7f66'/%3E%3Cpath d='M21 6.6C21 4.9 19.8 4 18 4h-2.6v9.8c2.2 0 3.7-.6 4.6-1.7.7-.9 1-2.1 1-3.3z' fill='%231e7f66'/%3E%3Cpath d='M8.2 5.2C9.3 3.9 10.6 3.3 12 3.3s2.7.6 3.8 1.9v8.1c0 1.3-.8 2.2-2 2.5l-.6 5.1c-.1.8-.6 1.2-1.2 1.2s-1.1-.4-1.2-1.2l-.6-5.1c-1.2-.3-2-1.2-2-2.5z' fill='%231e7f66'/%3E%3Ccircle cx='10.2' cy='8.6' r='.95' fill='%23f7fbf9'/%3E%3Ccircle cx='13.8' cy='8.6' r='.95' fill='%23f7fbf9'/%3E%3C/g%3E%3Cg transform='translate(9 -.6) scale(.25)'%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(0 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(72 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(144 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(216 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(288 12 12)'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%23c9a227' stroke='%23f7fbf9' stroke-width='.7'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\">")
 
 
-def _choice(pref, label, options, hint="", default=None):
-    """One Preferences row: a .seg of buttons (aria-pressed) for pref; options are (value, text), default the first."""
+def _choice(pref, label, options, hint="", default=None, attr="data-pref"):
+    """One Preferences row: a .seg of buttons (aria-pressed) for pref; options are (value, text), default the first.
+    attr: data-pref (this browser, PREFS_SCRIPT) or data-spref (saved on the server, TIME_PREFS_SCRIPT)."""
 
     default = default or options[0][0]
     buttons = "".join(f'<button type="button" data-v="{v}" aria-pressed="{str(v == default).lower()}">{_esc(text)}</button>'
                       for v, text in options)
     note = f'<p class="hint">{_esc(hint)}</p>' if hint else ""
     return (f'<div class="pref"><span id="pl-{pref}">{_esc(label)}</span>'
-            f'<div class="seg" role="group" aria-labelledby="pl-{pref}" data-pref="{pref}">{buttons}</div>{note}</div>')
+            f'<div class="seg" role="group" aria-labelledby="pl-{pref}" {attr}="{pref}">{buttons}</div>{note}</div>')
 
 
 START_PAGES = (("home", "Home"), ("devices", "Devices"), ("alerts", "Alerts"), ("map", "Network map"),
@@ -424,12 +458,24 @@ PREFS_PANEL = (
     '<div id="prefs" class="prefs" role="dialog" aria-modal="true" aria-labelledby="prefs-title" tabindex="-1" hidden>'
     '<div class="prefs-head"><h2 id="prefs-title">Preferences</h2>'
     '<button type="button" class="sm" data-prefs-close>Close</button></div>'
-    '<p class="muted" style="margin:6px 0 0;font-size:.8125rem">Saved in this browser only. Changes apply at once.</p>'
+    '<p class="muted" style="margin:6px 0 0;font-size:.8125rem">Saved in this browser only, except Time &amp; date. Changes apply at once.</p>'
     '<h3>Appearance</h3>'
     + _choice("theme", "Theme", (("light", "Light"), ("dark", "Dark"), ("system", "System")))
     + _choice("motion", "Reduced motion", (("system", "System"), ("on", "On"), ("off", "Off")),
               "System follows your device's setting.")
     + _choice("contrast", "High contrast", (("off", "Off"), ("on", "On")))
+    + '<h3>Time &amp; date</h3>'
+    '<p class="hint" style="margin:0;color:var(--muted);font-size:.8125rem">Saved for everyone, on every page and in '
+    'alert messages and the weekly summary.</p>'
+    + _choice("clock", "Clock", (("24h", "24-hour"), ("12h", "12-hour")), attr="data-spref")
+    + _choice("date_format", "Date format", (("iso", "2026-11-19"), ("dmy", "19/11/2026"), ("mdy", "11/19/2026")),
+              attr="data-spref")
+    + _choice("zone", "Time zone", (("browser", "This browser"), ("UTC", "UTC"), ("other", "Other")),
+              "This browser: each viewer sees their own time; alert messages then use UTC.", attr="data-spref")
+    + '<div class="pref" id="pref-zone-row" hidden><label for="pref-zone">Zone name</label>'
+    '<input id="pref-zone" list="pref-zones" placeholder="America/New_York" autocomplete="off" spellcheck="false">'
+    '<datalist id="pref-zones"></datalist><p class="hint">An IANA name; press Enter to save.</p></div>'
+    '<p id="pref-time-status" class="muted" role="status" aria-live="polite" style="font-size:.8125rem;min-height:1.2em;margin:6px 0 0"></p>'
     + '<h3>Size &amp; density</h3>'
     + _choice("text", "Text size", (("s", "S"), ("m", "M"), ("l", "L")), default="m")
     + _choice("density", "Density", (("comfortable", "Comfortable"), ("compact", "Compact")))
@@ -453,6 +499,13 @@ HEADER_BAR = (
     '<button type="button" class="icon-btn prefs-open" aria-haspopup="dialog" aria-controls="prefs" '
     f'aria-label="Preferences" title="Preferences">{icon("gear")}</button></div>'
 )
+
+
+def _display_attrs():
+    """The display: settings on <html>, read by TIME_SCRIPT and the Preferences panel."""
+
+    clock, zone, dates = (DISPLAY.clock, DISPLAY.time_zone, DISPLAY.date_format) if DISPLAY else ("24h", "browser", "iso")
+    return f' data-clock="{_esc(clock)}" data-datefmt="{_esc(dates)}" data-tz="{_esc(zone)}"'
 
 
 def render_page(title, body_html, active="", tabs=None, drawer=True, heading=None):
@@ -486,7 +539,7 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
 
     return (
         "<!doctype html>\n"
-        "<html lang=\"en\"><head><meta charset=\"utf-8\">"
+        f"<html lang=\"en\"{_display_attrs()}><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
         f"<title>Lanxang — {_esc(title)}</title>{FAVICON}{THEME_SCRIPT}"
         f"<style>{PAGE_STYLE}</style></head><body><div class=\"app\">"
@@ -500,7 +553,7 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
         "</div></aside>"
         f"<div class=\"shell{' docked' if drawer else ''}\">"
         f"<main class=\"page\"><div class=\"page-head\"><h1>{_esc(heading or title)}</h1>{HEADER_BAR}</div>{subnav}{body_html}</main>"
-        f"{drawer_html}</div></div>{PREFS_PANEL}{TIME_SCRIPT}{PREFS_SCRIPT}"
+        f"{drawer_html}</div></div>{PREFS_PANEL}{TIME_SCRIPT}{PREFS_SCRIPT}{TIME_PREFS_SCRIPT}"
         "</body></html>"
     )
 

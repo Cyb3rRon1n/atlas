@@ -90,7 +90,7 @@ def _row(alert, now, kind):
 
     return (f'<li class="{kind}"><span class="sev"></span><div class="body"><b>{_esc(alert["title"])}</b>{acked}'
             + (f'<div class="detail">{_esc(alert["detail"])}</div>' if alert["detail"] else "")
-            + f'<div class="meta">{_esc(SOURCES.get(alert["source"], alert["source"]))} · {_esc(when)}</div>'
+            + f'<div class="meta">{_esc(SOURCES.get(alert["source"], alert["source"]))} · <span{_opened(alert)}>{_esc(when)}</span></div>'
             f'</div>{link}</li>')
 
 
@@ -101,9 +101,23 @@ def _section(title, rows, now, kind, empty):
         f"<ul>{items}</ul>" if rows else f'<p class="empty">{_esc(empty)}</p>')
 
 
+def _opened(alert):
+    """A tooltip with when the alert opened, in the display: settings."""
+
+    from lanxang.clock import parse, stamp
+    from lanxang.web import render
+
+    moment = parse(alert["opened_at"]) if alert.get("opened_at") else None
+    return f' title="Opened {_esc(stamp(moment, render.DISPLAY))}"' if moment else ""
+
+
 def _clock(moment, now):
 
-    return moment.strftime("%H:%M UTC") if moment.date() == now.date() else moment.strftime("%b %d %H:%M UTC")
+    from lanxang.clock import local, stamp
+    from lanxang.web import render
+
+    shown = render.DISPLAY
+    return stamp(moment, shown, date=local(moment, shown)[0].date() != local(now, shown)[0].date())
 
 
 def _quiet_hours(notify, now):

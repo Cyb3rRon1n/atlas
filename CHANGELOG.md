@@ -9,10 +9,13 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 - A header bar at the top right of every page: a theme button that cycles Light, Dark and System (follows the device), and a gear that opens Preferences. On phones both sit in the top bar.
 - Preferences, a side panel that applies each change at once and remembers it in this browser: theme, reduced motion (System / On / Off), high contrast, text size (S / M / L), density (Comfortable / Compact), start page (Home, Devices, Alerts, Network map, Servers or Security) and a collapsed, icons-only sidebar.
 - The sidebar has a collapse button and line icons for each section; it stays in view while the page scrolls.
+- Preferences > Time & date, saved on the server for everyone: a 24-hour or 12-hour clock, the time zone (this browser, UTC or any IANA zone such as America/New_York) and the date format (2026-11-19, 19/11/2026 or 11/19/2026). It applies at once to every page and to alert messages, the test alert and the weekly summary; with "this browser", messages use UTC and say so. Also `display:` in the config file.
+- The weekly summary says which week it covers and when it was sent; the test alert says when it was sent.
 
 ### Changed
 - The sidebar's "Dark mode" button moved to the header bar; Sign out stays in the sidebar. A saved light or dark choice keeps working.
 - Page text sizes are now relative to the browser's text size, so text size and browser zoom scale every page evenly.
+- Times older than a week show the date ("2026-10-28") instead of "28 Oct", and Activity's day headings read "Wed 2026-10-28"; device "last seen" times in alerts now name their zone. Uptime's outage list and Visitors' times use the same friendly times as the rest of the UI.
 
 ## 1.1.0 - 2026-11-19
 

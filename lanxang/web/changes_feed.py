@@ -99,7 +99,15 @@ def render(items, now, window):
     more = f'<p class="muted">and {len(lines) - 60} more</p>' if len(lines) > 60 else ""
     return (STYLE + f'<section class="changes"><div class="changes-head"><h2>What changed</h2>{switch}</div>'
             + (f"<ul>{rows}</ul>{more}" if rows else '<p class="muted">Nothing changed — all quiet.</p>')
-            + "<p class=\"muted\">Times are in your local time. Everything Lanxang recorded is below.</p></section>")
+            + f'<p class="muted">Times are {_esc(_zone())}. Everything Lanxang recorded is below.</p></section>')
+
+
+def _zone():
+
+    from lanxang.web import render
+
+    zone = render.DISPLAY.time_zone if render.DISPLAY else "browser"
+    return "in your local time" if zone == "browser" else f"in {zone}"
 
 
 STYLE = """<style>

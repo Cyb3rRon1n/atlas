@@ -7,6 +7,14 @@ send leaves the items queued for the next run.
 import json
 import urllib.request
 
+from lanxang.clock import parse, stamp
+
+
+def _seen(value, display):
+
+    moment = parse(value) if value else None
+    return stamp(moment, display) if moment else value or "never"
+
 
 def _line(item):
 
@@ -24,14 +32,14 @@ def _named(names, ids):
     return [names.get(device_id, "?") for device_id in ids]
 
 
-def format_message(kind, items):
+def format_message(kind, items, display=None):
 
     if kind == "offline":
         if len(items) == 1 and items[0].get("behind"):
             lines = [f"**🔴 {items[0]['device']} is offline - everything behind it is unreachable**"]
         else:
             lines = ["**🔴 Important device offline**" if len(items) == 1 else f"**🔴 {len(items)} important devices offline**"]
-        lines += [_line(item) + (f" - last seen {item['last_seen'][:16].replace('T', ' ')}" if item.get("last_seen") else "")
+        lines += [_line(item) + (f" - last seen {_seen(item['last_seen'], display)}" if item.get("last_seen") else "")
                   for item in items]
         return "\n".join(lines)
 
@@ -57,7 +65,7 @@ def send_signal(config, text):
         return False, str(error)
 
 
-def report_alerts(store, devices, now, snaps=None):
+def report_alerts(store, devices, now, snaps=None, display=None):
     """The Alerts page's view of the inventory: important devices offline (folded under the switch, AP or
     gateway they sit behind when that is offline too), devices waiting for a name."""
 
@@ -70,7 +78,7 @@ def report_alerts(store, devices, now, snaps=None):
     folded = {device_id for behind in groups.values() for device_id in behind} | set(groups)
 
     def last_seen(device):
-        return (f"last seen {(device['last_seen'] or 'never')[:16].replace('T', ' ')}"
+        return (f"last seen {_seen(device['last_seen'], display)}"
                 + (f" ({device['ip']})" if device.get("ip") else ""))
 
     found = [issue("offline", device["id"], f"{device['name']} is offline", last_seen(device),
@@ -121,8 +129,8 @@ def _fold(items, store, snaps):
     return out
 
 
-def deliver(store, config, now=None, snaps=None):
-    """config is the whole notify: section (NotifyConfig)."""
+def deliver(store, config, now=None, snaps=None, display=None):
+    """config is the whole notify: section (NotifyConfig); display: how times read (DisplayConfig)."""
 
     from lanxang import notify
 
@@ -144,7 +152,7 @@ def deliver(store, config, now=None, snaps=None):
             if not rows:
                 continue
 
-        ok, error = notify.send(config, format_message(kind, [row[0] for row in rows]))
+        ok, error = notify.send(config, format_message(kind, [row[0] for row in rows], display))
 
         if ok:
             store.mark_sent([note for row in rows for note in row[1]], now)

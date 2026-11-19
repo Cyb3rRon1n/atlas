@@ -62,6 +62,7 @@ def chat_flag_reset(monkeypatch):
 
     from lanxang.web import render
     monkeypatch.setattr(render, "AI_ON", True)
+    monkeypatch.setattr(render, "DISPLAY", None)
 
 
 @pytest.fixture(autouse=True)

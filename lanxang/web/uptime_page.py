@@ -10,7 +10,7 @@ import re
 from lanxang.config.local import config_name
 from lanxang.config import local
 from lanxang.web.cabling_page import _ago
-from lanxang.web.render import _esc, plural, render_page
+from lanxang.web.render import _esc, plural, render_page, when
 
 STYLE = """<style>
 .up-intro { color:var(--muted); max-width:70ch; }
@@ -171,7 +171,7 @@ def _internet(data, now, fail_after):
                     + "".join(f'<td class="num">{_pct(info["uptime"].get(w))}</td>' for w in ("24 h", "7 days", "30 days"))
                     + "</tr>")
     outages = "".join(
-        f'<li><b>{_esc(start.strftime("%d %b %H:%M"))}</b> — '
+        f'<li><b>{when(start)}</b> — '
         + (f'{_minutes(end - start)}' if end else "still down")
         + f' · {"internet provider (your router answered)" if router_ok else "router or local network"}</li>'
         for start, end, router_ok in data["outages"][:20])

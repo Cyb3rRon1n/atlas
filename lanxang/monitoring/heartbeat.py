@@ -20,6 +20,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from lanxang.alerts import Text
+from lanxang.clock import parse, stamp
 
 KEY_FILE = Path("inventory/heartbeat.key")
 
@@ -89,10 +90,10 @@ def run(settings, store, now, send=None):
                 texts.append(Text(f"**⏰ {hb.name} hasn't checked in**\n• {detail}\n• the job may not have run, "
                                   "or failed before it could ping", f"heartbeat:{hb.name}"))
         elif current == "failed":
-            found.append(issue("failed", hb.name, f"{hb.name} reported a failure", f"at {last['at'][11:16]} UTC",
+            found.append(issue("failed", hb.name, f"{hb.name} reported a failure", f"at {stamp(parse(last['at']), settings.display, date=False)}",
                                href="/uptime"))
             if was != "failed":
-                texts.append(Text(f"**❌ {hb.name} reported a failure**\n• at {last['at'][11:16]} UTC - check its "
+                texts.append(Text(f"**❌ {hb.name} reported a failure**\n• at {stamp(parse(last['at']), settings.display, date=False)} - check its "
                                   "log", f"heartbeat:{hb.name}"))
         elif current == "ok" and was in ("late", "failed"):
             texts.append(Text(f"**✅ {hb.name} checked in again**", f"heartbeat:{hb.name}"))

@@ -112,7 +112,11 @@ def build(settings, now, sources):
         charge = f", {ups['charge']:.0f}% charged" if ups.get("charge") is not None else ""
         lines.append(f"🔋 UPS {name}: {ups.get('state', '?')}{charge}")
 
-    return "**📋 Lanxang: your week**\n" + "\n".join(f"• {line}" for line in lines or ["nothing to report yet"])
+    from lanxang.clock import day, local, stamp
+
+    span = (f"{day(local(week, settings.display)[0], settings.display)} to "
+            f"{day(local(now, settings.display)[0], settings.display)}, sent {stamp(now, settings.display, date=False)}")
+    return f"**📋 Lanxang: your week**\n{span}\n" + "\n".join(f"• {line}" for line in lines or ["nothing to report yet"])
 
 
 def _sources():

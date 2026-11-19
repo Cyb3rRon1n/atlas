@@ -267,7 +267,7 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
     body = (STYLE
             + '<p class="up-intro">Is each service answering? Lanxang tries every check once a minute. A web address '
               'is up when it answers at all (a login page counts); <code>host:port</code> is up when the port accepts '
-              f'a connection. After {plural(fail_after, 'failure')} in a row it is <strong>down</strong>: you get one alert, and '
+              f'a connection. After {plural(fail_after, "failure")} in a row it is <strong>down</strong>: you get one alert, and '
               'another when it is back.</p>'
             + _internet(internet, now, fail_after) + _power(power)
             + ("<h2>Services</h2>" if power or internet else "") + table + add

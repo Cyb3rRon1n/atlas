@@ -151,7 +151,7 @@ def _tree(graph):
     roots = [n for n in nodes if n == "internet"] or [n for n in nodes if not nodes[n].get("parent")][:1]
     body = "".join(item(r) for r in roots)
     hidden = (graph or {}).get("hidden_wireless") or 0
-    note = f'<p class="why">{plural(hidden, 'wireless device')} hidden — see <a href="/devices">Devices</a>.</p>' if hidden else ""
+    note = f'<p class="why">{plural(hidden, "wireless device")} hidden — see <a href="/devices">Devices</a>.</p>' if hidden else ""
 
     return f'<div class="tree"><ul>{body}</ul></div>{note}' if body else '<p class="muted">No devices yet.</p>'
 
@@ -174,7 +174,7 @@ def render_network_page(topology, routes, graph):
     total = sum(len(v) for v in lanes.values())
     machines = (
         f'<div class="machine"><h3><span class="dot ok"></span>{_esc(topology.get("host", "this host"))}</h3>'
-        f'<p class="why">{plural(total, 'container')}, {total - down} healthy — grouped above</p></div>'
+        f'<p class="why">{plural(total, "container")}, {total - down} healthy — grouped above</p></div>'
         + ('<div class="machine"><h3>Proxmox guests</h3><ul>' + "".join(
             f'<li><span class="dot {"ok" if g["status"] == "running" else "down"}"></span>{_esc(g["name"])}'
             f' <span class="kind">{_esc(g.get("type", ""))}</span></li>' for g in guests) + "</ul></div>" if guests else "")

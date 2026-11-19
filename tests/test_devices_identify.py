@@ -108,3 +108,4 @@ def test_one_friendly_time_everywhere():
     assert ">11:30 UTC</time>" in when(datetime(2026, 11, 17, 11, 30), now, clock=True)
     assert ">Yesterday</time>" in when(datetime(2026, 11, 16, 23), now, clock="day") and friendly_time(now - timedelta(days=3), now, "day") == "Sat 14 Nov"
     assert when(None, never="never") == "never" and "time[data-when]" in TIME_SCRIPT
+    assert ">2 h ago</time>" in when("2026-11-17T12:00:00+02:00", now) and ">2 h ago</time>" in when("2026-11-17T10:00:00Z", now)

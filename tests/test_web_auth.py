@@ -230,3 +230,4 @@ def test_sign_in_and_setup_pages_carry_the_brand():
     from lanxang.web.login_page import render_login_page, render_setup_page
     for page in (render_login_page(), render_setup_page()):
         assert 'class="brand"' in page and "Lanxang<small" in page and "ລ້ານຊ້າງ" in page and page.count("<svg") == 2
+        assert '<svg width="44" height="44" aria-hidden="true"' in page                  # the text names it

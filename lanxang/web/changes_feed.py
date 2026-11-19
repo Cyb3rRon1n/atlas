@@ -8,7 +8,7 @@ import json
 from datetime import timedelta
 
 from lanxang.web.icons import icon
-from lanxang.web.render import _esc, when
+from lanxang.web.render import _esc, event_label, when
 
 WINDOWS = {"24h": timedelta(hours=24), "7d": timedelta(days=7)}
 CHANGE_EVENTS = ("atlas.proxmox.changes_detected", "atlas.monitoring.changes_detected")
@@ -57,7 +57,7 @@ def collect(now, window, sources):
             try:
                 text = (proxmox_change if proxmox else container_change)(change)
             except Exception:                            # one odd row (a bare string, a missing key) never blanks
-                text = change if isinstance(change, str) else None    # the page: say it as-is, or leave it out
+                text = change if isinstance(change, str) else event_label(event_type)    # the page
             if text:
                 found.append((at, "server" if proxmox else "box", text.lstrip("!✓?+-~ ").strip(), "/overview"))
 

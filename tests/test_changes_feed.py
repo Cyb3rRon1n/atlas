@@ -71,4 +71,5 @@ def test_one_malformed_change_row_never_blanks_the_feed():
         (NOW - timedelta(hours=3), "atlas.monitoring.changes_detected", {"changes": "nope"})]}
     texts = [text for _, _, text, _ in changes_feed.collect(NOW, "24h", sources)]
     assert "test-vm stopped" in texts and "Guest 'ok-vm' (7) removed" in texts and "Printer is offline" in texts
+    assert "proxmox changes detected" in texts                  # the row that wouldn't format says what it was
     assert changes_feed.render(changes_feed.collect(NOW, "24h", sources), NOW, "24h").count("<li>") >= 6

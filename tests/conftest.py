@@ -15,7 +15,7 @@ from lanxang.database.models import Base
 def isolated_cwd(tmp_path, monkeypatch):
     """
     Run a test from an empty temp directory so it never reads the
-    developer's real atlas.yaml or writes into the real repo.
+    developer's real lanxang.yaml or writes into the real repo.
     """
 
     monkeypatch.chdir(tmp_path)

@@ -28,9 +28,8 @@ Needs Docker with the Compose plugin. The installer asks for a folder, port, who
 the admin password. Re-run it to upgrade; `bash install.sh --uninstall` removes it (and asks before
 deleting data). Prefer to read it first: download it with `curl -fsSLO`, read it, then `bash install.sh`.
 
-Installing by hand with `docker compose` instead? The compose file reads the config file named by `LANXANG_CONFIG` in `.env`,
-and until 1.2 it defaults to `atlas.yaml`. So when you create a new `lanxang.yaml`, add `LANXANG_CONFIG=lanxang.yaml` to `.env`
-(or keep calling the file `atlas.yaml`). The installer does this for you.
+Installing by hand with `docker compose` instead? Copy `lanxang.yaml.example` to `lanxang.yaml` next to
+`docker-compose.yml`, edit it, then `docker compose up -d`.
 
 ### From source
 
@@ -67,14 +66,17 @@ lanxang analyze    # sends the latest snapshot to an AI provider for a summary +
 
 ## Upgrading from atlas
 
-Lanxang was called Atlas before 1.0. Nothing is required of you: an existing install keeps working with the old names until 1.2.
+Lanxang was called Atlas before 1.0. Since 1.3 only the new names are read. The easiest way to move over is to
+run the installer again: it renames `atlas.yaml` to `lanxang.yaml` and the `ATLAS_*` entries in `.env` to
+`LANXANG_*` (keeping the old file as `.env.before-1.3`), then pulls and restarts.
 
-- The `atlas` command still runs (it prints a notice and does the same thing as `lanxang`).
-- An existing `atlas.yaml` is still read when there is no `lanxang.yaml`, and `ATLAS_*` settings in `.env` still work next to the new `LANXANG_*` ones.
-- The container image `ghcr.io/cyb3rron1n/atlas` is still published next to `ghcr.io/cyb3rron1n/lanxang`.
-- The compose services keep the names `atlas` and `atlas-scan`, so your containers and data volumes carry over.
+By hand: rename `atlas.yaml` to `lanxang.yaml`; rename every `ATLAS_*` entry in `.env` to `LANXANG_*`; use
+`lanxang` instead of `atlas` in scripts; pull `ghcr.io/cyb3rron1n/lanxang` (the old image name is no longer
+published); then `docker compose pull && docker compose up -d`. Until you do, Lanxang logs a warning naming
+what it no longer reads.
 
-To move to the new names whenever you like: rename `atlas.yaml` to `lanxang.yaml` and set `LANXANG_CONFIG=lanxang.yaml` in `.env`; rename any `ATLAS_*` entries in `.env` to `LANXANG_*`; use `lanxang` instead of `atlas` in scripts; then `docker compose pull && docker compose up -d`.
+Unchanged: the compose services keep the names `atlas` and `atlas-scan`, and your data, sign-in and history carry
+over as they are.
 
 ## Next steps
 

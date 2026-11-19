@@ -125,7 +125,7 @@ Everything it learns stays in one SQLite file in a Docker volume on your machine
 
 ## Upgrade and uninstall
 
-Run the installer again to upgrade: it keeps your `.env`, your config file (`lanxang.yaml`, or `atlas.yaml` from an earlier install) and data. Coming from Atlas? The old command, config file, `ATLAS_*` settings and image keep working until 1.2; see [Upgrading from atlas](https://cyb3rron1n.github.io/lanxang/getting-started/#upgrading-from-atlas). To remove Lanxang, run `bash install.sh --uninstall`; it asks before deleting your data.
+Run the installer again to upgrade: it keeps your `.env`, `lanxang.yaml` and data. Coming from Atlas? Re-running the installer moves your `atlas.yaml` and `ATLAS_*` settings to the new names; see [Upgrading from atlas](https://cyb3rron1n.github.io/lanxang/getting-started/#upgrading-from-atlas). To remove Lanxang, run `bash install.sh --uninstall`; it asks before deleting your data.
 
 ## Learn more
 

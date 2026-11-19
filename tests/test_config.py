@@ -14,7 +14,7 @@ def test_load_config_defaults_when_no_file(isolated_cwd):
 
 def test_load_config_reads_atlas_yaml(isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "name: homelab\n"
         "discovery:\n"
         "  hardware: false\n"

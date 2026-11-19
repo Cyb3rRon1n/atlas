@@ -24,11 +24,11 @@ def test_windows_by_day_over_midnight_and_time_zone():
 
 
 def test_messages_are_held_in_quiet_hours(isolated_cwd):
-    (isolated_cwd / "atlas.yaml").write_text("notify:\n  quiet_hours:\n    - {start: '23:00', end: '07:00'}\n")
+    (isolated_cwd / "lanxang.yaml").write_text("notify:\n  quiet_hours:\n    - {start: '23:00', end: '07:00'}\n")
     text = Text("**x**", "uptime:down:x")
     assert not allowed(None, text, datetime(2026, 11, 17, 2, 0))
     assert allowed(None, text, datetime(2026, 11, 17, 12, 0))
-    (isolated_cwd / "atlas.yaml").write_text("notify:\n  quiet_hours:\n    - {start: 'bad', end: '07:00'}\n")
+    (isolated_cwd / "lanxang.yaml").write_text("notify:\n  quiet_hours:\n    - {start: 'bad', end: '07:00'}\n")
     assert allowed(None, text, datetime(2026, 11, 17, 2, 0))                         # a bad schedule fails open
 
 

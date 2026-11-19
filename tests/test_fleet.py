@@ -40,7 +40,7 @@ def test_run_remote_doctor_uses_batch_mode_and_connect_timeout():
     assert "-o" in args and "BatchMode=yes" in args
     assert "ConnectTimeout=5" in args
     assert "atlas@10.0.0.5" in args
-    assert args[-3:] == ["atlas", "doctor", "--json"]
+    assert args[-3:] == ["lanxang", "doctor", "--json"]
 
 
 def test_run_remote_doctor_includes_identity_file_when_set():

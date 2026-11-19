@@ -23,7 +23,7 @@ def test_expand_env_braced_only_with_defaults():
 def test_load_config_expands_environment(isolated_cwd, monkeypatch):
 
     monkeypatch.setenv("LANXANG_TEST_KEY", "k123")
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "jellyfin:\n  enabled: true\n  api_key: ${LANXANG_TEST_KEY}\nintelligence:\n  ollama_host: ${NOPE:-http://gpu:11434}\n")
 
     config = loader.load_config()
@@ -35,7 +35,7 @@ def test_load_config_expands_environment(isolated_cwd, monkeypatch):
 def test_unset_variable_unquoted_becomes_empty_string_not_null(isolated_cwd, monkeypatch):
 
     monkeypatch.delenv("LANXANG_UNSET_KEY", raising=False)
-    (isolated_cwd / "atlas.yaml").write_text("jellyfin:\n  api_key: ${LANXANG_UNSET_KEY}\nmap:\n  hosts:\n    - name: ${LANXANG_UNSET_KEY:-nas}\n      address: 10.0.0.2\n")
+    (isolated_cwd / "lanxang.yaml").write_text("jellyfin:\n  api_key: ${LANXANG_UNSET_KEY}\nmap:\n  hosts:\n    - name: ${LANXANG_UNSET_KEY:-nas}\n      address: 10.0.0.2\n")
 
     config = loader.load_config()
 
@@ -45,7 +45,7 @@ def test_unset_variable_unquoted_becomes_empty_string_not_null(isolated_cwd, mon
 
 def test_empty_config_file_is_defaults(isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text("")
+    (isolated_cwd / "lanxang.yaml").write_text("")
 
     assert loader.load_config().name == "atlas-node"
 

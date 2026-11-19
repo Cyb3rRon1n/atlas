@@ -14,7 +14,7 @@
 # Settings (environment): LANXANG_DIR (~/lanxang, or ~/atlas if that is already installed), LANXANG_PORT
 # (8420), LANXANG_BIND (127.0.0.1 = this machine, 0.0.0.0 = whole LAN), LANXANG_AI (none|ollama|anthropic),
 # LANXANG_OLLAMA_URL, ANTHROPIC_API_KEY, LANXANG_REF (release tag or branch to install), LANXANG_TAG (image
-# tag, normally derived from LANXANG_REF). The ATLAS_* names still work.
+# tag, normally derived from LANXANG_REF).
 
 set -euo pipefail
 
@@ -23,12 +23,12 @@ set -euo pipefail
 main() {
 
 REPO="Cyb3rRon1n/lanxang"
-DIR="${LANXANG_DIR:-${ATLAS_DIR:-}}"
+DIR="${LANXANG_DIR:-}"
 if [ -z "$DIR" ]; then
     DIR="$HOME/lanxang"
     [ -f "$HOME/atlas/docker-compose.yml" ] && DIR="$HOME/atlas"   # upgrade an old install in place
 fi
-SOURCE="${LANXANG_SOURCE:-${ATLAS_SOURCE:-}}"
+SOURCE="${LANXANG_SOURCE:-}"
 YES=0
 UNINSTALL=0
 
@@ -88,8 +88,8 @@ fetch() {   # fetch <path in repo> <destination>
     fi
 }
 
-if [ -n "${LANXANG_REF:-${ATLAS_REF:-}}" ]; then
-    REF="${LANXANG_REF:-$ATLAS_REF}"
+if [ -n "${LANXANG_REF:-}" ]; then
+    REF="$LANXANG_REF"
 elif [ -n "$SOURCE" ]; then
     REF="main"
 else
@@ -99,7 +99,7 @@ else
 fi
 # image tags drop the v (v0.5.0 -> 0.5.0); a branch install runs :latest
 case "$REF" in v[0-9]*) TAG="${REF#v}" ;; *) TAG="latest" ;; esac
-TAG="${LANXANG_TAG:-${ATLAS_TAG:-$TAG}}"
+TAG="${LANXANG_TAG:-$TAG}"
 
 mkdir -p "$DIR"
 UPGRADE=0
@@ -121,23 +121,44 @@ set_env() {   # set_env KEY VALUE - replace or append one line in .env
 
 if [ "$UPGRADE" = 1 ]; then
     say "Upgrade: keeping your .env and config file"
+    # since 1.3 only the Lanxang names are read: move an older install's atlas.yaml and ATLAS_* settings over
+    # docker creates an empty folder when a mounted file is missing (a compose up before this rename)
+    if [ -d "$DIR/lanxang.yaml" ]; then
+        rmdir "$DIR/lanxang.yaml" 2>/dev/null \
+            || die "$DIR/lanxang.yaml is a folder, not a file - move what is in it, remove it, then run this again"
+    fi
+    if [ -f "$DIR/atlas.yaml" ] && [ ! -e "$DIR/lanxang.yaml" ]; then
+        mv "$DIR/atlas.yaml" "$DIR/lanxang.yaml"
+        say "Renamed atlas.yaml to lanxang.yaml"
+    fi
+    if grep -q '[$]{ATLAS_' "$DIR/lanxang.yaml" 2>/dev/null; then
+        cp -p "$DIR/lanxang.yaml" "$DIR/lanxang.yaml.before-1.3"
+        sed 's/[$]{ATLAS_/${LANXANG_/g' "$DIR/lanxang.yaml.before-1.3" > "$DIR/lanxang.yaml"
+        say "Renamed the \${ATLAS_...} references in lanxang.yaml (the old file is lanxang.yaml.before-1.3)"
+    fi
+    if [ -f "$DIR/.env" ] && grep -q '^ATLAS_\|^LANXANG_CONFIG=' "$DIR/.env"; then
+        cp -p "$DIR/.env" "$DIR/.env.before-1.3"
+        # ATLAS_X becomes LANXANG_X unless LANXANG_X is already set (that one always won); LANXANG_CONFIG is unused now
+        awk -F= 'NR == FNR { if ($1 ~ /^LANXANG_/) have[$1] = 1; next }
+                 /^LANXANG_CONFIG=/ { next }
+                 /^ATLAS_/ { k = "LANXANG_" substr($1, 7); if (k in have) next; sub(/^ATLAS_/, "LANXANG_") }
+                 { print }' "$DIR/.env.before-1.3" "$DIR/.env.before-1.3" > "$DIR/.env"
+        say "Renamed the ATLAS_ settings in .env to LANXANG_ (the old file is .env.before-1.3)"
+    fi
     set_env LANXANG_TAG "$TAG"
-    # the compose file mounts whichever file this names; an install that only has atlas.yaml keeps it
-    if [ -f "$DIR/lanxang.yaml" ]; then set_env LANXANG_CONFIG lanxang.yaml; else set_env LANXANG_CONFIG atlas.yaml; fi
 else
-    port=$(ask "Port for the web page" "${LANXANG_PORT:-${ATLAS_PORT:-8420}}")
+    port=$(ask "Port for the web page" "${LANXANG_PORT:-8420}")
     case "$port" in ''|*[!0-9]*) die "port must be a number" ;; esac
     access=$(ask "Who can open it? 1 = this machine only, 2 = anyone on your LAN (password protected)" \
-                 "$([ "${LANXANG_BIND:-${ATLAS_BIND:-127.0.0.1}}" = 0.0.0.0 ] && echo 2 || echo 1)")
+                 "$([ "${LANXANG_BIND:-127.0.0.1}" = 0.0.0.0 ] && echo 2 || echo 1)")
     bind=127.0.0.1
     [ "$access" = 2 ] && bind=0.0.0.0
-    ai=$(ask "AI assistant: none, ollama (your own server) or anthropic (API key)" "${LANXANG_AI:-${ATLAS_AI:-none}}")
+    ai=$(ask "AI assistant: none, ollama (your own server) or anthropic (API key)" "${LANXANG_AI:-none}")
 
     : > "$DIR/.env"   # set_env keeps it chmod 600; lanxang.yaml holds no secrets and must stay readable by the container
     set_env LANXANG_TAG "$TAG"
     set_env LANXANG_PORT "$port"
     set_env LANXANG_BIND "$bind"
-    set_env LANXANG_CONFIG lanxang.yaml
 
     provider=none model="" ollama=http://localhost:11434
     case "$ai" in
@@ -146,7 +167,7 @@ else
             # Lanxang runs in a container, so "localhost" would be the container itself
             lan_ip=$(hostname -I 2>/dev/null | awk '{print $1}')
             ollama=$(ask "Ollama URL (as seen from Docker, not localhost)" \
-                         "${LANXANG_OLLAMA_URL:-${ATLAS_OLLAMA_URL:-http://${lan_ip:-192.168.1.10}:11434}}") ;;
+                         "${LANXANG_OLLAMA_URL:-http://${lan_ip:-192.168.1.10}:11434}") ;;
         anthropic)
             provider=anthropic model=claude-opus-5
             key="${ANTHROPIC_API_KEY:-}"
@@ -159,7 +180,7 @@ else
         *) die "AI must be none, ollama or anthropic" ;;
     esac
 
-    if [ ! -f "$DIR/lanxang.yaml" ] && [ ! -f "$DIR/atlas.yaml" ]; then
+    if [ ! -f "$DIR/lanxang.yaml" ]; then
         cat > "$DIR/lanxang.yaml" <<EOF
 # Written by install.sh - lanxang.yaml.example shows every option. Alerts, the AI model and
 # more can also be set on the web page's Setup tab; anything set here wins over it.
@@ -176,11 +197,8 @@ EOF
     fi
 fi
 
-envval() {   # envval PORT - the LANXANG_ value from .env, else the old ATLAS_ one
-    local v
-    v=$(sed -n "s/^LANXANG_$1=//p" "$DIR/.env" | head -n1)
-    [ -n "$v" ] || v=$(sed -n "s/^ATLAS_$1=//p" "$DIR/.env" | head -n1)
-    printf '%s\n' "$v"
+envval() {   # envval PORT - the LANXANG_ value from .env
+    sed -n "s/^LANXANG_$1=//p" "$DIR/.env" | head -n1
 }
 
 # --- start ------------------------------------------------------------------
@@ -198,7 +216,7 @@ done
 curl -fsS "http://127.0.0.1:$port/healthz" >/dev/null 2>&1 \
     || die "Lanxang didn't come up - see: cd $DIR && docker compose logs atlas"
 
-if grep -q 'auth: *proxy' "$DIR"/lanxang.yaml "$DIR"/atlas.yaml 2>/dev/null; then
+if grep -q 'auth: *proxy' "$DIR/lanxang.yaml" 2>/dev/null; then
     :
 elif compose exec -T atlas lanxang auth setup-code 2>/dev/null | grep -q 'already set'; then
     :
@@ -207,8 +225,6 @@ elif [ "$YES" = 0 ] && { : </dev/tty; } 2>/dev/null; then
     compose exec atlas lanxang auth password </dev/tty || say "Skipped - the page will ask for it with a setup code."
 fi
 
-config=lanxang.yaml
-[ -f "$DIR/lanxang.yaml" ] || config=atlas.yaml
 code=$(compose exec -T atlas lanxang auth setup-code 2>/dev/null | tail -n1 || true)
 
 echo
@@ -222,7 +238,7 @@ case "$code" in
     *already*|"") ;;
     *) echo "    First visit asks for this setup code: $code" ;;
 esac
-echo "    Settings: $DIR/$config (then: cd $DIR && docker compose up -d)"
+echo "    Settings: $DIR/lanxang.yaml (then: cd $DIR && docker compose up -d)"
 echo "    Upgrade: run this installer again. Remove: bash install.sh --uninstall"
 }
 

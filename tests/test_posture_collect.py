@@ -184,7 +184,7 @@ def test_watch_logs_an_error_once_per_change(isolated_cwd, monkeypatch):
     from typer.testing import CliRunner
     from lanxang.cli.main import app
 
-    (isolated_cwd / "atlas.yaml").write_text("posture:\n  enabled: true\n")
+    (isolated_cwd / "lanxang.yaml").write_text("posture:\n  enabled: true\n")
     errors = iter(["database is locked", "database is locked", "disk full", None, "disk full", "disk full"])
 
     class Stub:

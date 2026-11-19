@@ -149,19 +149,19 @@ def test_init_reprompts_on_invalid_provider(isolated_cwd):
 
 def test_init_declines_overwrite_of_existing_config(isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text("name: untouched\n")
+    (isolated_cwd / "lanxang.yaml").write_text("name: untouched\n")
 
     result = runner.invoke(app, ["init"], input="n\n")
 
     assert result.exit_code == 0
     assert "Cancelled." in result.output
-    assert (isolated_cwd / "atlas.yaml").read_text() == "name: untouched\n"
+    assert (isolated_cwd / "lanxang.yaml").read_text() == "name: untouched\n"
     assert not (isolated_cwd / "logs").exists()
 
 
 def test_init_confirms_overwrite_of_existing_config(isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text("name: untouched\n")
+    (isolated_cwd / "lanxang.yaml").write_text("name: untouched\n")
 
     result = runner.invoke(
         app,
@@ -171,7 +171,7 @@ def test_init_confirms_overwrite_of_existing_config(isolated_cwd):
 
     assert result.exit_code == 0
 
-    written = (isolated_cwd / "atlas.yaml").read_text()
+    written = (isolated_cwd / "lanxang.yaml").read_text()
 
     assert "name: replaced" in written
 
@@ -180,7 +180,7 @@ def test_init_declining_review_writes_nothing(isolated_cwd):
     """
     The review screen is the safety net for input that looked garbled
     while typing (e.g. a terminal that doesn't render backspace
-    cleanly) - declining it must leave no atlas.yaml and no log,
+    cleanly) - declining it must leave no lanxang.yaml and no log,
     same as declining anything else.
     """
 
@@ -1396,7 +1396,7 @@ def test_proxmox_scan_first_run_prints_no_changes_section(isolated_cwd, temp_db)
     than claiming "no changes" (which implies a comparison happened).
     """
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
         patch("lanxang.cli.virt.connect", return_value=MagicMock()),
@@ -1425,7 +1425,7 @@ def test_proxmox_scan_first_run_prints_no_changes_section(isolated_cwd, temp_db)
 
 def test_proxmox_scan_second_run_reports_changes(isolated_cwd, temp_db):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     first_guests = [
         {
@@ -1481,7 +1481,7 @@ def test_proxmox_scan_ignores_other_commands_saving_an_empty_virtualization(isol
     from lanxang.core.application import application
     from lanxang.knowledge.store import KnowledgeStore
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
     guests = [{"vmid": 100, "name": "plex", "node": "pve1", "type": "qemu", "status": "running", "cpu": 0.1,
                "maxcpu": 4, "mem": 100, "maxmem": 1000, "disk": 0, "maxdisk": 0, "uptime": 10}]
 
@@ -1509,7 +1509,7 @@ def test_proxmox_restart_when_disabled_does_not_attempt_connection(isolated_cwd)
 
 def test_proxmox_restart_guest_not_found(isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
         patch("lanxang.cli.virt.connect", return_value=MagicMock()),
@@ -1531,7 +1531,7 @@ PROXMOX_GUEST = {
 
 def test_proxmox_restart_declined_does_not_restart_guest(isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
         patch("lanxang.cli.virt.connect", return_value=MagicMock()),
@@ -1555,7 +1555,7 @@ def test_proxmox_restart_confirmed_restarts_guest_and_logs_event(
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
         patch("lanxang.cli.virt.connect", return_value=MagicMock()),
@@ -1592,7 +1592,7 @@ def test_proxmox_stop_when_disabled_does_not_attempt_connection(isolated_cwd):
 
 def test_proxmox_stop_declined_does_not_stop_guest(isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
         patch("lanxang.cli.virt.connect", return_value=MagicMock()),
@@ -1616,7 +1616,7 @@ def test_proxmox_stop_confirmed_stops_guest_and_logs_event(
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
         patch("lanxang.cli.virt.connect", return_value=MagicMock()),
@@ -1646,7 +1646,7 @@ def test_proxmox_stop_confirmed_stops_guest_and_logs_event(
 
 def test_proxmox_resize_requires_cpus_or_memory(isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     result = runner.invoke(app, ["proxmox", "resize", "100"])
 
@@ -1656,7 +1656,7 @@ def test_proxmox_resize_requires_cpus_or_memory(isolated_cwd):
 
 def test_proxmox_resize_prints_hotplug_caveat_for_qemu_guest(isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
         patch("lanxang.cli.virt.connect", return_value=MagicMock()),
@@ -1678,7 +1678,7 @@ def test_proxmox_resize_prints_hotplug_caveat_for_qemu_guest(isolated_cwd):
 
 def test_proxmox_resize_omits_hotplug_caveat_for_lxc_guest(isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     lxc_guest = {**PROXMOX_GUEST, "type": "lxc"}
 
@@ -1704,7 +1704,7 @@ def test_proxmox_resize_confirmed_resizes_guest_and_logs_event(
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
+    (isolated_cwd / "lanxang.yaml").write_text(PROXMOX_ENABLED_ATLAS_YAML)
 
     with (
         patch("lanxang.cli.virt.connect", return_value=MagicMock()),
@@ -1757,7 +1757,7 @@ def test_monitor_json_when_disabled(isolated_cwd):
 
 def test_monitor_json_when_unreachable_exits_one(isolated_cwd, temp_db):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "monitoring:\n"
         "  enabled: true\n"
         "  prometheus_url: http://localhost:9090\n"
@@ -1778,7 +1778,7 @@ def test_monitor_json_when_unreachable_exits_one(isolated_cwd, temp_db):
 
 def test_monitor_json_reports_healthy_and_exits_zero(isolated_cwd, temp_db):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "monitoring:\n"
         "  enabled: true\n"
         "  prometheus_url: http://localhost:9090\n"
@@ -1814,7 +1814,7 @@ def test_monitor_json_reports_healthy_and_exits_zero(isolated_cwd, temp_db):
 
 def test_monitor_json_reports_unhealthy_and_exits_one(isolated_cwd, temp_db):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "monitoring:\n"
         "  enabled: true\n"
         "  prometheus_url: http://localhost:9090\n"
@@ -1848,7 +1848,7 @@ def test_monitor_when_enabled_saves_metrics_to_environment(
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "monitoring:\n"
         "  enabled: true\n"
         "  prometheus_url: http://localhost:9090\n"
@@ -1882,7 +1882,7 @@ def test_monitor_flags_metric_over_threshold_and_publishes_event(
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "monitoring:\n"
         "  enabled: true\n"
         "  prometheus_url: http://localhost:9090\n"
@@ -1918,7 +1918,7 @@ def test_monitor_does_not_publish_threshold_event_when_nothing_exceeds(
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "monitoring:\n"
         "  enabled: true\n"
         "  prometheus_url: http://localhost:9090\n"
@@ -1961,7 +1961,7 @@ def test_monitor_flags_container_over_its_own_allocation_threshold(
     that gap - this confirms the flag actually fires.
     """
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "monitoring:\n"
         "  enabled: true\n"
         "  prometheus_url: http://localhost:9090\n"
@@ -2006,7 +2006,7 @@ def test_monitor_flags_container_over_its_own_allocation_threshold(
 
 def test_monitor_saves_container_metrics_to_environment(isolated_cwd, temp_db):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "monitoring:\n"
         "  enabled: true\n"
         "  prometheus_url: http://localhost:9090\n"
@@ -2062,7 +2062,7 @@ def test_monitor_publishes_changes_detected_event_when_metric_crosses_since_last
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "monitoring:\n"
         "  enabled: true\n"
         "  prometheus_url: http://localhost:9090\n"
@@ -2210,7 +2210,7 @@ def test_restart_with_unknown_node_refuses(isolated_cwd, temp_db):
 
 def test_restart_with_node_connects_via_ssh_and_logs_node(isolated_cwd, temp_db):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "fleet:\n"
         "  nodes:\n"
         "    - name: node-a\n"
@@ -2297,7 +2297,7 @@ def test_libvirt_restart_with_node_uses_connect_uri_and_logs_node(
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "fleet:\n"
         "  nodes:\n"
         "    - name: node-a\n"
@@ -2475,7 +2475,7 @@ def test_fleet_doctor_aggregates_reachable_and_unreachable_nodes(
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "fleet:\n"
         "  nodes:\n"
         "    - name: node-a\n"
@@ -2529,7 +2529,7 @@ def test_fleet_trends_aggregates_reachable_and_unreachable_nodes(
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "fleet:\n"
         "  nodes:\n"
         "    - name: node-a\n"
@@ -2585,7 +2585,7 @@ def test_fleet_report_aggregates_reachable_and_unreachable_nodes(
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "fleet:\n"
         "  nodes:\n"
         "    - name: node-a\n"
@@ -2634,7 +2634,7 @@ def test_fleet_report_shows_reachable_node_with_no_inventory(
     isolated_cwd, temp_db
 ):
 
-    (isolated_cwd / "atlas.yaml").write_text(
+    (isolated_cwd / "lanxang.yaml").write_text(
         "fleet:\n"
         "  nodes:\n"
         "    - name: node-a\n"
@@ -2830,7 +2830,7 @@ def test_web_starts_server_with_default_host_and_port(isolated_cwd):
 
 def test_web_proxy_auth_passes_no_auth(isolated_cwd):
 
-    (isolated_cwd / "atlas.yaml").write_text("web:\n  auth: proxy\n")
+    (isolated_cwd / "lanxang.yaml").write_text("web:\n  auth: proxy\n")
     with patch("lanxang.web.server.run_server") as mock_run_server:
 
         result = runner.invoke(app, ["web"])

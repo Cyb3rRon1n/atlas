@@ -103,7 +103,7 @@ class MapConfig(BaseModel):
 
 class ScanConfig(BaseModel):
     # Whole-LAN device discovery (lanxang scan). Empty subnets = the default-route interface's network.
-    # How often atlas-scan re-runs (docker-compose.yml) is LANXANG_SCAN_MINUTES (the old ATLAS_SCAN_MINUTES still works), an env
+    # How often atlas-scan re-runs (docker-compose.yml) is LANXANG_SCAN_MINUTES, an env
     # var read by the compose loop itself - not a config field here.
     enabled: bool = True
     subnets: list[str] = []

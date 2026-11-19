@@ -130,7 +130,7 @@ def test_cli_notify_test(receiver, isolated_cwd):
     runner = CliRunner()
 
     assert runner.invoke(app, ["notify", "test"]).exit_code == 1          # nothing set
-    open("atlas.yaml", "w").write(f"notify:\n  webhooks: ['{base}/ok', '{base}/fail']\n")
+    open("lanxang.yaml", "w").write(f"notify:\n  webhooks: ['{base}/ok', '{base}/fail']\n")
     result = runner.invoke(app, ["notify", "test"])
     assert result.exit_code == 1 and "✓ webhook" in result.output and "✗ webhook" in result.output
     assert got[0]["body"]["title"] == "✅ Test alert from Lanxang"

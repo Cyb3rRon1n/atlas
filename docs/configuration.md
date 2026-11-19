@@ -1,6 +1,6 @@
 # Configuration
 
-Settings live in `lanxang.yaml` next to `docker-compose.yml` (a file called `atlas.yaml` from an earlier install is still read when there is no `lanxang.yaml`), and secrets in `.env`. Environment variables use the `LANXANG_` prefix; the old `ATLAS_` names keep working until 1.2. The compose file mounts the file named by `LANXANG_CONFIG` in `.env`, which defaults to `atlas.yaml` until 1.2, so set `LANXANG_CONFIG=lanxang.yaml` when you create a new `lanxang.yaml` by hand (the installer does it for you).
+Settings live in `lanxang.yaml` next to `docker-compose.yml`, and secrets in `.env`. Environment variables use the `LANXANG_` prefix. Coming from Atlas, see [Upgrading from atlas](getting-started/index.md#upgrading-from-atlas).
 
 Lanxang uses YAML configuration, loaded from `lanxang.yaml` in the current working directory. If the file doesn't exist, Lanxang runs on defaults (safe — no Proxmox connection is attempted, discovery is fully enabled, no AI model is used until you choose one).
 
@@ -220,7 +220,7 @@ Controls `lanxang scan`, whole-LAN device discovery. Sightings link into the dev
 | `timeout` | `0.5` | Per-address TCP connect timeout, in seconds |
 | `discover` | `true` | Ask devices their own name and model over mDNS/Bonjour and SSDP/UPnP (a few seconds per scan); shown as clues for new devices |
 
-How often the `atlas-scan` container loops `lanxang scan; lanxang discover; lanxang proxmox scan; lanxang map` is controlled by the `LANXANG_SCAN_MINUTES` environment variable (`docker-compose.yml`; the old `ATLAS_SCAN_MINUTES` still works), default `15` - not a `lanxang.yaml` field, since it's a property of the compose service's loop, not of scanning itself.
+How often the `atlas-scan` container loops `lanxang scan; lanxang discover; lanxang proxmox scan; lanxang map` is controlled by the `LANXANG_SCAN_MINUTES` environment variable (`docker-compose.yml`), default `15` - not a `lanxang.yaml` field, since it's a property of the compose service's loop, not of scanning itself.
 
 `lanxang scan` never pings and never opens a raw socket: it TCP-connects to port 9 on every address in scope, which makes the kernel ARP-resolve each live host, then reads `/proc/net/arp` for the resulting IP-to-MAC table (only complete entries count — an address nobody answered for isn't in it) and does a best-effort reverse DNS lookup for a hostname. This needs host networking (`network_mode: host`) but no extra capabilities. With `discover` on it also sends one mDNS question and one SSDP search to the LAN and reads each answering UPnP device's own description - read-only, and nothing leaves the network. The maker of each MAC address comes from the IEEE's public list (`inventory/oui.csv`, downloaded monthly; without internet it is skipped). A scan refuses to run over more than 1024 addresses at once — narrow `subnets` if your LAN is bigger than that.
 

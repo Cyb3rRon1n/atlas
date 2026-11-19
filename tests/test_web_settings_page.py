@@ -73,12 +73,12 @@ def test_ntfy_test_sends_without_saving_then_save_and_turn_off(env, receiver, is
 
 
 def test_atlas_yaml_fields_are_read_only_and_never_written(env, isolated_cwd):
-    (isolated_cwd / "atlas.yaml").write_text("notify:\n  ntfy:\n    topic: mine\n")
+    (isolated_cwd / "lanxang.yaml").write_text("notify:\n  ntfy:\n    topic: mine\n")
     handle_post("/api/settings/ntfy/save", {"url": "https://ntfy.example.org", "topic": "theirs"})
     assert load_config().notify.ntfy.topic == "mine"
     assert local.read_settings() == {"notify": {"ntfy": {"url": "https://ntfy.example.org"}}}
     page = render_settings_page()
-    assert 'name="topic" type="text" value="mine"' in page and "set in atlas.yaml" in page
+    assert 'name="topic" type="text" value="mine"' in page and "set in lanxang.yaml" in page
 
 
 def test_env_secret_wins_and_an_empty_one_does_not_count(env):
@@ -187,10 +187,10 @@ def test_blank_snmp_user_suggests_lanxang_only_for_a_new_switch(env, isolated_cw
 
 
 def test_switches_in_atlas_yaml_lock_the_card(env, isolated_cwd):
-    (isolated_cwd / "atlas.yaml").write_text("wiring:\n  switches:\n    - name: core\n      host: 192.0.2.2\n")
+    (isolated_cwd / "lanxang.yaml").write_text("wiring:\n  switches:\n    - name: core\n      host: 192.0.2.2\n")
     status, data = handle_post("/api/settings/switches/save", SWITCH)
-    assert status == 400 and "atlas.yaml" in data["error"] and local.read_settings() == {}
-    assert "(from atlas.yaml)" in render_settings_page()
+    assert status == 400 and "lanxang.yaml" in data["error"] and local.read_settings() == {}
+    assert "(from lanxang.yaml)" in render_settings_page()
     assert "No switch named core switch — names: core" in handle_post("/api/settings/switches/test", SWITCH)[1]["error"]
 
 
@@ -346,7 +346,7 @@ def test_setup_manages_an_old_atlas_keyed_install(env, receiver, isolated_cwd):
 
     handle_post("/api/settings/webhooks/save", {"urls": f"{url}/three"})
     stored = json.loads((isolated_cwd / "inventory" / "secrets.json").read_text())
-    assert stored == {"ATLAS_NTFY_TOKEN": "tk_old", "LANXANG_WEBHOOK_1": f"{url}/three"}
+    assert stored == {"LANXANG_NTFY_TOKEN": "tk_old", "LANXANG_WEBHOOK_1": f"{url}/three"}     # rewritten under the new name
     assert load_config().notify.webhooks == [f"{url}/three"]
 
     handle_post("/api/settings/ntfy/off", {})
@@ -361,7 +361,7 @@ def test_messages_name_the_config_file_in_use(env, isolated_cwd):
 
     from lanxang.cli.main import app
 
-    for name in ("atlas.yaml", "lanxang.yaml"):                # only atlas.yaml, then both: lanxang.yaml wins
+    for name in ("lanxang.yaml", "lanxang.yaml"):                # only lanxang.yaml, then both: lanxang.yaml wins
         (isolated_cwd / name).write_text("notify:\n  ntfy:\n    topic: mine\nsecurity:\n  port_watch: false\n")
         assert local.config_name() == name
         assert f"set in {name}" in render_settings_page()

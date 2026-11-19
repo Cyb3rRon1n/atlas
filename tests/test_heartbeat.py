@@ -48,7 +48,7 @@ def test_ping_address_needs_no_sign_in_and_rejects_bad_tokens(temp_db, isolated_
     from lanxang.web.auth import Auth
     from lanxang.web.server import AtlasWebHandler
 
-    (isolated_cwd / "atlas.yaml").write_text("uptime:\n  heartbeats:\n    - name: Backup\n")
+    (isolated_cwd / "lanxang.yaml").write_text("uptime:\n  heartbeats:\n    - name: Backup\n")
     handler = type("Handler", (AtlasWebHandler,), {"auth": Auth(isolated_cwd / "auth.json")})
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()

@@ -59,8 +59,7 @@ def _run_remote_json(node, *atlas_args, timeout=20):
 
     try:
         result = subprocess.run(
-            # remote nodes may run atlas < 1.0; switch to lanxang in 1.2
-            [ssh, *_ssh_args(node), "atlas", *atlas_args],
+            [ssh, *_ssh_args(node), "lanxang", *atlas_args],
             capture_output=True,
             text=True,
             timeout=timeout

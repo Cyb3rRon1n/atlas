@@ -1,6 +1,6 @@
-# cabling.example.yaml - copy to cabling.yaml next to atlas.yaml and edit.
+# cabling.example.yaml - copy to cabling.yaml next to lanxang.yaml and edit.
 # Patch panels and wall jacks are invisible to LLDP/SNMP; describe them here once.
-# switch = a switch name from atlas.yaml wiring.switches (or a UniFi device name),
+# switch = a switch name from lanxang.yaml wiring.switches (or a UniFi device name),
 # port = the port name as the switch reports it (e.g. gi1, Port 3).
 panels:
   - name: PP1

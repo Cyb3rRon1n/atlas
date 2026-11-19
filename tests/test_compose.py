@@ -63,7 +63,7 @@ def test_docker_proxy_allows_what_the_container_list_reads():
     env = yaml.safe_load(open("docker-compose.yml"))["services"]["docker-proxy"]["environment"]
     # collect_containers() reads container.image.tags -> GET /images/<id>/json
     assert env["CONTAINERS"] == 1 and env["IMAGES"] == 1
-    assert env["POST"] == "${LANXANG_DOCKER_WRITE:-${ATLAS_DOCKER_WRITE:-0}}"   # writes stay off by default
+    assert env["POST"] == "${LANXANG_DOCKER_WRITE:-0}"   # writes stay off by default
 
 
 def test_service_names_and_old_env_names_survive_the_rename():
@@ -71,8 +71,8 @@ def test_service_names_and_old_env_names_survive_the_rename():
     data = yaml.safe_load(open("docker-compose.yml"))
     assert {"atlas", "atlas-scan"} <= set(data["services"])   # existing overrides name these
     web = data["services"]["atlas"]
-    assert web["image"] == "ghcr.io/cyb3rron1n/lanxang:${LANXANG_TAG:-${ATLAS_TAG:-latest}}"
-    assert "${LANXANG_PORT:-${ATLAS_PORT:-8420}}" in web["ports"][0]
+    assert web["image"] == "ghcr.io/cyb3rron1n/lanxang:${LANXANG_TAG:-latest}"
+    assert "${LANXANG_PORT:-8420}" in web["ports"][0]
 
 
 def _mount_sources(tmp_path, env_text):
@@ -90,19 +90,13 @@ def _mount_sources(tmp_path, env_text):
             if v.get("type") == "bind"}
 
 
-def test_clone_with_only_atlas_yaml_mounts_it(tmp_path):
-    # a git clone that never runs install.sh: old .env names, no config variable
-    (tmp_path / "atlas.yaml").write_text("name: mine\n")
-    sources = _mount_sources(tmp_path, "ATLAS_PORT=8420\n")
-    assert "atlas.yaml" in sources and "lanxang.yaml" not in sources
-
-
-def test_config_variable_switches_the_mounted_file(tmp_path):
-    assert "lanxang.yaml" in _mount_sources(tmp_path, "LANXANG_CONFIG=lanxang.yaml\n")
+def test_compose_mounts_lanxang_yaml(tmp_path):
+    (tmp_path / "lanxang.yaml").write_text("name: mine\n")
+    assert "lanxang.yaml" in _mount_sources(tmp_path, "LANXANG_CONFIG=atlas.yaml\n")   # a stale variable is ignored
 
 
 def test_an_atlas_scan_minutes_override_is_not_shadowed():
     import yaml
     scan = yaml.safe_load(open("docker-compose.yml"))["services"]["atlas-scan"]
     assert not any("SCAN_MINUTES" in k for k in scan["environment"])
-    assert "${LANXANG_SCAN_MINUTES:-$${ATLAS_SCAN_MINUTES:-15}}" in "\n".join(scan["command"])
+    assert "$${LANXANG_SCAN_MINUTES:-15}" in "\n".join(scan["command"])

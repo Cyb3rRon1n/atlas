@@ -6,6 +6,10 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 ## Unreleased
 
 ### Added
+- Optional daily summary: set `notify.daily_summary` to a time like `08:00` (in the alert time zone,
+  `notify.timezone`) or use the Setup page's Daily summary card, and once a day Lanxang sends what changed in the
+  last 24 hours: new devices, alerts opened or cleared, public routes added or removed, devices gone quiet. Nothing
+  is sent on a day without changes.
 - Chat can now look things up in the posture data: new tools `get_posture`, `get_devices`, `get_alerts`, `get_disks`,
   `get_uptime` and (with the Internet view on) `get_internet_view`, all read-only and capped to short lists so small
   local models cope. The Security page gains the chip "What can the internet see on my network?".

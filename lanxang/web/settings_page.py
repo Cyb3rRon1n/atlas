@@ -41,6 +41,12 @@ CARDS = {
         Field("password", "Password", "secret", ("notify", "email", "password"), "LANXANG_SMTP_PASSWORD"),
         Field("sender", "From address (blank = username)", "text", ("notify", "email", "sender")),
         Field("to", "Send to (comma separated)", "list", ("notify", "email", "to"))]),
+    "summary": ("Daily summary", "One message a day with what changed in the last 24 hours: new devices, alerts "
+                "that started or cleared, public routes added or removed, devices gone quiet. Nothing changed, "
+                "nothing sent. The time uses the alert time zone (set with quiet hours on the Alerts page; UTC "
+                "until then).", [
+                    Field("daily_summary", "Daily summary at (HH:MM, empty = off)", "text", ("notify", "daily_summary"),
+                          hint="08:00 - uses the alert time zone")]),
     "ai": ("AI assistant", "Optional: powers Chat and the daily check-up. Ollama runs on your own hardware; "
            "Claude needs an Anthropic API key.", [
                Field("provider", "Provider", "select", ("intelligence", "provider"),
@@ -504,6 +510,11 @@ def _test(card, body):
         return True, f"Shodan sees {plural(len(found['ports']), 'open port')} on {ip}" + (
             f": {', '.join(map(str, found['ports']))}." if found["ports"] else ".")
     alerts = config.notify
+    if card == "summary":
+        if not alerts.daily_summary:
+            return False, "Enter a time like 08:00."
+        return True, (f"Looks right: sent daily from {alerts.daily_summary} {alerts.timezone or 'UTC'}, when something "
+                      "changed.")
     if card == "ntfy":
         if not (alerts.ntfy.url and alerts.ntfy.topic):
             return False, "Enter the server and topic."
@@ -672,6 +683,7 @@ def _on(card, config):
     alerts = config.notify
     return {"ntfy": bool(alerts.ntfy.url and alerts.ntfy.topic), "webhooks": bool(alerts.webhooks),
             "email": bool(alerts.email.host and alerts.email.to),
+            "summary": bool(alerts.daily_summary),
             "ai": config.intelligence.provider != "none", "switches": bool(config.wiring.switches),
             "unifi": config.wiring.unifi.enabled, "proxmox": config.proxmox.enabled, "ups": config.ups.enabled,
             "dnsfilter": config.dns_filter.enabled, "nas": config.nas.enabled,

@@ -167,6 +167,13 @@ class PostureStore:
             last = session.scalars(select(PostureRouteRecord).order_by(PostureRouteRecord.id.desc())).first()
             return json.loads(last.routes) if last else []
 
+    def routes_at(self, moment):
+        """The route snapshot in force at moment: the latest one taken at or before it; [] if none."""
+        with Session(self.engine) as session:
+            last = session.scalars(select(PostureRouteRecord).where(PostureRouteRecord.snapshot_at <= moment)
+                                   .order_by(PostureRouteRecord.snapshot_at.desc(), PostureRouteRecord.id.desc())).first()
+            return json.loads(last.routes) if last else []
+
     def prune(self, before):
         """Drop flow buckets older than before, plus destinations not used since then - so a removed
         container's traffic and review entries fade out instead of lingering forever."""

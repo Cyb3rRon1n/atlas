@@ -240,7 +240,8 @@ one; UTC when empty) and the first `lanxang scan` after it sends one message on 
 the Activity page's "What changed" items (new devices, alerts that started or cleared, Proxmox and container
 changes), public routes added or removed since the snapshot a day earlier, and known devices that went quiet. A day
 with nothing to tell sends nothing. Empty (the default) is off; the Setup page's Daily summary card sets it. Quiet
-hours and **Pause alerts** hold it until the next scan after they end.
+hours and **Pause alerts** hold it until the next scan after they end. A time close to midnight (say `"23:55"`) is
+skipped on a day when no scan runs between it and midnight, so pick one at least one scan interval before midnight.
 
 ```yaml
 notify:
@@ -562,11 +563,14 @@ posture:
   internet_view_url: https://internetdb.shodan.io/{ip}
 ```
 
-Each open port that isn't in `expected_ports` raises one alert ("Port 22 is open to the internet") and one when
-Shodan no longer sees it; each reported CVE raises one alert too. The Security page's **Public exposure** tab shows
+Each open port that isn't in `expected_ports` raises one alert ("Port 22 is open to the internet"), cleared with
+one more message when Shodan no longer sees it or when you add the port to `expected_ports` (saving the Setup card
+rechecks the last answer straight away, without asking Shodan again); each reported CVE raises one alert too. The Security page's **Public exposure** tab shows
 **What the internet sees**: each port marked expected or not, the CVEs, and when Shodan was last asked. This is
 Shodan's last scan, not a live test: a port you just closed can still show for a while. A failed lookup keeps the
-last answer and the open alerts. `lanxang internet check --force` looks up right away.
+last answer and the open alerts, and so does an empty answer from Shodan after it had data for your IP (shown as
+"Shodan has no current data for this IP"). A new public IP starts from nothing. `lanxang internet check --force`
+looks up right away.
 
 ## `notify`
 

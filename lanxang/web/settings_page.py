@@ -584,6 +584,11 @@ def handle_post(path, body):
         from lanxang.posture.internet_view import turn_off
         from lanxang.posture.store import PostureStore
         turn_off(PostureStore(), utcnow())
+    elif card == "internet":                         # new expected ports apply to the last answer now, no lookup
+        from lanxang.clock import utcnow
+        from lanxang.posture.internet_view import reassess
+        from lanxang.posture.store import PostureStore
+        reassess(load_config(), PostureStore(), utcnow())
 
     return 200, {"ok": True, "message": "Turned off." if action == "off" else "Saved."}
 

@@ -5,6 +5,12 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 
 ## Unreleased
 
+### Added
+- Internet view (opt-in): once a day `lanxang internet check` asks Shodan's InternetDB what it sees on your home's
+  public IP. An open port you don't expect (`posture.expected_ports`, 80 and 443 by default) or a reported CVE
+  alerts; the Security page shows **What the internet sees** and the Home Security posture card a one-line summary.
+  Turn it on with `posture.internet_view` or the Setup page's Internet view card — it sends your home IP to Shodan.
+
 ### Fixed
 - Activity, with the time zone set to "this browser": days and "×N today" counts now follow the viewer's own day
   (the browser tells Lanxang its zone), so repeats near midnight are no longer counted into the wrong day.

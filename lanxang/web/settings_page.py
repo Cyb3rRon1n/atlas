@@ -122,6 +122,12 @@ CARDS = {
                       Field("password", "Password or app password", "secret", None, "LANXANG_DNS_PASSWORD"),
                       Field("verify_ssl", "Check its certificate (off for a self-signed one)", "bool",
                             ("dns_filter", "verify_ssl"))]),
+    "internet": ("Internet view (Shodan)", "Once a day, asks Shodan's free InternetDB what it last saw on your "
+                 "home's public IP: open ports and reported vulnerabilities. Alerts on a port you don't expect to be "
+                 "open. Sends your home IP to Shodan once a day. Needs posture collection on (posture.enabled), "
+                 "which reads that IP.", [
+                     Field("expected_ports", "Ports you expect to be open (comma separated)", "list",
+                           ("posture", "expected_ports"), hint="80, 443")]),
 }
 # "What's on your network?" - each tick shows the Setup cards that gear uses. Alert and AI cards always show.
 GEAR = [
@@ -182,7 +188,8 @@ def _gear_html(chosen, detected):
 
 ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "enabled")], "ups": [("ups", "enabled")],
            "dnsfilter": [("dns_filter", "enabled")], "nas": [("nas", "enabled")],
-           "homeassistant": [("homeassistant", "enabled")], "router": [("router", "enabled")]}
+           "homeassistant": [("homeassistant", "enabled")], "router": [("router", "enabled")],
+           "internet": [("posture", "internet_view")]}
 WIRING_CARDS = ("switches", "unifi")
 
 ACTIONS = re.compile(r"^/api/settings/([a-z]+)/(test|save|off|dismiss)$")
@@ -483,6 +490,19 @@ def _test(card, body):
         unhealthy = [p["name"] for p in info["pools"] if p["health"] not in ("ONLINE", "NORMAL")]
         return True, (f"Connected: {info['kind']}, {len(info['pools'])} pool(s), {len(info['disks'])} disk(s)"
                       + (f"; not healthy: {', '.join(unhealthy)}." if unhealthy else ", all pools healthy."))
+    if card == "internet":
+        from lanxang.posture.internet_view import lookup
+        from lanxang.posture.store import PostureStore
+        ip = ((PostureStore().statuses().get("public_ip") or {}).get("detail") or {}).get("ip")
+        if not ip:
+            return False, "Lanxang doesn't know your public IP yet — turn on posture collection (posture.enabled)."
+        found = lookup(ip, config.posture.internet_view_url)
+        if not found["ok"]:
+            return False, f"Couldn't reach Shodan: {found['error']}"
+        if not found["known"]:
+            return True, f"Shodan knows nothing about {ip}."
+        return True, f"Shodan sees {plural(len(found['ports']), 'open port')} on {ip}" + (
+            f": {', '.join(map(str, found['ports']))}." if found["ports"] else ".")
     alerts = config.notify
     if card == "ntfy":
         if not (alerts.ntfy.url and alerts.ntfy.topic):
@@ -634,7 +654,7 @@ def _field_html(card, field, config):
         options = "".join(f'<option{" selected" if option == value else ""}>{_esc(option)}</option>'
                           for option in field.options)
         return f'<label for="{name}">{_esc(field.label)}{note}</label><select id="{name}" name="{field.key}"{disabled}>{options}</select>'
-    shown = ", ".join(value or []) if field.kind == "list" else "" if value is None else value
+    shown = ", ".join(map(str, value or [])) if field.kind == "list" else "" if value is None else value
     kind = "number" if field.kind == "number" else "text"
 
     return (f'<label for="{name}">{_esc(field.label)}{note}</label>'
@@ -650,7 +670,8 @@ def _on(card, config):
             "ai": config.intelligence.provider != "none", "switches": bool(config.wiring.switches),
             "unifi": config.wiring.unifi.enabled, "proxmox": config.proxmox.enabled, "ups": config.ups.enabled,
             "dnsfilter": config.dns_filter.enabled, "nas": config.nas.enabled,
-            "homeassistant": config.homeassistant.enabled, "router": config.router.enabled}[card]
+            "homeassistant": config.homeassistant.enabled, "router": config.router.enabled,
+            "internet": config.posture.internet_view}[card]
 
 
 SCRIPT = """

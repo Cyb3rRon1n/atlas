@@ -417,11 +417,14 @@ def _posture_card(posture, flagged=False):
     if not posture:
         return _card("/posture", "Security posture", "unknown", '<p class="muted">Posture data unavailable.</p>')
 
+    internet = posture.get("internet", "")
     rows = (("Status", posture["message"]), ("VPN", posture["vpn"]), ("Public routes", posture["routes"]),
-            ("CrowdSec bans", posture["blocked"]), ("Needs review", posture["review_count"]))
+            ("CrowdSec bans", posture["blocked"]), ("Needs review", posture["review_count"])) \
+        + ((("Internet", internet),) if internet else ())
     inner = "<dl>" + "".join(f"<dt>{_esc(k)}</dt><dd>{_esc(v)}</dd>" for k, v in rows) + "</dl>"
+    state = "warn" if "unexpected" in internet else posture["state"]
 
-    return _card("/posture", "Security posture", posture["state"], inner, flagged=flagged)
+    return _card("/posture", "Security posture", state, inner, flagged=flagged)
 
 
 def _usage(row):

@@ -970,9 +970,14 @@ def _posture_block(posture):
     else:
         state, message = "ok", "All good"
 
+    ports = (posture.get("internet") or {}).get("ports") or []
+    unexpected = sum(not p["expected"] for p in ports)
+    internet = (f"{unexpected} unexpected port{'s' * (unexpected != 1)}" if unexpected
+                else f"{len(ports)} port{'s' * (len(ports) != 1)} open, all expected" if ports else "")
+
     return {"state": state, "tunnel": items["ingress"]["value"], "vpn": items["vpn"]["value"],
             "routes": len(posture["exposure"]), "blocked": items["blocked"]["value"],
-            "review_count": len(posture["review"]), "message": message, "link": "/posture"}
+            "review_count": len(posture["review"]), "message": message, "internet": internet, "link": "/posture"}
 
 
 def build_summary(topology, devices=(), posture=None):

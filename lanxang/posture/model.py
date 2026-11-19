@@ -213,7 +213,20 @@ def build_posture(store, now, window="24h"):
     return {"generated_at": now.isoformat(), "window": window, "enabled": bool(statuses), "strip": strip_items,
             "nodes": nodes, "edges": edges, "bands": bands, "exposure": routes, "router": _router(statuses),
             "certs": ((statuses.get("certs") or {}).get("detail") or {}).get("hosts") or {},
+            "internet": _internet(statuses),
             "review": [{**r, "first_seen": r["first_seen"].isoformat()} for r in review]}
+
+
+def _internet(statuses):
+    """What Shodan last saw on the public IP, from lanxang internet check (None before its first run)."""
+
+    from lanxang.devices.ports import port_label
+
+    detail = (statuses.get("internet_view") or {}).get("detail")
+    if not detail:
+        return None
+
+    return {**detail, "ports": [{**p, "label": port_label(p["port"])} for p in detail.get("ports") or []]}
 
 
 def _router(statuses):

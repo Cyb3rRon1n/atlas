@@ -3,6 +3,10 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
+## Unreleased
+### Changed
+- The web UI now opens in light mode whatever the system theme; dark is still one click away in the sidebar and is remembered.
+
 ## 1.0.1 - 2026-11-18
 
 ### Fixed

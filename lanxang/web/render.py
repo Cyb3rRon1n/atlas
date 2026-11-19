@@ -18,8 +18,8 @@ from lanxang.clock import utcnow
 from lanxang.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE, DRAWER_HTML, DRAWER_STYLE
 
 
-# Colours are tokens: light by default, dark when the system asks for it or the viewer picks it (the sidebar's
-# Theme button, kept in localStorage). Pages use var(--...) only, never a raw colour.
+# Colours are tokens: light by default; dark, or the system's choice, when the viewer picks it (the header's theme
+# button or Preferences, kept in localStorage). Pages use var(--...) only, never a raw colour.
 LIGHT = """--bg:#f7fbf9; --surface:#ffffff; --surface2:#eef5f2; --deep:#e6efeb; --line:#dde8e3; --line2:#c4d4cd;
   --text:#10201c; --muted:#4f5f5a; --blue:#1e7f66; --accent:#1e7f66; --gold:#c9a227; --on-accent:#ffffff;
   --green:#15803d; --orange:#b45309; --red:#c42b2b; --purple:#7c3aed; --teal:#0f766e; --yellow:#a16207;
@@ -33,9 +33,28 @@ DARK = """--bg:#0e1a19; --surface:#13231f; --surface2:#182c27; --deep:#0b1513; -
   --bad-text:#ffb4a2; --bad-line:#6b3030; --bad-bg:#2a1d1a; --lane:#2a5248;
   --nav-bg:#08110f; --nav-text:#cfe3dc; --nav-muted:#8fb0a6; --nav-on:#16302c; color-scheme:dark;"""
 
+# High contrast (Preferences): stronger text and borders, every text colour at least 7:1 on its background.
+LIGHT_HC = """--bg:#ffffff; --surface:#ffffff; --surface2:#eef2f1; --deep:#eef2f1; --line:#4a5a55; --line2:#1f2b28;
+  --text:#000000; --muted:#26332f; --blue:#0b5a46; --accent:#0b5a46; --on-accent:#ffffff;
+  --green:#0b5e2a; --orange:#7a3600; --red:#9e1c1c; --purple:#5b21b6; --teal:#0b5a52; --yellow:#6b5200;
+  --ok-text:#0f4a26; --ok-line:#0b5e2a; --warn-text:#6b2e05; --warn-line:#7a3600; --bad-text:#7a1212; --bad-line:#9e1c1c;
+  --nav-text:#ffffff; --nav-muted:#d6e6e0;"""
+DARK_HC = """--bg:#000000; --surface:#0a1210; --surface2:#11201c; --deep:#000000; --line:#5f8579; --line2:#9dbfb4;
+  --text:#ffffff; --muted:#dbe8e3; --blue:#8fe6cb; --accent:#8fe6cb; --gold:#f5cc70; --on-accent:#000000;
+  --green:#7fe0b0; --orange:#ffc078; --red:#ff9e8a; --purple:#d2b8ff; --teal:#7ff0dc; --yellow:#f2d27a;
+  --ok-text:#a8f0d0; --ok-line:#7fe0b0; --warn-text:#ffe0b0; --warn-line:#ffc078; --bad-text:#ffd0c4; --bad-line:#ff9e8a;
+  --nav-bg:#000000; --nav-text:#ffffff; --nav-muted:#dbe8e3;"""
+
+# Later rules win at equal specificity: system-dark overrides light high contrast, then [data-contrast] on top.
 PAGE_STYLE = f"""
 :root {{ {LIGHT} }}
 :root[data-theme="dark"] {{ {DARK} }}
+:root[data-contrast="on"] {{ {LIGHT_HC} }}
+:root[data-theme="dark"][data-contrast="on"] {{ {DARK_HC} }}
+@media (prefers-color-scheme: dark) {{
+  :root[data-theme="system"] {{ {DARK} }}
+  :root[data-theme="system"][data-contrast="on"] {{ {DARK_HC} }}
+}}
 """ + """
   @font-face { font-family:"Lexend"; src:url("/static/fonts/Lexend.woff2") format("woff2"); font-weight:100 900; font-display:swap; }
   @font-face { font-family:"Noto Sans Lao"; src:url("/static/fonts/NotoSansLao-Medium.woff2") format("woff2"); font-weight:500; font-display:swap; }
@@ -43,11 +62,11 @@ PAGE_STYLE = f"""
          color:var(--text); margin:0; line-height:1.5; }
   a { color:var(--blue); text-decoration:none; }
   a:hover { text-decoration:underline; }
-  h1 { margin:0 0 16px; font-size:24px; font-weight:600; }
-  h2 { font-size:17px; font-weight:600; border-bottom:1px solid var(--line); padding-bottom:0.3rem; }
+  h1 { margin:0 0 16px; font-size:1.5rem; font-weight:600; }
+  h2 { font-size:1.0625rem; font-weight:600; border-bottom:1px solid var(--line); padding-bottom:0.3rem; }
   table { border-collapse:collapse; width:100%; margin:0.75rem 0 1.5rem; }
   th, td { text-align:left; padding:0.5rem 0.8rem; border-bottom:1px solid var(--line); }
-  th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.04em;
+  th { color:var(--muted); font-weight:600; font-size:.75rem; text-transform:uppercase; letter-spacing:.04em;
        background:var(--surface2); }
   .muted { color:var(--muted); }
   .card { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:1rem 1.5rem;
@@ -62,7 +81,7 @@ PAGE_STYLE = f"""
   :where(button:not(.port, .box, .chip, [role=tab], .side button), .btn) { display:inline-flex; align-items:center;
            justify-content:center; gap:6px; min-height:var(--control-h); box-sizing:border-box; padding:0 14px;
            margin:0; background:var(--surface); color:var(--text); border:1px solid var(--line2);
-           border-radius:var(--control-r); font:inherit; font-size:14px; line-height:1.2; cursor:pointer;
+           border-radius:var(--control-r); font:inherit; font-size:.875rem; line-height:1.2; cursor:pointer;
            text-decoration:none; white-space:nowrap; vertical-align:middle; }
   :where(button, .btn):not(:disabled):hover { border-color:var(--accent); text-decoration:none; }
   .btn { color:var(--text); } .btn:hover { text-decoration:none; }   /* beat the a / a:hover link styles */
@@ -72,10 +91,10 @@ PAGE_STYLE = f"""
   .danger { background:var(--surface); border-color:var(--bad-line); color:var(--bad-text); }
   .danger:not(:disabled):hover { background:var(--red); border-color:var(--red); color:var(--on-accent); }
   :where(button, .btn):disabled, :where(button, .btn)[aria-disabled="true"] { opacity:.55; cursor:not-allowed; }
-  .sm { min-height:30px; padding:0 10px; font-size:13px; }   /* compact: table rows, alert rows, suggestion chips */
+  .sm { min-height:30px; padding:0 10px; font-size:.8125rem; }   /* compact: table rows, alert rows, suggestion chips */
   :where(input:not([type=checkbox], [type=radio], [type=hidden], [type=range], [type=file], [type=color]), select,
          textarea) { background:var(--surface); color:var(--text); border:1px solid var(--line2);
-           border-radius:var(--control-r); padding:0 10px; font:inherit; font-size:14px; box-sizing:border-box;
+           border-radius:var(--control-r); padding:0 10px; font:inherit; font-size:.875rem; box-sizing:border-box;
            max-width:100%; }
   :where(input:not([type=checkbox], [type=radio], [type=hidden], [type=range], [type=file], [type=color]), select)
          { min-height:var(--control-h); }
@@ -90,7 +109,7 @@ PAGE_STYLE = f"""
          vertical-align:middle; }
   .seg > a, .seg > button { display:inline-flex; align-items:center; min-height:calc(var(--control-h) - 8px);
          padding:0 12px; margin:0; border:0; border-radius:var(--control-r); background:transparent;
-         color:var(--muted); font:inherit; font-size:13px; font-weight:500; line-height:1.2; cursor:pointer;
+         color:var(--muted); font:inherit; font-size:.8125rem; font-weight:500; line-height:1.2; cursor:pointer;
          text-decoration:none; white-space:nowrap; }
   .seg > a:not([aria-current]):hover, .seg > button:not([aria-pressed="true"]):hover { color:var(--text); background:var(--surface2); text-decoration:none; }
   .seg > [aria-current], .seg > [aria-pressed="true"] { background:color-mix(in srgb, var(--accent) 14%, var(--surface));
@@ -99,8 +118,8 @@ PAGE_STYLE = f"""
   .empty { display:flex; gap:14px; align-items:flex-start; padding:18px 20px; border:1px dashed var(--line2);
            border-radius:10px; background:var(--surface); margin:0 0 16px; }
   .empty > .ic { width:28px; height:28px; margin:2px 0 0; color:var(--accent); }
-  .empty p { margin:0 0 4px; font-size:14px; } .empty .empty-title { font-size:15px; font-weight:600; color:var(--text); }
-  .empty .btn { margin-top:10px; } .empty details { margin-top:10px; font-size:13px; }
+  .empty p { margin:0 0 4px; font-size:.875rem; } .empty .empty-title { font-size:.9375rem; font-weight:600; color:var(--text); }
+  .empty .btn { margin-top:10px; } .empty details { margin-top:10px; font-size:.8125rem; }
   :is(.card, .hcard) .empty { border:0; padding:4px 0 0; margin:0; background:none; }   /* already inside a box */
   label { display:block; margin:0.5rem 0 0.2rem; color:var(--muted); font-size:0.85rem; }
   .ic { width:1.1em; height:1.1em; vertical-align:-0.2em; margin-right:.4em; flex:none; }
@@ -115,28 +134,73 @@ PAGE_STYLE = f"""
 SHELL_STYLE = """
 .app { display:flex; min-height:100vh; }
 .side { flex:0 0 224px; box-sizing:border-box; background:var(--nav-bg); padding:18px 12px; display:flex;
-        flex-direction:column; gap:2px; }
+        flex-direction:column; gap:2px; position:sticky; top:0; height:100vh; overflow-y:auto; }
 .side a, .side button { display:block; width:100%; box-sizing:border-box; text-align:left; padding:8px 14px; margin:0;
-        border:0; border-radius:6px; background:none; color:var(--nav-text); font:inherit; font-size:14px;
+        border:0; border-radius:6px; background:none; color:var(--nav-text); font:inherit; font-size:.875rem;
         text-decoration:none; cursor:pointer; }
 .side a:hover, .side button:hover { background:var(--nav-on); text-decoration:none; }
 .side .brand { display:flex; align-items:center; gap:10px; padding:4px 14px 18px; color:#fff; font-weight:700;
-        font-size:17px; }
+        font-size:1.0625rem; }
 .side .brand:hover { background:none; }
 .side .brand .name { display:flex; flex-direction:column; line-height:1.1; }
-.side .brand small { font:500 11px "Noto Sans Lao", sans-serif; color:var(--gold); }
+.side .brand small { font:500 .6875rem "Noto Sans Lao", sans-serif; color:var(--gold); }
 .side ul { list-style:none; margin:0; padding:0; }
 .side nav.main > ul > li > a[aria-current="page"] { background:var(--nav-on); color:#fff; font-weight:600; }
-.side .tabs a { padding:6px 14px 6px 30px; font-size:13px; color:var(--nav-muted); }
+.side .tabs a { padding:6px 14px 6px 30px; font-size:.8125rem; color:var(--nav-muted); }
 .side .tabs a[aria-current="page"] { color:#fff; font-weight:600; box-shadow:inset 2px 0 0 var(--accent); background:none; }
 .side .foot { margin-top:auto; padding-top:16px; }
-.theme-btn .to-light { display:none; }
-:root[data-theme="dark"] .theme-btn .to-light { display:inline; } :root[data-theme="dark"] .theme-btn .to-dark { display:none; }
 .side .foot form { margin:0; }
 .page { padding:24px 32px 40px; min-width:0; }
+/* Header bar: the quick theme button and Preferences, top right of every page (in the top bar on phones). */
+.page-head { display:flex; align-items:flex-start; gap:12px; }
+.page-head h1 { flex:1; min-width:0; }
+.hbar { display:flex; gap:6px; flex:none; }
+.hbar .icon-btn { min-width:var(--control-h); padding:0; } .hbar .ic { margin:0; width:18px; height:18px; }
+.side .hbar, .subnav { display:none; }
+.theme-cycle .t-dark, .theme-cycle .t-system { display:none; }
+:root[data-theme="dark"] .theme-cycle .t-light, :root[data-theme="system"] .theme-cycle .t-light { display:none; }
+:root[data-theme="dark"] .theme-cycle .t-dark, :root[data-theme="system"] .theme-cycle .t-system { display:inline; }
+/* Preferences: a right-side panel over the page. */
+.prefs-back { position:fixed; inset:0; background:rgb(0 0 0 / .4); z-index:30; }
+.prefs { position:fixed; top:0; right:0; bottom:0; width:min(400px, 100vw); box-sizing:border-box; z-index:31;
+         overflow-y:auto; background:var(--surface); border-left:1px solid var(--line2); padding:18px 22px 28px;
+         box-shadow:-8px 0 24px rgb(0 0 0 / .18); }
+.prefs[hidden], .prefs-back[hidden] { display:none; }
+.prefs-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.prefs-head h2 { margin:0; border:0; padding:0; font-size:1.125rem; }
+.prefs h3 { margin:22px 0 4px; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em;
+            color:var(--muted); }
+.pref { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 12px; padding:8px 0;
+        border-bottom:1px solid var(--line); }
+.pref > span, .pref > label { margin:0; color:var(--text); font-size:.875rem; }
+.pref .hint { flex:1 1 100%; margin:0; color:var(--muted); font-size:.8125rem; }
+/* Preferences: each one is a data-* attribute on <html>, set before first paint by THEME_SCRIPT. */
+:root[data-text="s"] { font-size:87.5%; } :root[data-text="l"] { font-size:112.5%; }
+:root[data-density="compact"] { --control-h:30px; }
+:root[data-density="compact"] :is(th, td) { padding:.25rem .6rem; }
+:root[data-density="compact"] .card { padding:.6rem 1rem; margin-bottom:1rem; }
+:root[data-density="compact"] .page { padding:16px 24px 28px; }
+:root[data-motion="on"] *, :root[data-motion="on"] ::before, :root[data-motion="on"] ::after {
+  animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="off"]) *, :root:not([data-motion="off"]) ::before, :root:not([data-motion="off"]) ::after {
+    animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+}
+.side-toggle .ic { transition:transform .15s; }
+@media (min-width: 901px) {   /* collapsed sidebar: icons only; labels stay for screen readers, titles as tooltips */
+  :root[data-sidebar="on"] .side { flex-basis:64px; padding:18px 8px; }
+  :root[data-sidebar="on"] .side .lbl, :root[data-sidebar="on"] .side .brand .name { position:absolute; width:1px;
+    height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  :root[data-sidebar="on"] .side .tabs { display:none; }
+  :root[data-sidebar="on"] .side :is(a, button) { padding:9px 0; text-align:center; }
+  :root[data-sidebar="on"] .side .ic { margin:0; width:20px; height:20px; }
+  :root[data-sidebar="on"] .side .brand { justify-content:center; padding:4px 0 18px; }
+  :root[data-sidebar="on"] .side-toggle .ic { transform:scaleX(-1); }
+  :root[data-sidebar="on"] .subnav { display:block; margin:-4px 0 16px; }
+}
 .shell { flex:1; min-width:0; }
 .chips { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px; }
-.chips button { font:inherit; font-size:13px; min-height:32px; padding:4px 12px; border-radius:999px; margin:0;
+.chips button { font:inherit; font-size:.8125rem; min-height:32px; padding:4px 12px; border-radius:999px; margin:0;
                 white-space:normal; text-align:left; }
 @media (max-width: 900px) {
   .app { display:block; }
@@ -148,17 +212,71 @@ SHELL_STYLE = """
   .side a, .side button { width:auto; }
   .side .tabs { flex:1 1 100%; order:5; display:flex; flex-wrap:wrap; }
   .side .tabs a { padding:6px 12px; }
-  .side .foot { margin:0 0 0 auto; padding:0; display:flex; order:2; }
+  .side .foot { margin:0 0 0 auto; padding:0; display:flex; flex-wrap:wrap; align-items:center; order:2; }
+  .side { position:static; height:auto; overflow:visible; }
+  .side .hbar { display:flex; gap:2px; } .page-head .hbar, .side .side-toggle { display:none; }
   .page { padding:16px; }
 }
 """
 
 PAGE_STYLE += SHELL_STYLE
 
-# Light is the default whatever the OS prefers; runs before first paint so a chosen theme never flashes.
-THEME_SCRIPT = """<script>try{var t=localStorage.getItem("atlas-theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}
-function atlasTheme(){var d=document.documentElement;d.dataset.theme=d.dataset.theme==="dark"?"light":"dark";
-try{localStorage.setItem("atlas-theme",d.dataset.theme);}catch(e){}}</script>"""
+# Runs in <head> before first paint, so no saved choice ever flashes. Light is the default whatever the OS prefers;
+# the OS colour scheme counts only when the viewer picked "system". Each preference becomes a data-* attribute on
+# <html> that PAGE_STYLE keys on; a missing or blocked localStorage just means the defaults. Start page: opening /
+# directly goes to the chosen page; the Home link (/?home) and reloads or back/forward stay on Home.
+THEME_SCRIPT = """<script>(function(){var d=document.documentElement;
+function g(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+var t=g("atlas-theme");if(t==="light"||t==="dark"||t==="system")d.dataset.theme=t;
+var V={motion:["on","off"],contrast:["on"],text:["s","l"],density:["compact"],sidebar:["on"]};
+for(var k in V){var v=g("lanxang-pref-"+k);if(V[k].indexOf(v)>=0)d.setAttribute("data-"+k,v);}
+window.lanxangReduced=function(){var m=d.getAttribute("data-motion");
+return m==="on"||(m!=="off"&&!!window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);};
+if(location.pathname!=="/")return;
+if(/[?&]home(=|&|$)/.test(location.search)){try{history.replaceState(null,"","/");}catch(e){}return;}
+var s={devices:"/devices",alerts:"/alerts",map:"/cabling",servers:"/overview",security:"/posture"}[g("lanxang-pref-start")];
+var n=window.performance&&performance.getEntriesByType?performance.getEntriesByType("navigation")[0]:null;
+if(s&&(!n||n.type==="navigate"))location.replace(s);})();</script>"""
+
+# Last in <body>: the header buttons, the Preferences panel and the sidebar toggle. Every change applies at once.
+PREFS_SCRIPT = """<script>(function(){
+var d=document.documentElement,panel=document.getElementById("prefs"),back=document.getElementById("prefs-back"),opener=null;
+var DEF={theme:"light",motion:"system",contrast:"off",text:"m",density:"comfortable",start:"home",sidebar:"off"};
+var START=["home","devices","alerts","map","servers","security"];
+var NEXT={light:"dark",dark:"system",system:"light"},NAME={light:"Light",dark:"Dark",system:"System"};
+function key(k){return k==="theme"?"atlas-theme":"lanxang-pref-"+k;}
+function get(k){if(k==="theme")return NAME[d.dataset.theme]?d.dataset.theme:"light";
+  if(k==="start"){var v=null;try{v=localStorage.getItem(key(k));}catch(e){}return START.indexOf(v)>=0?v:"home";}
+  return d.getAttribute("data-"+k)||DEF[k];}
+function set(k,v){
+  if(k==="theme")d.dataset.theme=v;else if(k!=="start"){if(v===DEF[k])d.removeAttribute("data-"+k);else d.setAttribute("data-"+k,v);}
+  try{localStorage.setItem(key(k),v);}catch(e){}
+  sync();}
+function sync(){
+  document.querySelectorAll("[data-pref]").forEach(function(c){var v=get(c.dataset.pref);
+    if(c.tagName==="SELECT")c.value=v;else c.querySelectorAll("button").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.v===v));});});
+  var t=get("theme");
+  document.querySelectorAll(".theme-cycle").forEach(function(b){b.setAttribute("aria-label","Theme: "+NAME[t]+". Switch to "+NAME[NEXT[t]]);b.title="Theme: "+NAME[t];});
+  var c=get("sidebar")==="on",say=c?"Expand sidebar":"Collapse sidebar";
+  document.querySelectorAll(".side-toggle").forEach(function(b){b.setAttribute("aria-pressed",String(c));b.title=say;b.querySelector(".lbl").textContent=say;});}
+window.atlasTheme=function(){set("theme",NEXT[get("theme")]);};
+function show(b){opener=b;panel.hidden=back.hidden=false;var app=document.querySelector(".app");if(app)app.inert=true;sync();panel.focus();}
+function hide(){panel.hidden=back.hidden=true;var app=document.querySelector(".app");if(app)app.inert=false;if(opener)opener.focus();}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-pref] button");
+  if(b)set(b.parentNode.dataset.pref,b.dataset.v);
+  else if(e.target.closest(".prefs-open"))show(e.target.closest(".prefs-open"));
+  else if(e.target.closest("[data-prefs-close]")||e.target===back)hide();
+  else if(e.target.closest(".side-toggle"))set("sidebar",get("sidebar")==="on"?"off":"on");});
+document.addEventListener("change",function(e){if(e.target.matches("select[data-pref]"))set(e.target.dataset.pref,e.target.value);});
+document.addEventListener("keydown",function(e){if(panel.hidden)return;
+  if(e.key==="Escape"){e.preventDefault();hide();return;}
+  if(e.key!=="Tab")return;
+  var f=[].filter.call(panel.querySelectorAll("button,select,a[href],input"),function(x){return x.offsetParent!==null;});
+  var a=document.activeElement;
+  if(e.shiftKey&&(a===f[0]||a===panel||!panel.contains(a))){e.preventDefault();f[f.length-1].focus();}
+  else if(!e.shiftKey&&(a===f[f.length-1]||!panel.contains(a))){e.preventDefault();f[0].focus();}});
+sync();})();</script>"""
+
 
 LOGO = ('<svg width="26" height="26" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.4" stroke="#5ec2a4" stroke-width="1.8" fill="none"/><g transform="translate(4.8 4.8) scale(.6)"><g transform="translate(1.2 2.6) scale(.9)"><path d="M3 6.6C3 4.9 4.2 4 6 4h2.6v9.8C6.4 13.8 4.9 13.2 4 12.1 3.3 11.2 3 10 3 8.8z" fill="#5ec2a4"/><path d="M21 6.6C21 4.9 19.8 4 18 4h-2.6v9.8c2.2 0 3.7-.6 4.6-1.7.7-.9 1-2.1 1-3.3z" fill="#5ec2a4"/><path d="M8.2 5.2C9.3 3.9 10.6 3.3 12 3.3s2.7.6 3.8 1.9v8.1c0 1.3-.8 2.2-2 2.5l-.6 5.1c-.1.8-.6 1.2-1.2 1.2s-1.1-.4-1.2-1.2l-.6-5.1c-1.2-.3-2-1.2-2-2.5z" fill="#5ec2a4"/><circle cx="10.2" cy="8.6" r=".95" fill="#0e1a19"/><circle cx="13.8" cy="8.6" r=".95" fill="#0e1a19"/></g><g transform="translate(9 -.6) scale(.25)"><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(0 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(72 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(144 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(216 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(288 12 12)"/><circle cx="12" cy="12" r="2.6" fill="#e9b44c" stroke="#0e1a19" stroke-width=".7"/></g></g></svg>')
 
@@ -287,6 +405,56 @@ FAVICON = ('<link rel="icon" href="data:image/svg+xml,'
            "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10.4' stroke='%231e7f66' stroke-width='1.8' fill='none'/%3E%3Cg transform='translate(4.8 4.8) scale(.6)'%3E%3Cg transform='translate(1.2 2.6) scale(.9)'%3E%3Cpath d='M3 6.6C3 4.9 4.2 4 6 4h2.6v9.8C6.4 13.8 4.9 13.2 4 12.1 3.3 11.2 3 10 3 8.8z' fill='%231e7f66'/%3E%3Cpath d='M21 6.6C21 4.9 19.8 4 18 4h-2.6v9.8c2.2 0 3.7-.6 4.6-1.7.7-.9 1-2.1 1-3.3z' fill='%231e7f66'/%3E%3Cpath d='M8.2 5.2C9.3 3.9 10.6 3.3 12 3.3s2.7.6 3.8 1.9v8.1c0 1.3-.8 2.2-2 2.5l-.6 5.1c-.1.8-.6 1.2-1.2 1.2s-1.1-.4-1.2-1.2l-.6-5.1c-1.2-.3-2-1.2-2-2.5z' fill='%231e7f66'/%3E%3Ccircle cx='10.2' cy='8.6' r='.95' fill='%23f7fbf9'/%3E%3Ccircle cx='13.8' cy='8.6' r='.95' fill='%23f7fbf9'/%3E%3C/g%3E%3Cg transform='translate(9 -.6) scale(.25)'%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(0 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(72 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(144 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(216 12 12)'/%3E%3Cpath d='M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z' fill='%23c9a227' transform='rotate(288 12 12)'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%23c9a227' stroke='%23f7fbf9' stroke-width='.7'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\">")
 
 
+def _choice(pref, label, options, hint="", default=None):
+    """One Preferences row: a .seg of buttons (aria-pressed) for pref; options are (value, text), default the first."""
+
+    default = default or options[0][0]
+    buttons = "".join(f'<button type="button" data-v="{v}" aria-pressed="{str(v == default).lower()}">{_esc(text)}</button>'
+                      for v, text in options)
+    note = f'<p class="hint">{_esc(hint)}</p>' if hint else ""
+    return (f'<div class="pref"><span id="pl-{pref}">{_esc(label)}</span>'
+            f'<div class="seg" role="group" aria-labelledby="pl-{pref}" data-pref="{pref}">{buttons}</div>{note}</div>')
+
+
+START_PAGES = (("home", "Home"), ("devices", "Devices"), ("alerts", "Alerts"), ("map", "Network map"),
+               ("servers", "Servers"), ("security", "Security"))
+
+PREFS_PANEL = (
+    '<div id="prefs-back" class="prefs-back" hidden></div>'
+    '<div id="prefs" class="prefs" role="dialog" aria-modal="true" aria-labelledby="prefs-title" tabindex="-1" hidden>'
+    '<div class="prefs-head"><h2 id="prefs-title">Preferences</h2>'
+    '<button type="button" class="sm" data-prefs-close>Close</button></div>'
+    '<p class="muted" style="margin:6px 0 0;font-size:.8125rem">Saved in this browser only. Changes apply at once.</p>'
+    '<h3>Appearance</h3>'
+    + _choice("theme", "Theme", (("light", "Light"), ("dark", "Dark"), ("system", "System")))
+    + _choice("motion", "Reduced motion", (("system", "System"), ("on", "On"), ("off", "Off")),
+              "System follows your device's setting.")
+    + _choice("contrast", "High contrast", (("off", "Off"), ("on", "On")))
+    + '<h3>Size &amp; density</h3>'
+    + _choice("text", "Text size", (("s", "S"), ("m", "M"), ("l", "L")), default="m")
+    + _choice("density", "Density", (("comfortable", "Comfortable"), ("compact", "Compact")))
+    + '<h3>Navigation</h3>'
+    '<div class="pref"><label for="pref-start">Start page</label><select id="pref-start" data-pref="start">'
+    + "".join(f'<option value="{v}">{_esc(t)}</option>' for v, t in START_PAGES)
+    + '</select><p class="hint">Where Lanxang opens when you visit its address. The Home link still goes to Home.</p></div>'
+    + _choice("sidebar", "Collapsed sidebar", (("off", "Off"), ("on", "On")), "Icons only, on wide screens.")
+    + '</div>'
+)
+
+NAV_ICONS = {"home": "home", "alerts": "alert", "network": "network", "servers": "server", "security": "shield",
+             "settings": "tool"}
+
+# Rendered twice (page header; phone top bar), so classes, not ids. The theme icon follows data-theme from CSS.
+HEADER_BAR = (
+    '<div class="hbar"><button type="button" class="icon-btn theme-cycle" onclick="atlasTheme()" '
+    'aria-label="Theme: Light. Switch to Dark" title="Theme: Light">'
+    f'<span class="t-light">{icon("sun")}</span><span class="t-dark">{icon("moon")}</span>'
+    f'<span class="t-system">{icon("monitor")}</span></button>'
+    '<button type="button" class="icon-btn prefs-open" aria-haspopup="dialog" aria-controls="prefs" '
+    f'aria-label="Preferences" title="Preferences">{icon("gear")}</button></div>'
+)
+
+
 def render_page(title, body_html, active="", tabs=None, drawer=True, heading=None):
     """heading: the visible headline when it should say more than the tab title (Home's verdict)."""
 
@@ -301,11 +469,18 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
     items = []
     for href, label, key in NAV:
         on = key in (active, SECTION_OF.get(active))
-        items.append(f'<li><a href="{href}"{here if on else ""}>{_esc(label)}</a>{sub if on else ""}</li>')
+        href = "/?home" if href == "/" else href     # the Home link stays on Home; only a direct visit to / follows the start page
+        items.append(f'<li><a href="{href}"{here if on else ""} title="{_esc(label)}">{icon(NAV_ICONS[key])}'
+                     f'<span class="lbl">{_esc(label)}</span></a>{sub if on else ""}</li>')
+    subnav = ""
+    if tabs:   # the section's pages above the title, for when the collapsed sidebar hides them
+        subnav = '<nav class="subnav" aria-label="Section"><div class="seg">' + "".join(
+            f'<a href="{href}"{here if current else ""}>{_esc(label)}</a>' for href, label, current in tabs) + "</div></nav>"
 
+    chat_label = f'{icon("chat")}<span class="lbl">Chat</span>'
     chat_link = (
-        '<button id="chat-toggle" class="chat-link" aria-controls="chat-drawer">Chat</button>' if drawer
-        else "<a class=\"chat-link\" href=\"/chat\">Chat</a>" if AI_ON else ""   # no AI: /chat says how to set it up
+        f'<button id="chat-toggle" class="chat-link" aria-controls="chat-drawer" title="Chat">{chat_label}</button>' if drawer
+        else f'<a class="chat-link" href="/chat" title="Chat">{chat_label}</a>' if AI_ON else ""   # no AI: /chat says how to set it up
     )
     drawer_html = CHAT_STYLE + DRAWER_STYLE + DRAWER_HTML + CHAT_SCRIPT if drawer else ""
 
@@ -315,16 +490,17 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
         f"<title>Lanxang — {_esc(title)}</title>{FAVICON}{THEME_SCRIPT}"
         f"<style>{PAGE_STYLE}</style></head><body><div class=\"app\">"
-        f"<aside class=\"side\"><a class=\"brand\" href=\"/\">{LOGO}<span class=\"name\">Lanxang<small lang=\"lo\">ລ້ານຊ້າງ</small></span></a>"
+        f"<aside class=\"side\"><a class=\"brand\" href=\"/?home\" title=\"Lanxang home\">{LOGO}<span class=\"name\">Lanxang<small lang=\"lo\">ລ້ານຊ້າງ</small></span></a>"
         f"<nav class=\"main\" aria-label=\"Main\"><ul>{''.join(items)}</ul></nav>"
-        f"<div class=\"foot\">{chat_link}"
-        "<button type=\"button\" class=\"theme-btn\" onclick=\"atlasTheme()\" aria-label=\"Switch between light and dark\">"
-        f"<span class=\"to-dark\">{icon('moon')}Dark mode</span><span class=\"to-light\">{icon('sun')}Light mode</span></button>"
-        + ('<form method="post" action="/logout"><button>Sign out</button></form>' if SIGN_OUT else "") +
+        f"<div class=\"foot\">{chat_link}{HEADER_BAR}"
+        + ('<form method="post" action="/logout"><button title="Sign out">' + icon("logout")
+           + '<span class="lbl">Sign out</span></button></form>' if SIGN_OUT else "")
+        + '<button type="button" class="side-toggle" aria-pressed="false" title="Collapse sidebar">'
+        f'{icon("sidebar")}<span class="lbl">Collapse sidebar</span></button>'
         "</div></aside>"
         f"<div class=\"shell{' docked' if drawer else ''}\">"
-        f"<main class=\"page\"><h1>{_esc(heading or title)}</h1>{body_html}</main>"
-        f"{drawer_html}</div></div>{TIME_SCRIPT}"
+        f"<main class=\"page\"><div class=\"page-head\"><h1>{_esc(heading or title)}</h1>{HEADER_BAR}</div>{subnav}{body_html}</main>"
+        f"{drawer_html}</div></div>{PREFS_PANEL}{TIME_SCRIPT}{PREFS_SCRIPT}"
         "</body></html>"
     )
 
@@ -509,12 +685,12 @@ EVENT_CATEGORIES = (("alert", icon("alert"), ("threshold", "alert", "down", "fai
 HISTORY_STYLE = """
 <style>
 .filters { margin:0 0 14px; }
-.day { margin:0 0 18px; } .day > h2 { font-size:14px; color:var(--muted); border:0; margin:0 0 6px; }
+.day { margin:0 0 18px; } .day > h2 { font-size:.875rem; color:var(--muted); border:0; margin:0 0 6px; }
 .ev { display:grid; grid-template-columns:76px 26px 1fr; gap:6px; align-items:start; padding:6px 0;
-      border-top:1px solid var(--line); font-size:14px; }
+      border-top:1px solid var(--line); font-size:.875rem; }
 .ev[hidden], .day[hidden] { display:none; }   /* display:grid would otherwise beat the hidden attribute */
 .ev:first-of-type { border-top:0; } .ev .time { color:var(--muted); font-variant-numeric:tabular-nums; }
-.ev .count { color:var(--muted); font-size:12px; } .ev .src { color:var(--muted); font-size:12px; }
+.ev .count { color:var(--muted); font-size:.75rem; } .ev .src { color:var(--muted); font-size:.75rem; }
 .ev details > summary { cursor:pointer; list-style:none; } .ev details > summary::-webkit-details-marker { display:none; }
 .ev pre { margin:6px 0 0; max-height:260px; overflow:auto; }
 </style>

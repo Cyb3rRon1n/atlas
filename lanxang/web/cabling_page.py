@@ -28,24 +28,24 @@ CABLING_STYLE = """
 <style>
 .suggest { margin:0 0 12px; padding:8px 12px; border:1px solid var(--line2); border-radius:10px; }
 .cab-head { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px; }
-.cab-head .when { color:var(--muted); font-size:14px; }
-.chip { font-size:12px; padding:2px 9px; border-radius:999px; border:1px solid var(--line); }
+.cab-head .when { color:var(--muted); font-size:.875rem; }
+.chip { font-size:.75rem; padding:2px 9px; border-radius:999px; border:1px solid var(--line); }
 .chip.ok { color:var(--ok-text); border-color:var(--ok-line); } .chip.stale { color:var(--warn-text); border-color:var(--warn-line); }
 .chip.error { color:var(--bad-text); border-color:var(--bad-line); }
 #wiring-refresh:disabled { cursor:wait; }
-.warn { margin:6px 0 12px; padding:8px 12px 8px 28px; border:1px solid var(--warn-line); border-radius:8px; color:var(--warn-text); font-size:14px; }
+.warn { margin:6px 0 12px; padding:8px 12px 8px 28px; border:1px solid var(--warn-line); border-radius:8px; color:var(--warn-text); font-size:.875rem; }
 #diagram .frame { overflow:auto; border:1px solid var(--line); border-radius:10px; background:var(--deep); max-height:78vh; }
 #wiring-svg { display:block; min-width:100%; }
-.legend { display:flex; flex-wrap:wrap; align-items:center; gap:14px; font-size:12px; color:var(--muted); margin:6px 0; }
+.legend { display:flex; flex-wrap:wrap; align-items:center; gap:14px; font-size:.75rem; color:var(--muted); margin:6px 0; }
 .legend i { display:inline-block; width:22px; height:3px; vertical-align:middle; margin-right:5px; }
 .fp-wrap { overflow-x:auto; padding:8px 0 14px; }
 .fp { --pw:62px; --ph:44px; position:relative; }
 .fp .port { margin:0; text-align:left; font:inherit; color:inherit; cursor:pointer; overflow:hidden; position:absolute; width:56px; height:38px; box-sizing:border-box; border:1px solid var(--line2); border-radius:6px;
-           padding:2px 5px; font-size:11px; background:var(--surface); opacity:.55; }
+           padding:2px 5px; font-size:.6875rem; background:var(--surface); opacity:.55; }
 .fp .port.up { opacity:1; }
 .fp .port.poe-cap, .fp .port.poe { border:2px dashed var(--yellow); }
 .fp .port.poe { border-style:solid; }
-.fp .port.poe-cap::after { content:"PoE"; position:absolute; right:3px; top:1px; font-size:11px; font-weight:700; color:var(--yellow); }
+.fp .port.poe-cap::after { content:"PoE"; position:absolute; right:3px; top:1px; font-size:.6875rem; font-weight:700; color:var(--yellow); }
 .fp .port.poe::after { content:""; position:absolute; right:4px; top:4px; width:9px; height:11px; background:var(--yellow);
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='4 2 15 20'%3E%3Cpath d='M13 2 4 14h7l-1 8 9-12h-7z'/%3E%3C/svg%3E") center/contain no-repeat;
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='4 2 15 20'%3E%3Cpath d='M13 2 4 14h7l-1 8 9-12h-7z'/%3E%3C/svg%3E") center/contain no-repeat; }
@@ -54,34 +54,34 @@ CABLING_STYLE = """
 #health ul { list-style:none; padding:0; margin:0; } #health li { padding:6px 0; border-top:1px solid var(--line); }
 #health li:first-child { border-top:0; } #health .lvl { font-weight:600; margin-right:6px; }
 #health .bad .lvl { color:var(--red); } #health .watch .lvl { color:var(--orange); }
-.fp .port b { display:block; font-size:12px; }
+.fp .port b { display:block; font-size:.75rem; }
 .fp .port small { display:block; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .fp .port.cage { border-style:dashed; background:transparent; }
 .fp .port.standby { border:2px dashed var(--muted); opacity:.7; }
-.fp .port.standby::before { content:"standby"; position:absolute; left:4px; bottom:1px; font-size:8px; color:var(--muted); }
+.fp .port.standby::before { content:"standby"; position:absolute; left:4px; bottom:1px; font-size:.5rem; color:var(--muted); }
 .fp .port.vlan-off { opacity:.15; }
-.notes { margin:6px 0 12px; padding:6px 12px 6px 28px; color:var(--muted); font-size:14px; }
+.notes { margin:6px 0 12px; padding:6px 12px 6px 28px; color:var(--muted); font-size:.875rem; }
 .lag { border:1px solid var(--line); border-radius:6px; padding:1px 6px; margin-right:6px; }
 .fp .s100 { border-color:var(--muted); } .fp .s1g { border-color:var(--blue); } .fp .s25 { border-color:var(--teal); } .fp .s10g { border-color:var(--purple); }
 #faceplates details { border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:8px; }
 #faceplates summary { cursor:pointer; font-weight:600; }
-.portmap { width:100%; border-collapse:collapse; font-size:13px; }
+.portmap { width:100%; border-collapse:collapse; font-size:.8125rem; }
 .portmap th, .portmap td { text-align:left; padding:4px 8px; border-bottom:1px solid var(--line); }
 .portmap td.down { color:var(--bad-text); }
 .cab-tools { display:flex; gap:8px; align-items:center; margin:8px 0; }
 .cab-tools input { flex:0 1 20rem; min-width:0; }
-#changes li { font-size:14px; }
+#changes li { font-size:.875rem; }
 .spark { vertical-align:middle; margin-right:6px; } .spark polyline { fill:none; stroke:var(--blue); stroke-width:1.5; }
 .spark.busy polyline { stroke:var(--orange); } .spark.hot polyline { stroke:var(--red); }
 .portmap td.rate { white-space:nowrap; color:var(--muted); }
 .fp .port.sel { outline:3px solid var(--blue); outline-offset:2px; opacity:1; }
 .views { margin-left:auto; }
-.cab-sum { color:var(--muted); font-size:14px; }
+.cab-sum { color:var(--muted); font-size:.875rem; }
 .fp-layout { display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; }
 .fp-layout > div { flex:999 1 400px; min-width:0; }
 .pd { flex:1 1 240px; position:sticky; top:12px; border:1px solid var(--line); border-radius:10px; padding:16px 18px;
-      background:var(--surface); font-size:14px; }
-.pd h3 { margin:0 0 10px; font-size:17px; } .pd .k { font-size:13px; color:var(--muted); margin:0; }
+      background:var(--surface); font-size:.875rem; }
+.pd h3 { margin:0 0 10px; font-size:1.0625rem; } .pd .k { font-size:.8125rem; color:var(--muted); margin:0; }
 .pd dl { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; margin:0; } .pd dt { color:var(--muted); }
 .pd dd { margin:0; overflow-wrap:anywhere; } .pd dd.bad { color:var(--bad-text); font-weight:600; }
 </style>
@@ -240,7 +240,7 @@ DIAGRAM_SCRIPT = r"""
         }
         g.addEventListener("click", function () {
           var plate = document.getElementById("fp-" + c.id);
-          if (plate) { showView("faceplates"); plate.open = true; plate.scrollIntoView({behavior: "smooth"}); }
+          if (plate) { showView("faceplates"); plate.open = true; plate.scrollIntoView({behavior: window.lanxangReduced && lanxangReduced() ? "auto" : "smooth"}); }
         });
       });
     }).catch(function (error) { say("Diagram layout failed: " + error); });
@@ -300,7 +300,7 @@ DIAGRAM_SCRIPT = r"""
       put("dd", pair[0] === "Problem" ? "bad" : "", list, pair[1]);
     });
     var box = detail.getBoundingClientRect();
-    if (box.top > window.innerHeight || box.bottom < 0) { detail.scrollIntoView({behavior: "smooth", block: "nearest"}); }
+    if (box.top > window.innerHeight || box.bottom < 0) { detail.scrollIntoView({behavior: window.lanxangReduced && lanxangReduced() ? "auto" : "smooth", block: "nearest"}); }
   });
 
   function showView(name) {

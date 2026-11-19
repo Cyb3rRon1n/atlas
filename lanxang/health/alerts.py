@@ -113,7 +113,7 @@ def run(settings, store, health, containers, now, send=None):
     previous = ((store.statuses().get("host") or {}).get("detail")) or {}
     issues, state = assess(health, containers, settings.health, previous)
     from lanxang.alerts import issue, report
-    report("host", [issue(i["kind"], i["subject"], i["reason"], i["detail"], href="/")
+    report("host", [issue(i["kind"], i["subject"], i["reason"], i["detail"], href="/?home")
                     for i in issues] if settings.health.alerts else [], now, store)
     if settings.health.alerts:
         from lanxang.alerts import allowed

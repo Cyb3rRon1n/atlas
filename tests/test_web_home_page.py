@@ -61,7 +61,7 @@ def test_home_all_good_verdict_cards_and_links():
     assert "Security posture" in html and "Host health" in html and "Recent activity" in html
     assert "&lt;b&gt;x&lt;/b&gt;" in html and "<b>x</b>" not in html
     assert "proxmox changes detected" in html and "&times;3" in html
-    assert 'aria-current="page" href="/"' in html or 'href="/" aria-current="page"' in html
+    assert 'href="/?home" aria-current="page"' in html
 
 
 def test_home_counts_attention_and_handles_unavailable():

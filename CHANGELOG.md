@@ -3,6 +3,17 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
+## Unreleased
+
+### Added
+- A header bar at the top right of every page: a theme button that cycles Light, Dark and System (follows the device), and a gear that opens Preferences. On phones both sit in the top bar.
+- Preferences, a side panel that applies each change at once and remembers it in this browser: theme, reduced motion (System / On / Off), high contrast, text size (S / M / L), density (Comfortable / Compact), start page (Home, Devices, Alerts, Network map, Servers or Security) and a collapsed, icons-only sidebar.
+- The sidebar has a collapse button and line icons for each section; it stays in view while the page scrolls.
+
+### Changed
+- The sidebar's "Dark mode" button moved to the header bar; Sign out stays in the sidebar. A saved light or dark choice keeps working.
+- Page text sizes are now relative to the browser's text size, so text size and browser zoom scale every page evenly.
+
 ## 1.1.0 - 2026-11-19
 
 A polish release: light mode by default, a consistent look across every page, and friendlier empty pages.

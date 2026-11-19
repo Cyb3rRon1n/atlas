@@ -108,7 +108,7 @@ STYLE = """<style>
                 border-bottom:1px solid var(--line); } .changes-head h2 { margin:0; padding:0; border:0; }
 .changes ul { list-style:none; padding:0; margin:.4rem 0; }
 .changes li { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--line); align-items:baseline; }
-.changes .time { color:var(--muted); font-size:13px; flex:none; width:8.5em; font-variant-numeric:tabular-nums; }
+.changes .time { color:var(--muted); font-size:.8125rem; flex:none; width:8.5em; font-variant-numeric:tabular-nums; }
 .changes .mark { flex:none; } .changes .mark .ic { margin:0; }
 .changes details > summary { cursor:pointer; } .changes ul.group { margin:.3rem 0 0; }
 .changes ul.group li { border:0; padding:2px 0; }

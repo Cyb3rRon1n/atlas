@@ -14,13 +14,13 @@ from lanxang.web.render import _esc, plural, render_page
 
 STYLE = """<style>
 .up-intro { color:var(--muted); max-width:70ch; }
-.uptime { width:100%; border-collapse:collapse; font-size:14px; margin:12px 0 24px; }
+.uptime { width:100%; border-collapse:collapse; font-size:.875rem; margin:12px 0 24px; }
 .uptime th, .uptime td { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:middle; }
-.uptime th { color:var(--muted); font-weight:600; font-size:13px; }
+.uptime th { color:var(--muted); font-weight:600; font-size:.8125rem; }
 .uptime td.num { font-variant-numeric:tabular-nums; white-space:nowrap; }
-.uptime .target { display:block; color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+.uptime .target { display:block; color:var(--muted); font-size:.75rem; overflow-wrap:anywhere; }
 @media (max-width: 600px) { .uptime .target { white-space:nowrap; } }   /* the table scrolls sideways instead */
-.state { display:inline-block; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+.state { display:inline-block; padding:2px 10px; border-radius:999px; font-size:.75rem; font-weight:600; }
 .state.up { background:color-mix(in srgb, var(--green) 20%, transparent); color:var(--green); }
 .state.down { background:color-mix(in srgb, var(--red) 22%, transparent); color:var(--red); }
 .state.failing { background:color-mix(in srgb, var(--orange) 22%, transparent); color:var(--orange); }
@@ -29,11 +29,11 @@ STYLE = """<style>
 .up-add { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 16px; max-width:760px; }
 .up-add form, form.up-add { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .up-add input[name=name] { width:230px; max-width:100%; box-sizing:border-box; } .up-add input[name=target] { flex:1; min-width:min(240px, 100%); box-sizing:border-box; }
-.up-sugg { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; color:var(--muted); font-size:13px; }
+.up-sugg { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; color:var(--muted); font-size:.8125rem; }
 .up-sugg button { border-radius:999px; }   /* suggestion chips stay pills */
 .up-power { margin:.4rem 0; } .up-power .state { margin-right:.4rem; }
 #up-msg { color:var(--red); min-height:1.2em; }
-.outages { margin:4px 0 24px; padding-left:18px; font-size:14px; } .outages li { padding:2px 0; }
+.outages { margin:4px 0 24px; padding-left:18px; font-size:.875rem; } .outages li { padding:2px 0; }
 </style>"""
 
 SCRIPT = """<script>

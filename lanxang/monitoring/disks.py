@@ -58,7 +58,7 @@ def run(settings, store, now, nodes, host_names=None, *, source="disks", send=No
             now_problems = problems(disk, health, was_hot=(before.get("temp") or 0) >= hot_limit)
             label = _label(host, disk)
             for kind, (title, detail) in now_problems.items():
-                found.append(issue(kind, key, f"Disk {label} {title}", detail, href="/"))
+                found.append(issue(kind, key, f"Disk {label} {title}", detail, href="/?home"))
                 if kind not in (before.get("problems") or []):
                     texts.append(Text(f"**💽 Disk {label} {title}**\n• {detail}", f"disks:{kind}:{key}"))
             for kind in set(before.get("problems") or []) - set(now_problems):

@@ -18,10 +18,10 @@ def test_pages_use_theme_tokens_not_raw_colours():
 
 def test_shell_has_side_menu_sub_pages_and_both_themes():
     html = render_page("Cabling", "<p>x</p>", active="cabling")
-    assert '<aside class="side">' in html and 'href="/devices" aria-current="page">Network<' in html
+    assert '<aside class="side">' in html and 'href="/devices" aria-current="page" title="Network"' in html
     assert 'class="tabs"' in html and 'href="/cabling" aria-current="page">Cabling<' in html
     assert ':root[data-theme="dark"]' in html and "atlasTheme()" in html and "atlas-theme" in html
-    assert 'class="to-dark"' in html and "Light mode" in html and html.count('class="ic"') >= 2
+    assert html.count('class="ic"') >= 8      # every main nav item carries an icon (the collapsed sidebar needs it)
     assert render_page("Setup", "", active="settings").count('class="tabs"') == 0    # no sub-pages, no list
 
 
@@ -31,12 +31,15 @@ def test_pages_have_an_inline_icon():
         assert "<link rel=\"icon\" href=\"data:image/svg+xml," in html
 
 
-def test_light_is_default_dark_only_via_data_theme():
-    """The OS colour scheme is ignored: dark applies only when the viewer chose it (data-theme=dark)."""
+def test_light_is_default_system_only_when_chosen():
+    """Light whatever the OS prefers: the OS colour scheme counts only under data-theme="system"."""
 
     html = render_page("Home", "")
-    assert "prefers-color-scheme" not in html and "matchMedia" not in html
-    assert html.count("color-scheme:dark") == 1 and ':root[data-theme="dark"] {' in html
+    css = html.split("<style>")[1].split("</style>")[0]
+    media = css.split("@media (prefers-color-scheme: dark) {")[1].split("\n}")[0]
+    assert css.count("prefers-color-scheme") == 1 and ':root[data-theme="system"] {' in media
+    assert media.count(":root") == 2 and all('[data-theme="system"]' in line for line in media.splitlines() if ":root" in line)
+    assert html.count("color-scheme:dark") == 2 and ':root[data-theme="dark"] {' in html
     for path in (Path(__file__).resolve().parents[1] / "lanxang").rglob("*"):
-        if path.suffix in {".py", ".js", ".html", ".css"}:
+        if path.suffix in {".py", ".js", ".html", ".css"} and path.name != "render.py":
             assert "prefers-color-scheme" not in path.read_text(), path

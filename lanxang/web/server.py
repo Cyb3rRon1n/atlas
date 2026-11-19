@@ -114,6 +114,20 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
 
         return bool(morsel) and self.auth.valid_session(morsel.value)
 
+    def _viewer_zone(self):
+        """The IANA zone the browser reported (lanxang-tz cookie), if it names a real one; else None."""
+
+        from zoneinfo import ZoneInfo
+        from urllib.parse import unquote
+        cookie = SimpleCookie()
+        try:
+            cookie.load(self.headers.get("Cookie") or "")
+            name = unquote(cookie["lanxang-tz"].value)
+            ZoneInfo(name)
+        except Exception:
+            return None
+        return name
+
     def _token_ok(self):
 
         header = self.headers.get("Authorization") or ""
@@ -341,7 +355,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 "alerts": lambda at, days: AlertStore().listing(at, days), "devices": InventoryStore().devices,
                 "changes": lambda since: [(at, kind, payload) for kind in changes_feed.CHANGE_EVENTS
                                           for at, payload in query.events_since([kind], since)]})
-            body = render_history_page(events, changes=changes_feed.render(feed, now, window))
+            body = render_history_page(events, changes=changes_feed.render(feed, now, window),
+                                       viewer_zone=self._viewer_zone())
         elif path == "/uptime":
             from lanxang.config import local
             from lanxang.monitoring.uptime import UptimeStore

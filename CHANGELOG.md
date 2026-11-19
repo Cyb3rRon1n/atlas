@@ -3,7 +3,9 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
-## Unreleased
+## 1.1.0 - 2026-11-19
+
+A polish release: light mode by default, a consistent look across every page, and friendlier empty pages.
 ### Changed
 - The web UI now opens in light mode whatever the system theme; dark is still one click away in the sidebar and is remembered.
 - Every time on Triage, Devices, Coverage, Home and Activity is written the same way and in the viewer's own time zone: "5 min ago", "today 14:32", "yesterday 14:32", "12 Nov". Activity no longer says "Times are UTC".

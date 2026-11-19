@@ -41,7 +41,9 @@ def old_names(environ=None):
     ${ATLAS_*} references in the config file."""
 
     found = old_variables(environ)
-    if OLD_CONFIG.is_file() and not NEW_CONFIG.is_file():
+    if NEW_CONFIG.exists() and not NEW_CONFIG.is_file():
+        found.insert(0, "lanxang.yaml is a folder, not your config file")
+    elif OLD_CONFIG.is_file() and not NEW_CONFIG.exists():
         found.insert(0, OLD_CONFIG.name)
     try:
         if NEW_CONFIG.is_file() and "${ATLAS_" in NEW_CONFIG.read_text():

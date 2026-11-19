@@ -61,3 +61,9 @@ def test_no_atlas_command():
     import tomllib
     scripts = tomllib.loads((Path(__file__).parent.parent / "pyproject.toml").read_text())["project"]["scripts"]
     assert scripts == {"lanxang": "lanxang.cli:app"}
+
+
+def test_a_docker_made_folder_is_named(isolated_cwd):
+    Path("lanxang.yaml").mkdir()
+    Path("atlas.yaml").write_text("name: old\n")
+    assert local.old_names({}) == ["lanxang.yaml is a folder, not your config file"]

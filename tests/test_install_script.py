@@ -53,7 +53,7 @@ def test_fresh_install_upgrade_and_uninstall(sandbox):
 
     env = (target / ".env").read_text()
     assert "LANXANG_BIND=0.0.0.0" in env and "LANXANG_PORT=8420" in env
-    assert "LANXANG_CONFIG=lanxang.yaml" in env
+    assert "LANXANG_CONFIG" not in env
     assert "LANXANG_TAG=latest" in env
     assert oct((target / ".env").stat().st_mode & 0o777) == "0o600"
     config = AtlasConfig(**yaml.safe_load((target / "lanxang.yaml").read_text()))
@@ -104,6 +104,22 @@ def test_no_ai_choice_leaves_the_ai_section_to_the_setup_page(sandbox):
     assert run("--yes").returncode == 0
     written = yaml.safe_load((home / "lanxang" / "lanxang.yaml").read_text())
     assert "intelligence" not in written and written["web"]["auth"] == "builtin"
+
+
+def test_upgrade_keeps_the_new_name_when_both_are_set_and_clears_a_docker_folder(sandbox):
+    home, run = sandbox
+    old = home / "atlas"
+    old.mkdir()
+    (old / "docker-compose.yml").write_text("services: {}\n")
+    (old / ".env").write_text("ATLAS_PORT=8420\nLANXANG_PORT=9000\nATLAS_BIND=0.0.0.0\nLANXANG_CONFIG=atlas.yaml\n")
+    (old / "atlas.yaml").write_text("name: mine\n")
+    (old / "lanxang.yaml").mkdir()                       # what docker leaves when the mounted file is missing
+    result = run("--yes", LANXANG_DIR="", HOME=str(home))
+    assert result.returncode == 0, result.stderr
+    assert (old / "lanxang.yaml").read_text() == "name: mine\n"
+    env = (old / ".env").read_text().splitlines()
+    assert [line for line in env if "PORT" in line] == ["LANXANG_PORT=9000"]
+    assert "LANXANG_BIND=0.0.0.0" in env and not any("CONFIG" in line or "ATLAS_" in line for line in env)
 
 
 def test_old_atlas_install_is_upgraded_in_place_and_keeps_its_config(sandbox):

@@ -122,7 +122,12 @@ set_env() {   # set_env KEY VALUE - replace or append one line in .env
 if [ "$UPGRADE" = 1 ]; then
     say "Upgrade: keeping your .env and config file"
     # since 1.3 only the Lanxang names are read: move an older install's atlas.yaml and ATLAS_* settings over
-    if [ -f "$DIR/atlas.yaml" ] && [ ! -f "$DIR/lanxang.yaml" ]; then
+    # docker creates an empty folder when a mounted file is missing (a compose up before this rename)
+    if [ -d "$DIR/lanxang.yaml" ]; then
+        rmdir "$DIR/lanxang.yaml" 2>/dev/null \
+            || die "$DIR/lanxang.yaml is a folder, not a file - move what is in it, remove it, then run this again"
+    fi
+    if [ -f "$DIR/atlas.yaml" ] && [ ! -e "$DIR/lanxang.yaml" ]; then
         mv "$DIR/atlas.yaml" "$DIR/lanxang.yaml"
         say "Renamed atlas.yaml to lanxang.yaml"
     fi
@@ -131,9 +136,13 @@ if [ "$UPGRADE" = 1 ]; then
         sed 's/[$]{ATLAS_/${LANXANG_/g' "$DIR/lanxang.yaml.before-1.3" > "$DIR/lanxang.yaml"
         say "Renamed the \${ATLAS_...} references in lanxang.yaml (the old file is lanxang.yaml.before-1.3)"
     fi
-    if [ -f "$DIR/.env" ] && grep -q '^ATLAS_' "$DIR/.env"; then
+    if [ -f "$DIR/.env" ] && grep -q '^ATLAS_\|^LANXANG_CONFIG=' "$DIR/.env"; then
         cp -p "$DIR/.env" "$DIR/.env.before-1.3"
-        sed -e 's/^ATLAS_/LANXANG_/' -e '/^LANXANG_CONFIG=/d' "$DIR/.env.before-1.3" > "$DIR/.env"
+        # ATLAS_X becomes LANXANG_X unless LANXANG_X is already set (that one always won); LANXANG_CONFIG is unused now
+        awk -F= 'NR == FNR { if ($1 ~ /^LANXANG_/) have[$1] = 1; next }
+                 /^LANXANG_CONFIG=/ { next }
+                 /^ATLAS_/ { k = "LANXANG_" substr($1, 7); if (k in have) next; sub(/^ATLAS_/, "LANXANG_") }
+                 { print }' "$DIR/.env.before-1.3" "$DIR/.env.before-1.3" > "$DIR/.env"
         say "Renamed the ATLAS_ settings in .env to LANXANG_ (the old file is .env.before-1.3)"
     fi
     set_env LANXANG_TAG "$TAG"
@@ -150,7 +159,6 @@ else
     set_env LANXANG_TAG "$TAG"
     set_env LANXANG_PORT "$port"
     set_env LANXANG_BIND "$bind"
-    set_env LANXANG_CONFIG lanxang.yaml
 
     provider=none model="" ollama=http://localhost:11434
     case "$ai" in

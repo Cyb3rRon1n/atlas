@@ -9,7 +9,7 @@ import math
 from lanxang.config.local import config_name
 from lanxang.access.parse import is_private
 from lanxang.web.icons import icon
-from lanxang.web.render import _esc, ask_chips, plural, render_page
+from lanxang.web.render import _esc, ask_chips, segmented, plural, render_page
 from lanxang.web.world_land import LAND_PATH
 
 WINDOWS = {"24h": 1, "7d": 7, "30d": 30}
@@ -19,8 +19,7 @@ ACCESS_CHIPS = ("Who signed in from somewhere unusual this week?", "Which anonym
 
 ACCESS_STYLE = """
 <style>
-.windows { display:flex; gap:4px; margin:0 0 14px; } .windows a { padding:6px 12px; border-radius:8px; color:var(--muted); }
-.windows a[aria-current="page"] { background:var(--surface2); color:var(--text); }
+.windows { margin:0 0 14px; }
 .astrip { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px; }
 .astrip > div { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; }
 .astrip .k { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
@@ -91,7 +90,7 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
         + (f', {p["denied"]} denied' if p["denied"] else "") + (", signed-in user" if p["user"] else "") + "</title></circle>"
         for (x, y), p in sorted(places.items(), key=lambda kv: kv[1]["user"]))
 
-    win = "".join(f'<a href="/access?window={w}"{" aria-current=page" if w == window else ""}>{w}</a>' for w in WINDOWS)
+    win = segmented(WINDOWS, window, "/access?window={key}")
     countries = {v.get("cc") or v.get("country") for v in outside if v.get("cc") or v.get("country")}
     stats = (("Visitor IPs", len(outside), ""), ("Countries", len(countries), ""),
              ("Requests", sum(v["requests"] for v in outside), ""), ("Denied", sum(v["denied"] for v in outside), ""),
@@ -150,7 +149,7 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
                   " b.textContent = 'Failed (' + r.status + ')'; } catch (e) { b.textContent = 'Network error'; } b.disabled = false; }));</script>")
 
     body = (
-        ACCESS_STYLE + ask_chips(ACCESS_CHIPS) + review_card + f'<nav class="windows" aria-label="Time window">{win}</nav>'
+        ACCESS_STYLE + ask_chips(ACCESS_CHIPS) + review_card + f'<div class="windows">{win}</div>'
         + '<div class="astrip">' + "".join(f'<div class="{c}"><div class="k">{k}</div><div class="v">{v}</div></div>'
                                            for k, v, c in stats) + "</div>"
         + f'<div class="mapbox"><svg viewBox="0 0 360 180" role="img" aria-label="Where visitors came from">'

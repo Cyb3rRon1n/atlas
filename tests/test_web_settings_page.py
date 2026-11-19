@@ -62,6 +62,8 @@ def test_ntfy_test_sends_without_saving_then_save_and_turn_off(env, receiver, is
 
     page = render_settings_page()
     assert "tk_secret" not in page and "saved — leave blank to keep it" in page and 'class="badge on"' in page
+    ntfy = page.split('id="ntfy"')[1].split("</section>")[0]          # Turn off (danger) first, Save (primary) last
+    assert ntfy.index('class="danger off" data-act="off"') < ntfy.index('data-act="test"') < ntfy.index('class="primary" data-act="save"')
 
     assert handle_post("/api/settings/ntfy/save", {"url": url, "topic": "renamed", "token": ""})[0] == 200
     assert load_config().notify.ntfy.token == "tk_secret"                         # blank keeps the secret

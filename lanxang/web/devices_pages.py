@@ -142,13 +142,13 @@ def render_triage_page(triage, hints=None):
         f"<tr><td><div class=\"attn-row\">{_name_and_kind(device, hints.get(device['id']))}"
         f"{_clues(device, hints.get(device['id']))}</div></td>"
         f"<td>{_esc(_sources(device))}</td>"
-        f"<td>{_when(device['last_seen'])}</td><td>"
+        f"<td>{_when(device['last_seen'])}</td><td><div class=\"actions\">"
         + _button("Keep", f"/api/devices/{device['id']}", {"state": "known"}, "primary", name_from=f"name-{device['id']}",
                   kind_from=f"kind-{device['id']}")
         + (_button(f"Merge into {device['suggested_merge_name']}", f"/api/devices/{device['id']}/merge",
                    {"into": device["suggested_merge_id"]}) if device.get("suggested_merge_name") else "")
         + _button("Ignore", f"/api/devices/{device['id']}", {"state": "ignored"})
-        + f" <a href=\"/devices/{device['id']}\">details</a></td></tr>"
+        + f"<a href=\"/devices/{device['id']}\">details</a></div></td></tr>"
         for device in triage["new"]
     )
 
@@ -420,7 +420,7 @@ def render_device_page(device, devices, ports=None, wiring=None, suggestion=None
     others = "".join(f"<option value=\"{other['id']}\">{_esc(other['name'])}</option>"
                      for other in devices if other["id"] != device["id"])
     merge = (f"<p>Merge this device into <select id=\"merge-into\">{others}</select> "
-             + _button("Merge", f"/api/devices/{device['id']}/merge", {}, into_from="merge-into", after="goto")
+             + _button("Merge", f"/api/devices/{device['id']}/merge", {}, "danger", into_from="merge-into", after="goto")
              + "</p>") if others else ""
 
     body = (

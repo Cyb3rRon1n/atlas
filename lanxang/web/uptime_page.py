@@ -28,11 +28,9 @@ STYLE = """<style>
 .ms polyline { fill:none; stroke:var(--blue); stroke-width:1.5; } .ms rect { fill:var(--red); }
 .up-add { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 16px; max-width:760px; }
 .up-add form, form.up-add { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-.up-add input { background:var(--bg); color:inherit; border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
 .up-add input[name=name] { width:230px; max-width:100%; box-sizing:border-box; } .up-add input[name=target] { flex:1; min-width:min(240px, 100%); box-sizing:border-box; }
-.up-btn { background:var(--accent); color:var(--on-accent); border:0; border-radius:6px; padding:7px 14px; cursor:pointer; font:inherit; }
-.up-btn.ghost { background:transparent; color:inherit; border:1px solid var(--line); padding:4px 10px; font-size:13px; }
 .up-sugg { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; color:var(--muted); font-size:13px; }
+.up-sugg button { min-height:30px; padding:0 12px; border-radius:999px; font-size:13px; }
 .up-power { margin:.4rem 0; } .up-power .state { margin-right:.4rem; }
 #up-msg { color:var(--red); min-height:1.2em; }
 .outages { margin:4px 0 24px; padding-left:18px; font-size:14px; } .outages li { padding:2px 0; }
@@ -208,7 +206,7 @@ def _heartbeats(beats, now, locked):
         f'{hb.grace_minutes} min grace</span></td>'
         f'<td>{_esc(_ago(datetime.fromisoformat(st["at"]), now)) if st.get("at") else "never"}</td>'
         f'<td><code class="ping" data-ping="/ping/{_esc(token)}">curl -fsS -m 10 /ping/{_esc(token)}</code></td>'
-        f'<td>{"" if locked else f"""<button class="up-btn ghost" type="button" data-beat-remove="{_esc(hb.name)}">Remove</button>"""}</td></tr>'
+        f'<td>{"" if locked else f"""<button class="danger" type="button" data-beat-remove="{_esc(hb.name)}">Remove</button>"""}</td></tr>'
         for hb, st, token in beats)
     table = ('<div class="table-wrap"><table class="uptime"><thead><tr><th>Status</th><th>Job</th><th>Last ping</th><th>Ping it with</th>'
              f'<th></th></tr></thead><tbody>{rows}</tbody></table></div>' if rows else "")
@@ -217,7 +215,7 @@ def _heartbeats(beats, now, locked):
     add = ("" if locked else
            '<form id="beat-form" class="up-add"><input name="name" placeholder="Name, e.g. Nightly backup" '
            f'aria-label="Name" required><select name="every" aria-label="How often">{options}</select>'
-           '<button class="up-btn" type="submit">Add heartbeat</button></form>')
+           '<button class="primary" type="submit">Add heartbeat</button></form>')
     return ('<h2>Heartbeats</h2><p class="up-intro">For jobs Lanxang can\'t check from outside — a nightly backup, a '
             'cron job. Add one, then have the job run the line shown when it finishes (add <code>/fail</code> to '
             'the address when it fails). If it doesn\'t check in on time you get one alert, and another when it '
@@ -237,7 +235,7 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
         failure = info["last_failure"]
         problem = f"{_ago(failure[0], now)}: {failure[1]}" if failure else "none in 30 days"
         remove = ("" if locked else
-                  f'<button class="up-btn ghost" type="button" data-remove="{_esc(check.name)}">Remove</button>')
+                  f'<button class="danger" type="button" data-remove="{_esc(check.name)}">Remove</button>')
         rows.append(
             f'<tr><td><span class="state {state}">{label}</span></td>'
             f'<td><strong>{_esc(check.name)}</strong><span class="target">{_esc(check.target)}</span></td>'
@@ -255,12 +253,12 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
         add = (f'<section class="up-add"><p class="up-intro">These checks are set in {config_name()} '
                '(<code>uptime.checks</code>) — edit them there.</p></section>')
     else:
-        chips = "".join(f'<button class="up-btn ghost" type="button" data-name="{_esc(name)}" data-fill="{_esc(target)}">'
+        chips = "".join(f'<button class="secondary" type="button" data-name="{_esc(name)}" data-fill="{_esc(target)}">'
                         f'{_esc(name)}</button>' for name, target in suggestions)
         add = ('<section class="up-add"><h2>Add a check</h2>'
                '<form id="up-form"><input name="name" placeholder="Name, e.g. Media server" aria-label="Name" required>'
                '<input name="target" placeholder="https://media.example.org or 192.0.2.10:22" aria-label="Address" required>'
-               '<button class="up-btn" type="submit">Add</button></form>'
+               '<button class="primary" type="submit">Add</button></form>'
                + (f'<div class="up-sugg">Your public sites: {chips}</div>' if chips else "")
                + '<p id="up-msg"></p></section>')
 

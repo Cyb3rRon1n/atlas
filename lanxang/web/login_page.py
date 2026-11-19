@@ -14,10 +14,8 @@ CARD_STYLE = """
         border:1px solid var(--line); border-radius:12px; }
 .auth h1 { margin:0 0 6px; font-size:1.3rem; }
 .auth label { display:block; margin:14px 0 6px; color:var(--muted); font-size:.9rem; }
-.auth input { width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; font:inherit;
-              border:1px solid var(--line); background:var(--surface2); color:var(--text); }
-.auth button { margin-top:20px; width:100%; padding:10px 12px; border-radius:8px; border:0; font:inherit;
-               font-weight:600; cursor:pointer; background:var(--blue); color:var(--on-accent); }
+.auth input { width:100%; }
+.auth button { margin-top:20px; width:100%; }
 .auth .error { margin:12px 0 0; color:var(--red); }
 .auth .hint { color:var(--muted); font-size:.85rem; margin:8px 0 0; }
 """
@@ -42,7 +40,7 @@ def render_login_page(error="", next_path="/"):
         "<label for=\"password\">Password</label>"
         "<input id=\"password\" name=\"password\" type=\"password\" autocomplete=\"current-password\" required autofocus>"
         + (f"<p class=\"error\" role=\"alert\">{_esc(error)}</p>" if error else "") +
-        "<button type=\"submit\">Sign in</button></form>"
+        "<button class=\"primary\" type=\"submit\">Sign in</button></form>"
         "<p class=\"hint\">Forgot it? On the host: <code>docker compose exec -it atlas lanxang auth password</code></p>"))
 
 
@@ -60,4 +58,4 @@ def render_setup_page(error=""):
         "<label for=\"confirm\">Confirm password</label>"
         f"<input id=\"confirm\" name=\"confirm\" type=\"password\" autocomplete=\"new-password\" minlength=\"{MIN_PASSWORD}\" required>"
         + (f"<p class=\"error\" role=\"alert\">{_esc(error)}</p>" if error else "") +
-        "<button type=\"submit\">Save and sign in</button></form>"))
+        "<button class=\"primary\" type=\"submit\">Save and sign in</button></form>"))

@@ -8,7 +8,7 @@ import json
 from datetime import timedelta
 
 from lanxang.web.icons import icon
-from lanxang.web.render import _esc, event_label, when
+from lanxang.web.render import _esc, event_label, segmented, when
 
 WINDOWS = {"24h": timedelta(hours=24), "7d": timedelta(days=7)}
 CHANGE_EVENTS = ("atlas.proxmox.changes_detected", "atlas.monitoring.changes_detected")
@@ -85,9 +85,7 @@ def group(items):
 def render(items, now, window):
     """The section's HTML: a 24 h / 7 days switch and one line per change (a run of new devices is one line)."""
 
-    current = ' aria-current="page"'
-    switch = "".join(f'<a href="/history?changes={key}"{current if key == window else ""}>{label}</a>'
-                     for key, label in (("24h", "Last 24 hours"), ("7d", "Last 7 days")))
+    switch = segmented(WINDOWS, window, "/history?changes={key}")
     lines = []
     for at, mark, text, href, members in group(items):
         mark = icon("laptop" if mark == "device" else mark)
@@ -99,15 +97,13 @@ def render(items, now, window):
         lines.append(f'<li><span class="time">{when(at, now)}</span><span class="mark">{mark}</span>{line}</li>')
     rows = "".join(lines[:60])
     more = f'<p class="muted">and {len(lines) - 60} more</p>' if len(lines) > 60 else ""
-    return (STYLE + f'<section class="changes"><h2>What changed <span class="switch">{switch}</span></h2>'
+    return (STYLE + f'<section class="changes"><h2>What changed {switch}</h2>'
             + (f"<ul>{rows}</ul>{more}" if rows else '<p class="muted">Nothing changed — all quiet.</p>')
             + "<p class=\"muted\">Times are in your local time. Everything Lanxang recorded is below.</p></section>")
 
 
 STYLE = """<style>
-.changes { margin:0 0 1.4rem; } .changes h2 { display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; }
-.changes .switch { font-size:13px; font-weight:400; display:inline-flex; gap:10px; }
-.changes .switch a[aria-current] { font-weight:600; text-decoration:none; color:inherit; }
+.changes { margin:0 0 1.4rem; } .changes h2 { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 .changes ul { list-style:none; padding:0; margin:.4rem 0; }
 .changes li { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--line); align-items:baseline; }
 .changes .time { color:var(--muted); font-size:13px; flex:none; width:8.5em; font-variant-numeric:tabular-nums; }

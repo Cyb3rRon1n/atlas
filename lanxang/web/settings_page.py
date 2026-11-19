@@ -723,7 +723,10 @@ STYLE = """<style>
 .setup .status.ok { color:var(--green); } .setup .status.bad { color:var(--red); }
 .setup .lock { font-size:.75rem; border:1px solid var(--line2); border-radius:999px; padding:0 6px; margin-left:.3rem; }
 .setup input:disabled, .setup select:disabled, .setup textarea:disabled { opacity:.55; cursor:not-allowed; }
-.setup .buttons { display:flex; gap:.5rem; flex-wrap:wrap; }
+.setup .buttons { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:auto; }
+.setup .buttons .off { margin-right:auto; }
+.setup > .card { display:flex; flex-direction:column; } .setup > .card[hidden] { display:none; }
+.setup > .card > form { flex:1; display:flex; flex-direction:column; }
 .setup .found { border:1px dashed var(--line2); border-radius:8px; padding:.4rem .8rem; margin-bottom:.6rem; }
 .gear-list { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:.5rem; margin:.6rem 0; }
 .gear-item { display:flex; gap:.6rem; align-items:flex-start; border:1px solid var(--line2); border-radius:8px;
@@ -763,10 +766,10 @@ def render_settings_page():
             f'</span></h2><p class="muted">{_esc(intro)}</p>{saved}<form data-card="{card}">'
             + "".join(_field_html(card, field, config) for field in fields) +
             '<p class="status muted" role="status"></p><div class="buttons">'
-            f'<button data-act="test">{"Send test" if card in ("ntfy", "webhooks", "email") else "Test"}</button>'
-            '<button class="primary" data-act="save">Save</button>'
-            + (f'<button data-act="off">{"Remove this switch" if card == "switches" else "Turn off"}</button>'
-               if on else "") + '</div></form></section>')
+            + (f'<button class="danger off" data-act="off">{"Remove this switch" if card == "switches" else "Turn off"}</button>'
+               if on else "")
+            + f'<button data-act="test">{"Send test" if card in ("ntfy", "webhooks", "email") else "Test"}</button>'
+            '<button class="primary" data-act="save">Save</button></div></form></section>')
 
     body = (STYLE + '<p class="muted">Changes here take effect within a minute, no restart. Anything set in '
             f'{config_name()} or .env stays read-only here — edit it there. Passwords and keys are stored privately '

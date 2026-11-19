@@ -95,6 +95,8 @@ Controls the AI backend behind `lanxang analyze`.
 | `ollama_host` | `http://localhost:11434` | Only used when `provider: ollama` |
 | `think` | `false` | Only used when `provider: ollama`. Thinking models such as qwen3 reason silently before answering, which is much slower — `false` keeps replies fast. Set `null` if your Ollama or model rejects the field. |
 
+Chat's read-only tools: `get_containers`, `get_services`, `get_recent_events`, `get_last_analysis`, `get_container_logs`, `get_posture`, `get_devices` (`filter`: all/new/quiet, at most 40), `get_alerts`, `get_disks`, `get_uptime`, plus `get_internet_view` when `posture.internet_view` is on. Lists are capped with a `more` count; a tool whose data isn't set up answers `not set up` with where to turn it on.
+
 The Anthropic provider reads its API key from the `ANTHROPIC_API_KEY` environment variable — it is never stored in `lanxang.yaml`.
 
 ## `monitoring`

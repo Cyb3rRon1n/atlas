@@ -9,7 +9,8 @@ from lanxang.web.render import ask_chips, render_page
 
 
 POSTURE_CHIPS = ("Which new destinations look suspicious?", "Is the VPN actually protecting qBittorrent and slskd?",
-                 "Which public routes have no Authelia in front?", "What talked to the internet the most today?")
+                 "Which public routes have no Authelia in front?", "What talked to the internet the most today?",
+                 "What can the internet see on my network?")
 
 
 POSTURE_STYLE = """

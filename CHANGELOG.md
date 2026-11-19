@@ -6,6 +6,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 ## Unreleased
 
 ### Added
+- Chat can now look things up in the posture data: new tools `get_posture`, `get_devices`, `get_alerts`, `get_disks`,
+  `get_uptime` and (with the Internet view on) `get_internet_view`, all read-only and capped to short lists so small
+  local models cope. The Security page gains the chip "What can the internet see on my network?".
 - Internet view (opt-in): once a day `lanxang internet check` asks Shodan's InternetDB what it sees on your home's
   public IP. An open port you don't expect (`posture.expected_ports`, 80 and 443 by default) or a reported CVE
   alerts; the Security page shows **What the internet sees** and the Home Security posture card a one-line summary.

@@ -188,6 +188,152 @@ def _monitoring_handler(config: AtlasConfig):
     return handler
 
 
+def _cap(rows: list, limit: int = 40) -> dict:
+    """Small local models choke on long lists: cap them and say how many were left out."""
+
+    return {"items": rows[:limit], "more": max(0, len(rows) - limit)}
+
+
+def _not_set_up(how):
+
+    return {"status": "not set up", "how": how}
+
+
+def _when(value):
+
+    return value.isoformat() if hasattr(value, "isoformat") else value
+
+
+def _posture_handler(config: AtlasConfig):
+
+    def handler(arguments):
+
+        from lanxang.clock import utcnow
+        from lanxang.posture.model import build_posture
+        from lanxang.posture.store import PostureStore
+
+        store = PostureStore()
+
+        if not config.posture.enabled or not store.statuses():
+            return _not_set_up("Turn on posture.enabled (Setup page, Security card), then run lanxang posture watch.")
+
+        data = build_posture(store, utcnow())
+        routes = data["exposure"]
+
+        return {
+            "strip": [{k: item.get(k) for k in ("label", "state", "value", "detail")} for item in data["strip"]],
+            "routes": len(routes),
+            "unprotected": [r["name"] for r in routes if not r.get("protection")],
+            "new_destinations": _cap([
+                {"source": r["source"], "org": r["org"], "country": r["cc"], "first_seen": r["first_seen"]}
+                for r in data["review"]
+            ], 10)
+        }
+
+    return handler
+
+
+def _devices_handler(config: AtlasConfig):
+
+    def handler(arguments):
+
+        from lanxang.devices.store import InventoryStore
+
+        limit = max(1, min(int(arguments.get("limit") or 40), 40))
+        which = arguments.get("filter") or "all"
+        devices = InventoryStore().devices()
+
+        if which == "new":
+            devices = [d for d in devices if d["state"] == "new"]
+        elif which == "quiet":
+            devices = [d for d in devices if d["status"] == "quiet"]
+
+        return _cap([
+            {k: d.get(k) for k in ("name", "ip", "kind", "state", "status", "last_seen")} for d in devices
+        ], limit)
+
+    return handler
+
+
+def _alerts_handler(config: AtlasConfig):
+
+    def handler(arguments):
+
+        from lanxang.alerts import AlertStore
+        from lanxang.clock import utcnow
+
+        listing = AlertStore().listing(utcnow(), 7)
+
+        def rows(alerts):
+            return [{"title": a["title"], "source": a["source"], "level": a["level"], "detail": a["detail"],
+                     "opened_at": _when(a["opened_at"]), "acknowledged": a["acked_at"] is not None} for a in alerts]
+
+        return {
+            "open": _cap(rows(listing["open"] + listing["watch"])),
+            "recently_resolved": _cap(rows(listing["resolved"]), 10)
+        }
+
+    return handler
+
+
+def _disks_handler(config: AtlasConfig):
+
+    def handler(arguments):
+
+        from lanxang.posture.store import PostureStore
+        from lanxang.web.metrics import _sources
+
+        found = _sources()["disks"](PostureStore().statuses())
+        disks = [{"host": host, **{k: disk.get(k) for k in ("dev", "model", "temp", "health", "life")}}
+                 for host, listed in found for disk in listed]
+
+        if not disks:
+            return _not_set_up("Disk health comes from the Proxmox scan and the NAS card on the Setup page.")
+
+        return _cap(disks)
+
+    return handler
+
+
+def _uptime_handler(config: AtlasConfig):
+
+    def handler(arguments):
+
+        from lanxang.clock import utcnow
+        from lanxang.monitoring.uptime import UptimeStore
+
+        names = [check.name for check in config.uptime.checks]
+
+        if not names:
+            return _not_set_up("Add uptime checks on the Servers > Uptime page.")
+
+        summary = UptimeStore().summary(names, utcnow())
+
+        return _cap([
+            {"name": name, "up": last[1] if (last := info["last"]) else None, "uptime": info["uptime"],
+             "last_failure": _when(info["last_failure"][0]) if info["last_failure"] else None}
+            for name, info in summary.items()
+        ])
+
+    return handler
+
+
+def _internet_view_handler(config: AtlasConfig):
+
+    def handler(arguments):
+
+        from lanxang.posture.store import PostureStore
+
+        detail = (PostureStore().statuses().get("internet_view") or {}).get("detail")
+
+        if not detail:
+            return _not_set_up("Run lanxang internet check, or use the Setup page's Internet view card.")
+
+        return {k: detail.get(k) for k in ("checked_at", "ip", "ok", "known", "ports", "vulns", "cpes", "error")}
+
+    return handler
+
+
 def build_tools(config: AtlasConfig) -> dict[str, ToolDefinition]:
     """
     Read-only tools an AI provider can call mid-request to pull live
@@ -442,6 +588,68 @@ def build_tools(config: AtlasConfig) -> dict[str, ToolDefinition]:
             ),
             input_schema=EMPTY_SCHEMA,
             handler=_monitoring_handler(config)
+        )
+
+    tools.update({
+        "get_posture": ToolDefinition(
+            name="get_posture",
+            description=(
+                "Get the security posture: is the VPN protecting traffic, which public routes lack "
+                "Authelia sign-in, and which new internet destinations need review."
+            ),
+            input_schema=EMPTY_SCHEMA,
+            handler=_posture_handler(config)
+        ),
+        "get_devices": ToolDefinition(
+            name="get_devices",
+            description=(
+                "List devices on the home network, answering which devices are new, "
+                "quiet (not seen lately) or all known."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "filter": {
+                        "type": "string",
+                        "enum": ["all", "new", "quiet"],
+                        "description": "all (default), new (not yet reviewed) or quiet (not seen lately)."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max devices to return (default and max 40)."
+                    }
+                },
+                "additionalProperties": False
+            },
+            handler=_devices_handler(config)
+        ),
+        "get_alerts": ToolDefinition(
+            name="get_alerts",
+            description="Get the open alerts and what was resolved this week, answering what is wrong right now.",
+            input_schema=EMPTY_SCHEMA,
+            handler=_alerts_handler(config)
+        ),
+        "get_disks": ToolDefinition(
+            name="get_disks",
+            description="Get disk health, temperature and wear for Proxmox nodes and the NAS, answering whether any disk is failing.",
+            input_schema=EMPTY_SCHEMA,
+            handler=_disks_handler(config)
+        ),
+        "get_uptime": ToolDefinition(
+            name="get_uptime",
+            description="Get up/down state and uptime percentages of the monitored services, answering what was down and for how long.",
+            input_schema=EMPTY_SCHEMA,
+            handler=_uptime_handler(config)
+        )
+    })
+
+    if config.posture.internet_view:
+
+        tools["get_internet_view"] = ToolDefinition(
+            name="get_internet_view",
+            description="Get what the internet can see on the home public IP (open ports, known vulnerabilities).",
+            input_schema=EMPTY_SCHEMA,
+            handler=_internet_view_handler(config)
         )
 
     return tools

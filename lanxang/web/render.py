@@ -242,10 +242,11 @@ if(s&&(!n||n.type==="navigate"))location.replace(s);})();</script>"""
 PREFS_SCRIPT = """<script>(function(){
 var d=document.documentElement,panel=document.getElementById("prefs"),back=document.getElementById("prefs-back"),opener=null;
 var DEF={theme:"light",motion:"system",contrast:"off",text:"m",density:"comfortable",start:"home",sidebar:"off"};
+var START=["home","devices","alerts","map","servers","security"];
 var NEXT={light:"dark",dark:"system",system:"light"},NAME={light:"Light",dark:"Dark",system:"System"};
 function key(k){return k==="theme"?"atlas-theme":"lanxang-pref-"+k;}
 function get(k){if(k==="theme")return NAME[d.dataset.theme]?d.dataset.theme:"light";
-  if(k==="start"){try{return localStorage.getItem(key(k))||"home";}catch(e){return "home";}}
+  if(k==="start"){var v=null;try{v=localStorage.getItem(key(k));}catch(e){}return START.indexOf(v)>=0?v:"home";}
   return d.getAttribute("data-"+k)||DEF[k];}
 function set(k,v){
   if(k==="theme")d.dataset.theme=v;else if(k!=="start"){if(v===DEF[k])d.removeAttribute("data-"+k);else d.setAttribute("data-"+k,v);}
@@ -256,7 +257,8 @@ function sync(){
     if(c.tagName==="SELECT")c.value=v;else c.querySelectorAll("button").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.v===v));});});
   var t=get("theme");
   document.querySelectorAll(".theme-cycle").forEach(function(b){b.setAttribute("aria-label","Theme: "+NAME[t]+". Switch to "+NAME[NEXT[t]]);b.title="Theme: "+NAME[t];});
-  document.querySelectorAll(".side-toggle").forEach(function(b){b.setAttribute("aria-pressed",String(get("sidebar")==="on"));});}
+  var c=get("sidebar")==="on",say=c?"Expand sidebar":"Collapse sidebar";
+  document.querySelectorAll(".side-toggle").forEach(function(b){b.setAttribute("aria-pressed",String(c));b.title=say;b.querySelector(".lbl").textContent=say;});}
 window.atlasTheme=function(){set("theme",NEXT[get("theme")]);};
 function show(b){opener=b;panel.hidden=back.hidden=false;var app=document.querySelector(".app");if(app)app.inert=true;sync();panel.focus();}
 function hide(){panel.hidden=back.hidden=true;var app=document.querySelector(".app");if(app)app.inert=false;if(opener)opener.focus();}

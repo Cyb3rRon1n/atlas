@@ -57,6 +57,22 @@ def test_panel_script_traps_focus_escape_closes_and_returns_focus():
     assert 'e.key==="Escape"' in script and 'e.key!=="Tab"' in script
     assert "panel.focus()" in script and "opener.focus()" in script
     assert 'localStorage.setItem(key(k),v)' in script and "try{" in script
+    assert 'START.indexOf(v)>=0?v:"home"' in script                 # a stale or junk start value shows Home, not a blank select
+    assert 'c?"Expand sidebar":"Collapse sidebar"' in script        # the sidebar toggle says what it will do
+
+
+def test_start_values_match_the_panel_and_the_head_script():
+    from lanxang.web.render import START_PAGES
+    keys = [v for v, _ in START_PAGES]
+    assert 'var START=' + json.dumps(keys).replace(", ", ",") + ";" in render.PREFS_SCRIPT
+    for key in keys[1:]:
+        assert f"{key}:" in THEME_SCRIPT
+
+
+def test_home_links_in_alerts_skip_the_start_page():
+    from pathlib import Path
+    for path in Path(render.__file__).parents[1].rglob("*.py"):
+        assert 'href="/"' not in path.read_text(), path
 
 
 def test_every_preference_has_a_css_hook():

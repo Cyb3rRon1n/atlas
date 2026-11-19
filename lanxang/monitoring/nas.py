@@ -242,7 +242,7 @@ def run(settings, store, now, *, get=fetch, send=None):
             if pool.get("health") not in HEALTHY_POOL:
                 bad.add(pool["name"])
                 found.append(issue("pool", f"{host}:{pool['name']}", f"{host} {pool['name']} is {pool['health']}",
-                                   "a disk may have dropped out - check the NAS", href="/"))
+                                   "a disk may have dropped out - check the NAS", href="/?home"))
                 if pool["name"] not in was_bad:
                     texts.append(Text(f"**💽 {host}: {pool['name']} is {pool['health']}**\n• a disk may have dropped "
                                       "out or failed - check the NAS and keep your backups current",

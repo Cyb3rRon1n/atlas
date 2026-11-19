@@ -45,6 +45,16 @@ def _port_text(port, ip):
     return f"**⚠️ Port {port} is open to the internet**\n{port_label(port)} on {ip}, seen by Shodan"
 
 
+def turn_off(store, now):
+    """Switched off: resolve this check's alerts and drop its last answer, once."""
+
+    from lanxang.alerts import report
+
+    if SOURCE in store.statuses():
+        report(SOURCE, [], now, store)
+        store.clear_status(SOURCE)
+
+
 def run(settings, store, now, *, get=requests.get, send=None, force=False):
     """One daily lookup (skipped inside 24 h on the same IP unless force). Status source 'internet_view'."""
 
@@ -53,6 +63,7 @@ def run(settings, store, now, *, get=requests.get, send=None, force=False):
 
     config = settings.posture
     if not config.internet_view:
+        turn_off(store, now)
         return [], {}
     statuses = store.statuses()
     ip = ((statuses.get("public_ip") or {}).get("detail") or {}).get("ip")
@@ -62,7 +73,7 @@ def run(settings, store, now, *, get=requests.get, send=None, force=False):
 
     found = lookup(ip, config.internet_view_url, get)
     detail = {"checked_at": now.isoformat(timespec="minutes"), "ip": ip, "ok": found["ok"],
-              "known": previous.get("known", False), "ports": previous.get("ports", []),
+              "known": previous.get("known"), "ports": previous.get("ports", []),
               "vulns": previous.get("vulns", []), "cpes": previous.get("cpes", []), "error": found.get("error", "")}
     if not found["ok"]:                           # keep the last answer and leave the open alerts alone
         store.set_status(SOURCE, False, detail, now)
@@ -79,6 +90,8 @@ def run(settings, store, now, *, get=requests.get, send=None, force=False):
               for cve in detail["vulns"] if cve not in set(previous.get("vulns", []))]
     texts += [Text(f"**✓ Port {port} no longer seen from the internet**", f"{SOURCE}:internet_port:{port}")
               for port in sorted(alerted - set(found["ports"]))]
+    texts += [Text(f"**✓ {cve} no longer reported on your public IP**", f"{SOURCE}:internet_cve:{cve}")
+              for cve in previous.get("vulns", []) if cve not in set(detail["vulns"])]
 
     report(SOURCE, [issue("internet_port", str(port), f"Port {port} is open to the internet",
                           _port_text(port, ip).split("\n", 1)[1], href="/posture") for port in unexpected]

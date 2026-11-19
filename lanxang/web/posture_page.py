@@ -162,12 +162,12 @@ function renderInternet(info) {
     list.append(li);
   });
   (info.vulns || []).forEach((cve) => { const li = el("li"); li.append(el("span", cve), el("span", "! reported", "cert-bad")); list.append(li); });
-  if (!info.known) list.append(el("li", "Nothing known about this IP.", "muted"));
-  else if (!info.ports.length && !(info.vulns || []).length) list.append(el("li", "No open ports seen.", "muted"));
+  if (info.known === false) list.append(el("li", "Nothing known about this IP.", "muted"));
+  else if (info.known && !info.ports.length && !(info.vulns || []).length) list.append(el("li", "No open ports seen.", "muted"));
   const when = info.checked_at ? new Date(info.checked_at + "Z").toLocaleString() : "never";
   const parts = [el("h3", "What the internet sees"), el("p", info.ip + " · Shodan, last checked " + when, "muted")];
   if (!info.ok) parts.push(el("p", "The last check failed: " + info.error, "cert-bad"));
-  parts.push(list, el("p", "Shodan's last scan, not a live test.", "muted"));
+  parts.push(list, el("p", "Shodan's last scan, not a live test. Sends your home IP to Shodan once a day.", "muted"));
   box.replaceChildren(...parts);
 }
 

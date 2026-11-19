@@ -568,6 +568,11 @@ def handle_post(path, body):
         local.save_secrets(secrets)
     if settings:
         local.save_settings(settings)
+    if card == "internet" and action == "off":       # resolve its alerts and drop the last answer right away
+        from lanxang.clock import utcnow
+        from lanxang.posture.internet_view import turn_off
+        from lanxang.posture.store import PostureStore
+        turn_off(PostureStore(), utcnow())
 
     return 200, {"ok": True, "message": "Turned off." if action == "off" else "Saved."}
 

@@ -658,12 +658,11 @@ def internet_check(
     from lanxang.posture.store import PostureStore
 
     settings = load_config()
+    texts, detail = run(settings, PostureStore(), utcnow(), force=force)      # when off: only tidies up
 
     if not settings.posture.internet_view:
         console.print(f"Internet view is off (posture.internet_view: false in {config_name()}).")
         return
-
-    texts, detail = run(settings, PostureStore(), utcnow(), force=force)
 
     if json_output:
         print(json.dumps(detail, default=str))
@@ -674,7 +673,7 @@ def internet_check(
         return
     if not detail["ok"]:
         console.print(f"[yellow]Shodan lookup failed: {detail['error']}[/yellow]")
-    if not detail["known"]:
+    if detail["known"] is False:
         console.print(f"Nothing known about {detail['ip']}.")
     for port in detail["ports"]:
         colour = "green" if port["expected"] else "yellow"

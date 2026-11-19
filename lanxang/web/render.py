@@ -957,9 +957,18 @@ def _posture_block(posture):
 
     items = {item["key"]: item for item in posture["strip"]}
     warn = next((item for item in posture["strip"] if item["state"] == "warn"), None)
+    view = posture.get("internet") or {}
+    ports = view.get("ports") or []
+    unexpected = sum(not p["expected"] for p in ports)
+    internet = (f"{unexpected} unexpected port{'s' * (unexpected != 1)}" if unexpected
+                else f"{len(ports)} port{'s' * (len(ports) != 1)} open, all expected" if ports else "")
+    if view and view.get("ok") is False:
+        internet = f"{internet} (last check failed)" if internet else "Last check failed"
 
     if warn:
         state, message = "warn", f"{warn['label']}: {warn['value']}"
+    elif unexpected:
+        state, message = "warn", f"Internet: {internet}"
     elif items["new"]["state"] == "review" and posture["review"]:
         first = posture["review"][0]
         org = first["org"] or first["asn_key"]
@@ -970,14 +979,10 @@ def _posture_block(posture):
     else:
         state, message = "ok", "All good"
 
-    ports = (posture.get("internet") or {}).get("ports") or []
-    unexpected = sum(not p["expected"] for p in ports)
-    internet = (f"{unexpected} unexpected port{'s' * (unexpected != 1)}" if unexpected
-                else f"{len(ports)} port{'s' * (len(ports) != 1)} open, all expected" if ports else "")
-
     return {"state": state, "tunnel": items["ingress"]["value"], "vpn": items["vpn"]["value"],
             "routes": len(posture["exposure"]), "blocked": items["blocked"]["value"],
-            "review_count": len(posture["review"]), "message": message, "internet": internet, "link": "/posture"}
+            "review_count": len(posture["review"]), "message": message, "internet": internet,
+            "internet_unexpected": unexpected, "link": "/posture"}
 
 
 def build_summary(topology, devices=(), posture=None):

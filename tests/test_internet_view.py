@@ -197,3 +197,60 @@ def test_setup_card_turns_it_on_with_expected_ports(isolated_cwd, monkeypatch):
     assert saved["posture"] == {"internet_view": True, "expected_ports": ["80", "443", "8443"]}
     html = settings_page.render_settings_page()
     assert "Sends your home IP to Shodan once a day." in html
+
+
+def test_turning_it_off_resolves_alerts_and_clears_the_view(temp_db):
+    store = home(temp_db)
+    run(ON, store, NOW, get=shodan([22]), send=lambda text: None)
+    assert open_alerts(temp_db)
+    get = shodan([22])
+    assert run(AtlasConfig(), store, NOW + timedelta(hours=1), get=get) == ([], {})
+    assert get.calls == [] and open_alerts(temp_db) == []
+    assert "internet_view" not in store.statuses() and build_posture(store, NOW)["internet"] is None
+
+
+def test_setup_turn_off_clears_it(temp_db, isolated_cwd, monkeypatch):
+    from lanxang.config import local
+    from lanxang.web import settings_page
+
+    store = home(temp_db)
+    run(ON, store, NOW, get=shodan([22]), send=lambda text: None)
+    monkeypatch.setattr(local, "save_settings", lambda settings: None)
+    assert settings_page.handle_post("/api/settings/internet/off", {})[0] == 200
+    assert open_alerts(temp_db) == [] and "internet_view" not in store.statuses()
+
+
+def test_first_failure_knows_nothing(temp_db):
+    texts, detail = run(ON, home(temp_db), NOW, get=failing)
+    assert detail["ok"] is False and detail["known"] is None and detail["ports"] == []
+
+
+def test_cve_cleared_text(temp_db):
+    store, sent = home(temp_db), []
+    run(ON, store, NOW, get=shodan([443], ["CVE-2023-0001"]), send=sent.append)
+    run(ON, store, NOW + timedelta(days=1), get=failing, send=sent.append)
+    assert len(sent) == 1                                   # a failure says nothing
+    run(ON, store, NOW + timedelta(days=2), get=shodan([443]), send=sent.append)
+    assert sent[-1] == "**✓ CVE-2023-0001 no longer reported on your public IP**" and open_alerts(temp_db) == []
+
+
+def test_posture_block_flags_unexpected_and_failed_checks():
+    from lanxang.web.home_page import _posture_card, attention_items
+    from lanxang.web.render import _posture_block
+
+    block = _posture_block(posture({"ok": True, "ports": [{"port": 22, "expected": False}]}))
+    assert block["internet_unexpected"] == 1 and block["state"] == "warn" and block["message"] != "All good"
+    assert "1 unexpected port" in block["message"]
+    alert = {"source": "internet_view", "title": "Port 22 is open to the internet", "acked_at": None}
+    items = attention_items(block, {"rows": []}, {"rows": []}, (), [alert])
+    assert [i[0] for i in items] == ["posture"]             # one problem, one line
+    failed = _posture_block(posture({"ok": False, "ports": [{"port": 443, "expected": True}]}))
+    assert failed["internet"] == "1 port open, all expected (last check failed)" and failed["state"] == "ok"
+    assert _posture_block(posture({"ok": False, "ports": []}))["internet"] == "Last check failed"
+    assert 'class="hcard ok"' in _posture_card(failed)
+
+
+def test_posture_page_box_has_privacy_note():
+    from lanxang.web.posture_page import render_posture_page
+
+    assert "Sends your home IP to Shodan once a day." in render_posture_page()

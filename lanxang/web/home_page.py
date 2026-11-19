@@ -393,6 +393,8 @@ def attention_items(posture, hosts, storage, access_reviews=(), open_alerts=()):
             items.append(("hosts", "Hosts", f"{row['name']}: {', '.join(row['problems'][:3])}", "/overview", "Details"))
 
     covered = {"lan", "host"}        # already listed above through posture / hosts
+    if posture and posture.get("internet_unexpected"):
+        covered.add("internet_view")
     storage_alerts = [a for a in open_alerts if a["source"] in STORAGE_SOURCES and not a.get("acked_at")]
     for row in storage["rows"]:
         if row["warn"]:
@@ -422,9 +424,8 @@ def _posture_card(posture, flagged=False):
             ("CrowdSec bans", posture["blocked"]), ("Needs review", posture["review_count"])) \
         + ((("Internet", internet),) if internet else ())
     inner = "<dl>" + "".join(f"<dt>{_esc(k)}</dt><dd>{_esc(v)}</dd>" for k, v in rows) + "</dl>"
-    state = "warn" if "unexpected" in internet else posture["state"]
 
-    return _card("/posture", "Security posture", state, inner, flagged=flagged)
+    return _card("/posture", "Security posture", posture["state"], inner, flagged=flagged)
 
 
 def _usage(row):

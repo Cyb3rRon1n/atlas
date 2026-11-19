@@ -177,8 +177,12 @@ for hour in range(24, 0, -1):                          # a day of outbound traff
                           for n, (src, band, size) in enumerate((("homeserver", "direct", 40 * 10**6),
                                                                  ("media", "vpn", 90 * 10**6)))],
                          now - timedelta(hours=hour), track_seen=False)
-for minutes, event_type, payload in ((300, "atlas.proxmox.changes_detected", {"changes": ["test-vm stopped"]}),
-                                     (90, "atlas.monitoring.changes_detected", {"changes": ["photos restarted"]}),
+for minutes, event_type, payload in ((300, "atlas.proxmox.changes_detected", {"changes": [
+                                         {"type": "guest_status_changed", "vmid": 120, "name": "test-vm",
+                                          "from": "running", "to": "stopped"}]}),
+                                     (90, "atlas.monitoring.changes_detected", {"changes": [
+                                         {"type": "container_metric_crossed", "container": "photos",
+                                          "metric": "memory"}]}),
                                      (40, "atlas.devices.updated", {"name": "kitchen-speaker"})):
     KnowledgeStore().save_event(AtlasEvent(event_type, "demo", payload))
 

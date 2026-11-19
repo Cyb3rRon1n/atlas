@@ -1,5 +1,5 @@
 """
-"What changed" at the top of Activity: the last 24 hours (or 7 days) in plain words, newest first - problems that
+"What changed" at the top of Activity: the last 24 hours (or 7 days) in plain words, newest first: problems that
 started or cleared, one-off findings (a new open port, a certificate), new devices, Proxmox guests added, removed
 or stopped, and container limits crossed. Built from what atlas already saved; nothing is measured here.
 """
@@ -7,14 +7,15 @@ or stopped, and container limits crossed. Built from what atlas already saved; n
 import json
 from datetime import timedelta
 
-from lanxang.web.render import _esc
+from lanxang.web.icons import icon
+from lanxang.web.render import _esc, when
 
 WINDOWS = {"24h": timedelta(hours=24), "7d": timedelta(days=7)}
 CHANGE_EVENTS = ("atlas.proxmox.changes_detected", "atlas.monitoring.changes_detected")
 
 
 def collect(now, window, sources):
-    """[(at, mark, text, href)] newest first. sources: {"alerts": f(now, days), "devices": f(),
+    """[(at, mark, text, href)] newest first; mark is an icons.py name ("device" for a new device). sources: {"alerts": f(now, days), "devices": f(),
     "changes": f(since) -> [(at, event type, payload)] of the change events}."""
 
     since = now - WINDOWS[window]
@@ -29,18 +30,18 @@ def collect(now, window, sources):
     listing = safely(sources["alerts"], now, 7) or {}
     for row in (listing.get("open") or []) + (listing.get("watch") or []) + (listing.get("resolved") or []):
         if row["opened_at"] >= since:
-            mark = "⚠️" if row["level"] == "problem" else "🔎" if row.get("event") else "👀"
-            text = row["title"] + (f" - {row['detail']}" if row.get("detail") else "")
+            mark = "alert" if row["level"] == "problem" else "search" if row.get("event") else "info"
+            text = row["title"] + (f" — {row['detail']}" if row.get("detail") else "")
             found.append((row["opened_at"], mark, text, row.get("href") or "/alerts"))
         if row.get("resolved_at") and row["resolved_at"] >= since and not row.get("event"):
-            found.append((row["resolved_at"], "✅", f"Cleared: {row['title']}", "/alerts"))
+            found.append((row["resolved_at"], "check", f"Cleared: {row['title']}", "/alerts"))
 
     for device in safely(sources["devices"]) or []:
         seen = [s["first_seen"] for s in device.get("sightings") or [] if s.get("first_seen")]
         first = min(seen) if seen else None
         if first and first >= since.isoformat():
             where = f" ({device['ip']})" if device.get("ip") and device["ip"] != device["name"] else ""
-            found.append((_parse(first), "📱", f"New device: {device['name']}{where}", "/devices"))
+            found.append((_parse(first), "device", f"New device: {device['name']}{where}", "/devices"))
 
     from lanxang.monitoring.changes import format_change as container_change
     from lanxang.proxmox.changes import format_change as proxmox_change
@@ -51,9 +52,14 @@ def collect(now, window, sources):
             continue                                     # said the whole cluster was added): once is enough
         shown.add(key)
         proxmox = event_type.startswith("atlas.proxmox")
-        for change in ((payload or {}).get("changes") or [])[:20]:
-            text = (proxmox_change if proxmox else container_change)(change).lstrip("!✓?+-~ ").strip()
-            found.append((at, "🖥️" if proxmox else "📦", text, "/overview"))
+        changes = payload.get("changes") if isinstance(payload, dict) else None
+        for change in (changes if isinstance(changes, list) else [])[:20]:
+            try:
+                text = (proxmox_change if proxmox else container_change)(change)
+            except Exception:                            # one odd row (a bare string, a missing key) never blanks
+                text = change if isinstance(change, str) else None    # the page: say it as-is, or leave it out
+            if text:
+                found.append((at, "server" if proxmox else "box", text.lstrip("!✓?+-~ ").strip(), "/overview"))
 
     return sorted(found, key=lambda item: item[0], reverse=True)
 
@@ -64,21 +70,38 @@ def _parse(text):
     return datetime.fromisoformat(str(text).replace("Z", "")[:19])
 
 
-def render(items, now, window):
-    """The section's HTML: a 24 h / 7 days switch and one line per change."""
+def group(items):
+    """Back-to-back new devices fold into one entry: [(at, mark, text, href, [(at, text, href)...] or None)]."""
 
-    def when(at):
-        return at.strftime("%H:%M") if at.date() == now.date() else at.strftime("%a %d %b %H:%M")
+    rows = []
+    for at, mark, text, href in items:
+        if mark == "device" and rows and rows[-1][1] == "device":
+            rows[-1][4].append((at, text, href))
+        else:
+            rows.append((at, mark, text, href, [(at, text, href)] if mark == "device" else None))
+    return rows
+
+
+def render(items, now, window):
+    """The section's HTML: a 24 h / 7 days switch and one line per change (a run of new devices is one line)."""
 
     current = ' aria-current="page"'
     switch = "".join(f'<a href="/history?changes={key}"{current if key == window else ""}>{label}</a>'
                      for key, label in (("24h", "Last 24 hours"), ("7d", "Last 7 days")))
-    rows = "".join(f'<li><span class="time">{_esc(when(at))}</span><span>{mark}</span>'
-                   f'<a href="{_esc(href)}">{_esc(text)}</a></li>' for at, mark, text, href in items[:60])
-    more = f'<p class="muted">and {len(items) - 60} more</p>' if len(items) > 60 else ""
+    lines = []
+    for at, mark, text, href, members in group(items):
+        mark = icon("laptop" if mark == "device" else mark)
+        if members and len(members) > 1:
+            listed = "".join(f'<li><a href="{_esc(h)}">{_esc(t.removeprefix("New device: "))}</a></li>' for _, t, h in members)
+            line = f'<details><summary>{len(members)} new devices</summary><ul class="group">{listed}</ul></details>'
+        else:
+            line = f'<a href="{_esc(href)}">{_esc(text)}</a>'
+        lines.append(f'<li><span class="time">{when(at, now)}</span><span class="mark">{mark}</span>{line}</li>')
+    rows = "".join(lines[:60])
+    more = f'<p class="muted">and {len(lines) - 60} more</p>' if len(lines) > 60 else ""
     return (STYLE + f'<section class="changes"><h2>What changed <span class="switch">{switch}</span></h2>'
-            + (f"<ul>{rows}</ul>{more}" if rows else '<p class="muted">Nothing changed - all quiet.</p>')
-            + "<p class=\"muted\">Times are UTC. Everything Lanxang recorded is below.</p></section>")
+            + (f"<ul>{rows}</ul>{more}" if rows else '<p class="muted">Nothing changed — all quiet.</p>')
+            + "<p class=\"muted\">Times are in your local time. Everything Lanxang recorded is below.</p></section>")
 
 
 STYLE = """<style>
@@ -87,6 +110,9 @@ STYLE = """<style>
 .changes .switch a[aria-current] { font-weight:600; text-decoration:none; color:inherit; }
 .changes ul { list-style:none; padding:0; margin:.4rem 0; }
 .changes li { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--line); align-items:baseline; }
-.changes .time { color:var(--muted); font-size:13px; min-width:9.5em; font-variant-numeric:tabular-nums; }
+.changes .time { color:var(--muted); font-size:13px; flex:none; width:8.5em; font-variant-numeric:tabular-nums; }
+.changes .mark { flex:none; } .changes .mark .ic { margin:0; }
+.changes details > summary { cursor:pointer; } .changes ul.group { margin:.3rem 0 0; }
+.changes ul.group li { border:0; padding:2px 0; }
 .changes li a { color:inherit; text-decoration:none; } .changes li a:hover { text-decoration:underline; }
 </style>"""

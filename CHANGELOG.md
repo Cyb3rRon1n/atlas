@@ -3,7 +3,9 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
-## Unreleased
+## 1.3.0 - 2026-11-19
+
+The old Atlas names are gone; re-running the installer moves an older install over.
 
 ### Removed
 - The old Atlas names, as announced: the `atlas` command, reading `atlas.yaml`, the `ATLAS_*` setting names and
@@ -11,7 +13,7 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 - The compose file always mounts `lanxang.yaml`; `LANXANG_CONFIG` is no longer used.
 
 ### Upgrading
-- Re-run the installer: it renames `atlas.yaml` to `lanxang.yaml` and the `ATLAS_*` entries in `.env` to
+- Re-run the installer: it renames `atlas.yaml` to `lanxang.yaml`, `${ATLAS_…}` references in it and the `ATLAS_*` entries in `.env` to
   `LANXANG_*` (the old file is kept as `.env.before-1.3`). By hand, see Upgrading from atlas in Getting started.
 - Until then Lanxang logs a warning that names what it no longer reads. Secrets saved on the Setup page under
   old names still work and are saved under the new ones next time. Data, sign-in and history are unchanged.

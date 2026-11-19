@@ -3,7 +3,9 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
-## Unreleased
+## 1.2.0 - 2026-11-19
+
+Preferences: a gear in the top-right header for theme, motion, contrast, time and date, text size, density, start page and a collapsible sidebar, plus an accessibility pass and keyboard shortcuts.
 
 ### Added
 - A header bar at the top right of every page: a theme button that cycles Light, Dark and System (follows the device), and a gear that opens Preferences. On phones both sit in the top bar.

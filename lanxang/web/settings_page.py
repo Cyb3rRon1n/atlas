@@ -555,12 +555,14 @@ def handle_post(path, body):
 def _save_display(body):
     """Preferences > Time & date: clock, time_zone, date_format into display: (the config file's values still win)."""
 
-    from lanxang.config.models import DisplayConfig
+    from lanxang.config.models import DisplayConfig, zone_problem
 
     body = body if isinstance(body, dict) else {}
     fields = {key: body[key] for key in DisplayConfig.model_fields if key in body}
     if not fields or not all(isinstance(value, str) for value in fields.values()):
         return 400, {"error": "Send clock, time_zone and date_format."}
+    if "time_zone" in fields and zone_problem(fields["time_zone"].strip()):
+        return 400, {"error": zone_problem(fields["time_zone"].strip())}
     try:
         chosen = DisplayConfig(**fields)
     except ValidationError as error:

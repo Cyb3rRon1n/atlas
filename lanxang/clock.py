@@ -6,7 +6,7 @@ format) - the same ones the pages' time script uses. Server-side text has no vie
 here, and says so."""
 
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 def utcnow():
@@ -31,7 +31,10 @@ def local(moment, display=None):
     aware = moment.replace(tzinfo=timezone.utc) if moment.tzinfo is None else moment
     if display.time_zone in ("browser", "UTC"):
         return aware.astimezone(timezone.utc), "UTC"
-    here = aware.astimezone(ZoneInfo(display.time_zone))
+    try:
+        here = aware.astimezone(ZoneInfo(display.time_zone))
+    except (ZoneInfoNotFoundError, ValueError, OSError):      # zone data gone since it was saved: UTC, and say so
+        return aware.astimezone(timezone.utc), "UTC"
     return here, here.tzname() or display.time_zone
 
 
@@ -64,3 +67,10 @@ def parse(value):
     except ValueError:
         return None
     return moment.astimezone(timezone.utc).replace(tzinfo=None) if moment.tzinfo else moment
+
+
+def stamp_text(value, display=None, date=True, missing="never"):
+    """stamp() for stored ISO text: the raw text when it won't parse, missing when there is none."""
+
+    moment = parse(value) if value else None
+    return stamp(moment, display, date) if moment else str(value or missing)

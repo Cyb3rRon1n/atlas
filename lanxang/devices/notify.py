@@ -7,13 +7,7 @@ send leaves the items queued for the next run.
 import json
 import urllib.request
 
-from lanxang.clock import parse, stamp
-
-
-def _seen(value, display):
-
-    moment = parse(value) if value else None
-    return stamp(moment, display) if moment else value or "never"
+from lanxang.clock import stamp_text as _seen
 
 
 def _line(item):

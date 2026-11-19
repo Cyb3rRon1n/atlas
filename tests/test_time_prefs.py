@@ -27,10 +27,58 @@ def test_defaults_and_validation():
     assert DisplayConfig().model_dump() == {"clock": "24h", "time_zone": "browser", "date_format": "iso"}
     assert AtlasConfig().display == DisplayConfig()
     assert DisplayConfig(time_zone=" Asia/Vientiane ").time_zone == "Asia/Vientiane"
-    for bad in ({"time_zone": "Mars/Base"}, {"time_zone": "America"}, {"time_zone": "../etc/passwd"},
-                {"clock": "13h"}, {"date_format": "ymd"}):
+    for bad in ({"clock": "13h"}, {"date_format": "ymd"}):
         with pytest.raises(ValidationError):
             DisplayConfig(**bad)
+    for zone in ("Mars/Base", "America", "../etc/passwd"):          # never breaks loading: falls back to browser
+        assert DisplayConfig(time_zone=zone).time_zone == "browser"
+
+
+def test_unknown_saved_zone_still_loads(isolated_cwd):
+    from lanxang.config.loader import load_config
+
+    (isolated_cwd / "inventory").mkdir()
+    (isolated_cwd / "inventory" / "settings.yaml").write_text("display:\n  time_zone: Mars/Base\n  clock: 12h\n")
+    shown = load_config().display
+    assert shown.time_zone == "browser" and shown.clock == "12h"
+
+
+def test_zone_data_gone_falls_back_to_utc():
+    shown = DisplayConfig.model_construct(clock="24h", time_zone="Mars/Base", date_format="iso")   # skips validation
+    assert stamp(THEN, shown) == "2026-10-28 19:05 UTC"
+
+
+def test_unparseable_times_in_messages():
+    from types import SimpleNamespace
+
+    from lanxang.clock import stamp_text
+    from lanxang.monitoring import dnsfilter, heartbeat
+
+    assert stamp_text("garbage", SHOWN) == "garbage" and stamp_text(None) == "never"
+    assert stamp_text("2026-10-28T19:05:00", SHOWN, date=False) == "3:05 PM EDT"
+
+    class Store:
+        def __init__(self, statuses):
+            self.saved = statuses
+        def statuses(self):
+            return self.saved
+        def set_status(self, *a, **k):
+            pass
+
+    settings = AtlasConfig(display=SHOWN.model_dump(), uptime={"heartbeats": [{"name": "Backup"}]},
+                           dns_filter={"enabled": True, "url": "http://192.0.2.2"})
+    sent = []
+    beat = Store({"ping:Backup": {"detail": {"at": "garbage", "failed": True}}})
+    import lanxang.alerts as alerts
+    original = alerts.report, alerts.allowed
+    alerts.report, alerts.allowed = (lambda *a, **k: None), (lambda *a, **k: True)
+    try:
+        heartbeat.run(settings, beat, NOW, send=sent.append)
+        dns = Store({"dns": {"detail": {"off_since": "garbage", "alerted": False}}})
+        dnsfilter.run(settings, dns, NOW, get=lambda config: {"kind": "Pi-hole", "blocking": False}, send=sent.append)
+    finally:
+        alerts.report, alerts.allowed = original
+    assert any("at garbage" in text for text in sent) and any("off since garbage" in text for text in sent)
 
 
 @pytest.mark.parametrize("clock", ["24h", "12h"])
@@ -122,6 +170,7 @@ def test_save_rejects_bad_values_and_keeps_the_old_ones(server):
     assert _post(server, {"time_zone": "UTC"})[0] == 200
     status, data = _post(server, {"time_zone": "Mars/Base"})
     assert status == 400 and "unknown time zone" in data["error"]
+    assert _post(server, {"time_zone": "America"})[0] == 400
     assert _post(server, {"clock": "25h"})[0] == 400
     assert _post(server, {"clock": 12})[0] == 400
     assert _post(server, {})[0] == 400

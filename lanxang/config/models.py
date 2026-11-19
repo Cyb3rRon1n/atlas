@@ -340,14 +340,27 @@ class DisplayConfig(BaseModel):
     @field_validator("time_zone")
     @classmethod
     def _known_zone(cls, value):
+        """A zone that can't be found (saved earlier, tzdata gone) never breaks loading: "browser", with a warning.
+        The web save checks zone_problem() first, so a new unknown zone is refused there."""
         value = value.strip()
-        if value in ("browser", "UTC"):
-            return value
-        try:
-            ZoneInfo(value)
-        except (KeyError, ValueError, OSError):     # not found / not a zone name / a folder like "America"
-            raise ValueError(f"unknown time zone {value!r} - use an IANA name like America/New_York") from None
+        problem = zone_problem(value)
+        if problem:
+            import logging
+            logging.getLogger("lanxang").warning("display.time_zone: %s; using browser", problem)
+            return "browser"
         return value
+
+
+def zone_problem(value):
+    """Why value isn't a usable display.time_zone, or None when it is."""
+
+    if value in ("browser", "UTC"):
+        return None
+    try:
+        ZoneInfo(value)
+    except (KeyError, ValueError, OSError):     # not found / not a zone name / a folder like "America"
+        return f"unknown time zone {value!r} - use an IANA name like America/New_York"
+    return None
 
 
 class AtlasConfig(BaseModel):

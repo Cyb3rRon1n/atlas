@@ -47,17 +47,19 @@ PICK_PORT = 'var p=[...document.querySelectorAll(".fp .port[data-detail]")].find
 SHOTS = [("home", "/", ""), ("devices", "/devices", ""), ("setup", "/settings", ""),
          ("cabling-map", "/cabling", CABLING_DIAGRAM), ("cabling-ports", "/cabling", PICK_PORT)]
 
+call("Page.enable")
 call("Emulation.setDeviceMetricsOverride", width=1280, height=800, deviceScaleFactor=1, mobile=False)
 
 def shoot(name, url, scheme, script=""):
-    call("Emulation.setEmulatedMedia", features=[{"name": "prefers-color-scheme", "value": scheme}])
-    call("Runtime.evaluate", expression="try { localStorage.clear() } catch (e) {}")   # no saved theme or view
+    # the viewer's saved choice, set before the page loads; light is the default
+    sid = call("Page.addScriptToEvaluateOnNewDocument", source=f'try {{ localStorage.clear(); localStorage.setItem("atlas-theme", "{scheme}") }} catch (e) {{}}')["identifier"]
     call("Page.navigate", url=url)
     time.sleep(2)                                         # the cabling diagram lays itself out after load
     if script:
         call("Runtime.evaluate", expression=script)
         time.sleep(1)
     data = call("Page.captureScreenshot", format="png")["data"]
+    call("Page.removeScriptToEvaluateOnNewDocument", identifier=sid)
     with open(f"{out}/{name}.png", "wb") as f:
         f.write(base64.b64decode(data))
     print(f"{out}/{name}.png")

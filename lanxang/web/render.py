@@ -33,7 +33,6 @@ DARK = """--bg:#0e1a19; --surface:#13231f; --surface2:#182c27; --deep:#0b1513; -
 
 PAGE_STYLE = f"""
 :root {{ {LIGHT} }}
-@media (prefers-color-scheme: dark) {{ :root:not([data-theme="light"]) {{ {DARK} }} }}
 :root[data-theme="dark"] {{ {DARK} }}
 """ + """
   @font-face { font-family:"Lexend"; src:url("/static/fonts/Lexend.woff2") format("woff2"); font-weight:100 900; font-display:swap; }
@@ -88,9 +87,6 @@ SHELL_STYLE = """
 .side .foot { margin-top:auto; padding-top:16px; }
 .theme-btn .to-light { display:none; }
 :root[data-theme="dark"] .theme-btn .to-light { display:inline; } :root[data-theme="dark"] .theme-btn .to-dark { display:none; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme-btn .to-light { display:inline; }
-  :root:not([data-theme="light"]) .theme-btn .to-dark { display:none; } }
 .side .foot form { margin:0; }
 .page { padding:24px 32px 40px; min-width:0; }
 .shell { flex:1; min-width:0; }
@@ -113,10 +109,9 @@ SHELL_STYLE = """
 
 PAGE_STYLE += SHELL_STYLE
 
-# Runs before first paint so a chosen theme never flashes the other one.
+# Light is the default whatever the OS prefers; runs before first paint so a chosen theme never flashes.
 THEME_SCRIPT = """<script>try{var t=localStorage.getItem("atlas-theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}
-function atlasTheme(){var d=document.documentElement,dark=d.dataset.theme?d.dataset.theme==="dark":
-matchMedia("(prefers-color-scheme: dark)").matches;d.dataset.theme=dark?"light":"dark";
+function atlasTheme(){var d=document.documentElement;d.dataset.theme=d.dataset.theme==="dark"?"light":"dark";
 try{localStorage.setItem("atlas-theme",d.dataset.theme);}catch(e){}}</script>"""
 
 LOGO = ('<svg width="26" height="26" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.4" stroke="#5ec2a4" stroke-width="1.8" fill="none"/><g transform="translate(4.8 4.8) scale(.6)"><g transform="translate(1.2 2.6) scale(.9)"><path d="M3 6.6C3 4.9 4.2 4 6 4h2.6v9.8C6.4 13.8 4.9 13.2 4 12.1 3.3 11.2 3 10 3 8.8z" fill="#5ec2a4"/><path d="M21 6.6C21 4.9 19.8 4 18 4h-2.6v9.8c2.2 0 3.7-.6 4.6-1.7.7-.9 1-2.1 1-3.3z" fill="#5ec2a4"/><path d="M8.2 5.2C9.3 3.9 10.6 3.3 12 3.3s2.7.6 3.8 1.9v8.1c0 1.3-.8 2.2-2 2.5l-.6 5.1c-.1.8-.6 1.2-1.2 1.2s-1.1-.4-1.2-1.2l-.6-5.1c-1.2-.3-2-1.2-2-2.5z" fill="#5ec2a4"/><circle cx="10.2" cy="8.6" r=".95" fill="#0e1a19"/><circle cx="13.8" cy="8.6" r=".95" fill="#0e1a19"/></g><g transform="translate(9 -.6) scale(.25)"><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(0 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(72 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(144 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(216 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(288 12 12)"/><circle cx="12" cy="12" r="2.6" fill="#e9b44c" stroke="#0e1a19" stroke-width=".7"/></g></g></svg>')

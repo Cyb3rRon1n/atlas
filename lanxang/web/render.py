@@ -21,13 +21,13 @@ from lanxang.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE, DRAWER_HTML, DRAWER
 # Colours are tokens: light by default; dark, or the system's choice, when the viewer picks it (the header's theme
 # button or Preferences, kept in localStorage). Pages use var(--...) only, never a raw colour.
 LIGHT = """--bg:#f7fbf9; --surface:#ffffff; --surface2:#eef5f2; --deep:#e6efeb; --line:#dde8e3; --line2:#c4d4cd;
-  --text:#10201c; --muted:#4f5f5a; --blue:#1e7f66; --accent:#1e7f66; --gold:#c9a227; --on-accent:#ffffff;
+  --text:#10201c; --muted:#4f5f5a; --blue:#1e7f66; --accent:#1e7f66; --gold:#c9a227; --gold-text:#8a6a0c; --on-accent:#ffffff;
   --green:#15803d; --orange:#b45309; --red:#c42b2b; --purple:#7c3aed; --teal:#0f766e; --yellow:#a16207;
   --ok-text:#166534; --ok-line:#86d6a4; --warn-text:#92400e; --warn-line:#f2c97a; --warn-bg:#fff7eb;
   --bad-text:#991b1b; --bad-line:#f3a8a8; --bad-bg:#fef2f2; --lane:#a9d6c7;
   --nav-bg:#0e1a19; --nav-text:#cfe3dc; --nav-muted:#8fb0a6; --nav-on:#16302c; color-scheme:light;"""
 DARK = """--bg:#0e1a19; --surface:#13231f; --surface2:#182c27; --deep:#0b1513; --line:#1f3631; --line2:#2a4740;
-  --text:#e6f0ec; --muted:#9fb8af; --blue:#5ec2a4; --accent:#5ec2a4; --gold:#e9b44c; --on-accent:#0e1a19;
+  --text:#e6f0ec; --muted:#9fb8af; --blue:#5ec2a4; --accent:#5ec2a4; --gold:#e9b44c; --gold-text:#e9b44c; --on-accent:#0e1a19;
   --green:#43c08f; --orange:#f0a23a; --red:#f47a5c; --purple:#b48cf2; --teal:#3ccfb4; --yellow:#d9b44a;
   --ok-text:#7fdcb5; --ok-line:#2f6b55; --warn-text:#ffd08a; --warn-line:#6b5530; --warn-bg:#1d1810;
   --bad-text:#ffb4a2; --bad-line:#6b3030; --bad-bg:#2a1d1a; --lane:#2a5248;
@@ -35,12 +35,12 @@ DARK = """--bg:#0e1a19; --surface:#13231f; --surface2:#182c27; --deep:#0b1513; -
 
 # High contrast (Preferences): stronger text and borders, every text colour at least 7:1 on its background.
 LIGHT_HC = """--bg:#ffffff; --surface:#ffffff; --surface2:#eef2f1; --deep:#eef2f1; --line:#4a5a55; --line2:#1f2b28;
-  --text:#000000; --muted:#26332f; --blue:#0b5a46; --accent:#0b5a46; --on-accent:#ffffff;
+  --text:#000000; --muted:#26332f; --blue:#0b5a46; --accent:#0b5a46; --on-accent:#ffffff; --gold:#8a6a0c; --gold-text:#5e4700;
   --green:#0b5e2a; --orange:#7a3600; --red:#9e1c1c; --purple:#5b21b6; --teal:#0b5a52; --yellow:#6b5200;
   --ok-text:#0f4a26; --ok-line:#0b5e2a; --warn-text:#6b2e05; --warn-line:#7a3600; --bad-text:#7a1212; --bad-line:#9e1c1c;
-  --nav-text:#ffffff; --nav-muted:#d6e6e0;"""
+  --warn-bg:#fff1dc; --bad-bg:#fde8e8; --nav-text:#ffffff; --nav-muted:#d6e6e0;"""
 DARK_HC = """--bg:#000000; --surface:#0a1210; --surface2:#11201c; --deep:#000000; --line:#5f8579; --line2:#9dbfb4;
-  --text:#ffffff; --muted:#dbe8e3; --blue:#8fe6cb; --accent:#8fe6cb; --gold:#f5cc70; --on-accent:#000000;
+  --text:#ffffff; --muted:#dbe8e3; --blue:#8fe6cb; --accent:#8fe6cb; --gold:#f5cc70; --gold-text:#f5cc70; --on-accent:#000000;
   --green:#7fe0b0; --orange:#ffc078; --red:#ff9e8a; --purple:#d2b8ff; --teal:#7ff0dc; --yellow:#f2d27a;
   --ok-text:#a8f0d0; --ok-line:#7fe0b0; --warn-text:#ffe0b0; --warn-line:#ffc078; --bad-text:#ffd0c4; --bad-line:#ff9e8a;
   --nav-bg:#000000; --nav-text:#ffffff; --nav-muted:#dbe8e3;"""
@@ -124,6 +124,19 @@ PAGE_STYLE = f"""
   label { display:block; margin:0.5rem 0 0.2rem; color:var(--muted); font-size:0.85rem; }
   .ic { width:1.1em; height:1.1em; vertical-align:-0.2em; margin-right:.4em; flex:none; }
   :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  /* Status is never colour alone: every status dot also carries a glyph (ok ✓, warning !, down ×, unknown –). */
+  :root :is(.dot, .ddot) { width:14px; height:14px; border-radius:50%; display:inline-flex; align-items:center;
+         justify-content:center; flex:none; color:var(--surface); font:700 10px/1 system-ui, sans-serif; }
+  :is(.dot, .ddot)::after { content:"\\2013"; }
+  :is(.dot.ok, .ddot.seen)::after { content:"\\2713"; }
+  :is(.dot.warn, .dot.review, .ddot.quiet)::after { content:"!"; }
+  .dot.down::after { content:"\\00d7"; }
+  .skip { position:absolute; left:8px; top:-60px; z-index:60; padding:8px 14px; border-radius:6px;
+          background:var(--accent); color:var(--on-accent); font-weight:600; }
+  .skip:focus { top:8px; text-decoration:none; }
+  main:focus { outline:none; }
+  kbd { font:600 .75rem ui-monospace, Menlo, monospace; padding:1px 6px; border:1px solid var(--line2);
+        border-bottom-width:2px; border-radius:4px; background:var(--surface2); color:var(--text); }
   .status-seen { color:var(--green); } .status-quiet { color:var(--orange); } .status-invisible { color:var(--muted); }
   time[data-when] { white-space:nowrap; }
   #msg { color:var(--red); min-height:1.2rem; } #msg:empty { display:none; }
@@ -152,9 +165,13 @@ SHELL_STYLE = """
 .side .foot form { margin:0; }
 .page { padding:24px 32px 40px; min-width:0; }
 /* Header bar: the quick theme button and Preferences, top right of every page (in the top bar on phones). */
-.page-head { display:flex; align-items:flex-start; gap:12px; }
-.page-head h1 { flex:1; min-width:0; }
+.app { position:relative; }
+.page-head { padding-right:90px; }   /* room for the header bar, which sits over the page's top right corner */
+.page-head h1 { min-width:0; }
 .hbar { display:flex; gap:6px; flex:none; }
+.app > .hbar { position:absolute; top:20px; right:32px; z-index:5; }
+body:has(.shell.docked) .app > .hbar { right:calc(380px + 32px); }
+body.chat-collapsed:has(.shell.docked) .app > .hbar { right:calc(44px + 32px); }
 .hbar .icon-btn { min-width:var(--control-h); padding:0; } .hbar .ic { margin:0; width:18px; height:18px; }
 .side .hbar, .subnav { display:none; }
 .theme-cycle .t-dark, .theme-cycle .t-system { display:none; }
@@ -165,7 +182,13 @@ SHELL_STYLE = """
 .prefs { position:fixed; top:0; right:0; bottom:0; width:min(400px, 100vw); box-sizing:border-box; z-index:31;
          overflow-y:auto; background:var(--surface); border-left:1px solid var(--line2); padding:18px 22px 28px;
          box-shadow:-8px 0 24px rgb(0 0 0 / .18); }
-.prefs[hidden], .prefs-back[hidden] { display:none; }
+.prefs[hidden], .prefs-back[hidden], .keys[hidden] { display:none; }
+/* Keyboard shortcuts sheet (press ?): a small dialog in the middle of the window. */
+.keys { position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:min(380px, calc(100vw - 32px));
+        box-sizing:border-box; z-index:31; background:var(--surface); border:1px solid var(--line2); border-radius:10px;
+        padding:18px 22px 20px; box-shadow:0 12px 32px rgb(0 0 0 / .22); max-height:calc(100vh - 32px); overflow-y:auto; }
+.keys dl { display:grid; grid-template-columns:auto 1fr; gap:8px 16px; margin:14px 0 0; font-size:.875rem; }
+.keys dt { white-space:nowrap; } .keys dd { margin:0; }
 .prefs-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .prefs-head h2 { margin:0; border:0; padding:0; font-size:1.125rem; }
 .prefs h3 { margin:22px 0 4px; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em;
@@ -214,7 +237,8 @@ SHELL_STYLE = """
   .side .tabs a { padding:6px 12px; }
   .side .foot { margin:0 0 0 auto; padding:0; display:flex; flex-wrap:wrap; align-items:center; order:2; }
   .side { position:static; height:auto; overflow:visible; }
-  .side .hbar { display:flex; gap:2px; } .page-head .hbar, .side .side-toggle { display:none; }
+  .side .hbar { display:flex; gap:2px; } .app > .hbar, .side .side-toggle { display:none; }
+  .page-head { padding-right:0; }
   .page { padding:16px; }
 }
 """
@@ -484,8 +508,45 @@ PREFS_PANEL = (
     + "".join(f'<option value="{v}">{_esc(t)}</option>' for v, t in START_PAGES)
     + '</select><p class="hint">Where Lanxang opens when you visit its address. The Home link still goes to Home.</p></div>'
     + _choice("sidebar", "Collapsed sidebar", (("off", "Off"), ("on", "On")), "Icons only, on wide screens.")
+    + '<div class="pref"><span>Keyboard shortcuts — press <kbd>?</kbd></span>'
+    '<p class="hint"><kbd>g</kbd> <kbd>h</kbd> Home, <kbd>g</kbd> <kbd>d</kbd> Devices, <kbd>g</kbd> <kbd>a</kbd> Alerts, '
+    '<kbd>g</kbd> <kbd>s</kbd> Setup, <kbd>/</kbd> search.</p></div>'
     + '</div>'
 )
+
+# Keyboard shortcuts: (keys, what). The sheet (press ?) and KEYS_SCRIPT both follow this table.
+SHORTCUTS = ((("g", "h"), "Home"), (("g", "d"), "Devices"), (("g", "a"), "Alerts"), (("g", "s"), "Setup"),
+             (("/",), "Search or filter this page"), (("?",), "Show this list"), (("Esc",), "Close it"))
+
+KEYS_SHEET = (
+    '<div id="keys-back" class="prefs-back" hidden></div>'
+    '<div id="keys" class="keys" role="dialog" aria-modal="true" aria-labelledby="keys-title" tabindex="-1" hidden>'
+    '<div class="prefs-head"><h2 id="keys-title">Keyboard shortcuts</h2>'
+    '<button type="button" class="sm" data-keys-close>Close</button></div><dl>'
+    + "".join(f'<dt>{" ".join(f"<kbd>{_esc(k)}</kbd>" for k in keys)}</dt><dd>{_esc(what)}</dd>' for keys, what in SHORTCUTS)
+    + '</dl><p class="muted" style="margin:12px 0 0;font-size:.8125rem">Not while typing in a field.</p></div>'
+)
+
+# Last in <body>. g then a letter goes to a page, / focuses the page's search box, ? opens the sheet. Nothing fires
+# while typing in a field, with Ctrl/Alt/Cmd held, or while Preferences is open.
+KEYS_SCRIPT = """<script>(function(){
+var GO={h:"/?home",d:"/devices",a:"/alerts",s:"/settings"},sheet=document.getElementById("keys"),
+  back=document.getElementById("keys-back"),prefs=document.getElementById("prefs"),g=0,opener=null;
+function typing(t){return !!t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));}
+function app(on){var a=document.querySelector(".app");if(a)a.inert=on;}
+function open(){opener=document.activeElement;sheet.hidden=back.hidden=false;app(true);sheet.focus();}
+function close(){sheet.hidden=back.hidden=true;app(false);if(opener&&opener.focus)opener.focus();}
+document.addEventListener("click",function(e){if(e.target.closest("[data-keys-close]")||e.target===back)close();});
+document.addEventListener("keydown",function(e){
+  if(!sheet.hidden){if(e.key==="Escape"||e.key==="?"){e.preventDefault();close();}
+    else if(e.key==="Tab"){e.preventDefault();sheet.querySelector("[data-keys-close]").focus();}return;}
+  if(e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey||typing(e.target)||(prefs&&!prefs.hidden))return;
+  var was=g;g=0;
+  if(was&&Date.now()-was<1500&&GO[e.key]){e.preventDefault();location.href=GO[e.key];return;}
+  if(e.key==="g"){g=Date.now();return;}
+  if(e.key==="/"){var f=document.querySelector("main input[type=search]");if(f){e.preventDefault();f.focus();f.select();}return;}
+  if(e.key==="?"){e.preventDefault();open();}});
+})();</script>"""
 
 NAV_ICONS = {"home": "home", "alerts": "alert", "network": "network", "servers": "server", "security": "shield",
              "settings": "tool"}
@@ -542,7 +603,8 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
         f"<html lang=\"en\"{_display_attrs()}><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
         f"<title>Lanxang — {_esc(title)}</title>{FAVICON}{THEME_SCRIPT}"
-        f"<style>{PAGE_STYLE}</style></head><body><div class=\"app\">"
+        f"<style>{PAGE_STYLE}</style></head><body><a class=\"skip\" href=\"#main\">Skip to content</a>"
+        f"<div class=\"app\">{HEADER_BAR}"
         f"<aside class=\"side\"><a class=\"brand\" href=\"/?home\" title=\"Lanxang home\">{LOGO}<span class=\"name\">Lanxang<small lang=\"lo\">ລ້ານຊ້າງ</small></span></a>"
         f"<nav class=\"main\" aria-label=\"Main\"><ul>{''.join(items)}</ul></nav>"
         f"<div class=\"foot\">{chat_link}{HEADER_BAR}"
@@ -552,8 +614,8 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
         f'{icon("sidebar")}<span class="lbl">Collapse sidebar</span></button>'
         "</div></aside>"
         f"<div class=\"shell{' docked' if drawer else ''}\">"
-        f"<main class=\"page\"><div class=\"page-head\"><h1>{_esc(heading or title)}</h1>{HEADER_BAR}</div>{subnav}{body_html}</main>"
-        f"{drawer_html}</div></div>{PREFS_PANEL}{TIME_SCRIPT}{PREFS_SCRIPT}{TIME_PREFS_SCRIPT}"
+        f"<main class=\"page\" id=\"main\" tabindex=\"-1\"><div class=\"page-head\"><h1>{_esc(heading or title)}</h1></div>{subnav}{body_html}</main>"
+        f"{drawer_html}</div></div>{PREFS_PANEL}{KEYS_SHEET}{TIME_SCRIPT}{PREFS_SCRIPT}{TIME_PREFS_SCRIPT}{KEYS_SCRIPT}"
         "</body></html>"
     )
 
@@ -750,6 +812,20 @@ HISTORY_STYLE = """
 """
 
 
+# Activity with time zone "browser": the server grouped by UTC day; regroup the rows by the viewer's own day.
+# ponytail: rows were folded per UTC day, so a fold near midnight can still count both days; fine for a log.
+DAY_SCRIPT = """<script>(function(){var R=document.documentElement,log=document.getElementById("ev-log");
+if(!log||(R.dataset.tz||"browser")!=="browser")return;
+var groups=[],by={};
+log.querySelectorAll(".ev").forEach(function(ev){var t=ev.querySelector("time[datetime]");if(!t)return;
+  var d=new Date(t.getAttribute("datetime")),k=d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate();
+  if(!by[k]){by[k]=[];groups.push([t.getAttribute("datetime"),by[k]]);}by[k].push(ev);});
+if(!groups.length)return;
+log.replaceChildren.apply(log,groups.map(function(g){var s=document.createElement("section"),h=document.createElement("h2"),
+  t=document.createElement("time");s.className="day";t.setAttribute("datetime",g[0]);t.dataset.when="day";
+  h.appendChild(t);s.appendChild(h);g[1].forEach(function(ev){s.appendChild(ev);});return s;}));})();</script>"""
+
+
 def _event_category(event_type):
 
     lowered = event_type.lower()
@@ -771,13 +847,15 @@ def render_history_page(events, today=None, changes=""):
             active="history"
         )
 
-    from datetime import date, timedelta
-    today = today or utcnow().date()                     # stored times are UTC days
-    names = {today.isoformat(): "Today", (today - timedelta(days=1)).isoformat(): "Yesterday"}
+    from datetime import timedelta
+    # Day groups follow the display zone; with "browser" (UTC here) DAY_SCRIPT regroups by the viewer's own day.
+    today = today or local(utcnow(), DISPLAY)[0].date()
+    names = {today: "Today", today - timedelta(days=1): "Yesterday"}
 
     days = {}
     for event in events:   # newest first; one row per event type per day (newest kept, the rest counted)
-        items = days.setdefault(str(event.created_at)[:10], {})
+        moment = _moment(event.created_at)
+        items = days.setdefault(local(moment, DISPLAY)[0].date() if moment else str(event.created_at)[:10], {})
         items.setdefault(event.event_type, [event, 0])[1] += 1
 
     sections = ""
@@ -792,7 +870,7 @@ def render_history_page(events, today=None, changes=""):
                         else f' <span class="count">\u00d7{count}, latest</span>' if count > 1 else "")
                      + f' <span class="src">{_esc(event.source)}</span></summary><pre>{_esc(event.payload)}</pre></details></div>')
         newest = next(iter(items.values()))[0].created_at   # the heading follows the viewer's own day (TIME_SCRIPT)
-        heading = when(newest, clock="day", text=names.get(day, day))
+        heading = when(newest, clock="day", text=names.get(day))
         sections += f'<section class="day"><h2>{heading}</h2>{rows}</section>'
 
     buttons = "".join(f'<button type="button" data-filter="{cat}" aria-pressed="{str(cat == "important").lower()}">{label}</button>'
@@ -809,7 +887,7 @@ def render_history_page(events, today=None, changes=""):
 
     body = (HISTORY_STYLE + changes + ask_chips(HISTORY_CHIPS) + f'<div class="filters seg" role="group" aria-label="Show">{buttons}</div>'
             + '<p class="muted">Routine scans (every 15 min) are hidden under Important — pick All or Scans to see them.</p>'
-            + sections + script + "<script>document.querySelectorAll('.day').forEach((d) => {"
+            + f'<div id="ev-log">{sections}</div>' + DAY_SCRIPT + script + "<script>document.querySelectorAll('.day').forEach((d) => {"
               " d.hidden = !d.querySelector('.ev:not([hidden])'); });</script>")
 
     return render_page("Activity", body, active="history")

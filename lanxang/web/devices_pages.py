@@ -112,6 +112,15 @@ def _when(iso, now=None):
     return when(iso, now)
 
 
+def _own_id(sighting):
+    """The source's own ID for a sighting; blank when it is just the MAC again (the MAC column already shows it)."""
+
+    from lanxang.wiring import normalize_mac
+    own = sighting.get("external_id") or ""
+    mac = normalize_mac(sighting.get("mac"))
+    return "" if not own or (mac and normalize_mac(own) == mac) else _esc(own)
+
+
 def _sources(device):
 
     return ", ".join(sorted({sighting["source"] for sighting in device["sightings"]}))
@@ -304,7 +313,7 @@ def render_devices_page(devices, hints=None):
             + f'<p class="dsum"><b>{len(devices)}</b> devices \u00b7 <b>{len(new)}</b> new \u00b7 <b>{len(quiet)}</b> quiet'
               f' \u00b7 <b>{len(ignored)}</b> ignored</p>'
             + attention
-            + '<p><input id="filter" class="wide" placeholder="Filter by name, ip, source..."></p>'
+            + '<p><input id="filter" type="search" class="wide" placeholder="Filter by name, ip, source..." aria-label="Filter devices"></p>'
             + grouped + hidden)
 
     return _page(f"Devices ({len(devices)})", body, device_tabs("devices"))
@@ -477,8 +486,9 @@ def render_device_page(device, devices, ports=None, wiring=None, suggestion=None
     )
 
     several = len(device["sightings"]) > 1
+    ids = any(_own_id(sighting) for sighting in device["sightings"])   # no ID column when every ID is just the MAC
     sighting_rows = "".join(
-        f"<tr><td>{_esc(sighting['source'])}</td><td>{_esc(sighting['external_id'])}</td>"
+        f"<tr><td>{_esc(sighting['source'])}</td>" + (f"<td>{_own_id(sighting)}</td>" if ids else "") +
         f"<td>{_esc(sighting['ip'] or '-')}</td><td>{_esc(sighting['mac'] or '-')}</td>"
         f"<td>{_esc(sighting['hostname'] or '-')}</td><td>{_when(sighting['last_seen'])}</td><td>"
         + (_button("Split out", f"/api/sightings/{sighting['id']}/split", {}, "sm", after="goto") if several else "")
@@ -507,7 +517,8 @@ def render_device_page(device, devices, ports=None, wiring=None, suggestion=None
         DEVICE_STYLE + _status_header(device, _wired(wiring_node(device, wiring))) + _login_hint(suggestion)
         + f"<div class=\"card\"><h2>Details</h2>{form}</div>"
         + _open_ports(ports) +
-        "<div class=\"card\"><h2>Where Lanxang saw it</h2><div class=\"table-wrap\"><table><thead><tr><th>Source</th><th>ID</th><th>IP</th>"
+        "<div class=\"card\"><h2>Where Lanxang saw it</h2><div class=\"table-wrap\"><table><thead><tr><th>Source</th>"
+        + ("<th>ID</th>" if ids else "") + "<th>IP</th>"
         f"<th>MAC</th><th>Hostname</th><th>Last seen</th><th></th></tr></thead><tbody>{sighting_rows}</tbody></table></div></div>"
         + danger
     )

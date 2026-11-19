@@ -11,8 +11,17 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 - The sidebar has a collapse button and line icons for each section; it stays in view while the page scrolls.
 - Preferences > Time & date, saved on the server for everyone: a 24-hour or 12-hour clock, the time zone (this browser, UTC or any IANA zone such as America/New_York) and the date format (2026-11-19, 19/11/2026 or 11/19/2026). It applies at once to every page and to alert messages, the test alert and the weekly summary; with "this browser", messages use UTC and say so. Also `display:` in the config file.
 - The weekly summary says which week it covers and when it was sent; the test alert says when it was sent.
+- Keyboard shortcuts: `g` then `h` Home, `g d` Devices, `g a` Alerts, `g s` Setup; `/` jumps to the page's search or filter box; `?` shows the list (Escape closes it). They do nothing while you type in a field or hold Ctrl, Alt or Cmd, and Preferences > Navigation mentions them.
+- A "Skip to content" link, shown when you press Tab on any page.
 
 ### Changed
+- Status is never shown by colour alone: status dots carry a mark (✓ ok, ! warning, × down, – unknown), alert rows say Problem, Watching or Resolved with an icon, and Exposure's status tiles and problem boxes carry a mark or word too.
+- Gold text on light backgrounds is darker, for at least 4.5:1 contrast; high contrast also darkens gold and the warning and problem tints.
+- The header bar comes first when you Tab through a page, then the sidebar, then the page.
+- Alerts and Services no longer show headings for empty sections: the empty ones share one short line, and Alerts with nothing at all says "All clear".
+- Alerts and Uptime use the same friendly times as the rest of the UI ("2 h ago", "yesterday 14:32").
+- Activity groups by day in your time zone (or the one chosen in Preferences), not by UTC day.
+- A device's "Where Lanxang saw it" table drops the ID column when the ID is just the MAC again.
 - The sidebar's "Dark mode" button moved to the header bar; Sign out stays in the sidebar. A saved light or dark choice keeps working.
 - Page text sizes are now relative to the browser's text size, so text size and browser zoom scale every page evenly.
 - Times older than a week show the date ("2026-10-28") instead of "28 Oct", and Activity's day headings read "Wed 2026-10-28"; device "last seen" times in alerts now name their zone. Uptime's outage list and Visitors' times use the same friendly times as the rest of the UI.

@@ -7,8 +7,8 @@ import re
 from datetime import datetime
 
 from lanxang.config.local import config_name
-from lanxang.web.cabling_page import _ago
-from lanxang.web.render import _esc, render_page
+from lanxang.web.icons import icon
+from lanxang.web.render import _esc, empty_state, render_page, when
 from lanxang.clock import utcnow
 
 SOURCES = {"lan": "LAN watch", "host": "Host health", "certs": "Certificates", "wiring": "Cabling",
@@ -22,10 +22,11 @@ STYLE = """<style>
 .alerts li .body { flex:1; min-width:0; }
 .alerts li .detail { color:var(--muted); overflow-wrap:anywhere; }
 .alerts li .meta { font-size:.75rem; color:var(--muted); margin-top:2px; }
-.alerts .sev { width:10px; height:10px; border-radius:50%; margin-top:6px; flex:none; }
-.alerts .problem .sev { background:var(--red); } .alerts .watch .sev { background:var(--orange); }
-.alerts .resolved .sev { background:var(--green); } .alerts .resolved { opacity:.75; }
-.alerts .empty { color:var(--muted); }
+.alerts .sev { display:inline-flex; align-items:center; flex:none; min-width:6.5rem; margin-top:1px;
+  font-size:.75rem; font-weight:600; }
+.alerts .problem .sev { color:var(--bad-text); } .alerts .watch .sev { color:var(--warn-text); }
+.alerts .resolved .sev { color:var(--ok-text); } .alerts .resolved { opacity:.75; }
+.alerts .none { margin-top:1.2rem; }
 .alerts .acts { display:flex; gap:6px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
 .alerts .acked { font-size:.6875rem; border:1px solid var(--line2); border-radius:999px; padding:0 6px; margin-left:6px; }
 .alerts .bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:10px 12px; border:1px solid var(--line2);
@@ -73,8 +74,8 @@ QUIET_REMOVE = re.compile(r"^/api/alerts/quiet-hours/(\d+)/remove$")
 
 def _row(alert, now, kind):
 
-    when = (f"resolved {_ago(alert['resolved_at'], now)}, after {_ago(alert['opened_at'], alert['resolved_at'])[:-4]}"
-            if kind == "resolved" else f"since {_ago(alert['opened_at'], now)}")
+    said = (f"resolved {when(alert['resolved_at'], now)}, after {_lasted(alert['opened_at'], alert['resolved_at'])}"
+            if kind == "resolved" else f"since {when(alert['opened_at'], now)}")
     link = (f'<a class="btn primary sm" href="{_esc(alert["href"])}">Investigate</a>' if alert["href"] and kind != "resolved" else "")
     if kind != "resolved":
         pick = f"mute-{alert['id']}"
@@ -88,17 +89,41 @@ def _row(alert, now, kind):
                   f'title="No messages about {what}; it still shows here">Mute {what}</button></div>')
     acked = '<span class="acked">acknowledged</span>' if alert["acked_at"] and kind != "resolved" else ""
 
-    return (f'<li class="{kind}"><span class="sev"></span><div class="body"><b>{_esc(alert["title"])}</b>{acked}'
+    mark, word = SEVERITY[kind]
+    return (f'<li class="{kind}"><span class="sev">{icon(mark)}{word}</span><div class="body"><b>{_esc(alert["title"])}</b>{acked}'
             + (f'<div class="detail">{_esc(alert["detail"])}</div>' if alert["detail"] else "")
-            + f'<div class="meta">{_esc(SOURCES.get(alert["source"], alert["source"]))} · <span{_opened(alert)}>{_esc(when)}</span></div>'
+            + f'<div class="meta">{_esc(SOURCES.get(alert["source"], alert["source"]))} · <span{_opened(alert)}>{said}</span></div>'
             f'</div>{link}</li>')
 
 
-def _section(title, rows, now, kind, empty):
+# Status is never colour alone: each row's mark is an icon plus a word.
+SEVERITY = {"problem": ("alert", "Problem"), "watch": ("search", "Watching"), "resolved": ("check", "Resolved")}
 
-    items = "".join(_row(alert, now, kind) for alert in rows)
-    return f'<h2>{_esc(title)} <span class="muted">({len(rows)})</span></h2>' + (
-        f"<ul>{items}</ul>" if rows else f'<p class="empty">{_esc(empty)}</p>')
+
+def _lasted(start, end):
+    """How long an alert was open: '12 min', '3 h', '2 days'."""
+
+    minutes = max(0, int((end - start).total_seconds() // 60))
+    return f"{minutes} min" if minutes < 120 else f"{minutes // 60} h" if minutes < 48 * 60 else f"{minutes // 1440} days"
+
+
+def _sections(listing, now):
+    """Only the sections that have rows get a heading; the empty ones share one muted line, or one empty state."""
+
+    parts = (("Needs action", "open", "problem", "nothing needs action"), ("Watching", "watch", "watch", "nothing watched"),
+             ("Resolved in the last 7 days", "resolved", "resolved", "nothing resolved this week"))
+    if not any(listing[key] for _, key, _, _ in parts):
+        return empty_state("check", "All clear", "Nothing needs you, nothing is being watched, and nothing resolved "
+                           "in the last 7 days.")
+    html, none = "", []
+    for title, key, kind, empty in parts:
+        rows = listing[key]
+        if rows:
+            html += (f'<h2>{_esc(title)} <span class="muted">({len(rows)})</span></h2><ul>'
+                     + "".join(_row(alert, now, kind) for alert in rows) + "</ul>")
+        else:
+            none.append(empty)
+    return html + (f'<p class="none muted">{_esc(" · ".join(none).capitalize())}.</p>' if none else "")
 
 
 def _opened(alert):
@@ -210,9 +235,7 @@ def render_alerts_page(listing, now, notify=None):
             'also send an alert to your channels; watched items only show here. An item resolves by itself when '
             'the check stops seeing it. <b>Acknowledge</b> says you\'ve seen it; <b>Mute</b> stops messages about '
             'it (or its device) but keeps it listed.</p>' + _controls(listing, now, notify)
-            + _section("Needs action", listing["open"], now, "problem", "Nothing needs you right now.")
-            + _section("Watching", listing["watch"], now, "watch", "Nothing being watched.")
-            + _section("Resolved in the last 7 days", listing["resolved"], now, "resolved", "Nothing resolved recently.")
+            + _sections(listing, now)
             + "</div>" + SCRIPT)
 
     return render_page("Alerts", body, active="alerts")

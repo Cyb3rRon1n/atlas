@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta
 
 from lanxang.alerts import AlertStore, issue, report, report_event
@@ -52,7 +53,7 @@ def test_page_and_home_show_the_same_problems(temp_db):
     listing = store.listing(NOW + timedelta(hours=4))
     page = render_alerts_page(listing, NOW + timedelta(hours=4))
     assert "Needs action <span class=\"muted\">(1)" in page and 'href="/posture">Investigate' in page
-    assert "2 new devices waiting" in page and "resolved 60 min ago, after 3 h" in page
+    assert "2 new devices waiting" in page and re.search(r'resolved <time [^>]*>1 h ago</time>, after 3 h', page)
 
     items = attention_items(None, {"rows": []}, {"rows": []}, (), listing["open"])
     assert items == [("alerts", "Alerts", "Certificate expires in 3 days: example.org", "/alerts", "Review")]

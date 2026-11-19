@@ -23,6 +23,12 @@ POSTURE_STYLE = """
 #strip .chip.ok .v { color:var(--ok-text); } #strip .chip.warn { border-color:var(--red); } #strip .chip.warn .v { color:var(--bad-text); }
 #strip .chip.review { border-color:var(--orange); background:var(--warn-bg); } #strip .chip.review .v { color:var(--warn-text); }
 #strip .chip.unknown .v { color:var(--muted); }
+#strip .chip .v::before { margin-right:6px; font-size:.9em; }   /* status is never colour alone */
+#strip .chip.ok .v::before { content:"\\2713"; content:"\\2713" / ""; }
+#strip .chip.warn .v::before { content:"!"; content:"!" / ""; }
+#strip .chip.review .v::before { content:"?"; content:"?" / ""; }
+#strip .chip.unknown .v::before { content:"\\2013"; content:"\\2013" / ""; }
+.box.warn .badge { color:var(--bad-text); }
 .posture { display:flex; flex-wrap:wrap; gap:20px; }
 .posture .mapcard { flex:999 1 720px; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; }
 .posture aside { flex:1 1 320px; min-width:0; display:flex; flex-direction:column; gap:16px; }
@@ -55,7 +61,7 @@ POSTURE_STYLE = """
 .box.selected { outline:2px solid var(--blue); }
 .box .badge { margin-left:auto; font-size:.6875rem; color:var(--warn-text); text-transform:uppercase; letter-spacing:.05em; }
 #exposure li { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
-.prot-authelia { color:var(--ok-text); } .prot-public { color:var(--warn-text); } .cert-soon { color:var(--yellow); } .cert-bad { color:var(--bad-text); font-weight:600; }
+.prot-authelia { color:var(--ok-text); } .prot-public { color:var(--warn-text); } .cert-soon { color:var(--warn-text); } .cert-bad { color:var(--bad-text); font-weight:600; }
 @media (max-width: 900px) { #strip { grid-template-columns:repeat(2,minmax(0,1fr)); }  }
 #posture-panel dl { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:.8125rem; }
 #posture-panel dt { color:var(--muted); }
@@ -239,6 +245,7 @@ function lanes(data) {
           box.append(bar);
         }
         if (n.state === "review" && n.id.startsWith("dst:")) box.append(el("span", "review", "badge"));
+        else if (n.state === "warn") box.append(el("span", "problem", "badge"));
         box.addEventListener("click", () => {
           document.querySelectorAll("#posture-map .box.selected").forEach((o) => o.classList.remove("selected"));
           box.classList.add("selected");

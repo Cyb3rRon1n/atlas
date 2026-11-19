@@ -85,6 +85,6 @@ def test_uptime_page_adds_lists_and_removes_heartbeats(isolated_cwd):
     assert [(b.name, b.every_minutes, b.grace_minutes) for b in beats] == [("Backup", 1440, 60)]
     now = datetime(2026, 11, 17, 12)
     html = render_uptime_page([], {}, now, beats=[(beats[0], {"state": "late", "at": "2026-11-16T02:00:00"}, "ab12")])
-    assert "Late" in html and 'data-ping="/ping/ab12"' in html and "every day" in html and "34 h ago" in html
+    assert "Late" in html and 'data-ping="/ping/ab12"' in html and "every day" in html and "yesterday 02:00 UTC" in html
     assert handle_post("/api/uptime/heartbeat/remove", {"name": "Backup"}) == (200, {"ok": True})
     assert load_config().uptime.heartbeats == []

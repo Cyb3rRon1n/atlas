@@ -14,7 +14,8 @@ from lanxang.web.render import PAGE_STYLE, THEME_SCRIPT, render_page
 def test_header_bar_on_every_page_and_sidebar_theme_button_gone():
     html = render_page("Devices", "<p>x</p>", active="devices")
     assert html.count('class="hbar"') == 2           # page header + phone top bar
-    assert 'class="page-head"><h1>Devices</h1><div class="hbar">' in html
+    # the desktop header bar comes right after the skip link, before the sidebar and the page, for keyboard order
+    assert html.index('class="skip"') < html.index('class="hbar"') < html.index('<aside') < html.index('<main')
     assert html.count('class="icon-btn theme-cycle" onclick="atlasTheme()"') == 2
     assert 'aria-label="Theme: Light. Switch to Dark"' in html
     assert html.count('class="icon-btn prefs-open" aria-haspopup="dialog" aria-controls="prefs"') == 2

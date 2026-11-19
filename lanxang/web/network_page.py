@@ -183,23 +183,42 @@ def render_network_page(topology, routes, graph):
             f' <span class="kind">{_esc(h.get("role") or h["address"])}</span></li>' for h in lan) + "</ul></div>" if lan else "")
     )
 
+    # Only lanes and groups that have something get a heading; the empty ones share one muted line.
+    none = []
+    internet = ""
+    if guarded:
+        internet += (f'<h3 class="sub">{icon("lock")}Behind Authelia ({len(guarded)})</h3><p class="why">Authelia\'s login comes '
+                     'first — nobody reaches the app without your account.</p>' + grid("internet", guarded))
+    if own:
+        internet += (f'<h3 class="sub">{icon("shield")}Own login only ({len(own)})</h3><p class="why">Not behind Authelia '
+                     '(their phone/TV apps can\'t pass it) — the app\'s own login is the gate, CrowdSec and Lanxang still '
+                     'watch.</p>' + grid("internet", own))
+    lanes_html = ""
+    if internet:
+        lanes_html += ('<section class="nlane"><h2>' + icon("globe") + 'From the internet</h2><p class="why">Reachable by '
+                       'anyone through the Cloudflare tunnel. Every request passes CrowdSec (bans bad IPs) and is logged; '
+                       'Lanxang watches it.</p>' + internet + "</section>")
+    else:
+        none.append("nothing reachable from the internet")
+    if lanes["home"]:
+        lanes_html += ('<section class="nlane"><h2>' + icon("home") + 'Home network only</h2><p class="why">A web page or '
+                       'port, but no route from the internet.</p>' + grid("home") + "</section>")
+    else:
+        none.append("nothing on the home network only")
+    if lanes["background"]:
+        lanes_html += ('<details class="nlane"><summary>' + icon("gear") + 'Background (' + str(len(lanes["background"]))
+                       + ')</summary><p class="why">No web page — helpers like the VPN tunnel, CrowdSec and Recyclarr.</p>'
+                       + grid("background") + "</details>")
+    else:
+        none.append("no background helpers")
+
     body = (
         NETWORK_STYLE + ask_chips(NETWORK_CHIPS)
         + '<p class="muted">' + (f'Snapshot from {when(topology["generated_at"])}. ' if topology.get("generated_at") else "")
         + 'Click a service for details.'
         + (f' <strong>{down} not healthy</strong> (listed first in each lane).' if down else "") + "</p>"
-        + '<section class="nlane"><h2>' + icon("globe") + 'From the internet</h2><p class="why">Reachable by anyone through the '
-          'Cloudflare tunnel. Every request passes CrowdSec (bans bad IPs) and is logged; Lanxang watches it.</p>'
-        + f'<h3 class="sub">{icon("lock")}Behind Authelia ({len(guarded)})</h3><p class="why">Authelia\'s login comes first — '
-          'nobody reaches the app without your account.</p>' + grid("internet", guarded)
-        + f'<h3 class="sub">{icon("shield")}Own login only ({len(own)})</h3><p class="why">Not behind Authelia (their '
-          'phone/TV apps can\'t pass it) — the app\'s own login is the gate, CrowdSec and Lanxang still watch.</p>'
-        + grid("internet", own) + "</section>"
-        + '<section class="nlane"><h2>' + icon("home") + 'Home network only</h2><p class="why">A web page or port, but no '
-          'route from the internet.</p>' + grid("home") + "</section>"
-        + '<details class="nlane"><summary>' + icon("gear") + 'Background (' + str(len(lanes["background"]))
-        + ')</summary><p class="why">No web page — helpers like the VPN tunnel, CrowdSec and Recyclarr.</p>'
-        + grid("background") + "</details>"
+        + (f'<p class="muted none">{_esc(" · ".join(none).capitalize())}.</p>' if none else "")
+        + lanes_html
         + '<section class="nlane"><h2>' + icon("server") + 'Machines</h2><div class="machines">' + machines + "</div></section>"
         + '<section class="nlane"><h2>' + icon("plug") + 'Devices by connection</h2>' + _tree(graph) + "</section>"
     )

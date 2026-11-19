@@ -4,12 +4,10 @@
 already knows. Checks added here are saved to the web settings; a list in the config file wins and locks the form.
 """
 
-from datetime import datetime
 import re
 
 from lanxang.config.local import config_name
 from lanxang.config import local
-from lanxang.web.cabling_page import _ago
 from lanxang.web.render import _esc, plural, render_page, when
 
 STYLE = """<style>
@@ -204,7 +202,7 @@ def _heartbeats(beats, now, locked):
         f'<tr><td><span class="state {BEAT_LABELS[st["state"]][0]}">{BEAT_LABELS[st["state"]][1]}</span></td>'
         f'<td><strong>{_esc(hb.name)}</strong><span class="target">{_every(hb.every_minutes)}, '
         f'{hb.grace_minutes} min grace</span></td>'
-        f'<td>{_esc(_ago(datetime.fromisoformat(st["at"]), now)) if st.get("at") else "never"}</td>'
+        f'<td>{when(st.get("at"), now, never="never")}</td>'
         f'<td><code class="ping" data-ping="/ping/{_esc(token)}">curl -fsS -m 10 /ping/{_esc(token)}</code></td>'
         f'<td>{"" if locked else f"""<button class="danger sm" type="button" data-beat-remove="{_esc(hb.name)}">Remove</button>"""}</td></tr>'
         for hb, st, token in beats)
@@ -233,7 +231,7 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
         last = info["last"]
         response = f"{last[2]:.0f} ms" if last and last[2] is not None else (last[3] if last else "")
         failure = info["last_failure"]
-        problem = f"{_ago(failure[0], now)}: {failure[1]}" if failure else "none in 30 days"
+        problem = f"{when(failure[0], now)}: {_esc(failure[1])}" if failure else "none in 30 days"
         remove = ("" if locked else
                   f'<button class="danger sm" type="button" data-remove="{_esc(check.name)}">Remove</button>')
         rows.append(
@@ -241,7 +239,7 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
             f'<td><strong>{_esc(check.name)}</strong><span class="target">{_esc(check.target)}</span></td>'
             f'<td class="num">{_esc(response)}</td><td>{_graph(info["points"])}</td>'
             + "".join(f'<td class="num">{_pct(info["uptime"].get(w))}</td>' for w in ("24 h", "7 days", "30 days"))
-            + f'<td>{_esc(problem)}</td><td>{remove}</td></tr>')
+            + f'<td>{problem}</td><td>{remove}</td></tr>')
 
     table = ('<div class="table-wrap"><table class="uptime"><thead><tr><th>Status</th><th>Check</th><th>Response</th><th>Last 24 h</th>'
              '<th>24 h</th><th>7 days</th><th>30 days</th><th>Last problem</th><th></th></tr></thead>'

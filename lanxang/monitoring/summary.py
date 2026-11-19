@@ -158,3 +158,105 @@ def run(settings, store, now, *, send=None, sources=None):
         return None
     store.set_status("summary", True, {"sent_at": now.isoformat(timespec="seconds")}, now)
     return text
+
+
+# The daily summary: at notify.daily_summary ("08:00", in notify.timezone - the alert zone, not the display one)
+# one message with what changed in the last 24 hours: the Activity "What changed" items, public routes added or
+# removed, and devices that went quiet. Nothing changed = nothing sent. Off while daily_summary is empty.
+
+DAILY_LINES = 15                      # more than this folds into "... and N more"
+
+
+def daily_due(now, tz, at, last_sent):
+    """True once local time has reached at ("HH:MM") and nothing went out on this local date (last_sent: "YYYY-MM-DD")."""
+
+    from lanxang.alerts.quiet import local
+
+    if not at:
+        return False
+    here = local(now, tz)
+    hour, minute = map(int, at.split(":"))
+    return (here.hour, here.minute) >= (hour, minute) and last_sent != here.date().isoformat()
+
+
+def build_daily(settings, now, sources, last_quiet):
+    """(text, quiet device ids); text is None when nothing changed. last_quiet None (first run) = no baseline yet,
+    so today's quiet devices are taken as known rather than listed as newly quiet.
+    sources: changes_feed.collect's {"alerts", "devices", "changes"} plus "routes": f(moment) -> route snapshot."""
+
+    from lanxang.clock import hhmm, local, stamp
+    from lanxang.web import changes_feed
+
+    since = now - timedelta(hours=24)
+    display = settings.display
+
+    def safely(read, *args):
+        try:
+            return read(*args)
+        except Exception:
+            return None
+
+    lines = [f"{hhmm(local(at, display)[0], display)} {text}"
+             for at, _, text, _ in reversed(changes_feed.collect(now, "24h", sources))]
+
+    then = safely(sources["routes"], since) or []
+    if then:                                                 # no snapshot a day ago (fresh install): no diff
+        def hosts(routes):
+            return {h for r in routes for h in r.get("hosts") or []}
+        before, after = hosts(then), hosts(safely(sources["routes"], now) or [])
+        lines += [f"Route added: {h}" for h in sorted(after - before)]
+        lines += [f"Route removed: {h}" for h in sorted(before - after)]
+
+    devices = safely(sources["devices"]) or []
+    quiet = sorted(d["id"] for d in devices if d.get("status") == "quiet" and d.get("state") == "known")
+    if last_quiet is not None:
+        lines += [f"Gone quiet: {d['name']}" for d in devices if d["id"] in set(quiet) - set(last_quiet)]
+
+    if not lines:
+        return None, quiet
+    if len(lines) > DAILY_LINES:
+        lines = lines[:DAILY_LINES - 1] + [f"... and {len(lines) - DAILY_LINES + 1} more on the Activity page"]
+    span = f"{stamp(since, display)} – {stamp(now, display)}"
+    return f"**📋 Lanxang: yesterday**\n{span}\n" + "\n".join(f"• {line}" for line in lines), quiet
+
+
+def _daily_sources():
+
+    from lanxang.alerts import AlertStore
+    from lanxang.devices.store import InventoryStore
+    from lanxang.knowledge.queries import KnowledgeQueries
+    from lanxang.posture.store import PostureStore
+    from lanxang.web import changes_feed
+
+    query = KnowledgeQueries()
+    return {"alerts": lambda at, days: AlertStore().listing(at, days), "devices": InventoryStore().devices,
+            "changes": lambda since: [(at, kind, payload) for kind in changes_feed.CHANGE_EVENTS
+                                      for at, payload in query.events_since([kind], since)],
+            "routes": PostureStore().routes_at}
+
+
+def run_daily(settings, store, now, *, send=None, sources=None):
+    """Send the daily summary when it's due. Returns the text sent, or None."""
+
+    from lanxang import notify
+    from lanxang.alerts import allowed
+    from lanxang.alerts.quiet import local
+
+    at, tz = settings.notify.daily_summary, settings.notify.timezone
+    detail = ((store.statuses().get("summary_daily") or {}).get("detail")) or {}
+    if not daily_due(now, tz, at, detail.get("date")):
+        return None
+    body, quiet = build_daily(settings, now, sources or _daily_sources(), detail.get("quiet"))
+    text = Text(body, "summary:daily") if body else None
+    if text is not None:
+        if not allowed(store, text, now):
+            return None                                # quiet hours or paused: tried again on the next scan
+        if send:
+            send(text)
+        elif notify.configured(settings.notify):
+            notify.send(settings.notify, text)
+        else:
+            return None
+    store.set_status("summary_daily", True, {"sent_at": now.isoformat(timespec="seconds"),
+                                             "date": local(now, tz).date().isoformat(), "quiet": quiet}, now)
+    return text

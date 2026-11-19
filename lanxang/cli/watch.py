@@ -187,6 +187,14 @@ def lan_scan(
     except Exception as error:
         console.print(f"[yellow]Weekly summary failed: {error}[/yellow]")
 
+    try:                                                # notify.daily_summary: what changed in the last 24 hours
+        from lanxang.monitoring.summary import run_daily
+        from lanxang.posture.store import PostureStore
+        if run_daily(settings, PostureStore(), utcnow()):
+            console.print("Daily summary sent.")
+    except Exception as error:
+        console.print(f"[yellow]Daily summary failed: {error}[/yellow]")
+
     if result["new"] or result["offline"] or result["notify_errors"]:
         application.runtime.events.publish(
             AtlasEvent(event_type="atlas.devices.scan.completed", source="LanScan", payload=result)

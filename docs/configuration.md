@@ -233,6 +233,21 @@ week went: internet outages, services below 100%, new devices and how many wait 
 heartbeats, disks and the UPS - only the parts you use. Getting it also tells you lanxang itself is alive.
 `notify.weekly_summary: false` turns it off; quiet hours over Sunday evening hold it.
 
+### Daily summary
+
+Set `notify.daily_summary` to a time (`"08:00"`, 24 h, in `notify.timezone` - the alert time zone, not the display
+one; UTC when empty) and the first `lanxang scan` after it sends one message on what changed in the last 24 hours:
+the Activity page's "What changed" items (new devices, alerts that started or cleared, Proxmox and container
+changes), public routes added or removed since the snapshot a day earlier, and known devices that went quiet. A day
+with nothing to tell sends nothing. Empty (the default) is off; the Setup page's Daily summary card sets it. Quiet
+hours and **Pause alerts** hold it until the next scan after they end.
+
+```yaml
+notify:
+  timezone: America/Detroit
+  daily_summary: "08:00"
+```
+
 ### Quiet hours
 
 A weekly schedule when no alert messages go out - the night, or the Sunday update window. Problems still show on the Alerts page; only the messages are held, the same as **Pause alerts**. Add them on the Alerts page (times in your browser's time zone, which is saved as `notify.timezone`) or in `lanxang.yaml`:
@@ -585,6 +600,10 @@ notify:
 | `email` | `host`, `port` (587), `starttls` (true), `user`, `password`, `sender`, `to` | Port 465 uses implicit TLS. Put the password in `.env` as `LANXANG_SMTP_PASSWORD` rather than here |
 | `apprise` | list of [Apprise URLs](https://github.com/caronc/apprise/wiki) | Telegram, Pushover, Gotify, Matrix, Teams and more. Needs the `apprise` package — the Docker image has it; with pip, `pip install "lanxang[alerts]"` |
 | `signal` | `url`, `number`, `recipients` | Through [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api). `recipients` can be numbers or group IDs |
+
+Beside the channels: `timezone` (the alert time zone, an IANA name; UTC when empty) for `quiet_hours` and the
+summaries, `weekly_summary` (true) and `daily_summary` (`"HH:MM"`, empty = off) - see
+[Weekly summary](#weekly-summary) and [Daily summary](#daily-summary).
 
 An alert counts as delivered when at least one channel took it; if every channel fails it stays queued and is retried on the next run.
 

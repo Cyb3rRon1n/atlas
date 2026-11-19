@@ -1,3 +1,4 @@
+import re
 from typing import Literal
 from zoneinfo import ZoneInfo
 
@@ -152,6 +153,15 @@ class NotifyConfig(BaseModel):
     quiet_hours: list[QuietHours] = []   # no messages in these weekly windows (lanxang.alerts.quiet)
     timezone: str = ""                   # for quiet_hours: an IANA name like America/Detroit; UTC when empty
     weekly_summary: bool = True          # Sunday evening (timezone): how the week went (lanxang.monitoring.summary)
+    daily_summary: str = ""              # "08:00" (timezone): what changed in the last 24 hours; empty = off
+
+    @field_validator("daily_summary")
+    @classmethod
+    def _clock_time(cls, value):
+        value = value.strip()
+        if value and not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", value):
+            raise ValueError("daily_summary must be HH:MM (24 h, like 08:00) or empty")
+        return value
 
 
 class AccessConfig(BaseModel):

@@ -58,7 +58,7 @@ def test_store_summary_page_map_people_and_anonymous(temp_db):
     assert v["9.9.9.9"]["requests"] == 3 and v["9.9.9.9"]["denied"] == 1 and v["9.9.9.9"]["city"] == "Tampa"
     html = render_access_page(s, "7d")
     assert "grace" in html and "Tampa, Florida, US" in html and 'class="user"' in html     # signed-in place drawn green
-    assert "Anonymous visitors (1 IPs)" in html and "Lisbon, PT" in html and "&lt;b&gt;x" in html and "<b>x" not in html
+    assert "Anonymous visitors (1 IP)" in html and "Lisbon, PT" in html and "&lt;b&gt;x" in html and "<b>x" not in html
     assert 'href="/access?window=24h"' in html and "DB-IP" in html and 'data-ask="Who signed in' in html
     assert store.prune(datetime(2026, 10, 12)) > 0 and store.summary(datetime(2026, 1, 1))["visitors"] == []
     assert "access.enabled" in render_access_page({"visitors": [], "logins": []}, "7d", enabled=False)

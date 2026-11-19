@@ -117,7 +117,7 @@ def test_home_new_cards_chips_and_chart():
                             trends=trends, analysis=analysis, now=datetime(2026, 10, 10, 12))
     assert 'data-ask="What changed today?"' in html and "window.atlasAsk" in html
     assert "Security trends" in html and html.count("<rect") > 24 and "28 total" in html
-    assert "6 h ago" in html and "All &lt;fine&gt;" in html and ">Fan<" not in html and " Fan</li>" in html
+    assert "today 06:00 UTC</time>" in html and "All &lt;fine&gt;" in html and ">Fan<" not in html and " Fan</li>" in html
     assert html.split("<main")[1].count("<li>") == 3   # top 3 recommendations only
     assert "No check-up yet" in render_home_page(None, build_hosts(None, None, None), [])
 

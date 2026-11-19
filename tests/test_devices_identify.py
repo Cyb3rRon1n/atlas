@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from lanxang.devices import identify
 from lanxang.web.devices_pages import render_devices_page
@@ -52,7 +52,7 @@ def test_place_from_cabling_map_and_page_shows_clues():
     page = render_devices_page(devices, hints)
     assert 'value="Espressif smart device"' in page and '<option value="iot" selected>' in page
     assert "made by <b>Espressif</b>" in page and "on <b>core-switch port gi9</b>" in page
-    assert "private Wi-Fi address" in page and "first seen 2026-11-10" in page and 'data-kind-from="kind-1"' in page
+    assert "private Wi-Fi address" in page and 'first seen <time datetime="2026-11-10' in page and 'data-kind-from="kind-1"' in page
 
 
 def test_refresh_downloads_monthly_and_never_raises(tmp_path):
@@ -94,3 +94,17 @@ def test_atlas_downloads_are_marked_known_for_the_host(temp_db):
         known = {(k.source, k.asn_key) for k in session.scalars(select(PostureKnownRecord))}
     assert known == {("host", "AS64500"), ("host", "ip:198.51.100.9")}
     assert remember_download("https://x.example.org/", "n", table, store) == []        # offline in tests: nothing, no error
+
+
+def test_one_friendly_time_everywhere():
+    from lanxang.web.render import friendly_time, when, TIME_SCRIPT
+    now = datetime(2026, 11, 17, 12, 0)
+    said = lambda **ago: friendly_time(now - timedelta(**ago), now)
+    assert said(seconds=20) == "just now" and said(minutes=5) == "5 min ago" and said(hours=3) == "3 h ago"
+    assert said(hours=7) == "today 05:00 UTC" and said(hours=22) == "yesterday 14:00 UTC"
+    assert said(days=3) == "Sat 12:00 UTC" and said(days=20) == "28 Oct" and said(days=400) == "13 Oct 2025"
+    html = when("2026-11-17T09:02:01.035404", now)           # the raw stored form, microseconds and all
+    assert html.startswith('<time datetime="2026-11-17T09:02:01Z" data-when="rel"') and ">2 h ago</time>" in html
+    assert ">11:30 UTC</time>" in when(datetime(2026, 11, 17, 11, 30), now, clock=True)
+    assert ">Yesterday</time>" in when(datetime(2026, 11, 16, 23), now, clock="day") and friendly_time(now - timedelta(days=3), now, "day") == "Sat 14 Nov"
+    assert when(None, never="never") == "never" and "time[data-when]" in TIME_SCRIPT

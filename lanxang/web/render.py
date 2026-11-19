@@ -8,28 +8,30 @@ pure renderers; the write path (device edit/merge/split) lives in api.py
 and server.py.
 """
 
+from datetime import datetime
 from html import escape
 
 from lanxang.devices.store import CONNECTIONS, KINDS, STATES
 from lanxang.health.alerts import container_state
 from lanxang.web.icons import icon
+from lanxang.clock import utcnow
 from lanxang.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE, DRAWER_HTML, DRAWER_STYLE
 
 
 # Colours are tokens: light by default, dark when the system asks for it or the viewer picks it (the sidebar's
 # Theme button, kept in localStorage). Pages use var(--...) only, never a raw colour.
-LIGHT = """--bg:#f7fbf9; --surface:#ffffff; --surface2:#f1f3f8; --deep:#eceff5; --line:#e3e6ee; --line2:#cdd2de;
-  --text:#0f1222; --muted:#535a6b; --blue:#1e7f66; --accent:#1e7f66; --gold:#c9a227; --on-accent:#ffffff;
+LIGHT = """--bg:#f7fbf9; --surface:#ffffff; --surface2:#eef5f2; --deep:#e6efeb; --line:#dde8e3; --line2:#c4d4cd;
+  --text:#10201c; --muted:#4f5f5a; --blue:#1e7f66; --accent:#1e7f66; --gold:#c9a227; --on-accent:#ffffff;
   --green:#15803d; --orange:#b45309; --red:#c42b2b; --purple:#7c3aed; --teal:#0f766e; --yellow:#a16207;
   --ok-text:#166534; --ok-line:#86d6a4; --warn-text:#92400e; --warn-line:#f2c97a; --warn-bg:#fff7eb;
-  --bad-text:#991b1b; --bad-line:#f3a8a8; --bad-bg:#fef2f2; --lane:#c7cdf7;
+  --bad-text:#991b1b; --bad-line:#f3a8a8; --bad-bg:#fef2f2; --lane:#a9d6c7;
   --nav-bg:#0e1a19; --nav-text:#cfe3dc; --nav-muted:#8fb0a6; --nav-on:#16302c; color-scheme:light;"""
 DARK = """--bg:#0e1a19; --surface:#13231f; --surface2:#182c27; --deep:#0b1513; --line:#1f3631; --line2:#2a4740;
-  --text:#e7edf3; --muted:#a3b0bd; --blue:#5ec2a4; --accent:#5ec2a4; --gold:#e9b44c; --on-accent:#0e1a19;
+  --text:#e6f0ec; --muted:#9fb8af; --blue:#5ec2a4; --accent:#5ec2a4; --gold:#e9b44c; --on-accent:#0e1a19;
   --green:#43c08f; --orange:#f0a23a; --red:#f47a5c; --purple:#b48cf2; --teal:#3ccfb4; --yellow:#d9b44a;
   --ok-text:#7fdcb5; --ok-line:#2f6b55; --warn-text:#ffd08a; --warn-line:#6b5530; --warn-bg:#1d1810;
-  --bad-text:#ffb4a2; --bad-line:#6b3030; --bad-bg:#2a1d1a; --lane:#2c4560;
-  --nav-bg:#08110f; --nav-text:#c3cad4; --nav-muted:#8792a0; --nav-on:#16302c; color-scheme:dark;"""
+  --bad-text:#ffb4a2; --bad-line:#6b3030; --bad-bg:#2a1d1a; --lane:#2a5248;
+  --nav-bg:#08110f; --nav-text:#cfe3dc; --nav-muted:#8fb0a6; --nav-on:#16302c; color-scheme:dark;"""
 
 PAGE_STYLE = f"""
 :root {{ {LIGHT} }}
@@ -59,12 +61,15 @@ PAGE_STYLE = f"""
   button.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   input, select, textarea { background:var(--surface); color:var(--text); border:1px solid var(--line2);
            border-radius:6px; padding:0.3rem 0.5rem; font:inherit; }
-  textarea { width:100%; min-height:4rem; }
+  textarea { width:100%; min-height:4rem; box-sizing:border-box; }
   label { display:block; margin:0.5rem 0 0.2rem; color:var(--muted); font-size:0.85rem; }
   .ic { width:1.1em; height:1.1em; vertical-align:-0.2em; margin-right:.4em; flex:none; }
   :focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
   .status-seen { color:var(--green); } .status-quiet { color:var(--orange); } .status-invisible { color:var(--muted); }
-  #msg { color:var(--red); min-height:1.2rem; }
+  time[data-when] { white-space:nowrap; }
+  #msg { color:var(--red); min-height:1.2rem; } #msg:empty { display:none; }
+  .table-wrap { overflow-x:auto; max-width:100%; } .table-wrap > table { margin-top:0; }
+  input.wide { width:100%; max-width:26rem; box-sizing:border-box; }
 """
 
 SHELL_STYLE = """
@@ -117,8 +122,96 @@ try{localStorage.setItem("atlas-theme",d.dataset.theme);}catch(e){}}</script>"""
 LOGO = ('<svg width="26" height="26" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.4" stroke="#5ec2a4" stroke-width="1.8" fill="none"/><g transform="translate(4.8 4.8) scale(.6)"><g transform="translate(1.2 2.6) scale(.9)"><path d="M3 6.6C3 4.9 4.2 4 6 4h2.6v9.8C6.4 13.8 4.9 13.2 4 12.1 3.3 11.2 3 10 3 8.8z" fill="#5ec2a4"/><path d="M21 6.6C21 4.9 19.8 4 18 4h-2.6v9.8c2.2 0 3.7-.6 4.6-1.7.7-.9 1-2.1 1-3.3z" fill="#5ec2a4"/><path d="M8.2 5.2C9.3 3.9 10.6 3.3 12 3.3s2.7.6 3.8 1.9v8.1c0 1.3-.8 2.2-2 2.5l-.6 5.1c-.1.8-.6 1.2-1.2 1.2s-1.1-.4-1.2-1.2l-.6-5.1c-1.2-.3-2-1.2-2-2.5z" fill="#5ec2a4"/><circle cx="10.2" cy="8.6" r=".95" fill="#0e1a19"/><circle cx="13.8" cy="8.6" r=".95" fill="#0e1a19"/></g><g transform="translate(9 -.6) scale(.25)"><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(0 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(72 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(144 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(216 12 12)"/><path d="M12 12C9.4 9.8 8.2 6.4 9.6 4 10.6 2.4 13.4 2.4 14.4 4 15.8 6.4 14.6 9.8 12 12z" fill="#e9b44c" transform="rotate(288 12 12)"/><circle cx="12" cy="12" r="2.6" fill="#e9b44c" stroke="#0e1a19" stroke-width=".7"/></g></g></svg>')
 
 
+
+def logo(size=26, light=False):
+    """The mark at any size; light: the favicon's darker jade and gold, for a light background."""
+
+    svg = LOGO.replace('width="26" height="26"', f'width="{size}" height="{size}"')
+    if light:
+        svg = svg.replace("#5ec2a4", "#1e7f66").replace("#e9b44c", "#c9a227").replace("#0e1a19", "#f7fbf9")
+    return svg
+
+
 def _esc(value):
     return escape(str(value))
+
+
+def _moment(value):
+    """A stored time (naive UTC datetime, or its ISO text) as a datetime; None when there is none or it won't parse."""
+
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None)
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "")[:26]) if value else None
+    except ValueError:
+        return None
+
+
+def friendly_time(moment, now, clock=False):
+    """The server's wording for a naive-UTC time: '5 min ago', 'today 14:32 UTC', 'yesterday 14:32 UTC', 'Mon 14:32 UTC',
+    '12 Nov', '12 Nov 2025'. TIME_SCRIPT redoes the same in the viewer's own time zone; this is what shows without it.
+    clock: just 'HH:MM UTC' (rows already grouped by day); clock="day": 'Today', 'Yesterday', 'Mon 16 Nov'."""
+
+    if clock == "day":
+        days = (now.date() - moment.date()).days
+        return "Today" if days == 0 else "Yesterday" if days == 1 else f"{moment:%a} {moment.day} {moment:%b}"
+    if clock:
+        return moment.strftime("%H:%M UTC")
+    minutes = int((now - moment).total_seconds() // 60)
+    if minutes < 1:
+        return "just now"
+    if minutes < 60:
+        return f"{minutes} min ago"
+    if minutes < 6 * 60:
+        return f"{minutes // 60} h ago"
+    days = (now.date() - moment.date()).days
+    hhmm = moment.strftime("%H:%M")
+    if days == 0:
+        return f"today {hhmm} UTC"
+    if days == 1:
+        return f"yesterday {hhmm} UTC"
+    if days < 7:
+        return f"{moment:%a} {hhmm} UTC"
+    return f"{moment.day} {moment:%b}" + ("" if moment.year == now.year else f" {moment.year}")
+
+
+def when(value, now=None, clock=False, never="-", text=None):
+    """One time on any page: <time datetime="...Z"> with friendly_time() inside, which TIME_SCRIPT rewrites in the
+    viewer's local time. never: what to show when there is no time; text: other server-side words."""
+
+    moment = _moment(value)
+    if moment is None:
+        return _esc(value) if value else _esc(never)
+    stamp = moment.isoformat(timespec="seconds")
+    mode = "day" if clock == "day" else "clock" if clock else "rel"
+    shown = text if text is not None else friendly_time(moment, now or utcnow(), clock)
+    return (f'<time datetime="{stamp}Z" data-when="{mode}" title="{stamp[:16].replace("T", " ")} UTC">{_esc(shown)}</time>')
+
+
+# Turns every <time data-when> into the viewer's local time, in the same words as friendly_time(); refreshes each minute.
+TIME_SCRIPT = """<script>(function(){
+var two=function(n){return (n<10?"0":"")+n;};
+var hm=function(d){return two(d.getHours())+":"+two(d.getMinutes());};
+var M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],D=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+function say(d,now,mode){
+  if(mode==="clock")return hm(d);
+  var a=new Date(d.getFullYear(),d.getMonth(),d.getDate()),b=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  var days=Math.round((b-a)/86400000),min=Math.floor((now-d)/60000);
+  if(mode==="day")return days===0?"Today":days===1?"Yesterday":D[d.getDay()]+" "+d.getDate()+" "+M[d.getMonth()];
+  if(min<1)return "just now";
+  if(min<60)return min+" min ago";
+  if(min<360)return Math.floor(min/60)+" h ago";
+  if(days===0)return "today "+hm(d);
+  if(days===1)return "yesterday "+hm(d);
+  if(days<7)return D[d.getDay()]+" "+hm(d);
+  return d.getDate()+" "+M[d.getMonth()]+(d.getFullYear()===now.getFullYear()?"":" "+d.getFullYear());
+}
+function run(){var now=new Date();document.querySelectorAll("time[data-when]").forEach(function(t){
+  var d=new Date(t.getAttribute("datetime"));if(isNaN(d))return;
+  t.textContent=say(d,now,t.dataset.when);t.title=d.toLocaleString();});}
+window.atlasTimes=run;
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",run);else run();
+setInterval(run,60000);})();</script>"""
 
 
 NAV = [("/", "Home", "home"), ("/alerts", "Alerts", "alerts"), ("/devices", "Network", "network"),
@@ -180,7 +273,7 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
         "<!doctype html>\n"
         "<html lang=\"en\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-        f"<title>Lanxang - {_esc(title)}</title>{FAVICON}{THEME_SCRIPT}"
+        f"<title>Lanxang — {_esc(title)}</title>{FAVICON}{THEME_SCRIPT}"
         f"<style>{PAGE_STYLE}</style></head><body><div class=\"app\">"
         f"<aside class=\"side\"><a class=\"brand\" href=\"/\">{LOGO}<span class=\"name\">Lanxang<small lang=\"lo\">ລ້ານຊ້າງ</small></span></a>"
         f"<nav class=\"main\" aria-label=\"Main\"><ul>{''.join(items)}</ul></nav>"
@@ -191,7 +284,7 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
         "</div></aside>"
         f"<div class=\"shell{' docked' if drawer else ''}\">"
         f"<main class=\"page\"><h1>{_esc(heading or title)}</h1>{body_html}</main>"
-        f"{drawer_html}</div></div>"
+        f"{drawer_html}</div></div>{TIME_SCRIPT}"
         "</body></html>"
     )
 
@@ -244,7 +337,7 @@ def _list_of_dicts_table(items):
         for item in items
     )
 
-    return f"<table><thead><tr>{header}</tr></thead><tbody>{body_rows}</tbody></table>"
+    return f"<div class=\"table-wrap\"><table><thead><tr>{header}</tr></thead><tbody>{body_rows}</tbody></table></div>"
 
 
 def render_overview_page(environment, analysis, summary=""):
@@ -340,7 +433,7 @@ def render_overview_page(environment, analysis, summary=""):
         sections.append(
             "<div class=\"card\"><h2>Latest AI Analysis</h2>"
             f"<p class=\"muted\">{_esc(analysis.get('provider'))} / "
-            f"{_esc(analysis.get('model'))} - {_esc(analysis.get('created_at'))}</p>"
+            f"{_esc(analysis.get('model'))} — {_esc(analysis.get('created_at'))}</p>"
             f"<p>{_esc(analysis.get('summary'))}</p>"
             f"<ul>{recommendations}</ul></div>"
         )
@@ -352,7 +445,7 @@ def render_overview_page(environment, analysis, summary=""):
     # summary (hosts_page.render_hosts_summary) leads; the raw inventory tables fold underneath it
     raw = header + "".join(sections)
     if summary:
-        raw = f'<details class="raw"><summary>Details - full inventory snapshot</summary>{raw}</details>'
+        raw = f'<details class="raw"><summary>Details — full inventory snapshot</summary>{raw}</details>'
 
     return render_page("Overview", summary + raw, active="hosts", tabs=overview_tabs)
 
@@ -378,7 +471,7 @@ HISTORY_STYLE = """
 .filters { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 14px; }
 .filters button[aria-pressed="true"] { background:var(--blue); border-color:var(--blue); color:var(--on-accent); }
 .day { margin:0 0 18px; } .day > h2 { font-size:14px; color:var(--muted); border:0; margin:0 0 6px; }
-.ev { display:grid; grid-template-columns:52px 26px 1fr; gap:6px; align-items:start; padding:6px 0;
+.ev { display:grid; grid-template-columns:76px 26px 1fr; gap:6px; align-items:start; padding:6px 0;
       border-top:1px solid var(--line); font-size:14px; }
 .ev[hidden], .day[hidden] { display:none; }   /* display:grid would otherwise beat the hidden attribute */
 .ev:first-of-type { border-top:0; } .ev .time { color:var(--muted); font-variant-numeric:tabular-nums; }
@@ -411,7 +504,7 @@ def render_history_page(events, today=None, changes=""):
         )
 
     from datetime import date, timedelta
-    today = today or date.today()
+    today = today or utcnow().date()                     # stored times are UTC days
     names = {today.isoformat(): "Today", (today - timedelta(days=1)).isoformat(): "Yesterday"}
 
     days = {}
@@ -425,12 +518,14 @@ def render_history_page(events, today=None, changes=""):
         for event, count in items.values():
             cat, mark = _event_category(event.event_type)
             label = event_label(event.event_type)
-            rows += (f'<div class="ev" data-cat="{cat}"{" hidden" if cat == "scan" else ""}><span class="time">{_esc(str(event.created_at)[11:16])}</span>'
+            rows += (f'<div class="ev" data-cat="{cat}"{" hidden" if cat == "scan" else ""}><span class="time">{when(event.created_at, clock=True)}</span>'
                      f"<span>{mark}</span><details><summary>{_esc(label)}"
                      + (f' <span class="count">\u00d7{count} today, latest</span>' if count > 1 and names.get(day) == "Today"
                         else f' <span class="count">\u00d7{count}, latest</span>' if count > 1 else "")
                      + f' <span class="src">{_esc(event.source)}</span></summary><pre>{_esc(event.payload)}</pre></details></div>')
-        sections += f'<section class="day"><h2>{_esc(names.get(day, day))}</h2>{rows}</section>'
+        newest = next(iter(items.values()))[0].created_at   # the heading follows the viewer's own day (TIME_SCRIPT)
+        heading = when(newest, clock="day", text=names.get(day, day))
+        sections += f'<section class="day"><h2>{heading}</h2>{rows}</section>'
 
     buttons = "".join(f'<button data-filter="{cat}" aria-pressed="{str(cat == "important").lower()}">{label}</button>'
                       for cat, label in (("important", "Important"), ("all", "All"), ("change", icon("refresh") + "Changes"), ("alert", icon("alert") + "Alerts"),
@@ -445,15 +540,16 @@ def render_history_page(events, today=None, changes=""):
               " }));</script>")
 
     body = (HISTORY_STYLE + changes + ask_chips(HISTORY_CHIPS) + f'<div class="filters">{buttons}</div>'
-            + '<p class="muted">Routine scans (every 15 min) are hidden under Important - pick All or Scans to see them.</p>'
+            + '<p class="muted">Routine scans (every 15 min) are hidden under Important — pick All or Scans to see them.</p>'
             + sections + script + "<script>document.querySelectorAll('.day').forEach((d) => {"
               " d.hidden = !d.querySelector('.ev:not([hidden])'); });</script>")
 
     return render_page("Activity", body, active="history")
 
-def _count(number, word):
+def plural(number, word, many=None):
+    """'1 device', '3 devices'; many: the plural when it isn't word + 's' ('batteries')."""
 
-    return f"{number} {word}" + ("" if number == 1 else "s")
+    return f"{number} {word if number == 1 else many or word + 's'}"
 
 
 def _status_color(ok):

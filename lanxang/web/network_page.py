@@ -8,7 +8,7 @@ server.py passes the latest topology, Traefik routes and the device graph.
 import re
 
 from lanxang.web.icons import icon
-from lanxang.web.render import _esc, ask_chips, render_page
+from lanxang.web.render import _esc, ask_chips, plural, render_page, when
 
 UNNAMED = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
 
@@ -143,7 +143,7 @@ def _tree(graph):
         unnamed = [k for k in order if UNNAMED.match(str(nodes.get(k, {}).get("label", ""))) and not kids.get(k)]
         children = "".join(item(k) for k in order if k not in unnamed)
         if unnamed:
-            children += (f'<li><details><summary class="kind">{len(unnamed)} unnamed devices - name them on '
+            children += (f'<li><details><summary class="kind">{plural(len(unnamed), "unnamed device")} — name them on '
                          f'Devices</summary><ul>{"".join(item(k) for k in unnamed)}</ul></details></li>')
         return (f'<li><span class="row"><span class="dot {dot}"></span>{label}{kind}</span>'
                 + (f"<ul>{children}</ul>" if children else "") + "</li>")
@@ -151,7 +151,7 @@ def _tree(graph):
     roots = [n for n in nodes if n == "internet"] or [n for n in nodes if not nodes[n].get("parent")][:1]
     body = "".join(item(r) for r in roots)
     hidden = (graph or {}).get("hidden_wireless") or 0
-    note = f'<p class="why">{hidden} wireless devices hidden - see <a href="/devices">Devices</a>.</p>' if hidden else ""
+    note = f'<p class="why">{plural(hidden, 'wireless device')} hidden — see <a href="/devices">Devices</a>.</p>' if hidden else ""
 
     return f'<div class="tree"><ul>{body}</ul></div>{note}' if body else '<p class="muted">No devices yet.</p>'
 
@@ -159,7 +159,7 @@ def _tree(graph):
 def render_network_page(topology, routes, graph):
 
     if not topology:
-        body = '<p class="muted">No network snapshot yet - atlas-scan refreshes it every 15 minutes (<code>lanxang map</code>).</p>'
+        body = '<p class="muted">No network snapshot yet — atlas-scan refreshes it every 15 minutes (<code>lanxang map</code>).</p>'
         return render_page("Services", body, active="lan")
 
     lanes = classify(topology, routes)
@@ -174,7 +174,7 @@ def render_network_page(topology, routes, graph):
     total = sum(len(v) for v in lanes.values())
     machines = (
         f'<div class="machine"><h3><span class="dot ok"></span>{_esc(topology.get("host", "this host"))}</h3>'
-        f'<p class="why">{total} containers, {total - down} healthy - grouped above</p></div>'
+        f'<p class="why">{plural(total, 'container')}, {total - down} healthy — grouped above</p></div>'
         + ('<div class="machine"><h3>Proxmox guests</h3><ul>' + "".join(
             f'<li><span class="dot {"ok" if g["status"] == "running" else "down"}"></span>{_esc(g["name"])}'
             f' <span class="kind">{_esc(g.get("type", ""))}</span></li>' for g in guests) + "</ul></div>" if guests else "")
@@ -185,19 +185,20 @@ def render_network_page(topology, routes, graph):
 
     body = (
         NETWORK_STYLE + ask_chips(NETWORK_CHIPS)
-        + f'<p class="muted">Snapshot {_esc(topology.get("generated_at", ""))}. Click a service for details.'
+        + '<p class="muted">' + (f'Snapshot from {when(topology["generated_at"])}. ' if topology.get("generated_at") else "")
+        + 'Click a service for details.'
         + (f' <strong>{down} not healthy</strong> (listed first in each lane).' if down else "") + "</p>"
         + '<section class="nlane"><h2>' + icon("globe") + 'From the internet</h2><p class="why">Reachable by anyone through the '
           'Cloudflare tunnel. Every request passes CrowdSec (bans bad IPs) and is logged; Lanxang watches it.</p>'
-        + f'<h3 class="sub">{icon("lock")}Behind Authelia ({len(guarded)})</h3><p class="why">Authelia\'s login comes first - '
+        + f'<h3 class="sub">{icon("lock")}Behind Authelia ({len(guarded)})</h3><p class="why">Authelia\'s login comes first — '
           'nobody reaches the app without your account.</p>' + grid("internet", guarded)
         + f'<h3 class="sub">{icon("shield")}Own login only ({len(own)})</h3><p class="why">Not behind Authelia (their '
-          'phone/TV apps can\'t pass it) - the app\'s own login is the gate, CrowdSec and Lanxang still watch.</p>'
+          'phone/TV apps can\'t pass it) — the app\'s own login is the gate, CrowdSec and Lanxang still watch.</p>'
         + grid("internet", own) + "</section>"
         + '<section class="nlane"><h2>' + icon("home") + 'Home network only</h2><p class="why">A web page or port, but no '
           'route from the internet.</p>' + grid("home") + "</section>"
         + '<details class="nlane"><summary>' + icon("gear") + 'Background (' + str(len(lanes["background"]))
-        + ')</summary><p class="why">No web page - helpers like the VPN tunnel, CrowdSec and Recyclarr.</p>'
+        + ')</summary><p class="why">No web page — helpers like the VPN tunnel, CrowdSec and Recyclarr.</p>'
         + grid("background") + "</details>"
         + '<section class="nlane"><h2>' + icon("server") + 'Machines</h2><div class="machines">' + machines + "</div></section>"
         + '<section class="nlane"><h2>' + icon("plug") + 'Devices by connection</h2>' + _tree(graph) + "</section>"

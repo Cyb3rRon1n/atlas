@@ -15,7 +15,7 @@ from datetime import datetime
 
 from lanxang.config.local import config_name
 from lanxang.web.icons import icon
-from lanxang.web.render import _esc, render_page
+from lanxang.web.render import _esc, plural, render_page
 from lanxang.wiring import traffic
 from lanxang.wiring.build import IDLE
 from lanxang.wiring.faceplate import physical_layout
@@ -618,7 +618,7 @@ def _summary(snapshot, raw):
 
     boxes = len(_boxes(snapshot, raw))
     problems = len(snapshot.get("health") or []) + len(snapshot["warnings"])
-    return (f"{boxes} switch{'es' * (boxes != 1)} · {len(snapshot['links'])} cables · "
+    return (f"{boxes} switch{'es' * (boxes != 1)} · {plural(len(snapshot['links']), 'cable')} · "
             + (f"{problems} to check" if problems else "nothing to check"))
 
 
@@ -634,7 +634,7 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
 
     if not latest:
         body = (f'<div class="cab-head">{refresh}</div><p id="msg"></p>'
-                '<p class="muted">No wiring scan yet - press Refresh map (or run <code>lanxang wiring scan</code>).</p>')
+                '<p class="muted">No wiring scan yet — press Refresh map (or run <code>lanxang wiring scan</code>).</p>')
         return render_page("Cabling", CABLING_STYLE + body + DIAGRAM_SCRIPT, active="cabling")
 
     now = now or utcnow()
@@ -666,9 +666,9 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
         f'<td>{_esc(panel["switch"])} {_esc(panel["switch_port"])}</td><td>{_esc(panel["device"])}</td>'
         f'<td>{_esc(_speed_text(panel["speed"]) if panel["up"] else "down")}</td></tr>'
         for panel in snapshot["panels"])
-    panel_html = (f'<table class="portmap"><thead><tr><th>Panel port</th><th>Label</th><th>Switch port</th>'
-                  f'<th>Device</th><th>Link</th></tr></thead><tbody>{panels}</tbody></table>' if panels else
-                  '<p class="muted">No patch panels described yet - add them to cabling.yaml '
+    panel_html = (f'<div class="table-wrap"><table class="portmap"><thead><tr><th>Panel port</th><th>Label</th><th>Switch port</th>'
+                  f'<th>Device</th><th>Link</th></tr></thead><tbody>{panels}</tbody></table></div>' if panels else
+                  '<p class="muted">No patch panels described yet — add them to cabling.yaml '
                   '(see cabling.example.yaml).</p>')
 
     change_html = ("<ul>" + "".join(f"<li>{_esc(change['text'])}</li>" for change in changes) + "</ul>"
@@ -699,8 +699,8 @@ def render_cabling_page(latest, changes, enabled, now=None, faceplates=None, sug
         '<section id="portmap"><h2>Port map</h2><div class="cab-tools">'
         '<input id="portmap-filter" type="search" placeholder="Filter: device, port, label…" aria-label="Filter port map">'
         '<a class="cab-btn ghost" href="/cabling.csv" download>CSV</a></div>'
-        '<table class="portmap"><thead><tr><th>Switch</th><th>Port</th><th>Device</th><th>Device port</th>'
-        f'<th>Link</th><th>Patch</th><th>Traffic (24 h)</th><th>Label</th><th>Source</th></tr></thead><tbody>{rows}</tbody></table></section>'
+        '<div class="table-wrap"><table class="portmap"><thead><tr><th>Switch</th><th>Port</th><th>Device</th><th>Device port</th>'
+        f'<th>Link</th><th>Patch</th><th>Traffic (24 h)</th><th>Label</th><th>Source</th></tr></thead><tbody>{rows}</tbody></table></div></section>'
         f'<section id="patch"><h2>Patch panels</h2>{panel_html}</section>'
         f'<section id="changes"><h2>Changes since the previous scan</h2>{change_html}</section>'
     )

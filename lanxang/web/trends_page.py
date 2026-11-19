@@ -166,7 +166,7 @@ def render_trends_page(samples, scans, window, now, host_name="this host", node_
         + "</div></section>") if guests else ""
 
     empty = ("" if samples or scans else
-             '<p class="muted">No history yet - atlas-scan records a sample every 15 minutes; charts fill in as it runs.</p>')
+             '<p class="muted">No history yet — atlas-scan records a sample every 15 minutes; charts fill in as it runs.</p>')
     note = ('<p class="muted">Lanxang keeps its own history (every 15 min). The 24h view fills after a day, 7d after a week.</p>')
 
     body = (TRENDS_STYLE + ask_chips(TRENDS_CHIPS) + f'<nav class="windows" aria-label="Time window">{win}</nav>'

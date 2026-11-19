@@ -12,6 +12,10 @@ from datetime import timedelta
 from lanxang.posture.store import asn_key
 
 
+def _n(number, word):
+    return f"{number} {word}" + ("" if number == 1 else "s")
+
+
 WINDOWS = {"live": timedelta(0), "1h": timedelta(hours=1), "24h": timedelta(hours=24)}
 NEW_FOR = timedelta(days=7)
 BASELINE = timedelta(hours=24)   # posture_seen's first day is learning, not "new"
@@ -81,7 +85,7 @@ def _strip(statuses, routes, review, now):
     return [
         item("ingress", "Ingress", ingress),
         item("vpn", "VPN egress", vpn),
-        item("exposure", "Exposure", ("ok" if routes else "unknown", f"{len(routes)} routes",
+        item("exposure", "Exposure", ("ok" if routes else "unknown", _n(len(routes), "route"),
                                       f"{len(public)} without Authelia")),
         item("blocked", "Blocked", blocked),
         item("new", "New destinations", ("review" if review else "ok", str(len(review)),
@@ -129,15 +133,15 @@ def build_posture(store, now, window="24h"):
     authed = sum(r["protection"] == "authelia" for r in routes)
     tunnel_ok = _fresh(statuses, "tunnel", now)
     chain = [("in:internet", "Internet", "visitors"), ("in:cloudflare", "Cloudflare", "DNS + proxy"),
-             ("in:tunnel", "cloudflared", f"{statuses.get('tunnel', {}).get('detail', {}).get('connections', 0)} connections"),
-             ("in:traefik", "Traefik", f"{len(routes)} routes"), ("in:auth", "Authelia", f"{authed} routes")]
+             ("in:tunnel", "cloudflared", _n(statuses.get('tunnel', {}).get('detail', {}).get('connections', 0), "connection")),
+             ("in:traefik", "Traefik", _n(len(routes), "route")), ("in:auth", "Authelia", _n(authed, "route"))]
     for i, (node_id, label, sub) in enumerate(chain):
         nodes.append(_node(node_id, label, sub, "inbound", i * COL, y,
                            state="ok" if node_id != "in:tunnel" or tunnel_ok else "warn"))
         if i:
             edges.append(_edge(chain[i - 1][0], node_id))
-    nodes.append(_node("in:svc-auth", "Behind Authelia", f"{authed} services", "inbound", 5 * COL, y))
-    nodes.append(_node("in:svc-public", "Public", f"{len(routes) - authed} services", "inbound", 5 * COL, y + ROW,
+    nodes.append(_node("in:svc-auth", "Behind Authelia", _n(authed, "service"), "inbound", 5 * COL, y))
+    nodes.append(_node("in:svc-public", "Public", _n(len(routes) - authed, "service"), "inbound", 5 * COL, y + ROW,
                        state="review" if len(routes) - authed else "ok"))
     edges += [_edge("in:auth", "in:svc-auth"), _edge("in:traefik", "in:svc-public")]
 

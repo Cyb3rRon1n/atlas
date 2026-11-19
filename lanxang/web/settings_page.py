@@ -19,7 +19,7 @@ from pydantic import ValidationError
 from lanxang.config.local import config_name
 from lanxang.config import local
 from lanxang.config.loader import build_config, load_config
-from lanxang.web.render import _esc, render_page
+from lanxang.web.render import _esc, plural, render_page
 
 Field = namedtuple("Field", "key label kind path secret hint options", defaults=(None, None, "", ()))
 
@@ -58,7 +58,7 @@ CARDS = {
                      Field("host", "Address", "text", hint="192.168.1.2"),
                      Field("version", "SNMP version", "select", options=("3", "2c")),
                      Field("community", "v2c read-only community", "secret", None, "LANXANG_SNMP_{}_COMMUNITY"),
-                     Field("snmp_user", "SNMPv3 user", "text", hint="atlas"),
+                     Field("snmp_user", "SNMPv3 user", "text", hint="lanxang"),
                      Field("priv", "Privacy", "select", options=("aes", "des")),
                      Field("auth", "Auth passphrase (SHA)", "secret", None, "LANXANG_SNMP_{}_AUTH"),
                      Field("priv_pass", "Privacy passphrase", "secret", None, "LANXANG_SNMP_{}_PRIV")]),
@@ -73,8 +73,8 @@ CARDS = {
     "proxmox": ("Proxmox VE", "Lists your VMs and containers and draws them under their host. An API token "
                 "with the PVEAuditor role is enough.", [
                     Field("host", "Host", "text", ("proxmox", "host"), hint="192.168.1.10"),
-                    Field("user", "User", "text", ("proxmox", "user"), hint="atlas@pve"),
-                    Field("token_name", "Token ID", "text", ("proxmox", "token_name"), hint="atlas"),
+                    Field("user", "User", "text", ("proxmox", "user"), hint="lanxang@pve"),
+                    Field("token_name", "Token ID", "text", ("proxmox", "token_name"), hint="lanxang"),
                     Field("token_value", "Token secret", "secret", ("proxmox", "token_value"), "LANXANG_PROXMOX_TOKEN"),
                     Field("verify_ssl", "Check the host's certificate", "bool", ("proxmox", "verify_ssl"))]),
     "ups": ("UPS (NUT)", "Alerts on a power cut, a low battery, and when power is back. Lanxang reads a NUT server "
@@ -108,7 +108,7 @@ CARDS = {
                 Field("kind", "Which one", "select", ("nas", "kind"), options=("truenas", "synology")),
                 Field("url", "Web address", "text", ("nas", "url"), hint="https://192.168.1.20 (Synology: ...:5001)"),
                 Field("user", "Username (the API key's user, or the Synology account)", "text", ("nas", "user"),
-                      hint="atlas"),
+                      hint="lanxang"),
                 Field("password", "API key (TrueNAS) or password (Synology)", "secret", None, "LANXANG_NAS_PASSWORD"),
                 Field("name", "Call it (optional)", "text", ("nas", "name"), hint="nas"),
                 Field("verify_ssl", "Check its certificate (off for a self-signed one)", "bool", ("nas", "verify_ssl"))]),
@@ -242,7 +242,10 @@ def _switch_changes(body, off):
     name = str(body.get("name") or "").strip()
     if not name:
         raise ValueError("Enter the switch name.")
-    others = [s for s in _get(local.read_settings(), ("wiring", "switches")) or [] if s.get("name") != name]
+    saved = _get(local.read_settings(), ("wiring", "switches")) or []
+    others = [s for s in saved if s.get("name") != name]
+    # A blank user keeps a saved switch's own; a new switch gets the name the hint suggests.
+    user = next((s.get("snmp_user") for s in saved if s.get("name") == name and s.get("snmp_user")), "lanxang")
     every = {key: secret.format(env_key(name)) for key, secret in (("auth", "LANXANG_SNMP_{}_AUTH"),
                                                                     ("priv_pass", "LANXANG_SNMP_{}_PRIV"),
                                                                     ("community", "LANXANG_SNMP_{}_COMMUNITY"))}
@@ -258,7 +261,7 @@ def _switch_changes(body, off):
     if any(n not in secrets and not _saved(n) for n in names.values()):
         raise ValueError("Enter the read-only community." if version == "2c" else "Enter both passphrases.")
     secrets |= {n: None for key, n in every.items() if key not in names and _saved(n) and not _from_env(n)}
-    switch = {"name": name, "host": host, "snmp_user": str(body.get("snmp_user") or "").strip() or "atlas",
+    switch = {"name": name, "host": host, "snmp_user": str(body.get("snmp_user") or "").strip() or user,
               "priv": body.get("priv") or "aes"} | ({"version": "2c"} if version == "2c" else {})
 
     return {"wiring": {"switches": others + [switch]}}, secrets
@@ -357,7 +360,7 @@ def _test_ai(config, environ):
         if intelligence.model not in models and f"{intelligence.model}:latest" not in models:
             return False, f"Ollama is reachable, but {intelligence.model or 'no model'} isn't installed. " \
                           f"It has: {', '.join(models[:8])}"
-        return True, f"Connected to Ollama: {intelligence.model} is installed ({len(models)} models)."
+        return True, f"Connected to Ollama: {intelligence.model} is installed ({plural(len(models), 'model')})."
 
     import anthropic
 
@@ -470,8 +473,8 @@ def _test(card, body):
             info = fetch(config.homeassistant, environ)
         except HomeAssistantError as error:
             return False, str(error)
-        return True, (f"Connected: Home Assistant {info['version']}, {len(info['offline'])} device(s) offline, "
-                      f"{len(info['batteries'])} low batteries, {len(info['updates'])} updates waiting.")
+        return True, (f"Connected: Home Assistant {info['version']}, {plural(len(info['offline']), 'device')} offline, "
+                      f"{plural(len(info['batteries']), 'low battery', 'low batteries')}, {plural(len(info['updates']), 'update')} waiting.")
     if card == "nas":
         from lanxang.monitoring.nas import NasError, fetch
         try:
@@ -568,7 +571,7 @@ def _found_html(suggested):
     if not suggested:
         return ""
     rows = "".join(
-        f'<li><b>{_esc(entry["name"])}</b> {_esc(entry["ip"])} <span class="muted">- {_esc("; ".join(entry["why"]))}'
+        f'<li><b>{_esc(entry["name"])}</b> {_esc(entry["ip"])} <span class="muted">— {_esc("; ".join(entry["why"]))}'
         f'</span><br><button data-use="{_esc(entry["ip"])}" data-name="{_esc(entry["suggested_name"])}">Use</button> '
         f'<button data-dismiss="{_esc(entry["ip"])}">Don\'t ask</button></li>'
         for entry in suggested)

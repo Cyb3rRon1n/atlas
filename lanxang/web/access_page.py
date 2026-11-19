@@ -9,7 +9,7 @@ import math
 from lanxang.config.local import config_name
 from lanxang.access.parse import is_private
 from lanxang.web.icons import icon
-from lanxang.web.render import _esc, ask_chips, render_page
+from lanxang.web.render import _esc, ask_chips, plural, render_page
 from lanxang.web.world_land import LAND_PATH
 
 WINDOWS = {"24h": 1, "7d": 7, "30d": 30}
@@ -87,7 +87,7 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
         p["user"] = p["user"] or v["ip"] in login_ips
     dots = "".join(
         f'<circle class="{"user" if p["user"] else "vis denied" if p["denied"] * 2 > p["requests"] else "vis"}" cx="{x}" cy="{y}" '
-        f'r="{min(4.5, 0.6 + 0.5 * math.log10(1 + p["requests"])):.2f}"><title>{_esc(p["label"])}: {p["requests"]} requests'
+        f'r="{min(4.5, 0.6 + 0.5 * math.log10(1 + p["requests"])):.2f}"><title>{_esc(p["label"])}: {plural(p["requests"], "request")}'
         + (f', {p["denied"]} denied' if p["denied"] else "") + (", signed-in user" if p["user"] else "") + "</title></circle>"
         for (x, y), p in sorted(places.items(), key=lambda kv: kv[1]["user"]))
 
@@ -130,7 +130,7 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
         f'<div class="muted">first {_esc(str(p["first_seen"])[:16])} \u00b7 latest {_esc(str(p["last_seen"])[:16])} \u00b7 {_esc(p["ip"])}</div></div>'
         f'<button class="primary" data-confirm-user="{_esc(p["user"])}" data-confirm-key="{_esc(p["place_key"])}">That\'s them</button>'
         f'<button data-ask="Is this sign-in suspicious? {_esc(p["user"])} signed in to {_esc(p["app"])} from {_esc(p["label"])} '
-        f'(IP {_esc(p["ip"])}) - a place and provider they have not used before. Their usual places: '
+        f'(IP {_esc(p["ip"])}) — a place and provider they have not used before. Their usual places: '
         + _esc("; ".join(q["label"] for q in user_places if q["user"] == p["user"] and q["status"] != "review") or "none yet")
         + '. Verdict: expected / ask them / lock the account, and why.">Investigate</button></div>' for p in reviews)
     review_card = (
@@ -163,8 +163,8 @@ def render_access_page(summary, window, home_ips=(), enabled=True, user_places=(
         + (f'<table><thead><tr><th>User</th><th>App</th><th>From</th><th>Provider</th><th>Sign-ins</th><th>Latest</th></tr>'
            f'</thead><tbody>{people_rows}</tbody></table>' if people_rows else '<p class="muted">No sign-ins in this window.</p>')
         + "</section>"
-        + f'<section class="acard"><h2>Anonymous visitors ({len(anonymous)} IPs)</h2><p class="why">Requests from IPs that '
-          'never signed in - link previews, bots and scanners, or people who only reached a login page. Grouped by place '
+        + f'<section class="acard"><h2>Anonymous visitors ({plural(len(anonymous), "IP")})</h2><p class="why">Requests from IPs that '
+          'never signed in — link previews, bots and scanners, or people who only reached a login page. Grouped by place '
           'and provider.</p>'
         + (f'<table><thead><tr><th>From</th><th>Provider</th><th>IPs</th><th>Requests</th><th>Services hit</th></tr></thead>'
            f'<tbody>{anon_rows}</tbody></table>' if anon_rows else '<p class="muted">No anonymous visitors in this window.</p>')

@@ -6,14 +6,11 @@ data into innerHTML.
 """
 
 import json
-from datetime import datetime
 from urllib.parse import quote, urlencode
 
 from lanxang.devices.store import CONNECTIONS, KINDS, STATES
 from lanxang.web.icons import icon
-from lanxang.web.cabling_page import _ago
-from lanxang.web.render import section_tabs, ask_chips, _esc, render_page
-from lanxang.clock import utcnow
+from lanxang.web.render import section_tabs, ask_chips, _esc, render_page, when
 
 
 ACTIONS_SCRIPT = """
@@ -68,7 +65,7 @@ function doneInPlace(row, button) {
   const note = document.createElement("div");
   note.className = "muted done-note";
   note.textContent = "\u2713 " + (ignored ? "Ignored " : "Saved ") + name.trim()
-    + " - it moves to its group next time the page loads.";
+    + " — it moves to its group next time the page loads.";
   row.replaceWith(note);
   const heading = document.querySelector(".attn h2");
   if (heading) heading.textContent = heading.textContent.replace(/\\((\\d+)\\)/, (_, n) => "(" + Math.max(0, n - 1) + ")");
@@ -110,15 +107,9 @@ def _button(label, url, body=None, css="", **data):
 
 
 def _when(iso, now=None):
-    """'2026-11-17T01:33:24.388' -> '5 min ago' (the exact time stays in the tooltip); '-' when never."""
+    """'2026-11-17T01:33:24.388' -> '5 min ago' in the viewer's time (render.when); '-' when never."""
 
-    if not iso:
-        return "-"
-    try:
-        seen = datetime.fromisoformat(str(iso).replace("Z", ""))
-    except ValueError:
-        return _esc(iso)
-    return f'<time datetime="{_esc(iso)}" title="{_esc(str(iso)[:16].replace("T", " "))} UTC">{_ago(seen, now or utcnow())}</time>'
+    return when(iso, now)
 
 
 def _sources(device):
@@ -143,7 +134,7 @@ def _page(title, body, tabs=None):
 def render_triage_page(triage, hints=None):
 
     if not triage["new"] and not triage["quiet"]:
-        return _page("Triage", '<p class="muted">Nothing to triage - every device is known or ignored.</p>',
+        return _page("Triage", '<p class="muted">Nothing to triage — every device is known or ignored.</p>',
                       device_tabs("triage"))
 
     hints = hints or {}
@@ -163,7 +154,7 @@ def render_triage_page(triage, hints=None):
 
     quiet_rows = "".join(
         f"<tr><td><a href=\"/devices/{device['id']}\">{_esc(device['name'])}</a></td>"
-        f"<td>{_esc(device['ip'] or '-')}</td><td>{_esc(device['last_seen'] or '-')}</td><td>"
+        f"<td>{_esc(device['ip'] or '-')}</td><td>{_when(device['last_seen'])}</td><td>"
         + _button("Ignore", f"/api/devices/{device['id']}", {"state": "ignored"}) + "</td></tr>"
         for device in triage["quiet"]
     )
@@ -172,13 +163,13 @@ def render_triage_page(triage, hints=None):
 
     if new_rows:
         body += ("<div class=\"card\"><h2>New devices</h2><p class=\"muted\">Name it and Keep, merge it into "
-                 "the device it duplicates, or Ignore it.</p><table><thead><tr><th>name and clues</th>"
-                 f"<th>seen by</th><th>last seen</th><th></th></tr></thead><tbody>{new_rows}</tbody></table></div>")
+                 "the device it duplicates, or Ignore it.</p><div class=\"table-wrap\"><table><thead><tr><th>name and clues</th>"
+                 f"<th>seen by</th><th>last seen</th><th></th></tr></thead><tbody>{new_rows}</tbody></table></div></div>")
 
     if quiet_rows:
         body += ("<div class=\"card\"><h2>Gone quiet</h2><p class=\"muted\">Known devices no source has seen in "
-                 "its last two runs.</p><table><thead><tr><th>name</th><th>ip</th><th>last seen</th><th></th>"
-                 f"</tr></thead><tbody>{quiet_rows}</tbody></table></div>")
+                 "its last two runs.</p><div class=\"table-wrap\"><table><thead><tr><th>name</th><th>ip</th><th>last seen</th><th></th>"
+                 f"</tr></thead><tbody>{quiet_rows}</tbody></table></div></div>")
 
     return _page("Triage", body, device_tabs("triage"))
 
@@ -271,7 +262,7 @@ def _clues(device, hint):
     parts.append(_esc(device["ip"] or "no IP"))
     first = min((s["first_seen"] for s in device["sightings"] if s.get("first_seen")), default=None)
     if first:
-        parts.append(f"first seen {_esc(first[:10])}")
+        parts.append(f"first seen {_when(first)}")
     return '<div class="clues">' + " \u00b7 ".join(parts) + "</div>"
 
 
@@ -303,7 +294,7 @@ def render_devices_page(devices, hints=None):
                  + "".join('<div class="attn-row"' + r for r in row_list[shown:]) + "</details>")
     attention = (f'<section class="dcard attn"><h2>Needs attention ({len(new) + len(quiet)})</h2>'
                  f'<p class="muted">New: give it a name and Keep, or Ignore it. Quiet: known but not seen lately.</p>{rows}</section>'
-                 if rows else '<p class="muted">\u2713 Nothing to triage - every device is named or ignored.</p>')
+                 if rows else '<p class="muted">\u2713 Nothing to triage — every device is named or ignored.</p>')
 
     groups = {}
     for d in known:
@@ -318,7 +309,7 @@ def render_devices_page(devices, hints=None):
             + f'<p class="dsum"><b>{len(devices)}</b> devices \u00b7 <b>{len(new)}</b> new \u00b7 <b>{len(quiet)}</b> quiet'
               f' \u00b7 <b>{len(ignored)}</b> ignored</p>'
             + attention
-            + '<p><input id="filter" placeholder="Filter by name, ip, source..." size="40"></p>'
+            + '<p><input id="filter" class="wide" placeholder="Filter by name, ip, source..."></p>'
             + grouped + hidden)
 
     return _page(f"Devices ({len(devices)})", body, device_tabs("devices"))
@@ -367,7 +358,7 @@ def _wired(node):
 
     if not node:
         return ""
-    model = f"{_esc(node['model'])} - " if node.get("model") else ""
+    model = f"{_esc(node['model'])} — " if node.get("model") else ""
 
     box = node["id"].startswith(("s:", "u:"))          # switches/gateways/APs get a front panel there
     href = f"/cabling#fp-{quote(node['id'])}" if box else "/cabling"
@@ -401,17 +392,17 @@ def render_device_page(device, devices, ports=None, wiring=None, suggestion=None
     form = (
         f"<form id=\"edit\" data-original=\"{original}\" "
         "onsubmit=\"this.querySelector('[data-form]').click(); return false\">"
-        f"<label>Name</label><input name=\"name\" value=\"{_esc(device['name'])}\" size=\"40\">"
+        f"<label>Name</label><input class=\"wide\" name=\"name\" value=\"{_esc(device['name'])}\">"
         f"<label>Kind</label><select name=\"kind\">{_options(KINDS, device['kind'])}</select>"
         f"<label>State</label><select name=\"state\">{_options(STATES, device['state'])}</select>"
         f"<label>Connection</label><select name=\"connection\">{_options(CONNECTIONS, connection)}</select> "
         f"<span class=\"muted\">{_esc(guess)}</span>"
         "<label>Connected to</label><select name=\"uplink\">"
         f"<option value=\"\"{'' if device['uplink_id'] is not None else ' selected'}>router / not set</option>{uplinks}</select>"
-        f"<label>Tags (comma separated)</label><input name=\"tags\" value=\"{_esc(', '.join(device['tags']))}\" size=\"40\">"
+        f"<label>Tags (comma separated)</label><input class=\"wide\" name=\"tags\" value=\"{_esc(', '.join(device['tags']))}\">"
         f"<label>Notes</label><textarea name=\"notes\">{_esc(device['notes'])}</textarea>"
         f"<label><input type=\"checkbox\" name=\"important\"{' checked' if device['important'] else ''}> "
-        "Important - alert me on Signal when it goes quiet</label><p>"
+        "Important: alert me when it goes quiet</label><p>"
         + _button("Save", f"/api/devices/{device['id']}", {}, "primary", form="edit")
         + "</p></form>"
     )
@@ -433,13 +424,13 @@ def render_device_page(device, devices, ports=None, wiring=None, suggestion=None
              + "</p>") if others else ""
 
     body = (
-        f"<p>{_status(device)} <span class=\"muted\">- {_esc(device['ip'] or 'no ip')} - last seen "
+        f"<p>{_status(device)} <span class=\"muted\">· {_esc(device['ip'] or 'no ip')} · last seen "
         f"{_when(device['last_seen']) if device['last_seen'] else 'never'}</span></p>"
         + _wired(wiring_node(device, wiring)) + _login_hint(suggestion) +
         f"<div class=\"card\"><h2>Details</h2>{form}</div>"
         + _open_ports(ports) +
-        "<div class=\"card\"><h2>Where Lanxang saw it</h2><table><thead><tr><th>source</th><th>id</th><th>ip</th>"
-        f"<th>mac</th><th>hostname</th><th>last seen</th><th></th></tr></thead><tbody>{sighting_rows}</tbody></table>"
+        "<div class=\"card\"><h2>Where Lanxang saw it</h2><div class=\"table-wrap\"><table><thead><tr><th>source</th><th>id</th><th>ip</th>"
+        f"<th>mac</th><th>hostname</th><th>last seen</th><th></th></tr></thead><tbody>{sighting_rows}</tbody></table></div>"
         f"{merge}</div>"
     )
 
@@ -474,10 +465,10 @@ def render_coverage_page(coverage):
                                 for device in devices) + "</ul>"
 
     body = (
-        "<div class=\"card\"><h2>Sources</h2><table><thead><tr><th>source</th><th>last run</th><th>at</th>"
-        f"<th>devices seen</th><th>last success</th><th>error</th></tr></thead><tbody>{source_rows}</tbody></table>"
-        "<p class=\"muted\">A failed run never makes devices look quiet - they keep their last status.</p></div>"
-        f"<div class=\"card\"><h2>Gone quiet</h2>{listing(coverage['quiet'], 'None - everything is being seen.')}</div>"
+        "<div class=\"card\"><h2>Sources</h2><div class=\"table-wrap\"><table><thead><tr><th>source</th><th>last run</th><th>at</th>"
+        f"<th>devices seen</th><th>last success</th><th>error</th></tr></thead><tbody>{source_rows}</tbody></table></div>"
+        "<p class=\"muted\">A failed run never makes devices look quiet — they keep their last status.</p></div>"
+        f"<div class=\"card\"><h2>Gone quiet</h2>{listing(coverage['quiet'], 'None — everything is being seen.')}</div>"
         "<div class=\"card\"><h2>Known but invisible</h2><p class=\"muted\">In your config, never seen by a scan.</p>"
         f"{listing(coverage['invisible'], 'None.')}</div>"
     )

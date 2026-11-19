@@ -77,7 +77,6 @@ PAGE_STYLE = f"""
          textarea) { background:var(--surface); color:var(--text); border:1px solid var(--line2);
            border-radius:var(--control-r); padding:0 10px; font:inherit; font-size:14px; box-sizing:border-box;
            max-width:100%; }
-  .sm { min-height:30px; padding:0 10px; font-size:13px; }   /* compact: table rows, alert rows, suggestion chips */
   :where(input:not([type=checkbox], [type=radio], [type=hidden], [type=range], [type=file], [type=color]), select)
          { min-height:var(--control-h); }
   :where(input, select, textarea):focus-visible { border-color:var(--accent); outline:2px solid var(--accent);

@@ -30,6 +30,7 @@ STYLE = """<style>
 .up-add form, form.up-add { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .up-add input[name=name] { width:230px; max-width:100%; box-sizing:border-box; } .up-add input[name=target] { flex:1; min-width:min(240px, 100%); box-sizing:border-box; }
 .up-sugg { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; color:var(--muted); font-size:13px; }
+.up-sugg button { border-radius:999px; }   /* suggestion chips stay pills */
 .up-power { margin:.4rem 0; } .up-power .state { margin-right:.4rem; }
 #up-msg { color:var(--red); min-height:1.2em; }
 .outages { margin:4px 0 24px; padding-left:18px; font-size:14px; } .outages li { padding:2px 0; }

@@ -83,3 +83,11 @@ def test_compact_controls_in_rows():
     acts = page.split('<div class="acts">')[1].split("</div>")[0]
     assert 'class="btn primary sm"' in acts and '<button class="sm" data-post="/api/alerts/3/ack"' in acts
     assert '<select class="sm"' in acts and '<button class="sm" data-post="/api/alerts/3/mute"' in acts
+
+
+def test_chips_stay_pills():
+    from lanxang.web.uptime_page import STYLE
+    css = PAGE_STYLE.replace("\n", " ")
+    assert css.count(".sm {") == 1
+    assert "border-radius:999px" in css.split(".chips button {")[1].split("}")[0]
+    assert ".up-sugg button { border-radius:999px; }" in STYLE

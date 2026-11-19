@@ -3,6 +3,13 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
+## 1.4.1 - 2026-11-19
+
+### Fixed
+- Home, Security posture card: with the internet view on, the Internet line now also shows a clean result
+  ("No open ports seen") and an IP Shodan has no data for ("Shodan has no data for this IP"), instead of
+  leaving the line out, so you can tell a check ran.
+
 ## 1.4.0 - 2026-11-19
 
 See what the internet sees on your home IP, ask the local chat about posture, devices, alerts, disks and uptime, and get an optional daily summary of what changed.

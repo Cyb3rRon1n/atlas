@@ -962,6 +962,8 @@ def _posture_block(posture):
     unexpected = sum(not p["expected"] for p in ports)
     internet = (f"{unexpected} unexpected port{'s' * (unexpected != 1)}" if unexpected
                 else f"{len(ports)} port{'s' * (len(ports) != 1)} open, all expected" if ports else "")
+    if view.get("ok") and not ports:
+        internet = "Shodan has no data for this IP" if view.get("known") is False else "No open ports seen"
     if view and view.get("ok") is False:
         internet = f"{internet} (last check failed)" if internet else "Last check failed"
 

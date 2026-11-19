@@ -317,3 +317,14 @@ def test_posture_page_box_has_privacy_note():
     from lanxang.web.posture_page import render_posture_page
 
     assert "Sends your home IP to Shodan once a day." in render_posture_page()
+
+
+def test_posture_block_says_when_nothing_is_seen():
+    from lanxang.web.home_page import _posture_card
+    from lanxang.web.render import _posture_block
+
+    unknown = _posture_block(posture({"ok": True, "known": False, "ports": []}))
+    assert unknown["internet"] == "Shodan has no data for this IP" and unknown["state"] == "ok"
+    assert "Shodan has no data for this IP" in _posture_card(unknown)
+    assert _posture_block(posture({"ok": True, "known": True, "ports": []}))["internet"] == "No open ports seen"
+    assert _posture_block(posture({"ok": False, "known": False, "ports": []}))["internet"] == "Last check failed"

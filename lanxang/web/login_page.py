@@ -6,9 +6,9 @@ from lanxang.web.render import FAVICON, PAGE_STYLE, THEME_SCRIPT, _esc, logo
 
 CARD_STYLE = """
 .brand { display:flex; align-items:center; justify-content:center; gap:12px; margin:10vh auto 20px;
-         font-size:24px; font-weight:700; color:var(--text); }
+         font-size:1.5rem; font-weight:700; color:var(--text); }
 .brand .name { display:flex; flex-direction:column; line-height:1.1; }
-.brand small { font:500 13px "Noto Sans Lao", sans-serif; color:var(--yellow); letter-spacing:.02em; }
+.brand small { font:500 .8125rem "Noto Sans Lao", sans-serif; color:var(--yellow); letter-spacing:.02em; }
 .brand .dk, :root[data-theme="dark"] .brand .lt { display:none; } :root[data-theme="dark"] .brand .dk { display:inline-flex; }
 .auth { max-width:360px; margin:0 auto 32px; padding:28px 24px; background:var(--surface);
         border:1px solid var(--line); border-radius:12px; }

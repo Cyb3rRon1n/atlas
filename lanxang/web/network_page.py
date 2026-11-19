@@ -21,33 +21,33 @@ NETWORK_CHIPS = ("What is reachable from the internet without Authelia?",
 NETWORK_STYLE = """
 <style>
 .nlane { border:1px dashed var(--lane); border-radius:12px; padding:12px 14px; margin-bottom:14px; background:color-mix(in srgb, var(--blue) 4%, transparent); }
-.nlane > h2, .nlane > summary { margin:0 0 4px; font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.06em;
+.nlane > h2, .nlane > summary { margin:0 0 4px; font-size:.8125rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em;
                                 color:var(--muted); border:0; padding:0; cursor:default; }
 .nlane > summary { cursor:pointer; }
-.nlane .why { margin:0 0 10px; font-size:13px; color:var(--muted); }
-.nlane h3.sub { margin:14px 0 2px; font-size:14px; }
+.nlane .why { margin:0 0 10px; font-size:.8125rem; color:var(--muted); }
+.nlane h3.sub { margin:14px 0 2px; font-size:.875rem; }
 .svc { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:8px; }
-.svc details { background:var(--surface2); border:1px solid var(--line2); border-radius:8px; padding:8px 10px; font-size:14px; }
+.svc details { background:var(--surface2); border:1px solid var(--line2); border-radius:8px; padding:8px 10px; font-size:.875rem; }
 .svc details[open] { border-color:var(--blue); }
 .svc summary { display:flex; align-items:center; gap:8px; cursor:pointer; list-style:none; }
 .svc summary::-webkit-details-marker { display:none; }
 .svc .name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.svc dl { display:grid; grid-template-columns:auto 1fr; gap:3px 10px; margin:8px 0 0; font-size:12px; }
+.svc dl { display:grid; grid-template-columns:auto 1fr; gap:3px 10px; margin:8px 0 0; font-size:.75rem; }
 .svc dt { color:var(--muted); } .svc dd { margin:0; word-break:break-all; }
-.badge { font-size:11px; padding:1px 7px; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+.badge { font-size:.6875rem; padding:1px 7px; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
 .badge.auth { color:var(--ok-text); border-color:var(--ok-line); } .badge.own { color:var(--warn-text); border-color:var(--warn-line); }
 .badge.vpn { color:var(--blue); border-color:var(--lane); }
 .dot { width:9px; height:9px; border-radius:50%; background:var(--muted); display:inline-block; flex:none; }
 .dot.ok { background:var(--green); } .dot.warn { background:var(--orange); } .dot.down { background:var(--red); }
 .machines { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px; }
-.machine { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; }
-.machine h3 { margin:0 0 6px; font-size:14px; display:flex; gap:8px; align-items:center; }
+.machine { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:.875rem; }
+.machine h3 { margin:0 0 6px; font-size:.875rem; display:flex; gap:8px; align-items:center; }
 .machine ul, .tree ul { list-style:none; margin:0; padding:0; }
 .machine li { display:flex; gap:8px; align-items:center; padding:2px 0; }
 .tree ul ul { margin-left:18px; padding-left:10px; border-left:1px solid var(--line); }
 .tree li { padding:3px 0; }
-.tree .row { display:inline-flex; gap:8px; align-items:center; font-size:14px; }
-.tree .kind { font-size:12px; color:var(--muted); }
+.tree .row { display:inline-flex; gap:8px; align-items:center; font-size:.875rem; }
+.tree .kind { font-size:.75rem; color:var(--muted); }
 </style>
 """
 

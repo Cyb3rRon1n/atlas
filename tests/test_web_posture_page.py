@@ -5,7 +5,7 @@ from lanxang.web.render import NAV, render_page
 def test_nav_has_four_sections_and_marks_active():
     html = render_page("Devices", "<p>x</p>", active="devices")
     for href, label, _ in NAV:
-        assert f'href="{href}"' in html and label in html
+        assert f'href="{href if href != "/" else "/?home"}"' in html and label in html
     assert 'aria-current="page" href="/devices"' in html or 'href="/devices" aria-current="page"' in html
 
 
@@ -47,7 +47,7 @@ def test_nav_order_and_hosts_tabs():
     assert [label for _, label, _ in NAV] == ["Home", "Alerts", "Network", "Servers", "Security", "Setup"]
     html = render_trends_page([], [], "24h", datetime(2026, 10, 11))
     assert 'href="/overview"' in html and ">Trends<" in html
-    assert 'href="/overview" aria-current="page">Servers<' in html
+    assert 'href="/overview" aria-current="page" title="Servers">' in html
 
 
 def test_every_old_page_sits_under_one_top_tab():
@@ -68,7 +68,7 @@ def test_docked_chat_shell_and_collapse_state():
 
 def test_tabs_wrap_on_narrow_screens():
     html = render_page("x", "", tabs=[("/a", "A", True)])
-    assert "flex-wrap:wrap" in html.split(".tabs {")[1].split("}")[0].replace(" ", "")
+    assert "flex-wrap:wrap" in html.split(".side .tabs { flex")[1].split("}")[0].replace(" ", "")
 
 
 def test_posture_page_review_list_banner_and_live_label():

@@ -97,4 +97,4 @@ def test_sidebar_chat_link_only_with_ai(monkeypatch):
     monkeypatch.setattr(render, "AI_ON", False)
     assert 'class="chat-link"' not in render.render_page("X", "", drawer=False)
     monkeypatch.setattr(render, "AI_ON", True)
-    assert '<a class="chat-link" href="/chat">Chat</a>' in render.render_page("X", "", drawer=False)
+    assert '<a class="chat-link" href="/chat" title="Chat">' in render.render_page("X", "", drawer=False)

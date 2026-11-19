@@ -183,22 +183,22 @@ KIND_NAMES = {"server": "Server", "vm": "Virtual machine", "lxc": "Container (LX
 
 DEVICES_STYLE = """
 <style>
-.dsum { font-size:15px; margin:0 0 14px; } .dsum b { font-weight:600; }
+.dsum { font-size:.9375rem; margin:0 0 14px; } .dsum b { font-weight:600; }
 .dcard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:16px; }
 .dcard.attn { border-color:var(--orange); background:var(--warn-bg); }
-.dcard h2 { margin:0 0 10px; font-size:15px; border:0; padding:0; }
+.dcard h2 { margin:0 0 10px; font-size:.9375rem; border:0; padding:0; }
 .tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; }
 .tile { display:flex; gap:8px; align-items:center; padding:8px 10px; border-radius:8px; background:var(--surface2);
-        border:1px solid var(--line2); color:var(--text); text-decoration:none; font-size:14px; min-width:0; }
+        border:1px solid var(--line2); color:var(--text); text-decoration:none; font-size:.875rem; min-width:0; }
 .tile:hover { border-color:var(--blue); text-decoration:none; }
 .tile .t { flex:1; min-width:0; } .tile .t div { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.tile .sub { font-size:12px; color:var(--muted); }
+.tile .sub { font-size:.75rem; color:var(--muted); }
 .ddot { width:9px; height:9px; border-radius:50%; flex:none; background:var(--muted); }
 .ddot.seen { background:var(--green); } .ddot.quiet { background:var(--orange); }
 .attn-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:6px 0; border-top:1px solid var(--warn-line); }
 .attn-row:first-of-type { border-top:0; } .attn-row input { width:180px; }
 .attn-row select { max-width:170px; }
-.clues { flex-basis:100%; margin:-2px 0 2px 18px; font-size:13px; color:var(--muted); }
+.clues { flex-basis:100%; margin:-2px 0 2px 18px; font-size:.8125rem; color:var(--muted); }
 .clues b { color:var(--text); font-weight:600; }
 </style>
 """
@@ -367,26 +367,26 @@ STATUS_NAMES = {"seen": ("ok", "Online"), "quiet": ("warn", "Gone quiet"), "invi
 DEVICE_STYLE = """
 <style>
 .dhead { display:flex; flex-wrap:wrap; gap:12px 20px; align-items:center; justify-content:space-between; }
-.dhead .facts { display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; font-size:14px; min-width:0; }
-.dhead .model { flex-basis:100%; font-size:13px; color:var(--muted); }
-.mono { font-family:ui-monospace, "IBM Plex Mono", Menlo, monospace; font-size:13px; }
-.schip { display:inline-flex; align-items:center; gap:6px; padding:2px 10px; border-radius:999px; font-size:13px;
+.dhead .facts { display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; font-size:.875rem; min-width:0; }
+.dhead .model { flex-basis:100%; font-size:.8125rem; color:var(--muted); }
+.mono { font-family:ui-monospace, "IBM Plex Mono", Menlo, monospace; font-size:.8125rem; }
+.schip { display:inline-flex; align-items:center; gap:6px; padding:2px 10px; border-radius:999px; font-size:.8125rem;
          font-weight:600; border:1px solid var(--line2); color:var(--muted); }
 .schip::before { content:""; width:8px; height:8px; border-radius:50%; background:currentColor; }
 .schip.ok { color:var(--ok-text); border-color:var(--ok-line); } .schip.warn { color:var(--warn-text); border-color:var(--warn-line); background:var(--warn-bg); }
 .dform { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:4px 24px; }
 .dform .field > input, .dform .field > select, .dform textarea { width:100%; }
 .dform .full { grid-column:1 / -1; }
-.dform label.check { display:flex; gap:8px; align-items:center; color:var(--text); font-size:14px; margin-top:12px; }
-.dform .hint { font-size:12px; color:var(--muted); }
+.dform label.check { display:flex; gap:8px; align-items:center; color:var(--text); font-size:.875rem; margin-top:12px; }
+.dform .hint { font-size:.75rem; color:var(--muted); }
 .dform .actions { margin-top:12px; }
 @media (max-width: 700px) { .dform { grid-template-columns:1fr; } }
 .danger-zone { border-color:var(--bad-line); }
 .danger-zone h2 { color:var(--bad-text); border-color:var(--bad-line); }
-.danger-zone .why { margin:0 0 10px; font-size:14px; }
+.danger-zone .why { margin:0 0 10px; font-size:.875rem; }
 .danger-zone select { min-width:0; flex:1 1 220px; max-width:22rem; }
 .confirm { margin-top:12px; padding:12px 14px; border:1px solid var(--bad-line); border-radius:8px; background:var(--bad-bg); }
-.confirm p { margin:0 0 10px; font-size:14px; }
+.confirm p { margin:0 0 10px; font-size:.875rem; }
 .confirm .danger { background:var(--red); border-color:var(--red); color:var(--on-accent); font-weight:600; }
 .danger-zone [hidden] { display:none; }   /* the shared button display would otherwise beat [hidden] */
 </style>

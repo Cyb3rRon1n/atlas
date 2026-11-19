@@ -20,16 +20,16 @@ TRENDS_STYLE = """
 <style>
 .windows { margin:0 0 14px; }
 .tcard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:16px; }
-.tcard > h2 { margin:0 0 10px; font-size:16px; border:0; padding:0; }
+.tcard > h2 { margin:0 0 10px; font-size:1rem; border:0; padding:0; }
 .tgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
 .tgrid.small { grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); }
-.chart h3 { margin:0; font-size:13px; font-weight:600; display:flex; justify-content:space-between; gap:8px; }
+.chart h3 { margin:0; font-size:.8125rem; font-weight:600; display:flex; justify-content:space-between; gap:8px; }
 .chart h3 .now { font-variant-numeric:tabular-nums; } .chart svg { width:100%; height:70px; display:block; margin:4px 0 2px; }
-.chart .stats { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
-.chart .grow { font-size:12px; margin-top:2px; } .chart .grow.soon { color:var(--bad-text); }
+.chart .stats { font-size:.75rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+.chart .grow { font-size:.75rem; margin-top:2px; } .chart .grow.soon { color:var(--bad-text); }
 .chart .ln { fill:none; stroke-width:1.6; vector-effect:non-scaling-stroke; }
 .chart .area { opacity:.12; } .chart .th { stroke-width:1; stroke-dasharray:3 3; vector-effect:non-scaling-stroke; }
-.legend { font-size:12px; color:var(--muted); } .legend i { display:inline-block; width:10px; height:3px; margin:0 4px 2px 8px; }
+.legend { font-size:.75rem; color:var(--muted); } .legend i { display:inline-block; width:10px; height:3px; margin:0 4px 2px 8px; }
 </style>
 """
 

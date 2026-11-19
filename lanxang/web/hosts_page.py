@@ -16,18 +16,18 @@ HOSTS_STYLE = """
 .hgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; margin-bottom:16px; }
 .hbox { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; }
 .hbox.warn { border-color:var(--red); }
-.hbox h2 { margin:0 0 10px; font-size:16px; border:0; padding:0; display:flex; gap:8px; align-items:center; }
-.meter { display:grid; grid-template-columns:48px 1fr 44px; gap:8px; align-items:center; font-size:13px; margin:6px 0; }
+.hbox h2 { margin:0 0 10px; font-size:1rem; border:0; padding:0; display:flex; gap:8px; align-items:center; }
+.meter { display:grid; grid-template-columns:48px 1fr 44px; gap:8px; align-items:center; font-size:.8125rem; margin:6px 0; }
 .meter .track { height:8px; border-radius:4px; background:var(--surface2); overflow:hidden; }
 .meter .fill { height:100%; background:var(--green); }
 .meter .fill.mid { background:var(--orange); } .meter .fill.high { background:var(--red); }
-.hbox .bad { color:var(--bad-text); font-size:13px; }
-.chipset h3 { margin:12px 0 6px; font-size:12px; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
+.hbox .bad { color:var(--bad-text); font-size:.8125rem; }
+.chipset h3 { margin:12px 0 6px; font-size:.75rem; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
 .cchip { display:inline-flex; align-items:center; gap:6px; margin:0 6px 6px 0; padding:4px 10px; border-radius:999px;
-         background:var(--surface2); font-size:13px; }
+         background:var(--surface2); font-size:.8125rem; }
 .dot { width:9px; height:9px; border-radius:50%; background:var(--muted); display:inline-block; flex:none; }
 .dot.ok { background:var(--green); } .dot.warn { background:var(--orange); } .dot.down { background:var(--red); }
-.srow { display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-top:1px solid var(--line); font-size:14px; }
+.srow { display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-top:1px solid var(--line); font-size:.875rem; }
 .srow:first-of-type { border-top:0; } .srow.warn span:last-child { color:var(--bad-text); }
 details.raw > summary { cursor:pointer; color:var(--muted); margin:8px 0 12px; }
 </style>

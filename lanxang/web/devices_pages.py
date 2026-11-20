@@ -10,6 +10,7 @@ from urllib.parse import quote, urlencode
 
 from lanxang.devices.store import CONNECTIONS, KINDS, STATES
 from lanxang.web.icons import icon
+from lanxang.wiring import wiring_node
 from lanxang.web.render import section_tabs, ask_chips, _esc, empty_state, plural, render_page, when
 
 
@@ -340,26 +341,6 @@ def _open_ports(ports):
             + f'<p class="muted">Last seen at {_esc(ports["ip"])}. A newly opened port sends an alert.</p></div>')
 
 
-def wiring_node(device, snapshot):
-    """The wired-map node (latest wiring scan) that is this device - matched by IP or a sighting's MAC - or None."""
-
-    from lanxang.wiring import normalize_mac
-
-    macs = {normalize_mac(s.get("mac")) for s in device["sightings"]} - {None}
-    ips = {device["ip"]} | {s.get("ip") for s in device["sightings"]}
-    for node in (snapshot or {}).get("nodes") or []:
-        if node.get("kind") != "unknown" and ((node.get("ip") and node["ip"] in ips)
-                                              or normalize_mac(node.get("mac")) in macs):
-            return node
-    # A gateway's LAN MAC often differs from the base MAC its controller reports: match the LAN scan's default gateway.
-    gateways = [n for n in (snapshot or {}).get("nodes") or [] if n.get("kind") == "gateway"]
-    if len(gateways) == 1 and any(s.get("source") == "lan" and (s.get("detail") or {}).get("gateway") is True
-                                  for s in device["sightings"]):
-        return gateways[0]
-
-    return None
-
-
 def _wired(node):
     """(model, href, button label) for this device's place on the Cabling page, or None."""
 
@@ -591,18 +572,24 @@ def _source_card(latest, runs, now, display):
 def _coverage_head(coverage):
 
     total, multi, counted = coverage["total"], coverage["multi"], coverage["counted"]
+    seen = multi + len(coverage["single_source"])            # devices a counted source sees
+    failing = [source_name(source["source"]) for source in coverage["sources"] if not source["ok"]]
 
-    if counted and not total:
+    if counted and not seen:
         title, sub, state = "No devices found yet", "they appear here after a scan sees them", "unknown"
     elif len(counted) == 1:
-        title = (f"All {total} devices come" if total != 1 else "The one device comes") + \
+        title = (f"All {seen} devices come" if seen != 1 else "The one device comes") + \
             f" from one source ({_esc(source_name(counted[0]))})"
         sub, state = "if it fails, nothing else will notice them", "attention"
     elif not counted:
-        title, sub, state = "No source has run in the last 7 days", "so nothing here is current", "unknown"
+        title, sub, state = "No source has worked in the last 7 days", "so nothing here is current", "unknown"
     else:
         title = f"<b>{multi} of {total}</b> {'device is' if total == 1 else 'devices are'} seen by two or more sources"
         sub, state = "so one source failing won't hide them", "ok" if multi == total else "attention"
+
+    if failing and state != "unknown":                       # a failing source never sits under an all-clear
+        sub = f"{' and '.join(failing)} {'is' if len(failing) == 1 else 'are'} failing, so some devices may be missing"
+        state = "attention"
 
     ring = {"ok": icon("check"), "attention": icon("search"), "unknown": "?"}[state]
 
@@ -615,7 +602,7 @@ def _coverage_rows(coverage, setup):
     from lanxang.web.blocks import check_row
 
     rows = []
-    single, unknown, no_uplink = coverage["single_source"], coverage["unknown_connection"], coverage["no_uplink"]
+    single, unknown, off_map = coverage["single_source"], coverage["unknown_connection"], coverage["off_map"]
     snmp = setup.get("snmp") or "snmp" in coverage["counted"]
 
     if len(coverage["counted"]) == 1:
@@ -635,8 +622,8 @@ def _coverage_rows(coverage, setup):
         rows.append(check_row("plug", f"{plural(unknown, 'device')} {'has' if unknown == 1 else 'have'} an unknown connection",
                               "the switch doesn't say which port they are on", ("Review", "/devices")))
 
-    if setup.get("cabling") and no_uplink:
-        rows.append(check_row("network", f"{plural(no_uplink, 'device')} {'isn' if no_uplink == 1 else 'aren'}'t on the cabling map",
+    if setup.get("cabling") and off_map:                    # None without a wiring snapshot: no row
+        rows.append(check_row("network", f"{plural(off_map, 'device')} {'isn' if off_map == 1 else 'aren'}'t on the cabling map",
                               "", ("Review", "/cabling")))
 
     invisible, quiet = len(coverage["invisible"]), len(coverage["quiet"])

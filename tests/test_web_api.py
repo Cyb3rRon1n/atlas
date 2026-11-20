@@ -31,7 +31,7 @@ def test_get_routes(temp_db):
     assert api.handle("GET", "/api/devices/999") == (404, {"error": "not found"})
     assert set(api.handle("GET", "/api/triage")[1]) == {"new", "quiet"}
     assert set(api.handle("GET", "/api/coverage")[1]) == {"sources", "quiet", "invisible", "runs", "counted", "multi",
-                                                         "total", "single_source", "unknown_connection", "no_uplink"}
+                                                         "total", "single_source", "unknown_connection", "off_map"}
     assert api.handle("GET", "/api/summary") is None
     assert api.handle("GET", "/nope") is None
 

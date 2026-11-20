@@ -535,7 +535,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 except Exception as error:          # the to-do rows that need the config are left out
                     self.log_error("coverage: config failed: %r", error)
                     setup = None
-                body = render_coverage_page(InventoryStore().coverage(), setup,
+                body = render_coverage_page(InventoryStore().coverage(snapshot=_latest_wiring()), setup,
                                             home_display(self._viewer_zone()))
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)

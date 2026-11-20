@@ -18,6 +18,7 @@ from lanxang.database.models import DeviceRecord, NotificationRecord, SightingRe
 from lanxang.devices.linking import match
 from lanxang.devices.status import device_status
 from lanxang.devices.wiring import effective_connection
+from lanxang.wiring import wiring_node
 from lanxang.clock import utcnow
 
 
@@ -340,12 +341,15 @@ class InventoryStore:
             "quiet": [device for device in devices if device["state"] == "known" and device["status"] == "quiet"],
         }
 
-    def coverage(self, now=None):
+    def coverage(self, now=None, snapshot=None):
         """
         Each source's latest run, quiet and invisible devices, plus Coverage's trust numbers: runs (each source's runs
-        over 8 days, oldest first, enough for 7 display-zone days), counted (sources with a run in the last 7 days),
-        multi / total (non-ignored devices seen by two or more counted sources, of all), single_source
-        ([{id, name, source}] seen by exactly one), unknown_connection and no_uplink. `manual` is never a source.
+        over 8 days, oldest first, enough for 7 display-zone days), counted (sources with an ok run in the last 7
+        days: one failing all week proves nothing), multi / total (non-ignored devices seen by two or more counted
+        sources, of all), single_source ([{id, name, source}] seen by exactly one), unknown_connection and off_map
+        (non-wireless devices not in the wiring snapshot, matched as the device page does; None without a
+        snapshot). `manual` is
+        never a source.
         """
 
         now = now or utcnow()
@@ -374,7 +378,7 @@ class InventoryStore:
         devices = [device for device in self.devices() if device["state"] != "ignored"]
         week = (now - timedelta(days=7)).isoformat()
         counted = sorted(source for source, items in runs.items()
-                         if source != "manual" and any(run["started_at"] >= week for run in items))
+                         if source != "manual" and any(run["ok"] and run["started_at"] >= week for run in items))
         seen_by = {device["id"]: sorted({s["source"] for s in device["sightings"]} & set(counted)) for device in devices}
 
         return {
@@ -388,7 +392,9 @@ class InventoryStore:
             "single_source": [{"id": device["id"], "name": device["name"], "source": seen_by[device["id"]][0]}
                               for device in devices if len(seen_by[device["id"]]) == 1],
             "unknown_connection": sum(device["connection"] == "unknown" for device in devices),
-            "no_uplink": sum(device["uplink_id"] is None for device in devices),
+            # the cabling map is wired: a wireless device is never on it, so it isn't counted as missing
+            "off_map": None if not snapshot else sum(device["connection"] != "wireless" and wiring_node(device, snapshot) is None
+                                                     for device in devices),
         }
 
     def _ok_runs(self, session):

@@ -36,3 +36,21 @@ def normalize_mac(value):
 def is_virtual_mac(mac):
 
     return bool(int(mac[:2], 16) & 0x02) or mac[:8] in VIRTUAL_OUIS
+
+
+def wiring_node(device, snapshot):
+    """The wired-map node (latest wiring scan) that is this device - matched by IP or a sighting's MAC - or None."""
+
+    macs = {normalize_mac(s.get("mac")) for s in device["sightings"]} - {None}
+    ips = {device["ip"]} | {s.get("ip") for s in device["sightings"]}
+    for node in (snapshot or {}).get("nodes") or []:
+        if node.get("kind") != "unknown" and ((node.get("ip") and node["ip"] in ips)
+                                              or normalize_mac(node.get("mac")) in macs):
+            return node
+    # A gateway's LAN MAC often differs from the base MAC its controller reports: match the LAN scan's default gateway.
+    gateways = [n for n in (snapshot or {}).get("nodes") or [] if n.get("kind") == "gateway"]
+    if len(gateways) == 1 and any(s.get("source") == "lan" and (s.get("detail") or {}).get("gateway") is True
+                                  for s in device["sightings"]):
+        return gateways[0]
+
+    return None

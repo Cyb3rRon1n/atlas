@@ -254,7 +254,7 @@ def coverage_data(runs=None, devices_seen=3, **extra):
         "sources": latest(runs),
         "quiet": [], "invisible": [], "runs": runs, "counted": list(runs), "multi": 1, "total": 3,
         "single_source": [{"id": 2, "name": "printer", "source": "lan"}, {"id": 3, "name": "nas", "source": "lan"}],
-        "unknown_connection": 0, "no_uplink": 0,
+        "unknown_connection": 0, "off_map": None,
     }
     data.update(extra)
     data["week"] = week
@@ -272,12 +272,13 @@ def test_coverage_page_headline():
 def test_coverage_one_source_headline():
 
     data = coverage_data()
-    data.update(runs={"lan": data["runs"]["lan"]}, counted=["lan"], multi=0)
+    data.update(runs={"lan": data["runs"]["lan"]}, counted=["lan"], multi=0, total=4,
+                single_source=[{"id": i, "name": f"d{i}", "source": "lan"} for i in (1, 2, 3)])
     data["sources"] = latest(data["runs"])
 
     html = render_coverage_page(data)
 
-    assert "All 3 devices come from one source (LAN scan)" in html
+    assert "All 3 devices come from one source (LAN scan)" in html     # the 4th (config only) isn't seen by it
     assert "Add another source" in html
 
 
@@ -301,7 +302,7 @@ def test_source_card_day_strip_and_failing():
 
 def test_ways_to_see_more_rows():
 
-    data = coverage_data(unknown_connection=14, no_uplink=20)
+    data = coverage_data(unknown_connection=14, off_map=20)
 
     html = unescape(render_coverage_page(data, setup={"snmp": False, "cabling": True}))
 
@@ -314,6 +315,9 @@ def test_ways_to_see_more_rows():
 
     html = unescape(render_coverage_page(data, setup={"snmp": True, "cabling": False}))
     assert "cabling map" not in html
+
+    data["off_map"] = None                                  # no wiring snapshot yet: no row, even with cabling on
+    assert "cabling map" not in unescape(render_coverage_page(data, setup={"snmp": True, "cabling": True}))
 
 
 def test_done_rows_and_quiet_link():
@@ -330,3 +334,16 @@ def test_done_rows_and_quiet_link():
 def test_failed_run_note_kept():
 
     assert "A failed run never makes devices look quiet" in render_coverage_page(coverage_data())
+
+
+def test_headline_never_all_clear_while_a_source_is_failing():
+
+    data = coverage_data(multi=3, single_source=[])
+    assert 'class="hero cov-head ok"' in render_coverage_page(data)
+
+    data["runs"]["unifi"] = data["week"]("unifi", bad=(6,), error="login timed out")
+    data["sources"] = latest(data["runs"])
+    html = unescape(render_coverage_page(data))
+
+    assert 'class="hero cov-head attention"' in html
+    assert "UniFi is failing, so some devices may be missing" in html

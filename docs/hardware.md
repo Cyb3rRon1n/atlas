@@ -28,7 +28,7 @@ has already found is ticked for you.
 | **Any web service or port** | HTTP or TCP | Up/down alerts, response time, uptime % | Servers → Uptime |
 
 <p align="center">
-  <img src="images/screenshots/nas-degraded.png" alt="Lanxang home page with a TrueNAS pool that lost a disk: the Needs attention table and the Storage card both say storage tank is DEGRADED" style="max-width: 100%; width: 800px;"><br>
+  <img src="images/screenshots/nas-degraded.png" alt="Lanxang home page with a TrueNAS pool that lost a disk: the status line says two things need a look, with Storage (pool DEGRADED) and the open alert listed first" style="max-width: 100%; width: 800px;"><br>
   <em>A TrueNAS mirror losing a disk, as lanxang shows it.</em>
 </p>
 

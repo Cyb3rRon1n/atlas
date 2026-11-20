@@ -57,6 +57,22 @@ pieces fit together.
 
 <p align="center">
   <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/screenshots/coverage-dark.png">
+    <img src="images/screenshots/coverage-light.png" alt="Coverage page: how many devices two or more sources see, a card per source with its last 7 days, and ways to see more of the network" style="max-width: 100%; width: 900px;">
+  </picture><br>
+  <sub>The Coverage page, shown with example data.</sub>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/screenshots/overview-dark.png">
+    <img src="images/screenshots/overview-light.png" alt="Servers overview: each host's CPU, RAM and disk with the last 24 hours as a small line, and counts of containers and Proxmox guests" style="max-width: 100%; width: 900px;">
+  </picture><br>
+  <sub>The Servers overview, shown with example data.</sub>
+</p>
+
+<p align="center">
+  <picture>
     <source media="(prefers-color-scheme: dark)" srcset="images/screenshots/setup-dark.png">
     <img src="images/screenshots/setup-light.png" alt="The Setup tab: what is on your network, then cards for ntfy, webhooks and email" style="max-width: 100%; width: 820px;">
   </picture><br>

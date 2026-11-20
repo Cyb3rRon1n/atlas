@@ -48,7 +48,7 @@ def call(method, **params):
 CABLING_DIAGRAM = ('document.querySelector(\'.views button[data-view="diagram"]\').click();'
                    'setTimeout(() => window.scrollTo(0, document.querySelector("#diagram svg").getBoundingClientRect().top + scrollY - 16), 300)')
 PICK_PORT = 'var p=[...document.querySelectorAll(".fp .port[data-detail]")].find(c=>c.dataset.detail.includes("pve1")); p && p.click()'
-SHOTS = [("home", "/", ""), ("devices", "/devices", ""), ("setup", "/settings", ""),
+SHOTS = [("home", "/", ""), ("devices", "/devices", ""), ("setup", "/settings", ""), ("coverage", "/coverage", ""), ("overview", "/overview", ""),
          ("cabling-map", "/cabling", CABLING_DIAGRAM), ("cabling-ports", "/cabling", PICK_PORT)]
 
 call("Page.enable")

@@ -23,7 +23,7 @@ It never changes anything on its own. Restarting a container or a VM is only eve
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshots/home-dark.png">
-    <img src="docs/images/screenshots/home-light.png" alt="Lanxang home page: one sentence saying one thing needs a look, a Getting started checklist, number tiles for devices, internet, servers, uptime, public routes and power, a Needs attention table with the offline printer, and cards for security posture, host health and storage" width="90%">
+    <img src="docs/images/screenshots/home-light.png" alt="Lanxang home page: a status line saying one thing needs a look, the problem with a Review button, a Getting started checklist, Since you were here with the latest changes, and vitals tiles with a week of history" width="90%">
   </picture>
   <br>
   <picture>

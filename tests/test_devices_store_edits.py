@@ -256,3 +256,25 @@ def test_coverage_reports_each_source_and_quiet_invisible(temp_db):
     assert sources["lan"]["ok"] is True and sources["lan"]["seen_count"] == 2
     assert [d["name"] for d in coverage["invisible"]] == ["garage-tv"]
     assert coverage["quiet"] == []
+
+
+def test_coverage_counts(temp_db):
+
+    from lanxang.clock import utcnow
+
+    store = InventoryStore(temp_db)
+    now = utcnow()
+    store.import_manual_hosts([MapHost(name="nas", address="192.0.2.3")], now=now)
+    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.0.2.1", mac="aa:01"),
+                             Sighting("lan", "aa:02", ip="192.0.2.2", mac="aa:02"),
+                             Sighting("lan", "aa:03", ip="192.0.2.3", mac="aa:03")], now=now)
+    store.record_run("unifi", [Sighting("unifi", "aa:01", ip="192.0.2.1", mac="aa:01")], now=now)
+
+    coverage = store.coverage(now)
+
+    assert coverage["multi"] == 1 and coverage["total"] == 3
+    assert sorted(coverage["counted"]) == ["lan", "unifi"]
+    assert sorted((d["source"], d["name"]) for d in coverage["single_source"]) == \
+        [("lan", "192.0.2.2"), ("lan", "nas")]
+    assert [r["source"] for r in coverage["runs"]["unifi"]] == ["unifi"]
+    assert coverage["unknown_connection"] >= 0 and coverage["no_uplink"] == 3

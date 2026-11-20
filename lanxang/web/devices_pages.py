@@ -10,7 +10,7 @@ from urllib.parse import quote, urlencode
 
 from lanxang.devices.store import CONNECTIONS, KINDS, STATES
 from lanxang.web.icons import icon
-from lanxang.web.render import section_tabs, ask_chips, _esc, empty_state, render_page, when
+from lanxang.web.render import section_tabs, ask_chips, _esc, empty_state, plural, render_page, when
 
 
 ACTIONS_SCRIPT = """
@@ -537,36 +537,143 @@ def _login_hint(suggestion):
             f'<a href="/settings?{query}#switches">Add it on the Setup tab \u2192</a></p></div>')
 
 
-def render_coverage_page(coverage):
+SOURCE_NAMES = {"lan": "LAN scan", "unifi": "UniFi", "proxmox": "Proxmox", "snmp": "Switches (SNMP)"}
 
-    source_rows = "".join(
-        f"<tr><td>{_esc(source['source'])}</td><td>{'ok' if source['ok'] else 'FAILED'}</td>"
-        f"<td>{_when(source['last_run'])}</td><td>{_esc(source['seen_count'])}</td>"
-        f"<td>{_when(source['last_ok']) if source['last_ok'] else 'never'}</td><td>{_esc(source['error'] or '')}</td></tr>"
-        for source in coverage["sources"]
-    )
+COVERAGE_STYLE = """
+<style>
+.cov-head .hero-title b { font-size:1.5rem; color:var(--green); margin-right:4px; }
+.cov-head.attention .hero-title b { color:var(--orange); }
+.srcs { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin:0 0 16px; }
+.src { padding:12px 14px; background:var(--surface); border:1px solid var(--line); border-radius:10px; min-width:0; }
+.src.warn { border-color:var(--warn-line); }
+.src p { margin:2px 0 0; font-size:.8125rem; overflow-wrap:anywhere; }
+.src .pill { display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; font-size:.75rem; font-weight:600;
+             color:var(--ok-text); border:1px solid var(--ok-line); }
+.src.warn .pill { color:var(--warn-text); border-color:var(--warn-line); background:var(--warn-bg); }
+.src .err { color:var(--warn-text); }
+</style>
+"""
 
-    def listing(devices, empty):
-        if not devices:
-            return f"<p class=\"muted\">{empty}</p>"
-        return "<ul>" + "".join(f"<li><a href=\"/devices/{device['id']}\">{_esc(device['name'])}</a> "
-                                f"<span class=\"muted\">{_esc(device['ip'] or '')}</span></li>"
-                                for device in devices) + "</ul>"
 
-    sources = (
-        "<div class=\"table-wrap\"><table><thead><tr><th>source</th><th>last run</th><th>at</th>"
-        f"<th>devices seen</th><th>last success</th><th>error</th></tr></thead><tbody>{source_rows}</tbody></table></div>"
-        "<p class=\"muted\">A failed run never makes devices look quiet — they keep their last status.</p>"
-    ) if source_rows else empty_state("refresh", "No scans yet", "Each source appears here after its first scan, "
-                                      "which runs within a few minutes of starting.")
+def source_name(source):
+
+    return SOURCE_NAMES.get(source, source.replace("_", " ").title())
+
+
+def _source_card(latest, runs, now, display):
+    """One source: name, a status pill in words (failing / N bad days / no runs this week / ok), the latest run's
+    device count and time, the error when the latest run failed, and the 7-day strip."""
+
+    from lanxang import clock
+    from lanxang.web.blocks import day_strip
+    from lanxang.web.home_page import day_states
+
+    days = day_states([[(clock.parse(run["started_at"]), run["ok"]) for run in runs]], 1, now, display=display)
+    bad = days.count("bad")
+
+    if not latest["ok"]:
+        pill = "failing"
+    elif bad:
+        pill = plural(bad, "bad day")
+    elif days.count("none") == len(days):
+        pill = "no runs this week"
+    else:
+        pill = "ok"
+
+    error = f'<p class="err">{_esc(latest["error"] or "the last run failed")}</p>' if not latest["ok"] else ""
+
+    return (f'<article class="src {"" if pill == "ok" else "warn"}"><b>{_esc(source_name(latest["source"]))}</b>'
+            f'<span class="pill">{_esc(pill)}</span>'
+            f'<p class="muted">{_esc(plural(latest["seen_count"], "device"))} · last ran {_when(latest["last_run"])}</p>'
+            f'{error}{day_strip(days)}</article>')
+
+
+def _coverage_head(coverage):
+
+    total, multi, counted = coverage["total"], coverage["multi"], coverage["counted"]
+
+    if counted and not total:
+        title, sub, state = "No devices found yet", "they appear here after a scan sees them", "unknown"
+    elif len(counted) == 1:
+        title = (f"All {total} devices come" if total != 1 else "The one device comes") + \
+            f" from one source ({_esc(source_name(counted[0]))})"
+        sub, state = "if it fails, nothing else will notice them", "attention"
+    elif not counted:
+        title, sub, state = "No source has run in the last 7 days", "so nothing here is current", "unknown"
+    else:
+        title = f"<b>{multi} of {total}</b> {'device is' if total == 1 else 'devices are'} seen by two or more sources"
+        sub, state = "so one source failing won't hide them", "ok" if multi == total else "attention"
+
+    ring = {"ok": icon("check"), "attention": icon("search"), "unknown": "?"}[state]
+
+    return (f'<section class="hero cov-head {state}"><span class="ring">{ring}</span>'
+            f'<div><p class="hero-title">{title}</p><p class="muted">{_esc(sub)}</p></div></section>')
+
+
+def _coverage_rows(coverage, setup):
+
+    from lanxang.web.blocks import check_row
+
+    rows = []
+    single, unknown, no_uplink = coverage["single_source"], coverage["unknown_connection"], coverage["no_uplink"]
+    snmp = setup.get("snmp") or "snmp" in coverage["counted"]
+
+    if len(coverage["counted"]) == 1:
+        rows.append(check_row("plug", "Add another source",
+                              "UniFi, Proxmox or a switch (SNMP) can see devices too; with two, one failing won't hide them",
+                              ("Set up", "/settings")))
+    elif single:
+        names = ", ".join(device["name"] for device in single[:3]) + (f" and {len(single) - 3} more" if len(single) > 3 else "")
+        rows.append(check_row("search", f"{plural(len(single), 'device')} {'relies' if len(single) == 1 else 'rely'} on one source",
+                              names, ("See them", "/devices")))
+
+    if not snmp and unknown:
+        rows.append(check_row("plug", "Add your switch (SNMP)",
+                              f"{plural(unknown, 'device')} {'has' if unknown == 1 else 'have'} an unknown connection",
+                              ("Set up", "/settings")))
+    elif snmp and unknown:
+        rows.append(check_row("plug", f"{plural(unknown, 'device')} {'has' if unknown == 1 else 'have'} an unknown connection",
+                              "the switch doesn't say which port they are on", ("Review", "/devices")))
+
+    if setup.get("cabling") and no_uplink:
+        rows.append(check_row("network", f"{plural(no_uplink, 'device')} {'isn' if no_uplink == 1 else 'aren'}'t on the cabling map",
+                              "", ("Review", "/cabling")))
+
+    invisible, quiet = len(coverage["invisible"]), len(coverage["quiet"])
+    rows.append(check_row("check", "Every known device has been seen", state="done") if not invisible else
+                check_row("help", f"{plural(invisible, 'known device')} {'has' if invisible == 1 else 'have'} never been seen",
+                          "in your config, but no scan has found it", ("Triage", "/triage")))
+    rows.append(check_row("check", "No device has gone quiet", state="done") if not quiet else
+                check_row("alert", f"{plural(quiet, 'device')} {'has' if quiet == 1 else 'have'} gone quiet",
+                          "seen before, not by the latest scans", ("Triage", "/triage")))
+
+    return f'<section class="card"><h2>Ways to see more</h2>{"".join(rows)}</section>'
+
+
+def render_coverage_page(coverage, setup=None, display=None):
+    """
+    Can you trust the device list? The headline (how many devices two or more sources see), one card per source
+    with its week, and a checklist of ways to see more. setup: {"snmp": bool, "cabling": bool} from the config;
+    display: the display settings for the strips' days (the viewer's zone with time_zone "browser").
+    """
+
+    from lanxang.clock import utcnow
+    from lanxang.web.home_page import home_display
+
+    display = display or home_display()
+    now = utcnow()
+    runs = coverage.get("runs") or {}
+
+    if not coverage["sources"]:
+        return _page("Coverage", empty_state("refresh", "No scans yet", "Each source appears here after its first scan, "
+                                             "which runs within a few minutes of starting."), device_tabs("coverage"))
+
+    cards = "".join(_source_card(source, runs.get(source["source"], []), now, display) for source in coverage["sources"])
     body = (
-        f"<div class=\"card\"><h2>Sources</h2>{sources}</div>"
-        f"<div class=\"card\"><h2>Gone quiet</h2>{listing(coverage['quiet'], 'None — everything is being seen.')}</div>"
-        "<div class=\"card\"><h2>Known but invisible</h2>"
-        + ("<p class=\"muted\">In your config, never seen by a scan.</p>" + listing(coverage["invisible"], "")
-           if coverage["invisible"] else
-           empty_state("check", "Nothing invisible", "Every device in your config has been seen by a scan."))
-        + "</div>"
+        COVERAGE_STYLE + _coverage_head(coverage)
+        + f'<section aria-label="Sources"><div class="srcs">{cards}</div>'
+        "<p class=\"muted\">A failed run never makes devices look quiet — they keep their last status.</p></section>"
+        + _coverage_rows(coverage, setup or {})
     )
 
     return _page("Coverage", body, device_tabs("coverage"))

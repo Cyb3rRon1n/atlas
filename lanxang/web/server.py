@@ -528,7 +528,15 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 return
         elif path == "/coverage":
             try:
-                body = render_coverage_page(InventoryStore().coverage())
+                from lanxang.web.home_page import home_display
+                try:
+                    wiring = load_config().wiring
+                    setup = {"snmp": wiring.enabled and bool(wiring.switches), "cabling": wiring.enabled}
+                except Exception as error:          # the to-do rows that need the config are left out
+                    self.log_error("coverage: config failed: %r", error)
+                    setup = None
+                body = render_coverage_page(InventoryStore().coverage(), setup,
+                                            home_display(self._viewer_zone()))
             except Exception as error:
                 self.log_error("unhandled error in GET %s: %r", path, error)
                 self._send(500, "text/plain; charset=utf-8", "Internal error")

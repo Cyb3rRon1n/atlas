@@ -86,7 +86,7 @@ def test_coverage_known_but_invisible_empty_state():
     from lanxang.web.devices_pages import render_coverage_page
 
     html = render_coverage_page({"sources": [], "quiet": [], "invisible": []})
-    assert 'class="empty"' in html and "Nothing invisible" in html and "None.</p>" not in html
+    assert 'class="empty"' in html and "None.</p>" not in html
     assert "No scans yet" in html and "<table>" not in html
 
 

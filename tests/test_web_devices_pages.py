@@ -137,13 +137,13 @@ def test_actions_script_diffs_connection_and_uplink():
 
 def test_coverage_page_shows_source_failures():
 
-    html = render_coverage_page({
-        "sources": [{"source": "proxmox", "last_run": "2026-09-30T12:00:00", "ok": False,
-                     "error": "could not connect to Proxmox", "seen_count": 0, "last_ok": None}],
-        "quiet": [], "invisible": [device(4, "garage-tv", state="known", status="invisible")],
-    })
+    data = coverage_data(invisible=[device(4, "garage-tv", state="known", status="invisible")])
+    data["sources"].append({"source": "proxmox", "last_run": "2026-09-30T12:00:00", "ok": False,
+                            "error": "could not connect to Proxmox", "seen_count": 0, "last_ok": None})
+    html = render_coverage_page(data)
 
-    assert "could not connect to Proxmox" in html and "garage-tv" in html
+    assert "could not connect to Proxmox" in html and "1 known device has never been seen" in html
+    assert 'href="/triage"' in html and "garage-tv" not in html      # Triage is the one place that lists them
 
 
 def test_devices_page_attention_groups_and_ignored():
@@ -229,3 +229,104 @@ def test_device_page_danger_zone_merge_starts_unchosen_and_confirms_in_page():
 
     alone = render_device_page(dev, [dev])
     assert 'class="card danger-zone"' not in alone and 'id="merge-into"' not in alone
+
+
+def latest(runs):
+    """coverage()["sources"] for these runs: each source's latest run."""
+
+    return [{"source": source, "last_run": items[-1]["started_at"], "ok": items[-1]["ok"], "error": items[-1]["error"],
+             "seen_count": items[-1]["seen_count"], "last_ok": None} for source, items in runs.items()]
+
+
+def coverage_data(runs=None, devices_seen=3, **extra):
+    """A coverage() result: lan and unifi counted, runs keyed by source, 1 of 3 devices on two sources."""
+
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    def week(source, bad=(), error=""):
+        return [{"source": source, "started_at": (now - timedelta(days=6 - day)).isoformat(), "ok": day not in bad,
+                 "error": error if day in bad else "", "seen_count": devices_seen} for day in range(7)]
+
+    runs = runs if runs is not None else {"lan": week("lan"), "unifi": week("unifi")}
+    data = {
+        "sources": latest(runs),
+        "quiet": [], "invisible": [], "runs": runs, "counted": list(runs), "multi": 1, "total": 3,
+        "single_source": [{"id": 2, "name": "printer", "source": "lan"}, {"id": 3, "name": "nas", "source": "lan"}],
+        "unknown_connection": 0, "no_uplink": 0,
+    }
+    data.update(extra)
+    data["week"] = week
+    return data
+
+
+def test_coverage_page_headline():
+
+    html = render_coverage_page(coverage_data())
+
+    assert "<b>1 of 3</b>" in html and "devices are seen by two or more sources" in html
+    assert "so one source failing won&#x27;t hide them" in html
+
+
+def test_coverage_one_source_headline():
+
+    data = coverage_data()
+    data.update(runs={"lan": data["runs"]["lan"]}, counted=["lan"], multi=0)
+    data["sources"] = latest(data["runs"])
+
+    html = render_coverage_page(data)
+
+    assert "All 3 devices come from one source (LAN scan)" in html
+    assert "Add another source" in html
+
+
+def test_source_card_day_strip_and_failing():
+
+    data = coverage_data()
+    data["runs"]["unifi"] = data["week"]("unifi", bad=(1, 4), error="bad gateway")
+    data["sources"] = latest(data["runs"])
+
+    html = unescape(render_coverage_page(data))
+    unifi = html.split("UniFi</b>")[1].split("</article>")[0]
+
+    assert "2 bad days" in unifi and 'aria-label="5 of 7 days ok"' in unifi
+
+    data["runs"]["unifi"] = data["week"]("unifi", bad=(6,), error="login timed out")
+    data["sources"] = latest(data["runs"])
+    unifi = unescape(render_coverage_page(data)).split("UniFi</b>")[1].split("</article>")[0]
+
+    assert "failing" in unifi and "login timed out" in unifi and ">ok<" not in unifi
+
+
+def test_ways_to_see_more_rows():
+
+    data = coverage_data(unknown_connection=14, no_uplink=20)
+
+    html = unescape(render_coverage_page(data, setup={"snmp": False, "cabling": True}))
+
+    assert "2 devices rely on one source" in html and "printer, nas" in html
+    assert "Add your switch (SNMP)" in html and 'href="/settings"' in html
+    assert "20 devices aren't on the cabling map" in html and 'href="/cabling"' in html
+
+    html = unescape(render_coverage_page(data, setup={"snmp": True, "cabling": True}))
+    assert "Add your switch (SNMP)" not in html and "14 devices have an unknown connection" in html
+
+    html = unescape(render_coverage_page(data, setup={"snmp": True, "cabling": False}))
+    assert "cabling map" not in html
+
+
+def test_done_rows_and_quiet_link():
+
+    html = render_coverage_page(coverage_data())
+
+    assert "Every known device has been seen" in html and "No device has gone quiet" in html
+
+    html = render_coverage_page(coverage_data(quiet=[device(9, "garden-camera", state="known", status="quiet")]))
+
+    assert "1 device has gone quiet" in html and 'href="/triage"' in html and "garden-camera" not in html
+
+
+def test_failed_run_note_kept():
+
+    assert "A failed run never makes devices look quiet" in render_coverage_page(coverage_data())

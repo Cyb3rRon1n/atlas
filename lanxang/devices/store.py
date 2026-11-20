@@ -340,9 +340,23 @@ class InventoryStore:
             "quiet": [device for device in devices if device["state"] == "known" and device["status"] == "quiet"],
         }
 
-    def coverage(self):
+    def coverage(self, now=None):
+        """
+        Each source's latest run, quiet and invisible devices, plus Coverage's trust numbers: runs (each source's runs
+        over 8 days, oldest first, enough for 7 display-zone days), counted (sources with a run in the last 7 days),
+        multi / total (non-ignored devices seen by two or more counted sources, of all), single_source
+        ([{id, name, source}] seen by exactly one), unknown_connection and no_uplink. `manual` is never a source.
+        """
+
+        now = now or utcnow()
 
         with Session(self.engine) as session:
+
+            runs = {}
+            for run in session.scalars(select(SourceRunRecord).where(SourceRunRecord.started_at >= now - timedelta(days=8))
+                                       .order_by(SourceRunRecord.started_at, SourceRunRecord.id)):
+                runs.setdefault(run.source, []).append({"source": run.source, "started_at": _iso(run.started_at),
+                                                        "ok": run.ok, "error": run.error, "seen_count": run.seen_count})
 
             sources = []
 
@@ -358,11 +372,23 @@ class InventoryStore:
                                 "error": latest.error, "seen_count": latest.seen_count, "last_ok": _iso(last_ok)})
 
         devices = [device for device in self.devices() if device["state"] != "ignored"]
+        week = (now - timedelta(days=7)).isoformat()
+        counted = sorted(source for source, items in runs.items()
+                         if source != "manual" and any(run["started_at"] >= week for run in items))
+        seen_by = {device["id"]: sorted({s["source"] for s in device["sightings"]} & set(counted)) for device in devices}
 
         return {
             "sources": sources,
             "quiet": [device for device in devices if device["status"] == "quiet"],
             "invisible": [device for device in devices if device["status"] == "invisible"],
+            "runs": runs,
+            "counted": counted,
+            "multi": sum(len(seen) >= 2 for seen in seen_by.values()),
+            "total": len(devices),
+            "single_source": [{"id": device["id"], "name": device["name"], "source": seen_by[device["id"]][0]}
+                              for device in devices if len(seen_by[device["id"]]) == 1],
+            "unknown_connection": sum(device["connection"] == "unknown" for device in devices),
+            "no_uplink": sum(device["uplink_id"] is None for device in devices),
         }
 
     def _ok_runs(self, session):

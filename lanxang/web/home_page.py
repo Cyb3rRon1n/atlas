@@ -693,14 +693,30 @@ def _headline(items):
     return f"{n} thing{'s' * (n != 1)} need{'s' * (n == 1)} a look — everything else is healthy"
 
 
-def _hero(items, last_scan, scan_minutes, now):
-    """Unknown, never healthy, when no scan has run in the last 3 scan intervals."""
+def scan_state(runs):
+    """(newest ok run's start or None, True when every source's latest run failed) from InventoryStore.runs()."""
 
+    latest = {run["source"]: run for run in runs or []}          # oldest first: the last one per source wins
+    ok = [clock.parse(run["started_at"]) for run in runs or [] if run["ok"]]
+    return max(ok, default=None), bool(latest) and not any(run["ok"] for run in latest.values())
+
+
+def _hero(items, last_scan, scan_minutes, now, scans_failing=False, failed=()):
+    """
+    Unknown, never healthy, when no scan has worked in the last 3 scan intervals, every source's latest scan failed,
+    or (with nothing else to show) a part the verdict rests on couldn't be read.
+    """
+
+    if scans_failing:
+        good = f"last good scan {friendly_time(last_scan, now)}" if last_scan else "no scan has worked this week"
+        return status_hero(len(items), "Scans are failing", good, "unknown")
     if last_scan is None:
         return status_hero(len(items), "No recent scan", "no scan has run yet", "unknown")
     ago = f"last scan {friendly_time(last_scan, now)}"
     if now - last_scan > timedelta(minutes=3 * scan_minutes):
         return status_hero(len(items), "No recent scan", ago, "unknown")
+    if not items and failed:
+        return status_hero("?", f"Couldn't read {' / '.join(failed)}", ago, "unknown")
     return status_hero(len(items), _headline(items), ago, "attention" if items else "ok")
 
 
@@ -747,12 +763,13 @@ def _since(changes, since, now, display):
 
 def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=(),
                      steps=None, open_alerts=(), dns=None, names=None, ha=None, changes=None, since=None, vitals=None,
-                     last_scan=None, scan_minutes=15, viewer_zone=None):
+                     last_scan=None, scan_minutes=15, viewer_zone=None, scans_failing=False, failed=()):
     """
     posture: render._posture_block() output or None; hosts: build_hosts() output; events: interesting_events()
     pairs; storage: build_storage() output; trends: posture.model.build_trends() output or None; analysis:
     KnowledgeQueries().latest_analysis() or None; changes: changes_feed.collect() items since `since` (None leaves
-    Since you were here out); vitals: build_vitals() tiles; last_scan: the newest source run (naive UTC) or None;
+    Since you were here out); vitals: build_vitals() tiles; last_scan, scans_failing: scan_state() of the source runs;
+    failed: the parts that couldn't be read (["posture", "alerts"]), so an empty problem list isn't called healthy;
     viewer_zone: the zone the browser reported (lanxang-tz), used when the display time zone is "browser".
     """
 
@@ -763,7 +780,7 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
     items = attention_items(posture, hosts, storage, access_reviews, open_alerts)
     flagged = {card for card, *_ in items}
 
-    body = (HOME_STYLE + _hero(items, last_scan, scan_minutes, now) + _problems(items) + _checklist(steps)
+    body = (HOME_STYLE + _hero(items, last_scan, scan_minutes, now, scans_failing, failed) + _problems(items) + _checklist(steps)
             + _since(changes, since, now, display)
             + (f'<section class="vitals" aria-label="Vitals">{"".join(vitals)}</section>' if vitals else "")
             + '<div class="cards">'

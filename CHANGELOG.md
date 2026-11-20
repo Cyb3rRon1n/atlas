@@ -8,7 +8,8 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 ### Changed
 - Scan history (each source's runs) is kept for 8 days instead of the last 50 runs, so Coverage can show a week.
 - Home is now a briefing, top to bottom: a status line ("1 thing needs a look", with when the last scan ran, and
-  "No recent scan" when scans have stopped), the problems as rows with their buttons (replacing the Needs attention
+  "No recent scan" when scans have stopped, "Scans are failing" when every source's latest scan failed, and
+  "Couldn't read posture / alerts" instead of all-clear when a part it rests on can't be read), the problems as rows with their buttons (replacing the Needs attention
   table), the getting-started steps, **Since you were here** (what changed since your last visit, newest first, with
   a link to all of it in Activity) beside the Ask Lanxang questions, then vitals with a week of history (devices
   online, internet, services by day, storage, security, power) above the existing cards. The Ad blocking and Smart

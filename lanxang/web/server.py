@@ -11,7 +11,7 @@ or, with web.auth: proxy, the auth proxy in front of the host.
 import json
 import os
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from http.cookies import SimpleCookie
@@ -37,7 +37,7 @@ from lanxang.web.hosts_page import build_history, render_hosts_summary
 from lanxang.access.store import AccessStore
 from lanxang.web.access_page import WINDOWS as ACCESS_WINDOWS, render_access_page
 from lanxang.web.home_page import (build_hosts, build_storage, build_vitals, day_states, interesting_events, parse_mdstat,
-                                 render_home_page, setup_steps, since_window, storage_trend)
+                                 render_home_page, scan_state, setup_steps, since_window, storage_trend)
 from lanxang.web.posture_page import render_posture_page
 from lanxang.web.graph import build_graph
 from lanxang.web.network_page import render_network_page
@@ -266,17 +266,23 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             self.log_error("overview: history failed: %r", error)
             return {}
 
-    def _home_data(self, query):
+    def _home_data(self, query, brief=True):
         """
         render_home_page()'s arguments, plus "seen": the lanxang-seen cookie value to write back. Each source is
-        fetched on its own so one failing (no posture DB, no Proxmox scan yet) only blanks its own part.
+        fetched on its own so one failing (no posture DB, no Proxmox scan yet) only blanks its own part; a failed part
+        the verdict rests on is named in "failed" so Home never calls it healthy. brief=False (/overview) stops at
+        hosts, storage and topology: no briefing.
         """
 
-        def safe(label, fetch):
+        failed = []
+
+        def safe(label, fetch, part=None):
             try:
                 return fetch()
             except Exception as error:
                 self.log_error("home: %s failed: %r", label, error)
+                if part and part not in failed:
+                    failed.append(part)
                 return None
 
         from lanxang.web.home_page import home_display
@@ -286,26 +292,30 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         display = home_display(viewer_zone)             # days and times in the viewer's zone (time_zone: browser)
         settings = safe("config", load_config)
         health_settings = settings.health if settings else None
-        topology = safe("topology", query.latest_topology)
-        pve_scan = safe("proxmox scan", lambda: query.latest_event_payload("atlas.proxmox.scan.completed"))
+        topology = safe("topology", query.latest_topology, "hosts")
+        pve_scan = safe("proxmox scan", lambda: query.latest_event_payload("atlas.proxmox.scan.completed"), "hosts")
         host_issues = safe("host issues", lambda: ((PostureStore().statuses().get("host") or {}).get("detail")
-                                                    or {}).get("issues"))
-        local = safe("host health", lambda: get_host_health(health_settings.status_urls if health_settings else None))
+                                                    or {}).get("issues"), "hosts")
+        local = safe("host health", lambda: get_host_health(health_settings.status_urls if health_settings else None),
+                     "hosts")
 
         def usage():
             return {label: psutil.disk_usage(path) for label, path in (health_settings.storage_paths or {}).items()}
 
-        posture = safe("posture", lambda: _posture_block(build_posture(PostureStore(), now, "24h")))
         storage = build_storage(safe("mdstat", lambda: parse_mdstat(Path("/proc/mdstat").read_text())) or [],
                                 (safe("storage paths", usage) if health_settings else None) or {},
                                 (local or {}).get("status_feeds"), pve_scan, topology, health_settings,
                                 safe("nas", lambda: (PostureStore().statuses().get("nas") or {}).get("detail"))
                                 if settings and settings.nas.enabled else None)
 
+        hosts = build_hosts(topology, local, pve_scan, host_issues)
+        if not brief:
+            return dict(hosts=hosts, storage=storage, topology=topology)
+
         from lanxang.monitoring.uptime import UptimeStore
 
+        posture = safe("posture", lambda: _posture_block(build_posture(PostureStore(), now, "24h")), "posture")
         devices = safe("devices", lambda: InventoryStore().devices())
-        hosts = build_hosts(topology, local, pve_scan, host_issues)
         checks = settings.uptime.checks if settings else []
         ups = safe("ups", lambda: (PostureStore().statuses().get("ups") or {}).get("detail")) \
             if settings and settings.ups.enabled else None
@@ -322,7 +332,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         changes = safe("changes", lambda: changes_feed.collect(now, "24h", self._change_sources(query), since=since))
         week = now - timedelta(days=7)
         runs = safe("source runs", lambda: InventoryStore().runs(week))
-        last_scan = max((datetime.fromisoformat(r["started_at"]) for r in runs or []), default=None)
+        last_scan, scans_failing = scan_state(runs)
         try:
             scan_minutes = max(1, int(os.environ.get("LANXANG_SCAN_MINUTES", 15)))
         except ValueError:
@@ -350,15 +360,17 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
 
         return dict(
             dns=dns, names={d["ip"]: d["name"] for d in devices or [] if d.get("ip")}, ha=ha,
-            changes=changes, since=since, vitals=vitals, last_scan=last_scan, scan_minutes=scan_minutes, seen=seen,
+            changes=changes, since=since, vitals=vitals, last_scan=last_scan, scans_failing=scans_failing,
+            scan_minutes=scan_minutes, seen=seen,
             viewer_zone=viewer_zone,
             posture=posture, hosts=hosts,
             events=interesting_events(safe("events", lambda: query.recent_events(200)) or []),
             storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now, display)),
             analysis=safe("analysis", query.latest_analysis), now=now,
-            access_reviews=safe("access reviews", lambda: AccessStore().places("review")) or [],
-            open_alerts=safe("alerts", lambda: AlertStore().listing(now)["open"]) or [],
-            steps=safe("setup steps", lambda: setup_steps(settings, devices or [])) if settings else None)
+            access_reviews=safe("access reviews", lambda: AccessStore().places("review"), "sign-ins") or [],
+            open_alerts=safe("alerts", lambda: AlertStore().listing(now)["open"], "alerts") or [],
+            steps=safe("setup steps", lambda: setup_steps(settings, devices or [])) if settings else None,
+            failed=failed)
 
     def do_GET(self):
 
@@ -403,11 +415,10 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             from lanxang.web.settings_page import render_settings_page
             body = render_settings_page()
         elif path == "/overview":
-            home = self._home_data(query)
-            topology = query.latest_topology()
+            home = self._home_data(query, brief=False)
             body = render_overview_page(query.latest_environment(), query.latest_analysis(),
-                                        render_hosts_summary(home["hosts"], home["storage"], topology,
-                                                             self._host_history(query, topology)))
+                                        render_hosts_summary(home["hosts"], home["storage"], home["topology"],
+                                                             self._host_history(query, home["topology"])))
         elif path == "/access":
             from datetime import timedelta
             settings = load_config()

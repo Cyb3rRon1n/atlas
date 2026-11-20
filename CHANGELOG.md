@@ -3,7 +3,9 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
-## Unreleased
+## 1.5.0 - 2026-11-20
+
+A design pass: Home becomes a briefing of what's wrong and what changed since your last visit, Coverage says whether you can trust the device list and how to see more, and Overview and Uptime get trend lines and a status line.
 
 ### Changed
 - Scan history (each source's runs) is kept for 8 days instead of the last 50 runs, so Coverage can show a week.
@@ -24,8 +26,8 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
   week counts, and a source whose latest run failed keeps the headline from reading as all-clear.
 - Security trends: the charts have gridlines and x/y values (sizes or counts up the side, times or weekdays along
   the bottom), in your own clock and time zone instead of UTC.
-- Overview: each host and Proxmox node meter (CPU, RAM, disk) has the last 24 hours as a small line beside it, a
-  short list of counts (containers, Proxmox guests, LAN hosts) links to where each is listed, and the inventory
+- Overview: each host and Proxmox node meter (CPU, RAM, disk) has the last 24 hours as a small line beside it (and the
+  page loads faster: it no longer computes Home's briefing), a short list of counts (containers, Proxmox guests, LAN hosts) links to where each is listed, and the inventory
   dump folds under "Raw snapshot".
 - Uptime: a headline over the checks ("All 3 checks up", "1 check down"), counting the built-in Internet check when
   it is on ("Internet down", "Internet and all 3 checks up"). A check with no recent result reads as unknown, never

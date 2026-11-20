@@ -27,8 +27,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 - Overview: each host and Proxmox node meter (CPU, RAM, disk) has the last 24 hours as a small line beside it, a
   short list of counts (containers, Proxmox guests, LAN hosts) links to where each is listed, and the inventory
   dump folds under "Raw snapshot".
-- Uptime: a headline over the checks ("All 3 checks up", "1 check down"). A check with no recent result reads as
-  unknown, never as up. The explanation folds under "How checks work".
+- Uptime: a headline over the checks ("All 3 checks up", "1 check down"), counting the built-in Internet check when
+  it is on ("Internet down", "Internet and all 3 checks up"). A check with no recent result reads as unknown, never
+  as up. The explanation folds under "How checks work".
 
 ## 1.4.2 - 2026-11-19
 

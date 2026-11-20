@@ -104,33 +104,50 @@ def _state(info, fail_after):
     return ("up", "Up") if points[-1][0] else ("failing", "Failed once")
 
 
-def _hero(checks, summary, now, fail_after):
-    """The top line over the Services table. A check with no result in the last few minutes (or never) is unknown:
-    the hero only says "up" when every check answered recently and none failed."""
+def _hero(checks, summary, now, fail_after, internet=None):
+    """The top line over the Services table, counting the built-in Internet check when it is on. A check with no
+    result in the last few minutes (or never) is unknown: the hero only says "up" when every check answered recently
+    and none failed."""
 
-    if not checks:
+    entries = [(check.name, summary.get(check.name)) for check in checks]
+    if internet:
+        entries.append(("Internet", internet["summary"].get("Internet")))
+    if not entries:
         return ""
     fresh = timedelta(minutes=fail_after + 3)               # checks run once a minute
-    down = failing = unknown = 0
-    for check in checks:
-        info = summary.get(check.name) or {"points": [], "last": None}
+    down, failing, unknown = [], [], []
+    for name, info in entries:
+        info = info or {"points": [], "last": None}
         last = info["last"]
         if not last or now - last[0] > fresh:
-            unknown += 1
+            unknown.append(name)
             continue
         state = _state(info, fail_after)[0]
-        down += state == "down"
-        failing += state == "failing"
-    total = len(checks)
-    gaps = f"{plural(unknown, 'check')} with no recent result" if unknown else ""
+        if state == "down":
+            down.append(name)
+        elif state == "failing":
+            failing.append(name)
+    total = len(entries)
+    gaps = f"{plural(len(unknown), 'check')} with no recent result" if unknown else ""
+
+    def named(names, verb):                                 # the Internet by name: it isn't in the table below
+        rest = len(names) - ("Internet" in names)
+        if "Internet" not in names:
+            return f"{plural(rest, 'check')} {verb}"
+        return f"Internet and {plural(rest, 'check')} {verb}" if rest else f"Internet {verb}"
 
     if down or failing:
-        title = f"{plural(down, 'check')} down" if down else f"{plural(failing, 'check')} failing"
-        return status_hero(down or failing, title, gaps, "attention")
+        bad = down or failing
+        return status_hero(len(bad), named(bad, "down" if down else "failing"), gaps, "attention")
     if unknown:
-        return status_hero("?", f"{unknown} of {total} checks have no recent result",
-                           "Lanxang may not be running the checks right now.", "unknown")
+        title = ("The Internet check has no recent result" if unknown == ["Internet"]
+                 else f"{len(unknown)} of {total} checks have no recent result")
+        return status_hero("?", title, "Lanxang may not be running the checks right now.", "unknown")
 
+    rest = total - bool(internet)
+    if internet:
+        return status_hero("", f"Internet and {'all ' if rest > 1 else ''}{plural(rest, 'check')} up" if rest
+                           else "Internet up", "", "ok")
     return status_hero("", f"All {total} checks up" if total > 1 else "1 check up", "", "ok")
 
 
@@ -293,7 +310,7 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
                + (f'<div class="up-sugg">Your public sites: {chips}</div>' if chips else "")
                + '<p id="up-msg"></p></section>')
 
-    body = (STYLE + _hero(checks, summary, now, fail_after)
+    body = (STYLE + _hero(checks, summary, now, fail_after, internet)
             + '<details class="up-how"><summary>How checks work</summary>'
               '<p class="up-intro">Is each service answering? Lanxang tries every check once a minute. A web address '
               'is up when it answers at all (a login page counts); <code>host:port</code> is up when the port accepts '

@@ -288,6 +288,12 @@ def test_coverage_counts(temp_db):
     store.set_fields(nas["id"], {"connection": "wireless"})
     assert store.coverage(now, snapshot=snapshot)["off_map"] == 0       # a wireless device is never on a wired map
 
+    store.record_run("proxmox", [Sighting("proxmox", "pve/101", hostname="web", ip="192.0.2.50", detail={"type": "qemu"}),
+                                 Sighting("proxmox", "pve/102", hostname="db", ip="192.0.2.51", detail={"type": "lxc"})],
+                     now=now)
+    assert {d["kind"] for d in store.devices() if d["name"] in ("web", "db")} == {"vm", "lxc"}
+    assert store.coverage(now, snapshot=snapshot)["off_map"] == 0       # guests are virtual: never on the cabling map
+
 
 def test_coverage_counts_only_sources_that_worked_this_week(temp_db):
 

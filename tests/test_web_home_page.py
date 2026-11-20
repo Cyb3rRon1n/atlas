@@ -395,3 +395,24 @@ def test_storage_trend_largest_pool_then_host_paths():
     samples = [(NOW, {"storage": {"media": 58.0, "backup": 12.0}})]
     assert storage_trend([(NOW, {"nodes": []})], samples)["name"] == "media"
     assert storage_trend([], []) is None
+
+
+def test_home_failed_parts_unknown_unless_something_to_show():
+    hero = lambda html: re.search(r'<section class="hero[^"]*">.*?</section>', html).group(0)
+
+    quiet = hero(_briefing(open_alerts=[], failed=["posture", "alerts"]))
+    assert 'class="hero unknown"' in quiet and "read posture / alerts" in quiet and "healthy" not in quiet
+    loud = hero(_briefing(failed=["posture"]))                       # the certificate alert still wins
+    assert 'class="hero attention"' in loud
+
+
+def test_scan_state():
+    from lanxang.web.home_page import scan_state
+
+    def run(source, at, ok):
+        return {"source": source, "started_at": f"2026-11-19T{at}:00", "ok": ok, "error": "", "seen_count": 1}
+
+    assert scan_state([]) == (None, False)
+    assert scan_state([run("lan", "11:00", True), run("lan", "11:15", False), run("dhcp", "11:20", False)]) == (
+        datetime(2026, 11, 19, 11, 0), True)
+    assert scan_state([run("lan", "11:15", False), run("dhcp", "11:20", True)]) == (datetime(2026, 11, 19, 11, 20), False)

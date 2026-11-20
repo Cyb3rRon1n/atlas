@@ -2,6 +2,7 @@ import json
 import threading
 import urllib.error
 import urllib.request
+from datetime import timedelta
 from http.server import ThreadingHTTPServer
 
 import pytest
@@ -421,3 +422,69 @@ def test_static_serves_only_allow_listed_files(running_server):
         except urllib.error.HTTPError as error:
             with error:
                 assert error.code == 404, path
+
+
+def _runs(engine, *runs):
+    from sqlalchemy.orm import Session
+
+    from lanxang.clock import utcnow
+    from lanxang.database.models import SourceRunRecord
+
+    now = utcnow()
+    with Session(engine) as session:
+        for source, minutes_ago, ok in runs:
+            session.add(SourceRunRecord(source=source, started_at=now - timedelta(minutes=minutes_ago), ok=ok,
+                                        error="" if ok else "timed out", seen_count=3 if ok else 0))
+        session.commit()
+
+
+def _hero(body):
+    import re
+
+    return re.search(r'<section class="hero[^"]*">.*?</section>', body).group(0)
+
+
+def test_home_unread_posture_or_alerts_is_unknown_not_healthy(running_server, temp_db, monkeypatch):
+    from lanxang.web import server
+
+    _runs(temp_db, ("lan", 5, True))
+    assert 'class="hero ok"' in _hero(_get(running_server + "/")[1])          # sanity: readable and quiet is ok
+
+    def broken(*args, **kwargs):
+        raise RuntimeError("database is locked")
+
+    monkeypatch.setattr(server, "build_posture", broken)
+    monkeypatch.setattr(server.AlertStore, "listing", broken)
+    hero = _hero(_get(running_server + "/")[1])
+    assert 'class="hero unknown"' in hero and "Couldn&#x27;t read posture / alerts" in hero
+    assert "healthy" not in hero
+
+
+def test_home_failing_scans_are_not_healthy(running_server, temp_db):
+
+    _runs(temp_db, *[(source, minutes, False) for minutes in range(0, 120, 15) for source in ("lan", "dhcp")])
+    hero = _hero(_get(running_server + "/")[1])
+    assert 'class="hero unknown"' in hero and "Scans are failing" in hero and "healthy" not in hero
+
+
+def test_overview_skips_the_briefing(running_server, monkeypatch):
+    from lanxang.devices.store import InventoryStore
+    from lanxang.monitoring.uptime import UptimeStore
+    from lanxang.web import changes_feed, server
+
+    called = []
+
+    def spy(name):
+        def fail(*args, **kwargs):
+            called.append(name)
+            raise AssertionError(name)
+        return fail
+
+    monkeypatch.setattr(changes_feed, "collect", spy("changes"))
+    monkeypatch.setattr(InventoryStore, "runs", spy("runs"))
+    monkeypatch.setattr(UptimeStore, "history", spy("uptime history"))
+    monkeypatch.setattr(server, "build_posture", spy("posture"))
+    monkeypatch.setattr(server, "build_trends", spy("trends"))
+
+    assert _get(running_server + "/overview")[0] == 200
+    assert called == []

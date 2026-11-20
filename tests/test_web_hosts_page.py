@@ -4,7 +4,8 @@ from lanxang.web.render import render_overview_page
 
 HOSTS = {"rows": [{"name": "homeserver", "cpu": 20, "mem": 50, "disk": 40, "detail": "", "problems": []}]}
 STORAGE = {"rows": []}
-TOPOLOGY = {"docker": {"networks": {"web": [{"name": "app", "status": "running"}]}},
+TOPOLOGY = {"docker": {"networks": {"web": [{"name": "app", "status": "running"}],
+                                    "db": [{"name": "app", "status": "running"}]}},       # one container, two networks
             "proxmox": {"guests": [{"name": "vm1", "status": "running"}]},
             "lan": [{"name": "nas", "reachable": True}, {"name": "tv", "reachable": False}]}
 HISTORY = {"homeserver": {"cpu": [10, 20, 30], "mem": [40, 41, 42], "disk": [50, 50, 51]}}
@@ -36,8 +37,9 @@ def test_build_history_maps_host_and_proxmox_node():
 
     samples = [(None, {"cpu": 1, "mem": 2, "disk": 3}), (None, {"cpu": 4, "mem": None, "disk": 6})]
     scans = [(None, {"nodes": [{"name": "pve", "cpu": 0.25, "mem": 50, "maxmem": 100, "disk": 1, "maxdisk": 4}]}),
-             (None, {"nodes": [{"name": "pve", "status": "offline"}]})]
+             (None, {"nodes": [{"name": "pve", "status": "offline"}]}),
+             (None, {"nodes": [{"name": "pve", "mem": 50, "maxmem": 100, "disk": 1, "maxdisk": 4}]})]   # no cpu read
     history = build_history(samples, scans, "homeserver", {"pve": "nas"})
     assert history["homeserver"] == {"cpu": [1, 4], "mem": [2, None], "disk": [3, 6]}
-    assert history["nas"]["cpu"] == [25.0] and history["nas"]["mem"] == [50.0] and history["nas"]["disk"] == [25.0]
+    assert history["nas"]["cpu"] == [25.0, None] and history["nas"]["mem"] == [50.0, 50.0]
     assert build_history([], [], "x", {}) == {}

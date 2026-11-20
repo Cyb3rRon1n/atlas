@@ -65,7 +65,7 @@ def build_history(samples, scans, host_name, node_names=None):
                 continue
             row = history.setdefault((node_names or {}).get(node["name"], node["name"]),
                                      {"cpu": [], "mem": [], "disk": []})
-            row["cpu"].append((node.get("cpu") or 0) * 100)
+            row["cpu"].append(node["cpu"] * 100 if node.get("cpu") is not None else None)   # missing isn't 0%
             row["mem"].append(_pct(node.get("mem"), node.get("maxmem")))
             row["disk"].append(_pct(node.get("disk"), node.get("maxdisk")))
 
@@ -94,7 +94,8 @@ def _counts(topology, guests):
     """The short list: how many of each kind, each linking to where they are listed."""
 
     topology = topology or {}
-    containers = sum(len(members) for members in ((topology.get("docker") or {}).get("networks") or {}).values())
+    containers = len({c["name"] for members in ((topology.get("docker") or {}).get("networks") or {}).values()
+                      for c in members})                    # one on two networks is still one container
     lan = len(topology.get("lan") or [])
     items = [f'<a href="#containers">{plural(containers, "container")}</a>' if containers else "",
              f'<a href="#guests">{plural(len(guests), "Proxmox guest")}</a>' if guests else "",

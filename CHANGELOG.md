@@ -8,7 +8,8 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 ### Changed
 - Scan history (each source's runs) is kept for 8 days instead of the last 50 runs, so Coverage can show a week.
 - Home is now a briefing, top to bottom: a status line ("1 thing needs a look", with when the last scan ran, and
-  "No recent scan" when scans have stopped), the problems as rows with their buttons (replacing the Needs attention
+  "No recent scan" when scans have stopped, "Scans are failing" when every source's latest scan failed, and
+  "Couldn't read posture / alerts" instead of all-clear when a part it rests on can't be read), the problems as rows with their buttons (replacing the Needs attention
   table), the getting-started steps, **Since you were here** (what changed since your last visit, newest first, with
   a link to all of it in Activity) beside the Ask Lanxang questions, then vitals with a week of history (devices
   online, internet, services by day, storage, security, power) above the existing cards. The Ad blocking and Smart
@@ -17,7 +18,7 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
   or "All 12 devices come from one source (LAN scan)"), a card per source with friendly names, its devices, when it
   last ran and a 7-day strip in your time zone (the pill says "ok", "2 bad days", or "failing" with the error), and
   **Ways to see more**: devices that rely on one source, adding a switch (SNMP) or devices with an unknown
-  connection, wired or unknown devices missing from the latest cabling scan (when it is set up), and done rows for "Every known device has been
+  connection, wired or unknown devices (not Proxmox guests) missing from the latest cabling scan (when it is set up), and done rows for "Every known device has been
   seen" and "No device has gone quiet" (gone quiet links to Triage). `/api/coverage` adds `runs`, `counted`,
   `multi`, `total`, `single_source`, `unknown_connection` and `off_map`. Only a source with an ok run this
   week counts, and a source whose latest run failed keeps the headline from reading as all-clear.
@@ -26,8 +27,9 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
 - Overview: each host and Proxmox node meter (CPU, RAM, disk) has the last 24 hours as a small line beside it, a
   short list of counts (containers, Proxmox guests, LAN hosts) links to where each is listed, and the inventory
   dump folds under "Raw snapshot".
-- Uptime: a headline over the checks ("All 3 checks up", "1 check down"). A check with no recent result reads as
-  unknown, never as up. The explanation folds under "How checks work".
+- Uptime: a headline over the checks ("All 3 checks up", "1 check down"), counting the built-in Internet check when
+  it is on ("Internet down", "Internet and all 3 checks up"). A check with no recent result reads as unknown, never
+  as up. The explanation folds under "How checks work".
 
 ## 1.4.2 - 2026-11-19
 

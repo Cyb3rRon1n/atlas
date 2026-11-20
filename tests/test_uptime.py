@@ -155,3 +155,52 @@ def test_uptime_hero_never_calls_stale_or_unchecked_healthy(temp_db):
 
     failing = _hero_page(temp_db, [True, True, True])      # sanity: fresh results are fine
     assert "All 3 checks up" in failing
+
+
+def test_history_reads_only_two_columns(temp_db):
+    from sqlalchemy import event
+    from sqlalchemy.orm import Session
+
+    store, now = UptimeStore(), datetime(2026, 1, 1, 12)
+    store.save({"A": (True, 10.0, "HTTP 200")}, now - timedelta(minutes=2))
+    store.save({"A": (False, None, "refused")}, now - timedelta(minutes=1))
+    selected = []
+
+    def spy(state):
+        if state.is_select:
+            selected.append([column.name for column in state.statement.selected_columns])
+
+    event.listen(Session, "do_orm_execute", spy)
+    try:
+        assert store.history("A", now - timedelta(hours=1)) == [(now - timedelta(minutes=2), True),
+                                                                 (now - timedelta(minutes=1), False)]
+    finally:
+        event.remove(Session, "do_orm_execute", spy)
+    assert selected == [["checked_at", "ok"]]          # not whole rows: a week of ten checks is 100k of them
+
+
+def test_uptime_hero_counts_the_internet_check(temp_db):
+
+    store, start = UptimeStore(), datetime(2026, 1, 1, 12)
+    checks = [UptimeCheck(name=n, target="https://media.example.org") for n in ("A", "B", "C")]
+
+    def page(hour, internet_ok, ago=1):                     # each case an hour after the last: its rows are newest
+        now = start + timedelta(hours=hour)
+        for name in ("A", "B", "C"):
+            store.save({name: (True, 10.0, "HTTP 200")}, now - timedelta(minutes=1))
+        if internet_ok is not None:
+            for minute in (ago + 1, ago):
+                store.save({"Internet": (internet_ok, 12.0 if internet_ok else None, "ok" if internet_ok else "no answer")},
+                           now - timedelta(minutes=minute))
+        html = uptime_page.render_uptime_page(checks, store.summary(["A", "B", "C"], now), now, 2,
+                                              internet=uptime_page.internet_data(store, now, 2))
+        return html[html.index('<section class="hero'):html.index("</section>")]
+
+    never = page(0, None)
+    assert 'class="hero unknown"' in never and "Internet check has no recent result" in never and "up" not in never
+    stale = page(1, True, ago=30)
+    assert 'class="hero unknown"' in stale and "All 3" not in stale
+    down = page(2, False)
+    assert 'class="hero attention"' in down and "Internet down" in down and "All 3" not in down
+    up = page(3, True)
+    assert 'class="hero ok"' in up and "Internet and all 3 checks up" in up

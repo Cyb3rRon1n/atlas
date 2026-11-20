@@ -38,7 +38,8 @@ class KnowledgeStore:
                 source=event.source,
                 payload=json.dumps(
                     event.payload
-                )
+                ),
+                created_at=event.timestamp      # when it happened (utcnow unless back-dated, as the demo history is)
             )
 
             session.add(record)

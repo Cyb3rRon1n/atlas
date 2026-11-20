@@ -140,12 +140,13 @@ class InventoryStore:
             session.add(SourceRunRecord(source=source, started_at=now, ok=ok, error=error, seen_count=result["seen"]))
             session.flush()
 
-            # Runs are only ever read for the last 2 ok runs and the latest run per source -
-            # keep the newest 50 per source and drop the rest so this table can't grow forever.
+            # Keep 8 days of runs per source (Coverage's 7-day strips; ~770 rows at 15 minutes), and never fewer
+            # than the newest 50, so the table can't grow forever and a rarely run source keeps its history.
             keep = session.scalars(select(SourceRunRecord.id).where(SourceRunRecord.source == source)
                                    .order_by(SourceRunRecord.started_at.desc()).limit(50)).all()
             session.execute(delete(SourceRunRecord).where(
-                SourceRunRecord.source == source, SourceRunRecord.id.not_in(keep)))
+                SourceRunRecord.source == source, SourceRunRecord.started_at < now - timedelta(days=8),
+                SourceRunRecord.id.not_in(keep)))
 
             if not ok:
                 session.commit()

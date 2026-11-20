@@ -106,18 +106,19 @@ def test_failed_run_does_not_make_devices_quiet(temp_db):
 def test_record_run_prunes_old_runs_keeping_newest_50(temp_db):
 
     store = InventoryStore(temp_db)
+    last = at(59 * 24 * 60)
 
-    for minute in range(60):
-        store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.50.1", mac="aa:01")], now=at(minute))
+    for day in range(60):     # one run a day: only 9 are within 8 days, so the floor of 50 decides
+        store.record_run("lan", [Sighting("lan", "aa:01", ip="192.168.50.1", mac="aa:01")], now=at(day * 24 * 60))
 
     runs = store.source_runs(limit=1000)
     assert len(runs) == 50
-    assert runs[0]["started_at"] == at(59).isoformat()
+    assert runs[0]["started_at"] == last.isoformat()
 
     # status/coverage still work off the surviving rows
-    assert store.devices(now=at(59))[0]["status"] == "seen"
+    assert store.devices(now=last)[0]["status"] == "seen"
     coverage = store.coverage()
-    assert coverage["sources"][0]["last_ok"] == at(59).isoformat()
+    assert coverage["sources"][0]["last_ok"] == last.isoformat()
 
 
 def test_new_alert_suppressed_for_ignored_device(temp_db):
@@ -195,3 +196,27 @@ def test_important_device_offline_queues_once_and_new_alerts_roll_up(temp_db):
 
     assert "new" not in store.due_notifications(now=at(60))
     assert "new" in store.due_notifications(now=at(60 + 24 * 60))
+
+
+def test_source_runs_keep_eight_days(temp_db):
+    """A week of 15-minute runs stays (Coverage's 7-day strips); past 8 days only the newest 50 are kept."""
+
+    from sqlalchemy import func, select
+    from sqlalchemy.orm import Session
+
+    from lanxang.database.models import SourceRunRecord
+
+    store = InventoryStore(temp_db)
+
+    def count():
+        with Session(temp_db) as session:
+            return session.scalar(select(func.count()).select_from(SourceRunRecord).where(SourceRunRecord.source == "lan"))
+
+    for i in range(700):
+        store.record_run("lan", [], now=at(15 * (i - 699)))
+
+    assert count() == 700
+
+    store.record_run("lan", [], now=at(10 * 24 * 60))
+
+    assert count() == 50

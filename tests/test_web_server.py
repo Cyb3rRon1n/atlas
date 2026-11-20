@@ -329,7 +329,7 @@ def test_device_pages_render(running_server):
     # seeded "router" (state "new", status "seen") is neither, so it never
     # appears there; assert on the source row it does produce instead.
     status, body = _get(running_server + "/coverage")
-    assert status == 200 and "lan" in body
+    assert status == 200 and "The one device comes from one source (LAN scan)" in body
 
 
 def test_get_500s_are_plain_text_for_pages_and_json_for_api(running_server, monkeypatch):

@@ -256,3 +256,52 @@ def test_coverage_reports_each_source_and_quiet_invisible(temp_db):
     assert sources["lan"]["ok"] is True and sources["lan"]["seen_count"] == 2
     assert [d["name"] for d in coverage["invisible"]] == ["garage-tv"]
     assert coverage["quiet"] == []
+
+
+def test_coverage_counts(temp_db):
+
+    from lanxang.clock import utcnow
+
+    store = InventoryStore(temp_db)
+    now = utcnow()
+    store.import_manual_hosts([MapHost(name="nas", address="192.0.2.3")], now=now)
+    store.record_run("lan", [Sighting("lan", "00:00:5e:00:53:01", ip="192.0.2.1", mac="00:00:5e:00:53:01"),
+                             Sighting("lan", "00:00:5e:00:53:02", ip="192.0.2.2", mac="00:00:5e:00:53:02"),
+                             Sighting("lan", "00:00:5e:00:53:03", ip="192.0.2.3", mac="00:00:5e:00:53:03")], now=now)
+    store.record_run("unifi", [Sighting("unifi", "00:00:5e:00:53:01", ip="192.0.2.1", mac="00:00:5e:00:53:01")], now=now)
+
+    coverage = store.coverage(now)
+
+    assert coverage["multi"] == 1 and coverage["total"] == 3
+    assert sorted(coverage["counted"]) == ["lan", "unifi"]
+    assert sorted((d["source"], d["name"]) for d in coverage["single_source"]) == \
+        [("lan", "192.0.2.2"), ("lan", "nas")]
+    assert [r["source"] for r in coverage["runs"]["unifi"]] == ["unifi"]
+    assert coverage["unknown_connection"] == 3 and coverage["off_map"] is None
+
+    snapshot = {"nodes": [{"id": "h:00:00:5e:00:53:01", "kind": "host", "ip": "", "mac": "00:00:5e:00:53:01"},
+                          {"id": "h:x", "kind": "host", "ip": "192.0.2.2", "mac": None},
+                          {"id": "u:y", "kind": "unknown", "ip": "192.0.2.3", "mac": None}]}   # unknown nodes never match
+    assert store.coverage(now, snapshot=snapshot)["off_map"] == 1
+
+    nas = next(d for d in store.devices() if d["name"] == "nas")
+    store.set_fields(nas["id"], {"connection": "wireless"})
+    assert store.coverage(now, snapshot=snapshot)["off_map"] == 0       # a wireless device is never on a wired map
+
+
+def test_coverage_counts_only_sources_that_worked_this_week(temp_db):
+
+    from lanxang.clock import utcnow
+
+    store = InventoryStore(temp_db)
+    now = utcnow()
+    one = [Sighting("lan", "00:00:5e:00:53:01", ip="192.0.2.1", mac="00:00:5e:00:53:01")]
+    store.record_run("lan", one, now=now)
+    store.record_run("proxmox", [Sighting("proxmox", "pve:1", ip="192.0.2.1")], now=now - timedelta(days=7, hours=1))
+    for day in range(7):
+        store.record_run("unifi", [], ok=False, error="login timed out", now=now - timedelta(days=day))
+
+    coverage = store.coverage(now)
+
+    assert coverage["counted"] == ["lan"]            # proxmox ran 7 days + 1 hour ago; unifi failed all week
+    assert coverage["multi"] == 0 and [d["source"] for d in coverage["single_source"]] == ["lan"]

@@ -3,12 +3,13 @@ Made-up home network for screenshots: python tools/demo_data.py <dir> [--degrade
 
 Writes <dir>/lanxang.yaml and <dir>/inventory/atlas.db (plus a small maker table) through the same store APIs
 the scans use. Everything is invented: addresses on 192.0.2.0/24 (TEST-NET-1), example.org names.
-Run the web UI from <dir> to see it. --degraded puts the NAS pool "tank" in DEGRADED for the hardware docs.
+Run the web UI from <dir> to see it, with a week of history behind the current state. --degraded puts the NAS
+pool "tank" in DEGRADED for the hardware docs (and skips the history, which takes most of the run).
 """
 
 import os
 import sys
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from pathlib import Path
 
 DIR = Path(sys.argv[1] if len(sys.argv) > 1 else "demo").resolve()
@@ -53,7 +54,7 @@ from lanxang.monitoring.uptime import UptimeStore                       # noqa: 
 from lanxang.posture.store import PostureStore                          # noqa: E402
 from lanxang.wiring.scan import run_scan                                # noqa: E402
 from lanxang.wiring.store import WiringStore                            # noqa: E402
-from lanxang.wiring.unifi import parse_unifi                            # noqa: E402
+from lanxang.wiring.unifi import parse_unifi, sightings                 # noqa: E402
 
 settings = AtlasConfig.model_validate(__import__("yaml").safe_load((DIR / "lanxang.yaml").read_text()))
 now = utcnow()
@@ -89,18 +90,6 @@ DEVICES = [
 GUESTS = [(100, "photos", "running"), (101, "media", "running"), (102, "backup", "running"),
           (103, "home-automation", "running"), (104, "test-vm", "stopped")]
 
-lan = [Sighting("lan", mac(maker, octet), ip=f"192.0.2.{octet}", mac=mac(maker, octet),
-                hostname=None if name.startswith("192.") else name,
-                detail={"gateway": True} if octet == 1 else {})
-       for octet, name, _, maker, _, _ in DEVICES]
-inventory = InventoryStore()
-# Three LAN scans ten minutes apart; the printer answered only the first, so it now shows as offline.
-for i, minutes in enumerate((30, 20, 10)):
-    inventory.record_run("lan", [s for s in lan if i == 0 or s.ip != "192.0.2.30"], now=now - timedelta(minutes=minutes))
-inventory.record_run("proxmox", [Sighting("proxmox", f"pve:{vmid}", ip=f"192.0.2.{vmid - 20}" if up == "running" else None,
-                                          hostname=name, detail={"type": "qemu" if vmid != 103 else "lxc"})
-                                 for vmid, name, up in GUESTS], now=now - timedelta(minutes=10))
-
 # UniFi: gateway Port 1 -> core-switch Port 1 (uplink), switch ports to the servers, the AP on PoE Port 8.
 GW, SW, AP = mac("Ubiquiti", 1), mac("Ubiquiti", 2), mac("Ubiquiti", 3)
 switch_port = {10: 3, 11: 4, 12: 5}
@@ -126,6 +115,54 @@ UNIFI_CLIENTS = [{"mac": mac(maker, octet), "ip": f"192.0.2.{octet}", "hostname"
                      {"is_wired": False, "essid": "home", "ap_mac": AP, "signal": -48 - octet % 17,
                       "radio": "na" if octet % 3 else "ng"})}
                  for octet, name, _, maker, _, _ in DEVICES if octet > 3 and octet != 30]
+lan = [Sighting("lan", mac(maker, octet), ip=f"192.0.2.{octet}", mac=mac(maker, octet),
+                hostname=None if name.startswith("192.") else name,
+                detail={"gateway": True} if octet == 1 else {})
+       for octet, name, _, maker, _, _ in DEVICES]
+inventory = InventoryStore()
+
+# A week of history before the current state, written through the same stores at back-dated times: every 15 minutes
+# a run of each source, a host sample and the uptime checks; every hour a Proxmox scan. UniFi's login timed out for
+# all of days -5 and -2, and Media was down for 20 minutes on day -3. The two "new" devices aren't in it.
+known = [s for s in lan if s.ip not in ("192.0.2.70", "192.0.2.71")]
+seen_by_unifi = sightings(parse_unifi(UNIFI_DEVICES, UNIFI_CLIENTS))
+guests = [Sighting("proxmox", f"pve:{vmid}", ip=f"192.0.2.{vmid - 20}" if up == "running" else None,
+                   hostname=name, detail={"type": "qemu" if vmid != 103 else "lxc"}) for vmid, name, up in GUESTS]
+outage = datetime.combine(now.date() - timedelta(days=3), time(14, 0))
+tick = (now - timedelta(days=7)).replace(minute=0, second=0, microsecond=0)
+while not DEGRADED and tick < now - timedelta(minutes=45):    # ~50 s; the degraded copy needs none
+    k = int((tick - now).total_seconds() // 900)                   # a steady wobble from the tick's position
+    inventory.record_run("lan", known, now=tick)
+    if (tick.date() - now.date()).days in (-5, -2):
+        inventory.record_run("unifi", [], ok=False, error="login timed out", now=tick)
+    else:
+        inventory.record_run("unifi", seen_by_unifi, now=tick)
+    inventory.record_run("proxmox", guests, now=tick)
+    hours = (tick - now).total_seconds() / 3600
+    KnowledgeStore().save_event(AtlasEvent("atlas.host.sample", "HostSample", {
+        "cpu": round(8 + 6 * (tick.hour in range(18, 23)) + k % 5, 1), "mem": round(41 + k % 7 / 2, 1),
+        "disk": round(37 + hours / 168, 1), "temp": 46 + k % 4, "storage": {"tank": round(43.75 + hours / 336, 2)}},
+        timestamp=tick))
+    if tick.minute == 0:
+        KnowledgeStore().save_event(AtlasEvent("atlas.proxmox.scan.completed", "proxmox", {"nodes": [
+            {"name": "pve1", "status": "online", "cpu": 0.05 + k % 4 / 100, "mem": (16 + k % 3) * 2**30,
+             "maxmem": 64 * 2**30, "disk": round((310 + hours / 24) * 2**30), "maxdisk": 960 * 2**30,
+             "zfs": [{"name": "rpool", "health": "ONLINE", "size": 1800 * 10**9, "alloc": round((620 + hours / 6) * 10**9)}]}]},
+            timestamp=tick))
+    down = outage <= tick < outage + timedelta(minutes=20)
+    UptimeStore().save({"Internet": (True, 14.0 + k % 5, ""),
+                        **{c.name: (not (down and c.name == "Media"), 40.0 + k % 7, "timed out" if down and c.name == "Media" else "")
+                           for c in settings.uptime.checks}}, tick)
+    if tick == outage:                                             # finer results through the outage: 20 min down
+        for minutes, ok in ((5, False), (10, False), (20, True)):
+            UptimeStore().save({"Media": (ok, 40.0, "" if ok else "timed out")}, tick + timedelta(minutes=minutes))
+    tick += timedelta(minutes=15)
+
+# Three LAN scans ten minutes apart; the printer answered only the first, so it now shows as offline.
+for i, minutes in enumerate((30, 20, 10)):
+    inventory.record_run("lan", [s for s in lan if i == 0 or s.ip != "192.0.2.30"], now=now - timedelta(minutes=minutes))
+inventory.record_run("proxmox", guests, now=now - timedelta(minutes=10))
+
 run_scan(settings, WiringStore(), inventory.devices(), env={}, now=now - timedelta(minutes=5),
          fetch=lambda *a, **k: parse_unifi(UNIFI_DEVICES, UNIFI_CLIENTS))
 
@@ -149,7 +186,8 @@ environment.update("topology", {
 KnowledgeStore().save_environment(environment)
 KnowledgeStore().save_event(AtlasEvent("atlas.proxmox.scan.completed", "proxmox", {"nodes": [
     {"name": "pve1", "status": "online", "cpu": 0.07, "mem": 17 * 2**30, "maxmem": 64 * 2**30,
-     "disk": 310 * 2**30, "maxdisk": 960 * 2**30}]}))
+     "disk": 310 * 2**30, "maxdisk": 960 * 2**30,
+     "zfs": [{"name": "rpool", "health": "ONLINE", "size": 1800 * 10**9, "alloc": 620 * 10**9}]}]}))
 
 posture = PostureStore()
 nas.run(settings, posture, now - timedelta(minutes=2), send=lambda text: None, get=lambda config: {

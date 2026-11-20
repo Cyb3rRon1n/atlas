@@ -49,6 +49,17 @@ def test_latest_event_payload_picks_newest_of_type(temp_db):
     assert KnowledgeQueries().latest_event_payload("atlas.proxmox.scan.completed") == {"n": 3}
 
 
+def test_saved_event_keeps_its_own_time(temp_db):
+    """A back-dated event (the demo's week of history) is stored at its time, not at the moment it was saved."""
+
+    from datetime import datetime
+
+    KnowledgeStore().save_event(AtlasEvent("atlas.host.sample", "test", {"cpu": 5}, timestamp=datetime(2026, 1, 2, 3, 4)))
+
+    assert KnowledgeQueries().events_since(["atlas.host.sample"], datetime(2026, 1, 1)) == [
+        (datetime(2026, 1, 2, 3, 4), {"cpu": 5})]
+
+
 def test_latest_environment_none_when_nothing_stored(temp_db):
 
     assert KnowledgeQueries().latest_environment() is None

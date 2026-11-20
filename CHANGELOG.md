@@ -3,6 +3,11 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
+## Unreleased
+
+### Changed
+- Scan history (each source's runs) is kept for 8 days instead of the last 50 runs, so Coverage can show a week.
+
 ## 1.4.2 - 2026-11-19
 
 ### Changed

@@ -14,6 +14,7 @@ from html import escape
 from lanxang.devices.store import CONNECTIONS, KINDS, STATES
 from lanxang.health.alerts import container_state
 from lanxang.web.icons import icon
+from lanxang.web.blocks import BLOCKS_STYLE
 from lanxang.clock import day, hhmm, local, parse, stamp, utcnow
 from lanxang.web.chat_assets import CHAT_SCRIPT, CHAT_STYLE, DRAWER_HTML, DRAWER_STYLE
 
@@ -606,7 +607,7 @@ def render_page(title, body_html, active="", tabs=None, drawer=True, heading=Non
         f"<html lang=\"en\"{_display_attrs()}><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
         f"<title>Lanxang — {_esc(title)}</title>{FAVICON}{THEME_SCRIPT}"
-        f"<style>{PAGE_STYLE}</style></head><body><a class=\"skip\" href=\"#main\">Skip to content</a>"
+        f"<style>{PAGE_STYLE}{BLOCKS_STYLE}</style></head><body><a class=\"skip\" href=\"#main\">Skip to content</a>"
         f"<div class=\"app\">{HEADER_BAR}"
         f"<aside class=\"side\"><a class=\"brand\" href=\"/?home\" title=\"Lanxang home\">{LOGO}<span class=\"name\">Lanxang<small lang=\"lo\">ລ້ານຊ້າງ</small></span></a>"
         f"<nav class=\"main\" aria-label=\"Main\"><ul>{''.join(items)}</ul></nav>"

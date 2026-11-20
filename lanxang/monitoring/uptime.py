@@ -98,8 +98,9 @@ class UptimeStore:
         """[(checked_at, ok)] for one check since `since`, oldest first."""
 
         with Session(self.engine) as session:
-            return [(r.checked_at, r.ok) for r in session.scalars(
-                select(UptimeRecord).where(UptimeRecord.name == name, UptimeRecord.checked_at >= since)
+            return [(at, ok) for at, ok in session.execute(              # two columns, not whole ORM rows
+                select(UptimeRecord.checked_at, UptimeRecord.ok)
+                .where(UptimeRecord.name == name, UptimeRecord.checked_at >= since)
                 .order_by(UptimeRecord.checked_at))]
 
     def outage_start(self, name, before):

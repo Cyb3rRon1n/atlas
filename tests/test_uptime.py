@@ -155,3 +155,25 @@ def test_uptime_hero_never_calls_stale_or_unchecked_healthy(temp_db):
 
     failing = _hero_page(temp_db, [True, True, True])      # sanity: fresh results are fine
     assert "All 3 checks up" in failing
+
+
+def test_history_reads_only_two_columns(temp_db):
+    from sqlalchemy import event
+    from sqlalchemy.orm import Session
+
+    store, now = UptimeStore(), datetime(2026, 1, 1, 12)
+    store.save({"A": (True, 10.0, "HTTP 200")}, now - timedelta(minutes=2))
+    store.save({"A": (False, None, "refused")}, now - timedelta(minutes=1))
+    selected = []
+
+    def spy(state):
+        if state.is_select:
+            selected.append([column.name for column in state.statement.selected_columns])
+
+    event.listen(Session, "do_orm_execute", spy)
+    try:
+        assert store.history("A", now - timedelta(hours=1)) == [(now - timedelta(minutes=2), True),
+                                                                 (now - timedelta(minutes=1), False)]
+    finally:
+        event.remove(Session, "do_orm_execute", spy)
+    assert selected == [["checked_at", "ok"]]          # not whole rows: a week of ten checks is 100k of them

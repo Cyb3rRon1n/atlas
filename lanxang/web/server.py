@@ -33,7 +33,7 @@ from lanxang.web.auth import COOKIE, SESSION_SECONDS
 from lanxang.web.chat_page import render_chat_page
 from lanxang.web.login_page import render_login_page, render_setup_page
 from lanxang.web.devices_pages import render_coverage_page, render_device_page, render_devices_page, render_triage_page
-from lanxang.web.hosts_page import render_hosts_summary
+from lanxang.web.hosts_page import build_history, render_hosts_summary
 from lanxang.access.store import AccessStore
 from lanxang.web.access_page import WINDOWS as ACCESS_WINDOWS, render_access_page
 from lanxang.web.home_page import (build_hosts, build_storage, build_vitals, day_states, interesting_events, parse_mdstat,
@@ -248,6 +248,24 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         else:
             self._redirect(next_path, cookie=result)
 
+    def _host_history(self, query, topology):
+        """24 h of host and Proxmox node usage for the Overview meters; {} when there is none (optional data)."""
+
+        try:
+            since = utcnow() - timedelta(days=1)
+            topology = topology or {}
+            pve = (topology.get("proxmox") or {}).get("host")
+            lan = {h.get("address"): h["name"] for h in topology.get("lan", [])}
+            scans = query.events_since(["atlas.proxmox.scan.completed"], since)
+            node_set = {n["name"] for _, p in scans for n in p.get("nodes", [])}
+            names = {next(iter(node_set)): lan[pve]} if len(node_set) == 1 and pve in lan else {}    # as /trends
+            samples = query.events_since(["atlas.host.sample"], since)
+
+            return build_history(samples, scans, topology.get("host") or "this host", names)
+        except Exception as error:
+            self.log_error("overview: history failed: %r", error)
+            return {}
+
     def _home_data(self, query):
         """
         render_home_page()'s arguments, plus "seen": the lanxang-seen cookie value to write back. Each source is
@@ -386,8 +404,10 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             body = render_settings_page()
         elif path == "/overview":
             home = self._home_data(query)
+            topology = query.latest_topology()
             body = render_overview_page(query.latest_environment(), query.latest_analysis(),
-                                        render_hosts_summary(home["hosts"], home["storage"], query.latest_topology()))
+                                        render_hosts_summary(home["hosts"], home["storage"], topology,
+                                                             self._host_history(query, topology)))
         elif path == "/access":
             from datetime import timedelta
             settings = load_config()

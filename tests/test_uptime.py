@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import pytest
 
 from lanxang.alerts import AlertStore
-from lanxang.config.models import AtlasConfig
+from lanxang.config.models import AtlasConfig, UptimeCheck
 from lanxang.monitoring import uptime
 from lanxang.monitoring.uptime import UptimeStore, probe, run, valid_target
 from lanxang.web import uptime_page
@@ -116,3 +116,42 @@ def test_add_and_remove_from_the_page(isolated_cwd):
 
     (isolated_cwd / "lanxang.yaml").write_text("uptime:\n  checks: []\n")
     assert "lanxang.yaml" in post("/api/uptime/add", {"name": "X", "target": "192.0.2.1:22"})[1]["error"]
+
+
+def _hero_page(temp_db, outcomes, ago=1, names=("A", "B", "C")):
+
+    store, now = UptimeStore(), datetime(2026, 1, 1, 12)
+    checks = [UptimeCheck(name=n, target="https://media.example.org") for n in names]
+    for name, ok in zip(names, outcomes):
+        if ok is not None:
+            for minute in (ago + 1, ago):
+                store.save({name: (ok, 10.0 if ok else None, "HTTP 200" if ok else "refused")},
+                           now - timedelta(minutes=minute))
+
+    return uptime_page.render_uptime_page(checks, store.summary(list(names), now), now, 2)
+
+
+def test_uptime_hero_and_how_it_works(temp_db):
+
+    up = _hero_page(temp_db, [True, True, True])
+    assert 'class="hero ok"' in up and "All 3 checks up" in up
+    assert "<details" in up and "<summary>How checks work</summary>" in up
+    assert up.index("<summary>How checks work</summary>") < up.index("Is each service answering?") < up.index("</details>")
+
+    down = _hero_page(temp_db, [True, False, True], names=("D", "E", "F"))
+    assert 'class="hero attention"' in down and "1 check down" in down and "All 3" not in down
+
+    page = uptime_page.render_uptime_page([], {}, datetime(2026, 1, 1, 12), 2)
+    assert 'class="hero' not in page and "No checks yet." in page
+
+
+def test_uptime_hero_never_calls_stale_or_unchecked_healthy(temp_db):
+
+    never = _hero_page(temp_db, [True, True, None])
+    assert "All 3" not in never and 'class="hero unknown"' in never and "no recent result" in never
+
+    stale = _hero_page(temp_db, [True, True, True], ago=30)
+    assert "All 3" not in stale and 'class="hero unknown"' in stale
+
+    failing = _hero_page(temp_db, [True, True, True])      # sanity: fresh results are fine
+    assert "All 3 checks up" in failing

@@ -780,7 +780,7 @@ def render_overview_page(environment, analysis, summary=""):
     # summary (hosts_page.render_hosts_summary) leads; the raw inventory tables fold underneath it
     raw = header + "".join(sections)
     if summary:
-        raw = f'<details class="raw"><summary>Details — full inventory snapshot</summary>{raw}</details>'
+        raw = f'<details class="raw"><summary>Raw snapshot</summary>{raw}</details>'
 
     return render_page("Overview", summary + raw, active="hosts", tabs=overview_tabs)
 

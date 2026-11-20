@@ -18,7 +18,7 @@ Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every re
   or "All 12 devices come from one source (LAN scan)"), a card per source with friendly names, its devices, when it
   last ran and a 7-day strip in your time zone (the pill says "ok", "2 bad days", or "failing" with the error), and
   **Ways to see more**: devices that rely on one source, adding a switch (SNMP) or devices with an unknown
-  connection, wired or unknown devices missing from the latest cabling scan (when it is set up), and done rows for "Every known device has been
+  connection, wired or unknown devices (not Proxmox guests) missing from the latest cabling scan (when it is set up), and done rows for "Every known device has been
   seen" and "No device has gone quiet" (gone quiet links to Triage). `/api/coverage` adds `runs`, `counted`,
   `multi`, `total`, `single_source`, `unknown_connection` and `off_map`. Only a source with an ok run this
   week counts, and a source whose latest run failed keeps the headline from reading as all-clear.

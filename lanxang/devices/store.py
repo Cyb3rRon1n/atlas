@@ -393,8 +393,10 @@ class InventoryStore:
                               for device in devices if len(seen_by[device["id"]]) == 1],
             "unknown_connection": sum(device["connection"] == "unknown" for device in devices),
             # the cabling map is wired: a wireless device is never on it, so it isn't counted as missing
-            "off_map": None if not snapshot else sum(device["connection"] != "wireless" and wiring_node(device, snapshot) is None
-                                                     for device in devices),
+            # nor is a Proxmox guest (virtual: it has no cable of its own)
+            "off_map": None if not snapshot else sum(device["connection"] != "wireless"
+                                                     and device["kind"] not in GUEST_KINDS.values()
+                                                     and wiring_node(device, snapshot) is None for device in devices),
         }
 
     def _ok_runs(self, session):

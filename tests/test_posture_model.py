@@ -177,3 +177,12 @@ def test_build_trends_hours_and_new_per_day(temp_db):
     assert last["direct"] == 125000 + 900010 and last["vpn"] == 9800000
     assert trends["new_per_day"][-1] == {"day": "2026-10-08", "count": 3}   # sonarr, jellyfin, gluetun today
     assert sum(d["count"] for d in trends["new_per_day"]) == 3              # prowlarr's first day is baseline
+
+
+def test_build_trends_days_follow_the_display_zone(temp_db):
+    from lanxang.config.models import DisplayConfig
+
+    store = PostureStore(temp_db)
+    seed(store)
+    ahead = model_module.build_trends(store, NOW, DisplayConfig(time_zone="Pacific/Kiritimati"))   # UTC+14
+    assert ahead["new_per_day"][-1]["day"] == "2026-10-09"

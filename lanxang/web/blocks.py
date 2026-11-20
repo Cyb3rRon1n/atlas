@@ -110,15 +110,16 @@ def check_row(icon_name, title, detail="", action=None, state="todo"):
             f'<div class="what"><p class="title">{_esc(title)}</p>{more}</div>{button}</div>')
 
 
-def timeline(items):
+def timeline(items, display=None):
     """A vertical list of (when, title, text, state); when is naive UTC, shown as a time in the display zone with the
-    date too when it isn't today. state: ok, attention or info (the dot's colour; the title says what happened)."""
+    date too when it isn't today. state: ok, attention or info (the dot's colour; the title says what happened).
+    display: the display settings to use (Home passes the viewer's zone); render.DISPLAY by default."""
 
     if not items:
         return ""
     from lanxang.web import render       # the display settings live there; imported here, render imports this module
 
-    display = render.DISPLAY
+    display = display or render.DISPLAY
     today = clock.local(clock.utcnow(), display)[0].date()
     rows = []
     for when, title, text, state in items:

@@ -261,7 +261,11 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 self.log_error("home: %s failed: %r", label, error)
                 return None
 
+        from lanxang.web.home_page import home_display
+
         now = utcnow()
+        viewer_zone = self._viewer_zone()
+        display = home_display(viewer_zone)             # days and times in the viewer's zone (time_zone: browser)
         settings = safe("config", load_config)
         health_settings = settings.health if settings else None
         topology = safe("topology", query.latest_topology)
@@ -307,9 +311,9 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             scan_minutes = 15
         fail_after = settings.uptime.fail_after if settings else 2
         internet_days = safe("internet days", lambda: day_states([UptimeStore().history("Internet", week)], fail_after,
-                                                                 now)) if settings and settings.internet.enabled else None
+                                                                 now, display=display)) if settings and settings.internet.enabled else None
         uptime_days = safe("uptime days", lambda: day_states([UptimeStore().history(c.name, week) for c in checks],
-                                                             fail_after, now)) if checks else None
+                                                             fail_after, now, display=display)) if checks else None
 
         def storage_history():
             fresh = now - timedelta(minutes=3 * scan_minutes)
@@ -329,9 +333,10 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         return dict(
             dns=dns, names={d["ip"]: d["name"] for d in devices or [] if d.get("ip")}, ha=ha,
             changes=changes, since=since, vitals=vitals, last_scan=last_scan, scan_minutes=scan_minutes, seen=seen,
+            viewer_zone=viewer_zone,
             posture=posture, hosts=hosts,
             events=interesting_events(safe("events", lambda: query.recent_events(200)) or []),
-            storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now)),
+            storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now, display)),
             analysis=safe("analysis", query.latest_analysis), now=now,
             access_reviews=safe("access reviews", lambda: AccessStore().places("review")) or [],
             open_alerts=safe("alerts", lambda: AlertStore().listing(now)["open"]) or [],

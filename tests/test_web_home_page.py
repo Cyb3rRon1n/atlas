@@ -346,6 +346,41 @@ def test_day_states_find_outages_per_day():
     down = [(NOW - timedelta(days=5, minutes=m), False) for m in (3, 2)]
     assert day_states([fine + blip + down], 2, NOW) == ["none", "bad", "none", "ok", "none", "ok", "none"]
     assert day_states([], 2, NOW) == ["none"] * 7
+    # ok only when every check reported that day; an outage is bad even when another check is silent
+    silent = [(NOW - timedelta(days=5, minutes=1), True)]
+    assert day_states([fine + down, silent], 2, NOW) == ["none", "bad", "none", "none", "none", "none", "none"]
+    assert day_states([fine, fine], 2, NOW)[5] == "ok"
+
+
+def test_day_states_follow_the_viewer_zone():
+    from lanxang.config.models import DisplayConfig
+    from lanxang.web.home_page import day_states
+
+    late = [(datetime(2026, 11, 19, 2, 0), True)]          # 02:00 UTC is still the 18th in New York
+    assert day_states([late], 2, NOW)[-1] == "ok"
+    ny = DisplayConfig(time_zone="America/New_York")
+    assert day_states([late], 2, NOW, display=ny)[-2:] == ["ok", "none"]
+
+
+def test_services_tile_without_recent_data_is_unknown():
+    from lanxang.web.home_page import build_vitals
+
+    tile = build_vitals(None, None, None, ["ok"] * 4 + ["none"] * 3, None, None, None)[0]
+    assert 'class="trend unknown"' in tile and "No recent data" in tile and "All up" not in tile
+
+
+def test_home_uses_the_viewer_zone_with_browser_time():
+    from lanxang.web.home_page import _trends_card, home_display
+
+    assert home_display(None).time_zone == "browser"
+    tokyo = home_display("Asia/Tokyo")
+    assert tokyo.time_zone == "Asia/Tokyo"
+    trends = {"hours": [{"hour": f"2026-11-19T{h:02d}:00:00", "direct": h, "vpn": 1} for h in range(24)],
+              "new_per_day": [{"day": f"2026-11-1{d}", "count": d} for d in range(3, 10)]}
+    utc, here = _trends_card(trends), _trends_card(trends, tokyo)
+    assert "2026-11-19 05:00 UTC" in utc and "2026-11-19 14:00 JST" in here         # bar titles shift
+    html = _briefing(viewer_zone="Asia/Tokyo", changes=[(datetime(2026, 11, 19, 11, 0), "check", "Cleared: x", "/alerts")])
+    assert re.search(r"<time[^>]*>[^<]*20:00</time>", html)                            # 11:00 UTC is 20:00 in Tokyo
 
 
 def test_storage_trend_largest_pool_then_host_paths():

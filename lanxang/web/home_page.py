@@ -252,7 +252,7 @@ def _disk_rows(host, disks, health=None):
     return rows
 
 
-def _trends_card(trends):
+def _trends_card(trends, display=None):
 
     if not trends:
         return _card("/posture", "Security trends", "unknown", '<p class="muted">Posture data unavailable.</p>',
@@ -266,9 +266,7 @@ def _trends_card(trends):
             "the first scans that see traffic leave this host.",
             extra='<span class="btn primary">Open Exposure →</span>'))   # the card is the link: no <a> in <a>
 
-    from lanxang.web import render
-
-    display = render.DISPLAY
+    display = display or home_display()
     moments = [clock.parse(h["hour"]) for h in hours]
     here = [clock.local(m, display)[0] for m in moments]
     # An x label every 6 hours on the viewer's own clock (00:00, 06:00...); a half-hour zone gets every 6th bar.
@@ -283,7 +281,7 @@ def _trends_card(trends):
                     ticks, fmt=_size, height=70, label=f"{label} traffic per hour")
         for key, label in (("direct", "Direct"), ("vpn", "Via VPN")))
 
-    dates = [date.fromisoformat(str(d["day"])[:10]) for d in days]
+    dates = [date.fromisoformat(str(d["day"])[:10]) for d in days]      # display-zone days (build_trends(display))
     new = bar_chart([d["count"] for d in days], [f"{clock.day(x, display)}: {d['count']} new" for x, d in zip(dates, days)],
                     {i: f"{x:%a}" for i, x in enumerate(dates)}, fmt=lambda v: f"{v:g}", height=110,
                     label="New destinations per day")
@@ -482,6 +480,18 @@ def _checklist(steps):
     return f'<section class="panel steps" aria-label="Getting started"><h2>Getting started</h2>{rows}</section>'
 
 
+def home_display(viewer_zone=None):
+    """The display settings Home's server-side times use: render.DISPLAY, with "browser" made the zone the viewer's
+    browser reported (as Activity does); without one, UTC, which the page's time script then redoes."""
+
+    from lanxang.web import render
+
+    display = clock._display(render.DISPLAY)
+    if display.time_zone == "browser" and viewer_zone:
+        display = display.model_copy(update={"time_zone": viewer_zone})
+    return display
+
+
 VISIT_GAP = timedelta(minutes=30)       # away this long and the next Home load is a new visit
 
 
@@ -505,21 +515,20 @@ def since_window(value, now):
     return since, f"{since:%Y-%m-%dT%H:%M}|{now:%Y-%m-%dT%H:%M}"
 
 
-def day_states(histories, fail_after, now, days=7):
+def day_states(histories, fail_after, now, days=7, display=None):
     """
-    One "ok" / "bad" / "none" per display-zone day, oldest first, ending today, from [(checked_at, ok)] lists (one
-    per check): bad when a check failed fail_after times in a row that day, ok when there are results and no outage.
+    One "ok" / "bad" / "none" per day in the display zone (display: home_display()), oldest first, ending today, from
+    [(checked_at, ok)] lists (one per check): bad when any check failed fail_after times in a row that day; ok only
+    when every check has results that day and none had an outage; otherwise none (a silent check is no data).
     """
 
-    from lanxang.web import render
-
-    first = clock.local(now, render.DISPLAY)[0].date() - timedelta(days=days - 1)
-    states = ["none"] * days
+    first = clock.local(now, display)[0].date() - timedelta(days=days - 1)
+    reported, bad = [0] * days, [False] * days
 
     for rows in histories:
         by_day = {}
         for at, ok in rows:
-            index = (clock.local(at, render.DISPLAY)[0].date() - first).days
+            index = (clock.local(at, display)[0].date() - first).days
             if 0 <= index < days:
                 by_day.setdefault(index, []).append(ok)
         for index, results in by_day.items():
@@ -527,9 +536,10 @@ def day_states(histories, fail_after, now, days=7):
             for ok in results:
                 run = 0 if ok else run + 1
                 longest = max(longest, run)
-            states[index] = "bad" if longest >= max(1, fail_after) or states[index] == "bad" else "ok"
+            reported[index] += 1
+            bad[index] = bad[index] or longest >= max(1, fail_after)
 
-    return states
+    return ["bad" if bad[i] else "ok" if histories and reported[i] == len(histories) else "none" for i in range(days)]
 
 
 def storage_trend(scans, samples=(), fresh_after=None):
@@ -595,9 +605,10 @@ def build_vitals(runs, internet, internet_days, uptime_days, storage, posture, u
 
     if uptime_days is not None:
         bad = uptime_days.count("bad")
-        known = any(d != "none" for d in uptime_days)
-        tiles.append(trend_tile("Services, 7 days", plural(bad, "bad day") if bad else "All up" if known else "No data",
-                                state="attention" if bad else "ok" if known else "unknown", href="/uptime",
+        recent = uptime_days[-1] != "none"           # nothing today: stale, never "All up"
+        tiles.append(trend_tile("Services, 7 days", plural(bad, "bad day") if bad and recent else
+                                "All up" if recent else "No recent data",
+                                state="attention" if bad and recent else "ok" if recent else "unknown", href="/uptime",
                                 strip=day_strip(uptime_days)))
 
     if storage and storage["points"]:
@@ -710,7 +721,7 @@ CHANGE_KINDS = {"device": ("New device", "attention"), "check": ("Cleared", "ok"
                 "search": ("Found", "attention"), "server": ("Proxmox", "info"), "box": ("Container", "info")}
 
 
-def _since(changes, since, now):
+def _since(changes, since, now, display):
     """Since you were here (the newest 8 changes_feed items) beside the Ask Lanxang chips; stacked on a phone."""
 
     chips = ask_chips(ASK_SHORTCUTS)
@@ -725,7 +736,7 @@ def _since(changes, since, now):
                 rows.append((at, title, text.removeprefix("New device: ").removeprefix("Cleared: "), state))
             window = "24h" if now - since <= timedelta(hours=24) else "7d"
             news = (f'<section class="panel since"><h2>Since you were here <span class="muted">— {when(since, now)}'
-                    f'</span></h2>{timeline(rows)}<p class="muted more">{plural(len(changes), "change")} · '
+                    f'</span></h2>{timeline(rows, display)}<p class="muted more">{plural(len(changes), "change")} · '
                     f'<a href="/history?changes={window}">see all in Activity →</a></p></section>')
         else:
             news = ('<section class="panel since"><h2>Since you were here</h2>'
@@ -736,13 +747,16 @@ def _since(changes, since, now):
 
 def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=(),
                      steps=None, open_alerts=(), dns=None, names=None, ha=None, changes=None, since=None, vitals=None,
-                     last_scan=None, scan_minutes=15):
+                     last_scan=None, scan_minutes=15, viewer_zone=None):
     """
     posture: render._posture_block() output or None; hosts: build_hosts() output; events: interesting_events()
     pairs; storage: build_storage() output; trends: posture.model.build_trends() output or None; analysis:
     KnowledgeQueries().latest_analysis() or None; changes: changes_feed.collect() items since `since` (None leaves
-    Since you were here out); vitals: build_vitals() tiles; last_scan: the newest source run (naive UTC) or None.
+    Since you were here out); vitals: build_vitals() tiles; last_scan: the newest source run (naive UTC) or None;
+    viewer_zone: the zone the browser reported (lanxang-tz), used when the display time zone is "browser".
     """
+
+    display = home_display(viewer_zone)
 
     now = now or utcnow()
     storage = storage or {"rows": [], "state": "unknown"}
@@ -750,12 +764,12 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
     flagged = {card for card, *_ in items}
 
     body = (HOME_STYLE + _hero(items, last_scan, scan_minutes, now) + _problems(items) + _checklist(steps)
-            + _since(changes, since, now)
+            + _since(changes, since, now, display)
             + (f'<section class="vitals" aria-label="Vitals">{"".join(vitals)}</section>' if vitals else "")
             + '<div class="cards">'
             + _posture_card(posture, "posture" in flagged) + _hosts_card(hosts, "hosts" in flagged)
             + _storage_card(storage, "storage" in flagged) + _dns_card(dns, names or {}) + _ha_card(ha)
-            + _trends_card(trends) + _analysis_card(analysis, now)
+            + _trends_card(trends, display) + _analysis_card(analysis, now)
             + _activity_card(events) + "</div>")
 
     return render_page("Home", body, active="home")

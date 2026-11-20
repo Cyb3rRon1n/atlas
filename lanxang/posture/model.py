@@ -241,12 +241,15 @@ def _router(statuses):
             "recent": [{"text": r["text"], "at": r.get("at", "")} for r in (detail.get("recent") or [])[:8]]}
 
 
-def build_trends(store, now):
+def build_trends(store, now, display=None):
     """
     Home page security chart data: outbound bytes per hour for the last 24 h
     (direct vs VPN), and new destinations first seen per day for the last 7
-    days (the first-day learning baseline is not counted as new).
+    days (the first-day learning baseline is not counted as new). Days are
+    the display zone's (display: DisplayConfig; None = UTC).
     """
+
+    from lanxang.clock import local
 
     start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=23)
     hours = [start + timedelta(hours=i) for i in range(24)]
@@ -258,11 +261,12 @@ def build_trends(store, now):
 
     seen = store.seen()
     baseline = _baseline_end(seen)
-    days = [(now - timedelta(days=6 - i)).date() for i in range(7)]
+    today = local(now, display)[0].date()
+    days = [today - timedelta(days=6 - i) for i in range(7)]
     new = dict.fromkeys(days, 0)
 
     for s in seen:
-        day = s["first_seen"].date()
+        day = local(s["first_seen"], display)[0].date()
         if day in new and baseline and s["first_seen"] >= baseline:
             new[day] += 1
 

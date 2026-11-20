@@ -5,13 +5,16 @@ already knows. Checks added here are saved to the web settings; a list in the co
 """
 
 import re
+from datetime import timedelta
 
 from lanxang.config.local import config_name
 from lanxang.config import local
+from lanxang.web.blocks import status_hero
 from lanxang.web.render import _esc, plural, render_page, when
 
 STYLE = """<style>
 .up-intro { color:var(--muted); max-width:70ch; }
+.up-how > summary { cursor:pointer; color:var(--muted); margin:8px 0 12px; }
 .uptime { width:100%; border-collapse:collapse; font-size:.875rem; margin:12px 0 24px; }
 .uptime th, .uptime td { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:middle; }
 .uptime th { color:var(--muted); font-weight:600; font-size:.8125rem; }
@@ -99,6 +102,36 @@ def _state(info, fail_after):
         return "down", "Down"
 
     return ("up", "Up") if points[-1][0] else ("failing", "Failed once")
+
+
+def _hero(checks, summary, now, fail_after):
+    """The top line over the Services table. A check with no result in the last few minutes (or never) is unknown:
+    the hero only says "up" when every check answered recently and none failed."""
+
+    if not checks:
+        return ""
+    fresh = timedelta(minutes=fail_after + 3)               # checks run once a minute
+    down = failing = unknown = 0
+    for check in checks:
+        info = summary.get(check.name) or {"points": [], "last": None}
+        last = info["last"]
+        if not last or now - last[0] > fresh:
+            unknown += 1
+            continue
+        state = _state(info, fail_after)[0]
+        down += state == "down"
+        failing += state == "failing"
+    total = len(checks)
+    gaps = f"{plural(unknown, 'check')} with no recent result" if unknown else ""
+
+    if down or failing:
+        title = f"{plural(down, 'check')} down" if down else f"{plural(failing, 'check')} failing"
+        return status_hero(down or failing, title, gaps, "attention")
+    if unknown:
+        return status_hero("?", f"{unknown} of {total} checks have no recent result",
+                           "Lanxang may not be running the checks right now.", "unknown")
+
+    return status_hero("", f"All {total} checks up" if total > 1 else "1 check up", "", "ok")
 
 
 def _pct(value):
@@ -260,11 +293,12 @@ def render_uptime_page(checks, summary, now, fail_after=2, suggestions=(), locke
                + (f'<div class="up-sugg">Your public sites: {chips}</div>' if chips else "")
                + '<p id="up-msg"></p></section>')
 
-    body = (STYLE
-            + '<p class="up-intro">Is each service answering? Lanxang tries every check once a minute. A web address '
+    body = (STYLE + _hero(checks, summary, now, fail_after)
+            + '<details class="up-how"><summary>How checks work</summary>'
+              '<p class="up-intro">Is each service answering? Lanxang tries every check once a minute. A web address '
               'is up when it answers at all (a login page counts); <code>host:port</code> is up when the port accepts '
               f'a connection. After {plural(fail_after, "failure")} in a row it is <strong>down</strong>: you get one alert, and '
-              'another when it is back.</p>'
+              'another when it is back.</p></details>'
             + _internet(internet, now, fail_after) + _power(power)
             + ("<h2>Services</h2>" if power or internet else "") + table + add
             + _heartbeats(beats, now, beats_locked) + SCRIPT)

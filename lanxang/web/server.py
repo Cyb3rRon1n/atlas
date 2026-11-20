@@ -9,6 +9,7 @@ or, with web.auth: proxy, the auth proxy in front of the host.
 """
 
 import json
+import os
 import re
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -35,8 +36,8 @@ from lanxang.web.devices_pages import render_coverage_page, render_device_page, 
 from lanxang.web.hosts_page import render_hosts_summary
 from lanxang.access.store import AccessStore
 from lanxang.web.access_page import WINDOWS as ACCESS_WINDOWS, render_access_page
-from lanxang.web.home_page import (build_hosts, build_stats, build_storage, interesting_events, parse_mdstat, render_home_page,
-                                 setup_steps)
+from lanxang.web.home_page import (build_hosts, build_storage, build_vitals, day_states, interesting_events, parse_mdstat,
+                                 render_home_page, setup_steps, since_window, storage_trend)
 from lanxang.web.posture_page import render_posture_page
 from lanxang.web.graph import build_graph
 from lanxang.web.network_page import render_network_page
@@ -127,6 +128,25 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         except Exception:
             return None
         return name
+
+    def _seen_cookie(self):
+        """The lanxang-seen cookie's value (Home's "Since you were here"), or None."""
+
+        cookie = SimpleCookie()
+        try:
+            cookie.load(self.headers.get("Cookie") or "")
+            return cookie["lanxang-seen"].value
+        except Exception:
+            return None
+
+    def _change_sources(self, query):
+        """What changes_feed.collect() reads: the same for Activity's What changed and Home's Since you were here."""
+
+        from lanxang.web import changes_feed
+
+        return {"alerts": lambda at, days: AlertStore().listing(at, days), "devices": InventoryStore().devices,
+                "changes": lambda since: [(at, kind, payload) for kind in changes_feed.CHANGE_EVENTS
+                                          for at, payload in query.events_since([kind], since)]}
 
     def _token_ok(self):
 
@@ -230,9 +250,8 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
 
     def _home_data(self, query):
         """
-        (posture, hosts, events) for the home page. Each source is fetched on
-        its own so one failing (no posture DB, no Proxmox scan yet) only
-        blanks its own card.
+        render_home_page()'s arguments, plus "seen": the lanxang-seen cookie value to write back. Each source is
+        fetched on its own so one failing (no posture DB, no Proxmox scan yet) only blanks its own part.
         """
 
         def safe(label, fetch):
@@ -242,7 +261,11 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 self.log_error("home: %s failed: %r", label, error)
                 return None
 
+        from lanxang.web.home_page import home_display
+
         now = utcnow()
+        viewer_zone = self._viewer_zone()
+        display = home_display(viewer_zone)             # days and times in the viewer's zone (time_zone: browser)
         settings = safe("config", load_config)
         health_settings = settings.health if settings else None
         topology = safe("topology", query.latest_topology)
@@ -266,8 +289,6 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         devices = safe("devices", lambda: InventoryStore().devices())
         hosts = build_hosts(topology, local, pve_scan, host_issues)
         checks = settings.uptime.checks if settings else []
-        uptime = safe("uptime", lambda: [info["uptime"].get("7 days") for info in
-                                         UptimeStore().summary([c.name for c in checks], now).values()])
         ups = safe("ups", lambda: (PostureStore().statuses().get("ups") or {}).get("detail")) \
             if settings and settings.ups.enabled else None
 
@@ -276,6 +297,34 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         if last and settings and settings.internet.enabled and now - last[0] < timedelta(minutes=5):
             internet = last[1:]                         # (up, ms); an old result means the check isn't running
 
+        # The briefing: what changed since the last visit, the newest scan, and a week of history for the vitals.
+        from lanxang.web import changes_feed
+
+        since, seen = since_window(self._seen_cookie(), now)
+        changes = safe("changes", lambda: changes_feed.collect(now, "24h", self._change_sources(query), since=since))
+        week = now - timedelta(days=7)
+        runs = safe("source runs", lambda: InventoryStore().runs(week))
+        last_scan = max((datetime.fromisoformat(r["started_at"]) for r in runs or []), default=None)
+        try:
+            scan_minutes = max(1, int(os.environ.get("LANXANG_SCAN_MINUTES", 15)))
+        except ValueError:
+            scan_minutes = 15
+        fail_after = settings.uptime.fail_after if settings else 2
+        internet_days = safe("internet days", lambda: day_states([UptimeStore().history("Internet", week)], fail_after,
+                                                                 now, display=display)) if settings and settings.internet.enabled else None
+        uptime_days = safe("uptime days", lambda: day_states([UptimeStore().history(c.name, week) for c in checks],
+                                                             fail_after, now, display=display)) if checks else None
+
+        def storage_history():
+            fresh = now - timedelta(minutes=3 * scan_minutes)
+            scans = query.events_since(["atlas.proxmox.scan.completed"], week)
+            trend = (storage_trend(scans, fresh_after=fresh)
+                     or storage_trend([], query.events_since(["atlas.host.sample"], week), fresh))
+            return trend and {**trend, "warn": storage["state"] == "warn"}   # a degraded pool never reads as fine
+
+        vitals = safe("vitals", lambda: build_vitals(runs, internet, internet_days, uptime_days,
+                                                     safe("storage history", storage_history), posture, ups))
+
         ha = safe("homeassistant", lambda: (PostureStore().statuses().get("homeassistant") or {}).get("detail")) \
             if settings and settings.homeassistant.enabled else None
         dns = safe("dns", lambda: (PostureStore().statuses().get("dns") or {}).get("detail")) \
@@ -283,10 +332,11 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
 
         return dict(
             dns=dns, names={d["ip"]: d["name"] for d in devices or [] if d.get("ip")}, ha=ha,
-            stats=build_stats(devices, hosts, storage, posture, uptime, ups, internet, dns, ha),
+            changes=changes, since=since, vitals=vitals, last_scan=last_scan, scan_minutes=scan_minutes, seen=seen,
+            viewer_zone=viewer_zone,
             posture=posture, hosts=hosts,
             events=interesting_events(safe("events", lambda: query.recent_events(200)) or []),
-            storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now)),
+            storage=storage, trends=safe("trends", lambda: build_trends(PostureStore(), now, display)),
             analysis=safe("analysis", query.latest_analysis), now=now,
             access_reviews=safe("access reviews", lambda: AccessStore().places("review")) or [],
             open_alerts=safe("alerts", lambda: AlertStore().listing(now)["open"]) or [],
@@ -324,7 +374,11 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         query = KnowledgeQueries()
 
         if path == "/":
-            body = render_home_page(**self._home_data(query))
+            home = self._home_data(query)
+            seen = home.pop("seen")
+            self._send(200, "text/html; charset=utf-8", render_home_page(**home), headers=[
+                ("Set-Cookie", f"lanxang-seen={seen}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax")])
+            return
         elif path == "/posture":
             body = render_posture_page()
         elif path == "/settings":
@@ -351,10 +405,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             window = (parse_qs(self.path.partition("?")[2]).get("changes") or ["24h"])[0]
             window = window if window in changes_feed.WINDOWS else "24h"
             events, now = query.recent_events(300), utcnow()
-            feed = changes_feed.collect(now, window, {
-                "alerts": lambda at, days: AlertStore().listing(at, days), "devices": InventoryStore().devices,
-                "changes": lambda since: [(at, kind, payload) for kind in changes_feed.CHANGE_EVENTS
-                                          for at, payload in query.events_since([kind], since)]})
+            feed = changes_feed.collect(now, window, self._change_sources(query))
             body = render_history_page(events, changes=changes_feed.render(feed, now, window),
                                        viewer_zone=self._viewer_zone())
         elif path == "/uptime":
@@ -608,13 +659,15 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         ping(PostureStore(), beat.name, utcnow(), failed=failed)
         self._send(200, "text/plain; charset=utf-8", "ok")
 
-    def _send(self, status, content_type, body):
+    def _send(self, status, content_type, body, headers=()):
 
         encoded = body.encode("utf-8")
 
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(encoded)))
+        for name, value in headers:
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(encoded)
 

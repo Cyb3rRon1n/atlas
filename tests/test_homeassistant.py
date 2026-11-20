@@ -5,7 +5,7 @@ import pytest
 
 from lanxang.config.models import AtlasConfig, HomeAssistantConfig
 from lanxang.monitoring import homeassistant as ha
-from lanxang.web.home_page import build_stats, render_home_page
+from lanxang.web.home_page import render_home_page
 
 NOW = datetime(2026, 11, 18, 12)
 LONG_AGO = (NOW - timedelta(hours=30)).isoformat() + "+00:00"
@@ -96,11 +96,9 @@ def test_alerts_once_and_when_fine_again(temp_db):
     assert "isn't answering" in sent[2] and "answering again" in sent[3] and "back in Home Assistant" in sent[4]
 
 
-def test_home_tile_and_card():
+def test_home_card():
     detail = {"error": "", "failures": 0, "info": {"version": "2026.10.3", "offline": [
         {"name": "Porch camera", "hours": 30, "kinds": ["camera"]}], "batteries": [], "updates": [
         {"title": "Home Assistant Core", "installed": "a", "latest": "2026.11.2"}]}}
-    tiles = build_stats(ha=detail)
-    assert tiles == [("Smart home", "1 to check", "1 offline", "/#homeassistant", "bad")]
     html = render_home_page(None, {"rows": [], "down": [], "state": "ok"}, [], now=NOW, ha=detail)
     assert 'id="homeassistant"' in html and "Porch camera" in html and "offline 30 h" in html and "2026.11.2" in html

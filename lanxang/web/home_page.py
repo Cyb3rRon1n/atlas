@@ -1,38 +1,34 @@
 """
-/ - the summary home: one verdict line and three cards (security posture,
-hosts health, recent activity), each linking to its detail tab. Pure
-renderers; server.py gathers the data and passes None for any source that
-failed, which renders as a muted "unavailable" line instead of a 500.
+/ - the home briefing, top to bottom: a status line, the problems (only when there are any), the getting-started
+steps, what changed since your last visit beside the Ask Lanxang chips, the vitals with a week of history, then the
+detail cards, each linking to its tab. Problems before news, news before numbers, numbers before detail. Pure
+renderers; server.py gathers the data and passes None for any source that failed, which renders as a muted
+"unavailable" line (or leaves the part out) instead of a 500.
 """
 
 import re
+from datetime import date, timedelta
 
+from lanxang import clock
 from lanxang.health.alerts import container_problem, container_state
-from lanxang.web.render import _esc, ask_chips, empty_state, event_label, plural, render_page, when
+from lanxang.web.blocks import bar_chart, check_row, day_strip, status_hero, timeline, trend_tile
+from lanxang.web.render import _esc, ask_chips, empty_state, event_label, friendly_time, plural, render_page, when
 from lanxang.clock import utcnow
 
 
 HOME_STYLE = """
 <style>
-.steps { margin:0 0 16px; padding:12px 16px; border:1px solid var(--line2); border-radius:12px; }
-.steps h2 { margin:0 0 6px; font-size:.9375rem; border:0; padding:0; }
-.steps ol { list-style:none; margin:0; padding:0; }
-.steps li { display:flex; gap:10px; align-items:baseline; padding:4px 0; }
-.steps li .what { flex:1; } .steps li.done { opacity:.6; }
-.steps .tick { width:1em; color:var(--ok-text); }
-.verdict { font-size:1.25rem; font-weight:600; margin:0 0 16px; }
-.verdict.ok { color:var(--ok-text); }
-.attention { margin:0 0 16px; padding:12px 16px; border:1px solid var(--orange); border-radius:12px; background:var(--warn-bg); }
-.attention h2 { margin:0 0 6px; font-size:.9375rem; border:0; padding:0; color:var(--warn-text); }
-.attention ul { list-style:none; margin:0; padding:0; }
-.attention li { display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px solid var(--warn-line); font-size:.875rem; }
-.attention li:first-child { border-top:0; }
-.attention li .what { flex:1; } .attention li .what b { font-weight:600; }
-.attention li a { white-space:nowrap; }
+.panel { margin:0 0 16px; padding:12px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+.panel h2 { margin:0 0 6px; font-size:.9375rem; font-weight:600; border:0; padding:0; }
+.panel h2 .muted { font-weight:400; font-size:.8125rem; }
+.problems { padding:4px 16px; border-color:var(--warn-line); }
+.brief { display:grid; grid-template-columns:minmax(0,3fr) minmax(0,2fr); gap:16px; align-items:start; margin:0 0 16px; }
+.brief > .panel { margin:0; } .brief > :only-child { grid-column:1 / -1; }
+.brief .chips { margin:0; } .since .more { margin:8px 0 0; font-size:.8125rem; }
+.vitals { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:0 0 16px; }
+@media (max-width: 700px) { .brief { grid-template-columns:minmax(0,1fr); } .vitals { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 .cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; align-items:start; }
 .cards a.hcard.wide { grid-column:span 2; grid-row:span 2; align-self:stretch; display:flex; flex-direction:column; }
-.cards a.hcard.wide .chart:last-child { flex:1; display:flex; flex-direction:column; }
-.cards a.hcard.wide .chart:last-child svg { flex:1; min-height:100px; max-height:170px; height:auto !important; }
 .hcard .summary { font-size:.875rem; line-height:1.45; margin:6px 0 10px; }
 @media (max-width: 1100px) { .cards { grid-template-columns:repeat(2,minmax(0,1fr)); } .cards a.hcard.wide { grid-row:auto; } }
 @media (max-width: 700px) { .cards { grid-template-columns:1fr; } .cards a.hcard.wide { grid-column:auto; } }
@@ -59,23 +55,8 @@ HOME_STYLE = """
 .hcard .row:first-of-type { border-top:0; }
 .hcard .row.warn span:last-child { color:var(--bad-text); }
 .chart { margin:4px 0 12px; } .chart h3 { margin:0 0 4px; font-size:.75rem; font-weight:500; color:var(--muted); }
-.chart svg { width:100%; height:70px; display:block; }
 .chart .lbl { font-size:.75rem; margin-top:4px; }
 .sev-high, .sev-critical { color:var(--bad-text); } .sev-medium { color:var(--warn-text); }
-.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(128px,1fr)); gap:12px; margin:0 0 24px; }
-.kpis a { display:block; border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:var(--surface);
-          color:var(--text); text-decoration:none; }
-.kpis a:hover { border-color:var(--blue); }
-.kpis .k { font-size:.8125rem; color:var(--muted); }
-.kpis .v { display:block; font-size:1.5rem; font-weight:600; margin:2px 0; font-variant-numeric:tabular-nums; }
-.kpis .s { font-size:.8125rem; color:var(--muted); } .kpis .bad .v { color:var(--red); } .kpis .warn .v { color:var(--orange); } .kpis .good .v { color:var(--green); }
-.issues { border:1px solid var(--line); border-radius:10px; overflow-x:auto; background:var(--surface); margin:0 0 24px; }
-.issues table { margin:0; font-size:.875rem; } .issues td { vertical-align:top; } .issues tr:last-child td { border-bottom:0; }
-.sev { display:inline-flex; align-items:center; gap:6px; font-weight:600; font-size:.8125rem; white-space:nowrap; }
-.sev i { width:8px; height:8px; border-radius:2px; display:block; }
-.sev.problem { color:var(--red); } .sev.problem i { background:var(--red); }
-.sev.review { color:var(--orange); } .sev.review i { background:var(--orange); }
-h2.sect { font-size:1rem; border:0; padding:0; margin:0 0 10px; }
 </style>
 """
 
@@ -271,30 +252,7 @@ def _disk_rows(host, disks, health=None):
     return rows
 
 
-def _bars_svg(series, colors, labels, height=70):
-    """
-    Stacked bars, one per point: series is a list of {key: value} dicts, colors
-    {key: css color}. Each bar carries a <title> tooltip from labels.
-    """
-
-    peak = max((sum(point.values()) for point in series), default=0) or 1
-    width = 100 / len(series)
-    bars = []
-
-    for i, (point, label) in enumerate(zip(series, labels)):
-        y = height
-        for key, color in colors.items():
-            h = point.get(key, 0) / peak * (height - 4)
-            if h:
-                y -= h
-                bars.append(f'<rect x="{i * width + width * 0.12:.2f}" y="{y:.2f}" width="{width * 0.76:.2f}" '
-                            f'height="{h:.2f}" style="fill:{color}"><title>{_esc(label)}</title></rect>')
-
-    return (f'<svg viewBox="0 0 100 {height}" preserveAspectRatio="none" role="img" style="height:{height}px">'
-            f'{"".join(bars)}</svg>')
-
-
-def _trends_card(trends):
+def _trends_card(trends, display=None):
 
     if not trends:
         return _card("/posture", "Security trends", "unknown", '<p class="muted">Posture data unavailable.</p>',
@@ -306,15 +264,27 @@ def _trends_card(trends):
         return _card("/posture", "Security trends", "unknown", empty_state(
             "shield", "No traffic data yet", "Charts of outbound traffic and new destinations appear here after "
             "the first scans that see traffic leave this host.",
-            extra='<span class="btn primary">Open Exposure \u2192</span>'))   # the card is the link: no <a> in <a>
+            extra='<span class="btn primary">Open Exposure →</span>'))   # the card is the link: no <a> in <a>
+
+    display = display or home_display()
+    moments = [clock.parse(h["hour"]) for h in hours]
+    here = [clock.local(m, display)[0] for m in moments]
+    # An x label every 6 hours on the viewer's own clock (00:00, 06:00...); a half-hour zone gets every 6th bar.
+    ticks = ({i: clock.hhmm(t, display) for i, t in enumerate(here) if t.hour % 6 == 0 and t.minute == 0}
+             or {i: clock.hhmm(t, display) for i, t in enumerate(here) if i % 6 == 0})
+
     # Separate scales: VPN (torrents) is often 100x direct and would flatten it.
     traffic = "".join(
         f'<div class="lbl">{label} <span class="muted">peak {_size(max(h[key] for h in hours))}/h</span></div>'
-        + _bars_svg([{key: h[key]} for h in hours], {key: color},
-                    [f"{h['hour'][11:16]} UTC · {label} {_size(h[key])}" for h in hours], height=56)
-        for key, label, color in (("direct", "Direct", "var(--muted)"), ("vpn", "Via VPN", "var(--green)")))
-    new = _bars_svg([{"n": d["count"]} for d in days], {"n": "var(--orange)"},
-                    [f"{d['day']}: {d['count']} new" for d in days], height=110)
+        + bar_chart([h[key] for h in hours], [f"{clock.stamp(m, display)} · {label} {_size(h[key])}"
+                                              for h, m in zip(hours, moments)],
+                    ticks, fmt=_size, height=70, label=f"{label} traffic per hour")
+        for key, label in (("direct", "Direct"), ("vpn", "Via VPN")))
+
+    dates = [date.fromisoformat(str(d["day"])[:10]) for d in days]      # display-zone days (build_trends(display))
+    new = bar_chart([d["count"] for d in days], [f"{clock.day(x, display)}: {d['count']} new" for x, d in zip(dates, days)],
+                    {i: f"{x:%a}" for i, x in enumerate(dates)}, fmt=lambda v: f"{v:g}", height=110,
+                    label="New destinations per day")
     total_new = sum(d["count"] for d in days)
     inner = (
         '<div class="chart"><h3>Outbound traffic per hour, last 24 h</h3>' + traffic + "</div>"
@@ -492,79 +462,176 @@ def setup_steps(config, devices):
     ]
 
 
+STEP_ICONS = {"/devices": "laptop", "/settings#ntfy": "alert", "/settings#switches": "network",
+              "/settings#proxmox": "server"}
+
+
 def _checklist(steps):
     """Shown until every required step is done; optional ones ride along."""
 
     if not steps or all(done for *_, done, optional in steps if not optional):
         return ""
 
-    rows = []
-    for title, why, href, done, optional in steps:
-        extra = ' <span class="muted">(optional)</span>' if optional else ""
-        if done:
-            rows.append(f'<li class="done"><span class="tick">\u2713</span><span class="what"><b>{_esc(title)}</b>'
-                        f'{extra}</span></li>')
-        else:
-            rows.append(f'<li><span class="tick">\u25cb</span><span class="what"><b>{_esc(title)}</b>{extra} '
-                        f'\u2014 {_esc(why)}</span><a href="{href}">Set up \u2192</a></li>')
+    rows = "".join(
+        check_row(STEP_ICONS.get(href, "info"), title + (" (optional)" if optional else ""), "" if done else why,
+                  None if done else ("Set up", href), "done" if done else "todo")
+        for title, why, href, done, optional in steps)
 
-    return ('<section class="steps" aria-label="Getting started"><h2>Getting started</h2><ol>' + "".join(rows)
-            + "</ol></section>")
+    return f'<section class="panel steps" aria-label="Getting started"><h2>Getting started</h2>{rows}</section>'
 
 
-def build_stats(devices=None, hosts=None, storage=None, posture=None, uptime=None, ups=None, internet=None,
-                dns=None, ha=None):
-    """The number tiles along the top of Home: [(label, value, sub, href, tone)]; a source that's missing is left out.
-    devices: InventoryStore().devices(); uptime: [7-day % per check]; ups: the UPS watch's saved detail."""
+def home_display(viewer_zone=None):
+    """The display settings Home's server-side times use: render.DISPLAY, with "browser" made the zone the viewer's
+    browser reported (as Activity does); without one, UTC, which the page's time script then redoes."""
+
+    from lanxang.web import render
+
+    display = clock._display(render.DISPLAY)
+    if display.time_zone == "browser" and viewer_zone:
+        display = display.model_copy(update={"time_zone": viewer_zone})
+    return display
+
+
+VISIT_GAP = timedelta(minutes=30)       # away this long and the next Home load is a new visit
+
+
+def since_window(value, now):
+    """
+    "Since you were here" from the lanxang-seen cookie ("<since>|<last>", UTC minutes): (since, the value to write
+    back). Away more than 30 minutes since the last load starts a new visit (since = that last load); a reload
+    within a visit keeps since. No cookie, an unreadable one or a time ahead of now means the last 24 hours; never
+    more than 7 days back.
+    """
+
+    first, _, last = (value or "").partition("|")
+    since, last = clock.parse(first), clock.parse(last)
+
+    if since is None or last is None or since > now or last > now:
+        since = now - timedelta(hours=24)
+    elif now - last > VISIT_GAP:
+        since = last
+    since = max(since, now - timedelta(days=7))
+
+    return since, f"{since:%Y-%m-%dT%H:%M}|{now:%Y-%m-%dT%H:%M}"
+
+
+def day_states(histories, fail_after, now, days=7, display=None):
+    """
+    One "ok" / "bad" / "none" per day in the display zone (display: home_display()), oldest first, ending today, from
+    [(checked_at, ok)] lists (one per check): bad when any check failed fail_after times in a row that day; ok only
+    when every check has results that day and none had an outage; otherwise none (a silent check is no data).
+    """
+
+    first = clock.local(now, display)[0].date() - timedelta(days=days - 1)
+    reported, bad = [0] * days, [False] * days
+
+    for rows in histories:
+        by_day = {}
+        for at, ok in rows:
+            index = (clock.local(at, display)[0].date() - first).days
+            if 0 <= index < days:
+                by_day.setdefault(index, []).append(ok)
+        for index, results in by_day.items():
+            run = longest = 0
+            for ok in results:
+                run = 0 if ok else run + 1
+                longest = max(longest, run)
+            reported[index] += 1
+            bad[index] = bad[index] or longest >= max(1, fail_after)
+
+    return ["bad" if bad[i] else "ok" if histories and reported[i] == len(histories) else "none" for i in range(days)]
+
+
+def storage_trend(scans, samples=(), fresh_after=None):
+    """
+    The Storage tile: the largest ZFS pool's used % per Proxmox scan ([(at, payload)] oldest first), else the
+    fullest storage_paths label per host sample; None when neither has any. {"name", "points", "size", "stale"}:
+    stale when the newest reading is older than fresh_after.
+    """
+
+    def pools(payload):
+        return {pool["name"]: pool for node in (payload or {}).get("nodes") or [] for pool in node.get("zfs") or []
+                if pool.get("size")}
+
+    newest = pools(scans[-1][1]) if scans else {}
+    if newest:
+        name = max(newest, key=lambda n: newest[n]["size"])
+        points = [round((found[name].get("alloc") or 0) / found[name]["size"] * 100, 1)
+                  for _, payload in scans for found in [pools(payload)] if name in found]
+        return {"name": name, "points": points, "size": newest[name]["size"],
+                "stale": bool(fresh_after and scans[-1][0] < fresh_after)}
+
+    paths = ((samples[-1][1] or {}).get("storage") or {}) if samples else {}
+    if paths:
+        name = max(paths, key=paths.get)
+        points = [s["storage"][name] for _, s in samples if name in ((s or {}).get("storage") or {})]
+        return {"name": name, "points": points, "size": None,
+                "stale": bool(fresh_after and samples[-1][0] < fresh_after)}
+
+    return None
+
+
+def build_vitals(runs, internet, internet_days, uptime_days, storage, posture, ups):
+    """
+    The vitals row's trend_tile()s: Devices, Internet, Services, Storage, Security, Power; each is left out when its
+    data is None. runs: InventoryStore.runs() for 7 days, oldest first; internet: (up, ms) of a recent internet
+    check or None; internet_days / uptime_days: day_states(); storage: storage_trend() (plus "warn" when the Storage & RAID card has a problem); posture: _posture_block();
+    ups: the UPS watch's saved detail.
+    """
 
     tiles = []
-    if devices is not None:
-        live = [d for d in devices if d["state"] != "ignored"]
-        online = sum(d.get("status") != "quiet" for d in live)
-        new = sum(d["state"] == "new" for d in live)
-        tiles.append(("Devices", f"{online} / {len(live)}", f"online · {new} new" if new else "online, all named",
-                      "/devices", "warn" if new else ""))
-    if internet:                                  # (up, ms) from the newest internet check
-        up, ms = internet
-        tiles.append(("Internet", "Up" if up else "Down", f"{ms:.0f} ms" if up and ms is not None else
-                      "router or provider — see Uptime" if not up else "", "/uptime", "good" if up else "bad"))
-    info = (dns or {}).get("info") or {}
-    if info:                                      # Pi-hole / AdGuard Home
-        on = info.get("blocking")
-        share = f'{info["percent"]:.0f}% of queries blocked' if info.get("percent") is not None else ""
-        tiles.append(("Ad blocking", "On" if on else "Off", share if on else "every device sees ads", "/#dns",
-                      "good" if on else "bad"))
-    home = (ha or {}).get("info") or {}
-    if ha and (home or ha.get("error")):          # Home Assistant
-        lost, low = len(home.get("offline") or []), len(home.get("batteries") or [])
-        problems = ([f"{lost} offline"] if lost else []) + ([f"{plural(low, 'low battery', 'low batteries')}"] if low else [])
-        tiles.append(("Smart home", "Down" if ha.get("failures", 0) >= 2 else "Fine" if not problems else
-                      f"{lost + low} to check", ", ".join(problems) or (f"{plural(len(home.get('updates') or []), 'update')} "
-                      "waiting" if home.get("updates") else "all devices answering"), "/#homeassistant",
-                      "bad" if ha.get("failures", 0) >= 2 or lost else "warn" if low else "good"))
-    if hosts and hosts["rows"]:
-        fine = sum(not row["problems"] for row in hosts["rows"])
-        tiles.append(("Servers", f"{fine} / {len(hosts['rows'])}", "healthy" if fine == len(hosts["rows"]) else
-                      "need a look", "/overview", "" if fine == len(hosts["rows"]) else "bad"))
-    if uptime is not None:
-        known = [u for u in uptime if u is not None]
-        tiles.append(("Uptime, 7 days", f"{min(known):g}%" if known else "–",
-                      f"{len(uptime)} check{'s' * (len(uptime) != 1)}" if uptime else "no checks yet — add one",
-                      "/uptime", "bad" if known and min(known) < 99 else ""))
+
+    if runs is not None:
+        # The LAN scan's count of devices seen; with no LAN scan, whichever source ran last.
+        lan = [r for r in runs if r["source"] == "lan"] or [r for r in runs if r["source"] == runs[-1]["source"]]
+        last = lan[-1] if lan else None
+        if last and last["ok"]:
+            tiles.append(trend_tile("Devices online", last["seen_count"],
+                                    points=[r["seen_count"] for r in lan if r["ok"]], href="/devices"))
+        else:
+            tiles.append(trend_tile("Devices online", "?", state="unknown", href="/devices",
+                                    note="last scan failed" if last else "no scan yet"))
+
+    if internet is not None or internet_days is not None:
+        strip = day_strip(internet_days) if internet_days else ""
+        if internet is None:
+            tiles.append(trend_tile("Internet", "?", state="unknown", href="/uptime", note="no recent result",
+                                    strip=strip))
+        else:
+            up, ms = internet
+            tiles.append(trend_tile("Internet", "Up" if up else "Down", f"· {ms:.0f} ms" if up and ms is not None else "",
+                                    state="ok" if up else "attention", href="/uptime", strip=strip,
+                                    note="" if up else "router or provider — see Uptime"))
+
+    if uptime_days is not None:
+        bad = uptime_days.count("bad")
+        recent = uptime_days[-1] != "none"           # nothing today: stale, never "All up"
+        tiles.append(trend_tile("Services, 7 days", plural(bad, "bad day") if bad and recent else
+                                "All up" if recent else "No recent data",
+                                state="attention" if bad and recent else "ok" if recent else "unknown", href="/uptime",
+                                strip=day_strip(uptime_days)))
+
+    if storage and storage["points"]:
+        used, stale = storage["points"][-1], storage.get("stale")
+        note = storage["name"] + (f" · of {_size(storage['size'])}" if storage.get("size") else "")
+        flagged = storage.get("warn") or used >= WARN_PERCENT       # warn: the Storage & RAID card has a problem
+        tiles.append(trend_tile("Storage", f"{used:.0f}", "%", points=storage["points"], href="/overview",
+                                state="unknown" if stale else "attention" if flagged else "ok",
+                                note=note + (" · old reading" if stale else " · see Storage & RAID" if storage.get("warn") else "")))
+
     if posture:
-        tiles.append(("Public routes", str(posture["routes"]), f"{posture['review_count']} to review"
-                      if posture.get("review_count") else "nothing to review", "/posture",
-                      "bad" if posture["state"] == "warn" else ""))
+        state = {"ok": "ok", "warn": "attention", "review": "attention"}.get(posture["state"], "unknown")
+        value = {"ok": "All good", "warn": "Problem", "review": "To review"}.get(posture["state"], "No data")
+        bans = f" · {plural(int(posture['blocked']), 'ban')}" if str(posture.get("blocked")).isdigit() else ""
+        tiles.append(trend_tile("Security", value, state=state, href="/posture",
+                                note=plural(posture["routes"], "public route") + bans))
+
     for name, info in ((ups or {}).get("upses") or {}).items():
         on_battery = info.get("state") in ("battery", "low")
         charge = f"{info['charge']:.0f}% charged" if info.get("charge") is not None else name
-        tiles.append(("Power", "On battery" if on_battery else "On mains", charge, "/uptime",
-                      "bad" if on_battery else "good"))
+        tiles.append(trend_tile("Power", "On battery" if on_battery else "On mains", href="/uptime", note=charge,
+                                state="attention" if on_battery else "ok"))
         break
-    if storage and storage["rows"] and not ups:
-        bad = sum(bool(row["warn"]) for row in storage["rows"])
-        tiles.append(("Storage", "Problem" if bad else "Healthy", f"{len(storage['rows'])} checked", "/overview",
-                      "bad" if bad else "good"))
 
     return tiles
 
@@ -618,56 +685,91 @@ def _ha_card(ha):
     return f'<div id="homeassistant" style="display:contents">{_card("/settings#homeassistant", "Smart home", state, inner)}</div>'
 
 
-def _kpis(stats):
-
-    if not stats:
-        return ""
-    return ('<nav class="kpis" aria-label="At a glance">' + "".join(
-        f'<a class="{tone}" href="{href}"><span class="k">{_esc(label)}</span><span class="v">{_esc(value)}</span>'
-        f'<span class="s">{_esc(sub)}</span></a>' for label, value, sub, href, tone in stats) + "</nav>")
-
-
 def _headline(items):
 
     if not items:
-        return "\u2713 Everything is healthy"
+        return "Everything is healthy"
     n = len(items)
     return f"{n} thing{'s' * (n != 1)} need{'s' * (n == 1)} a look — everything else is healthy"
 
 
-def _issues(items):
+def _hero(items, last_scan, scan_minutes, now):
+    """Unknown, never healthy, when no scan has run in the last 3 scan intervals."""
 
-    rows = []
-    for card, what, why, href, action in items:
-        problem = card in ("hosts", "storage") or (card == "posture" and action == "Open")
-        sev = ('<span class="sev problem"><i></i>Problem</span>' if problem else
-               '<span class="sev review"><i></i>Review</span>')
-        rows.append(f'<tr><td>{sev}</td><td><b>{_esc(what)}</b></td><td>{_esc(why)}</td>'
-                    f'<td><a href="{href}">{_esc(action)} \u2192</a></td></tr>')
+    if last_scan is None:
+        return status_hero(len(items), "No recent scan", "no scan has run yet", "unknown")
+    ago = f"last scan {friendly_time(last_scan, now)}"
+    if now - last_scan > timedelta(minutes=3 * scan_minutes):
+        return status_hero(len(items), "No recent scan", ago, "unknown")
+    return status_hero(len(items), _headline(items), ago, "attention" if items else "ok")
 
-    return ('<section aria-label="Needs attention"><h2 class="sect">Needs attention</h2><div class="issues"><table>'
-            '<thead><tr><th>Severity</th><th>Area</th><th>What</th><th></th></tr></thead><tbody>'
-            + "".join(rows) + "</tbody></table></div></section>")
+
+PROBLEM_ICONS = {"posture": "shield", "hosts": "server", "storage": "box", "alerts": "alert", "access": "key"}
+
+
+def _problems(items):
+
+    if not items:
+        return ""
+    return ('<section class="panel problems" aria-label="Needs attention">' + "".join(
+        check_row(PROBLEM_ICONS.get(card, "alert"), what, why, (action, href)) for card, what, why, href, action in items)
+        + "</section>")
+
+
+# A changes_feed mark as a timeline title and dot state.
+CHANGE_KINDS = {"device": ("New device", "attention"), "check": ("Cleared", "ok"), "alert": ("Problem", "attention"),
+                "search": ("Found", "attention"), "server": ("Proxmox", "info"), "box": ("Container", "info")}
+
+
+def _since(changes, since, now, display):
+    """Since you were here (the newest 8 changes_feed items) beside the Ask Lanxang chips; stacked on a phone."""
+
+    chips = ask_chips(ASK_SHORTCUTS)
+    ask = f'<section class="panel ask"><h2>Ask Lanxang</h2>{chips}</section>' if chips else ""
+    news = ""
+
+    if changes is not None and since is not None:
+        if changes:
+            rows = []
+            for at, mark, text, _ in changes[:8]:
+                title, state = CHANGE_KINDS.get(mark, ("Notice", "info"))
+                rows.append((at, title, text.removeprefix("New device: ").removeprefix("Cleared: "), state))
+            window = "24h" if now - since <= timedelta(hours=24) else "7d"
+            news = (f'<section class="panel since"><h2>Since you were here <span class="muted">— {when(since, now)}'
+                    f'</span></h2>{timeline(rows, display)}<p class="muted more">{plural(len(changes), "change")} · '
+                    f'<a href="/history?changes={window}">see all in Activity →</a></p></section>')
+        else:
+            news = ('<section class="panel since"><h2>Since you were here</h2>'
+                    f'<p class="muted">Nothing changed since {when(since, now)}.</p></section>')
+
+    return f'<div class="brief">{news}{ask}</div>' if news or ask else ""
 
 
 def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=(),
-                     steps=None, open_alerts=(), stats=None, dns=None, names=None, ha=None):
+                     steps=None, open_alerts=(), dns=None, names=None, ha=None, changes=None, since=None, vitals=None,
+                     last_scan=None, scan_minutes=15, viewer_zone=None):
     """
-    posture: render._posture_block() output or None; hosts: build_hosts()
-    output; events: interesting_events() pairs; storage: build_storage()
-    output; trends: posture.model.build_trends() output or None; analysis:
-    KnowledgeQueries().latest_analysis() or None; stats: build_stats() tiles.
+    posture: render._posture_block() output or None; hosts: build_hosts() output; events: interesting_events()
+    pairs; storage: build_storage() output; trends: posture.model.build_trends() output or None; analysis:
+    KnowledgeQueries().latest_analysis() or None; changes: changes_feed.collect() items since `since` (None leaves
+    Since you were here out); vitals: build_vitals() tiles; last_scan: the newest source run (naive UTC) or None;
+    viewer_zone: the zone the browser reported (lanxang-tz), used when the display time zone is "browser".
     """
 
+    display = home_display(viewer_zone)
+
+    now = now or utcnow()
     storage = storage or {"rows": [], "state": "unknown"}
     items = attention_items(posture, hosts, storage, access_reviews, open_alerts)
     flagged = {card for card, *_ in items}
 
-    body = (HOME_STYLE + _checklist(steps) + _kpis(stats) + (_issues(items) if items else "")
-            + ask_chips(ASK_SHORTCUTS) + '<div class="cards">'
+    body = (HOME_STYLE + _hero(items, last_scan, scan_minutes, now) + _problems(items) + _checklist(steps)
+            + _since(changes, since, now, display)
+            + (f'<section class="vitals" aria-label="Vitals">{"".join(vitals)}</section>' if vitals else "")
+            + '<div class="cards">'
             + _posture_card(posture, "posture" in flagged) + _hosts_card(hosts, "hosts" in flagged)
             + _storage_card(storage, "storage" in flagged) + _dns_card(dns, names or {}) + _ha_card(ha)
-            + _trends_card(trends) + _analysis_card(analysis, now or utcnow())
+            + _trends_card(trends, display) + _analysis_card(analysis, now)
             + _activity_card(events) + "</div>")
 
-    return render_page("Home", body, active="home", heading=_headline(items))
+    return render_page("Home", body, active="home")

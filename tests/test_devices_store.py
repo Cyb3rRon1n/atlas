@@ -220,3 +220,15 @@ def test_source_runs_keep_eight_days(temp_db):
     store.record_run("lan", [], now=at(10 * 24 * 60))
 
     assert count() == 50
+
+
+def test_runs_since_oldest_first(temp_db):
+    store = InventoryStore()
+    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.0.2.1", mac="aa:01")], now=at(0))
+    store.record_run("unifi", [], ok=False, error="login timed out", now=at(15))
+    store.record_run("lan", [Sighting("lan", "aa:01", ip="192.0.2.1", mac="aa:01")], now=at(30))
+
+    runs = store.runs(at(15))
+    assert [(r["source"], r["ok"], r["seen_count"], r["error"]) for r in runs] == [
+        ("unifi", False, 0, "login timed out"), ("lan", True, 1, "")]
+    assert runs[-1]["started_at"] == at(30).isoformat() and store.runs(at(31)) == []

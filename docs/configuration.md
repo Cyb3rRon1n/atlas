@@ -279,6 +279,13 @@ display:
 
 With `browser`, pages show each viewer's own time zone; messages have no viewer, so they use UTC and say so.
 
+Home's **Since you were here** remembers your last visit in a `lanxang-seen` cookie: two times in UTC (when the
+current visit's window starts and when you last loaded Home), nothing else. Lanxang sets it on each Home load
+(HttpOnly, SameSite=Lax, kept a year); it is read only by your own Lanxang server and never sent anywhere else. A
+visit ends after 30 minutes away; without the cookie Home shows the last 24 hours, and never more than 7 days.
+Home reads **No recent scan** when the newest scan is older than three scan intervals (`LANXANG_SCAN_MINUTES`,
+see [`scan`](#scan)); set it in `.env` so the web container sees the same value as `atlas-scan`.
+
 ## Prometheus metrics
 
 `/metrics` serves what lanxang already knows in Prometheus format, for Grafana or any Prometheus-compatible

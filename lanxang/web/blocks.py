@@ -151,7 +151,10 @@ def bar_chart(values, labels, x_ticks, unit="", fmt=None, height=110, label=""):
         f'<rect x="{i * 10 + 1.5}" y="{100 - h:.2f}" width="7" height="{h:.2f}">'
         f'<title>{_esc(labels[i] if i < len(labels) else fmt(v))}</title></rect>'
         for i, v in enumerate(values) for h in [max(v, 0) / top * 100])
-    y_axis = "".join(f'<span style="bottom:{pos}%">{_esc(fmt(v))}</span>' for pos, v in ((0, 0), (50, top / 2), (100, top)))
+    y_labels = [fmt(v) for v in (0, top / 2, top)]
+    # the labels sit absolutely on their gridlines; a hidden copy of the longest one gives the column its width
+    y_axis = (f'<span class="w" aria-hidden="true">{_esc(max(y_labels, key=len))}</span>'
+              + "".join(f'<span style="bottom:{pos}%">{_esc(text)}</span>' for pos, text in zip((0, 50, 100), y_labels)))
     x_axis = "".join(f'<span style="left:{(i + 0.5) / len(values) * 100:.2f}%">{_esc(text)}</span>'
                      for i, text in sorted(x_ticks.items()) if 0 <= i < len(values))
     summary = f"{label + ': ' if label else ''}peak {fmt(max(values))}, total {fmt(sum(values))}"
@@ -203,8 +206,9 @@ BLOCKS_STYLE = """
   .timeline li::before { content:""; position:absolute; left:-20px; top:10px; width:10px; height:10px; border-radius:50%; background:var(--accent); }
   .timeline li.attention::before { background:var(--gold); } .timeline li.info::before { background:var(--line2); }
   .timeline time { color:var(--muted); font-size:.8125rem; margin-right:4px; font-variant-numeric:tabular-nums; }
-  .bars { display:grid; grid-template-columns:auto 1fr; column-gap:6px; font-size:.6875rem; color:var(--muted); }
+  .bars { display:grid; grid-template-columns:auto 1fr; column-gap:6px; margin-top:.7em; font-size:.6875rem; color:var(--muted); }
   .bars .y { position:relative; min-width:2.5em; }
+  .bars .y .w { position:static; display:block; height:0; overflow:hidden; visibility:hidden; transform:none; }
   .bars .y span { position:absolute; right:0; transform:translateY(50%); white-space:nowrap; font-variant-numeric:tabular-nums; }
   .bars .plot svg { display:block; width:100%; height:100%; overflow:visible; }
   .bars line { stroke:var(--line); stroke-width:1; } .bars rect { fill:var(--accent); }

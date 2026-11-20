@@ -491,6 +491,16 @@ class InventoryStore:
 
             session.commit()
 
+    def runs(self, since):
+        """Every source's runs started at or after `since`, oldest first: [{source, started_at, ok, error, seen_count}]."""
+
+        with Session(self.engine) as session:
+
+            return [{"source": run.source, "started_at": _iso(run.started_at), "ok": run.ok,
+                     "error": run.error, "seen_count": run.seen_count}
+                    for run in session.scalars(select(SourceRunRecord).where(SourceRunRecord.started_at >= since)
+                                               .order_by(SourceRunRecord.started_at, SourceRunRecord.id))]
+
     def source_runs(self, limit=20):
 
         with Session(self.engine) as session:

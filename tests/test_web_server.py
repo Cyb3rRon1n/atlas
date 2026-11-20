@@ -63,6 +63,19 @@ def test_home_at_root_and_posture_route(running_server):
     assert 'id="posture-map"' in body
 
 
+def test_home_sets_seen_cookie(running_server):
+
+    with urllib.request.urlopen(running_server + "/", timeout=5) as response:
+        cookie = response.headers["Set-Cookie"]
+    assert cookie.startswith("lanxang-seen=")
+    assert cookie.endswith("; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax")
+
+    request = urllib.request.Request(running_server + "/", headers={"Cookie": cookie.split(";")[0]})
+    with urllib.request.urlopen(request, timeout=5) as response:
+        assert response.status == 200 and response.headers["Set-Cookie"].startswith("lanxang-seen=")
+        assert "Since you were here" in response.read().decode("utf-8")
+
+
 def test_overview_route_with_no_data(running_server):
 
     status, body = _get(running_server + "/overview")

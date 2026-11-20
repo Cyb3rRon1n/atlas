@@ -73,3 +73,12 @@ def test_one_malformed_change_row_never_blanks_the_feed():
     assert "test-vm stopped" in texts and "Guest 'ok-vm' (7) removed" in texts and "Printer is offline" in texts
     assert "proxmox changes detected" in texts                  # the row that wouldn't format says what it was
     assert changes_feed.render(changes_feed.collect(NOW, "24h", sources), NOW, "24h").count("<li>") >= 6
+
+
+def test_since_overrides_the_window():
+    asked = []
+    since = NOW - timedelta(hours=3, minutes=30)
+    items = changes_feed.collect(NOW, "24h", {**SOURCES, "changes": lambda at: asked.append(at) or []}, since=since)
+    assert [text for _, _, text, _ in items] == ["Cleared: Backup hasn't checked in", "Printer is offline",
+                                                 "New device: Den TV (192.0.2.41)"]
+    assert asked == [since]

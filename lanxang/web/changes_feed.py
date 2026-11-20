@@ -14,11 +14,12 @@ WINDOWS = {"24h": timedelta(hours=24), "7d": timedelta(days=7)}
 CHANGE_EVENTS = ("atlas.proxmox.changes_detected", "atlas.monitoring.changes_detected")
 
 
-def collect(now, window, sources):
+def collect(now, window, sources, since=None):
     """[(at, mark, text, href)] newest first; mark is an icons.py name ("device" for a new device). sources: {"alerts": f(now, days), "devices": f(),
-    "changes": f(since) -> [(at, event type, payload)] of the change events}."""
+    "changes": f(since) -> [(at, event type, payload)] of the change events}. since: a start of its own (Home's
+    "Since you were here", at most 7 days back) instead of the window's."""
 
-    since = now - WINDOWS[window]
+    since = since or now - WINDOWS[window]
     found = []
 
     def safely(read, *args):

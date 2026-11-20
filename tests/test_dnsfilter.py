@@ -4,7 +4,7 @@ import pytest
 
 from lanxang.config.models import AtlasConfig, DnsFilterConfig
 from lanxang.monitoring import dnsfilter
-from lanxang.web.home_page import build_hosts, build_stats, render_home_page
+from lanxang.web.home_page import build_hosts, render_home_page
 
 
 class Reply:
@@ -111,12 +111,10 @@ def test_blocking_off_twice_alerts_once_and_again_when_back(temp_db):
     assert detail["error"] and detail["info"]["blocking"] is True and len(sent) == 2   # last known kept, no message
 
 
-def test_home_tile_and_card_name_the_busiest_devices():
+def test_home_card_names_the_busiest_devices():
     dns = {"error": "", "info": {"kind": "Pi-hole", "blocking": True, "queries": 20000, "blocked": 3100,
                                  "percent": 15.5, "blocklist": 123456,
                                  "clients": [{"ip": "192.0.2.20", "name": "", "count": 5000}]}}
-    stats = build_stats(dns=dns)
-    assert stats == [("Ad blocking", "On", "16% of queries blocked", "/#dns", "good")]
-    page = render_home_page(None, build_hosts(None, None, None), [], stats=stats, dns=dns,
+    page = render_home_page(None, build_hosts(None, None, None), [], dns=dns,
                             names={"192.0.2.20": "Kids tablet"})
     assert "Kids tablet" in page and "5,000" in page and "123,456 domains" in page

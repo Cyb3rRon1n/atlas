@@ -75,7 +75,8 @@ def trend_tile(label, value, unit="", points=None, state="ok", href=None, note="
     and an optional note. A link when href is given. state: ok, attention or unknown; the note says why in words."""
 
     state = state if state in ("ok", "attention") else "unknown"
-    mark = icon("alert") if state == "attention" else ""
+    mark = {"attention": f'<span role="img" aria-label="needs a look">{icon("alert")}</span>',
+            "unknown": f'<span role="img" aria-label="unknown">{icon("help")}</span>'}.get(state, "")
     small = f"<small>{_esc(unit)}</small>" if unit else ""
     tail = f'<span class="note">{_esc(note)}</span>' if note else ""
     body = (f'<span class="lbl">{mark}{_esc(label)}</span><span class="val">{_esc(value)}{small}</span>'
@@ -121,6 +122,7 @@ def timeline(items):
     today = clock.local(clock.utcnow(), display)[0].date()
     rows = []
     for when, title, text, state in items:
+        when = clock.parse(when)                                       # an aware time becomes naive UTC
         here = clock.local(when, display)[0]
         shown = clock.hhmm(here, display) if here.date() == today else f"{clock.day(here, display)} {clock.hhmm(here, display)}"
         state = state if state in ("ok", "attention") else "info"
@@ -177,7 +179,7 @@ BLOCKS_STYLE = """
            background:var(--surface); border:1px solid var(--line); border-radius:10px; color:var(--text); }
   a.trend:hover { border-color:var(--accent); text-decoration:none; }
   .trend .lbl { display:flex; align-items:center; gap:4px; font-size:.75rem; color:var(--muted); }
-  .trend .lbl .ic { width:14px; height:14px; color:var(--orange); }
+  .trend .lbl .ic { width:14px; height:14px; color:var(--orange); } .trend.unknown .lbl .ic { color:var(--muted); }
   .trend .val { font-size:1.25rem; font-weight:600; } .trend .val small { font-size:.8125rem; font-weight:500; color:var(--muted); margin-left:2px; }
   .trend.attention { border-color:var(--warn-line); } .trend.unknown .val { color:var(--muted); }
   .trend .note { font-size:.75rem; color:var(--muted); }

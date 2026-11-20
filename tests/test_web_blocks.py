@@ -83,6 +83,11 @@ def test_trend_tile():
     plain = trend_tile("Internet", "99.9", "%", points=None, state="attention", note="1 outage")
     assert plain.startswith('<div class="trend attention"') and "polyline" not in plain and "1 outage" in plain
 
+    assert 'aria-label="needs a look"' in plain
+    unknown = trend_tile("Internet", "?", state="unknown")
+    assert 'aria-label="unknown"' in unknown and "<svg" in unknown        # a mark, not only a muted colour
+    assert "aria-label" not in trend_tile("CPU", "12")                    # ok carries no mark
+
     strip = trend_tile("Services", "7 of 7", strip=day_strip(["ok"] * 7), points=[1, 2])
     assert "7 of 7 days ok" in strip and "polyline" not in strip
 
@@ -101,6 +106,9 @@ def test_check_row_and_timeline():
     from lanxang.clock import utcnow
     shown = re.search(r"<time[^>]*>([^<]*)</time>", timeline([(utcnow(), "Now", "", "info")])).group(1)
     assert re.fullmatch(r"\d\d:\d\d", shown)                                # today: the time only
+    from datetime import timedelta, timezone
+    aware = timeline([(datetime(2020, 1, 2, 10, 30, tzinfo=timezone(timedelta(hours=1))), "Aware", "", "ok")])
+    assert 'datetime="2020-01-02T09:30:00Z"' in aware and "09:30" in aware   # normalised to UTC, no "+00:00Z"
     assert timeline([]) == ""
 
 

@@ -454,7 +454,7 @@ def test_speed_and_busiest_device_cards():
              "history": [{"down": 1880.5}, {"down": 1210.0}]}
     html = _speed_card(speed, now)
     assert "1880.5 Mb/s" in html and "940 Mb/s" in html and "9 ms" in html and "6 h ago" in html
-    assert "Slowest of 2 days" in html and "1210 Mb/s" in html and 'href="/settings#speedtest"' in html
+    assert "Slowest, 30 days" in html and "1210 Mb/s" in html and 'href="/settings#speedtest"' in html
     failed = _speed_card({**speed, "down": None, "up": None, "ping": None, "error": "timed out", "history": []}, now)
     assert "timed out" in failed and "hcard warn" in failed and "Download" not in failed
     assert _speed_card(None, now) == "" and _speed_card({}, now) == ""

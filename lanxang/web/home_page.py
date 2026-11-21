@@ -683,7 +683,7 @@ def _speed_card(speed, now):
         rows = [("Download", f'{speed["down"]:g} Mb/s'), ("Upload", f'{speed["up"]:g} Mb/s'), ("Ping", f'{speed["ping"]} ms')]
     downs = [h["down"] for h in speed.get("history") or []]
     if len(downs) > 1:
-        rows.append((f"Slowest of {len(downs)} days", f"{min(downs):g} Mb/s"))
+        rows.append(("Slowest, 30 days", f"{min(downs):g} Mb/s"))
     rows.append(("Tested", "just now" if hours == 0 else f"{hours} h ago"))
     inner = "<dl>" + "".join(f"<dt>{_esc(k)}</dt><dd>{_esc(v)}</dd>" for k, v in rows) + "</dl>"
     if speed.get("error"):

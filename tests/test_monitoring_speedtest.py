@@ -15,7 +15,7 @@ class Store:
         self.saved[source] = detail
 
 
-SETTINGS = SimpleNamespace(notify=SimpleNamespace(timezone="America/Detroit"))
+SETTINGS = SimpleNamespace(notify=SimpleNamespace(timezone="America/New_York"))
 RESULT = {"down": 1880.5, "up": 940.2, "ping": 9}
 
 
@@ -27,9 +27,9 @@ def test_runs_once_a_day_after_four_local():
         calls.append(1)
         return RESULT
 
-    night = datetime(2026, 11, 20, 8, 30)           # 03:30 in Detroit: too early
+    night = datetime(2026, 11, 20, 8, 30)           # 03:30 in New York: too early
     assert speedtest.run(SETTINGS, store, night, test=test) == {} and not calls
-    morning = datetime(2026, 11, 20, 9, 5)          # 04:05 in Detroit
+    morning = datetime(2026, 11, 20, 9, 5)          # 04:05 in New York
     detail = speedtest.run(SETTINGS, store, morning, test=test)
     assert detail["down"] == 1880.5 and detail["error"] is None and len(detail["history"]) == 1
     speedtest.run(SETTINGS, store, datetime(2026, 11, 20, 20, 0), test=test)   # same local day

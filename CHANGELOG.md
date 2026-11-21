@@ -3,6 +3,11 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
+## Unreleased
+
+### Fixed
+- The weak Wi-Fi row only suggests 5 GHz when one of the devices is on 2.4 GHz.
+
 ## 1.5.1 - 2026-11-20
 
 ### Added

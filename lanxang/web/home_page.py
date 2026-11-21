@@ -718,9 +718,10 @@ def _wifi(weak):
     title = (f"{weak[0]['name']} has a weak Wi-Fi signal" if len(weak) == 1
              else f"{len(weak)} devices have a weak Wi-Fi signal")
     href = f"/devices/{weak[0]['id']}" if len(weak) == 1 else "/devices"
+    tip = " - pages load slowly at this strength; move closer to an access point" + (
+        " or use 5 GHz." if any(str(d.get("band") or "").startswith("2.4") for d in weak[:4]) else ".")
     return ('<section class="panel wifi" aria-label="Wi-Fi">'
-            + check_row("wifi", title, " · ".join(each) + more + " - pages load slowly at this strength; move closer to "
-                        "an access point or use 5 GHz.", ("Details", href), "info") + "</section>")
+            + check_row("wifi", title, " · ".join(each) + more + tip, ("Details", href), "info") + "</section>")
 
 
 def _headline(items):

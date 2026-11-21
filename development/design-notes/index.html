@@ -1,0 +1,881 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Self-hosted watchdog for your home network: every device, every cable, every change. Alerts included, cloud not required.">
+      
+      
+      
+        <link rel="canonical" href="https://cyb3rron1n.github.io/lanxang/development/design-notes/">
+      
+      
+        <link rel="prev" href="../../roadmap/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/brand/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
+    
+    
+      
+        <title>Design notes - Lanxang</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/lanxang.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#design-notes" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Lanxang" class="md-header__button md-logo" aria-label="Lanxang" data-md-component="logo">
+      
+  <img src="../../images/brand/mark-dark.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Lanxang
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Design notes
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Cyb3rRon1n/lanxang" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cyb3rRon1n/lanxang
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Lanxang" class="md-nav__button md-logo" aria-label="Lanxang" data-md-component="logo">
+      
+  <img src="../../images/brand/mark-dark.svg" alt="logo">
+
+    </a>
+    Lanxang
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Cyb3rRon1n/lanxang" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cyb3rRon1n/lanxang
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Supported hardware
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service-catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design notes
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-style-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code style notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-philosophy-from-contributingmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project philosophy (from CONTRIBUTING.md)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-style-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code style notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-philosophy-from-contributingmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project philosophy (from CONTRIBUTING.md)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Cyb3rRon1n/lanxang/edit/main/docs/development/design-notes.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="design-notes">Design notes<a class="headerlink" href="#design-notes" title="Permanent link">&para;</a></h1>
+<p>The development history of lanxang's CLI core: why things are built the way they are, and what was learned verifying each piece against real infrastructure. It covers the CLI, actions, monitoring, plugins and fleet work; the web pages, device inventory, cabling map and posture checks are described in <a href="../../architecture/">Architecture</a> and <a href="../../configuration/">Configuration</a>.</p>
+<h3 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h3>
+<p><strong>Runtime wiring.</strong> <code>lanxang.core.application.application</code> is a module-level singleton (<code>AtlasApplication</code>) constructed at import time; it owns an <code>AtlasRuntime</code> (<code>lanxang/core/runtime.py</code>), which in turn owns:
+- <code>AtlasContext</code> (<code>lanxang/core/context.py</code>) — a plain dataclass bag (<code>config</code>, <code>inventory</code>, <code>docker</code>, <code>proxmox</code>, <code>services</code>, <code>health</code>) that subsystems write into.
+- <code>AtlasEnvironmentContext</code> (<code>lanxang/intelligence/context.py</code>) — the accumulated discovery snapshot (system/hardware/storage/network/services/containers/virtualization), updated via <code>.ingest_discovery(data)</code> after <code>lanxang discover</code> and read back via <code>.summary()</code>.
+- <code>EventBus</code> (<code>lanxang/events/bus.py</code>) — a synchronous pub/sub bus; <code>subscribe("*", cb)</code> receives every event type.</p>
+<p>CLI commands (<code>lanxang/cli/main.py</code>) reach the singleton via <code>from lanxang.core.application import application; runtime = application.runtime</code> rather than constructing their own runtime.</p>
+<p><strong>Event flow.</strong> Almost everything that produces data publishes an <code>AtlasEvent(event_type, source, payload)</code> on the bus (see <code>atlas.discovery.completed</code>, <code>atlas.plugin.loaded</code>, <code>atlas.analysis.completed</code>, <code>atlas.action.container_restarted</code>). <code>lanxang/listeners/database.py</code>'s <code>DatabaseListener</code> subscribes to <code>"*"</code> and persists every event via <code>KnowledgeStore.save_event</code>; it's registered onto every <code>AtlasRuntime</code>'s event bus in <code>lanxang/core/runtime.py</code>'s <code>__init__</code> (<code>DatabaseListener().register(self.events)</code>). <strong>This registration was missing until it was added</strong> — the listener class existed but nothing ever instantiated/registered it, so <code>lanxang history</code> was silently non-functional (no published event was ever persisted; only the direct <code>save_environment()</code>/<code>save_analysis()</code> calls worked) for the entire life of the project up to that point. If event persistence ever looks broken again, check this wiring first. <code>lanxang/listeners/logger.py</code>'s <code>EventLogger</code> (prints plugin-load events) is defined but still <strong>not</strong> registered anywhere — leave it that way unless you have a specific reason, since wiring it up changes visible CLI output for every existing command that publishes events. New features that produce meaningful state changes should publish an event rather than writing to the knowledge store directly from the CLI command, to keep that persistence path centralized.</p>
+<p><strong>Approval-gated actions.</strong> <code>lanxang restart &lt;name&gt;</code> was the first command that mutates infrastructure instead of observing it; <code>lanxang proxmox restart &lt;vmid&gt;</code> was the second (Proxmox guest instead of Docker container); <code>lanxang stop &lt;name&gt;</code> (backed by <code>stop_container</code> in <code>lanxang/docker/manager.py</code>) was the third — a genuinely different verb, not just another restart on a different resource type; <code>lanxang resize &lt;name&gt;</code> (backed by <code>resize_container</code>) is the fourth — the first one that isn't a single fixed operation, taking <code>--cpus</code>/<code>--memory</code> instead. All four follow the same shape: the capability itself is a pure function returning a plain result dict (<code>{"success"/"found": bool, "error": str, ...}</code>, never raising the underlying library's exceptions to the caller — same style as <code>collect_containers()</code>); the CLI layer shows the current state and gates on <code>typer.confirm()</code> (default deny, no bypass flag) before calling it; the result is published as an event so it's logged via the same <code>DatabaseListener</code> path as everything else — no bespoke persistence code. The Proxmox token needs write/power-management permission beyond the read-only scope that's enough for <code>lanxang proxmox scan</code> — see <a href="../../configuration/#proxmox">Configuration</a>.</p>
+<p><strong>Proxmox stop/resize parity.</strong> <code>lanxang proxmox stop &lt;vmid&gt;</code> and <code>lanxang proxmox resize &lt;vmid&gt; --cpus/--memory</code> (<code>stop_guest()</code>/<code>resize_guest()</code> in <code>lanxang/proxmox/manager.py</code>) close the gap between Docker's three actions and Proxmox's one — same pure-result-dict, never-raises shape as every other manager function, same <code>typer.confirm()</code> gate, same event-publish path (<code>atlas.action.guest_stopped</code>/<code>atlas.action.guest_resized</code>, sources <code>"ProxmoxStopAction"</code>/<code>"ProxmoxResizeAction"</code>, prefixed to disambiguate from the Docker <code>"StopAction"</code>/<code>"ResizeAction"</code> sources the same way <code>"ProxmoxRestartAction"</code> already was). Two real API distinctions, found by reading Proxmox's actual endpoints, not assumed: (1) Proxmox has no single call with Docker <code>container.stop()</code>'s built-in graceful-then-force behavior — <code>status.shutdown</code> (ACPI request, no automatic force-fallback if the guest doesn't respond) and <code>status.stop</code> (hard power-off) are separate endpoints. <code>stop_guest()</code> uses <code>shutdown</code> — matches what "stop" means in Docker's own default and most tooling — and the CLI's confirmation text says outright that this can stall on an unresponsive guest, rather than implying Docker-equivalent guaranteed termination. (2) Docker's <code>--cpus</code> maps to Proxmox's <code>cpulimit</code> (a float cap on host-core usage), <strong>not</strong> <code>cores</code>/<code>sockets</code> (CPU topology — how many vCPUs the guest OS sees, a completely different concept that generally needs guest-side hot-add support to take effect without a reboot). <code>--memory</code> maps straightforwardly to Proxmox's <code>memory</code> (MB) config field, reusing <code>docker.utils.parse_bytes()</code> (the same helper <code>resize_container</code> already uses) to accept the same <code>"512m"</code>/<code>"1g"</code> strings, converted to MB since Proxmox's API takes a plain integer with no unit parsing of its own — <code>lanxang/proxmox/manager.py</code> didn't previously import <code>docker</code> at all; it now does, purely for this helper, no new dependency. <strong>Verified against a real Proxmox VE host and the same real LXC test guest used for <code>restart</code> verification</strong>: started the (normally stopped) guest, ran <code>lanxang proxmox resize --cpus 0.5 --memory 256m</code> against it, and confirmed via a direct config read (<code>cpulimit: 0.5</code>, <code>memory: 256</code>) that both applied live to the running LXC, not just written to config for next boot — then ran <code>lanxang proxmox stop</code> and confirmed via a status check that the guest genuinely stopped. The CLI prints an extra caveat for a <code>qemu</code>-type guest specifically (a resize may need hotplug enabled to apply without a restart, unlike LXC) — this has since been independently verified against a real QEMU VM (see below); don't claim it's unverified going forward.</p>
+<p><strong>The QEMU hotplug caveat, verified against a real VM via Proxmox's own <code>pending</code> API — not guessed, and not just re-reading docs.</strong> <code>/nodes/{node}/qemu/{vmid}/pending</code> returns each config key with a <code>value</code> (what the <em>running</em> instance actually has) and, only when a write hasn't taken effect yet, a separate <code>pending</code> field — Proxmox's own authoritative signal for "did this apply live or get queued." Test VM kept <code>kvm: 0</code> (software emulation) since this Proxmox host has no hardware virtualization available at all — irrelevant here, since only config-application behavior was under test, not guest performance. Three real findings: (1) <code>cpulimit</code> applies live to a running <code>qemu</code> guest regardless of hotplug, same as <code>lxc</code> — <code>pending.get()</code> returned a bare <code>value</code>, no split, confirming the "host-side cgroup cap" assumption for both guest types now, not just the one already tested. (2) <code>memory</code> genuinely does <strong>not</strong> apply live without hotplug — resizing with <code>hotplug</code> unset produced <code>{"key": "memory", "value": "2048", "pending": "512"}</code>, the <em>old</em> value still what the running VM actually had. Exactly the caveat as documented, now confirmed. (3) <strong>A real gotcha the original caveat didn't anticipate:</strong> enabling <code>hotplug: memory</code> on an <em>already-running</em> VM doesn't retroactively grant it live-resize capability — the <code>hotplug</code> write itself showed as <code>pending</code>, same as <code>memory</code>, because QEMU's hotplug controller is a boot-time device that can't be added to a process already running. Confirmed by properly restarting the VM with <code>hotplug: memory</code> (and <code>numa: 1</code>, which Proxmox's memory hotplug also requires — restarting with NUMA on surfaced a second real gotcha, a <code>minimum memory must be 1024MB</code> start failure, since NUMA imposes its own floor) set <em>before</em> boot: a subsequent resize then showed a bare <code>value</code>, genuinely live. The CLI's one-line confirmation-prompt caveat stays terse on purpose — this level of nuance belongs in docs, not a <code>y/N</code> prompt.</p>
+<p><strong><code>resize_container</code> doesn't use docker-py's <code>container.update()</code>, and this was only discovered by testing against a real container, not by reading docker-py's docs.</strong> <code>docker run --cpus=0.5</code> (the standard, common path — and how every earlier real-infra test container in this project was created) sets <code>HostConfig.NanoCpus</code>, not <code>CpuPeriod</code>/<code>CpuQuota</code>. A real <code>container.update(cpu_period=..., cpu_quota=...)</code> call against that same container fails with a genuine <code>409 Conflict</code>: <code>"CPU Period cannot be updated as NanoCPUs has already been set"</code> — Docker won't let a container mix the two CPU-limiting mechanisms. Worse, docker-py's <code>update_container()</code> (confirmed by reading its actual source, not just the docstring, in the installed <code>docker</code> 7.2.0) has <strong>no <code>NanoCPUs</code> parameter at all</strong> — it's simply not exposed by the convenience wrapper, even though the raw Docker Engine API accepts it (confirmed: the real <code>docker update --cpus</code> CLI command works against the same container and does set <code>NanoCpus</code>). <code>resize_container()</code> therefore posts the raw API request directly — <code>client.api.post(f"{client.api.base_url}/containers/{container.id}/update", data=json.dumps({"NanoCPUs": ..., "Memory": ...}))</code> — reusing docker-py's own <code>requests.Session</code> subclass and its already-registered Docker-socket transport adapter (both <code>.post()</code> and <code>.base_url</code> are genuinely public, stable attributes) rather than adding a new HTTP dependency or shelling out to the <code>docker</code> CLI binary, which nothing else in this codebase does. <code>docker.utils.parse_bytes()</code> (the same public helper <code>container.update()</code> uses internally) parses a human memory string (<code>"512m"</code>, <code>"1g"</code>) into raw bytes for the request body. Verified end to end against a real container: current-state display, a combined cpus+memory resize actually taking effect (confirmed via <code>docker inspect</code> before/after), and an intentionally-too-low memory value failing cleanly with a caught <code>400 Bad Request</code> rather than a crash.</p>
+<p><strong><code>lanxang/actions/</code> is the real action registry</strong>, added once a third action type existed to actually force the generalization (two entries were still just two ad-hoc dicts duplicated across files). <code>lanxang/actions/targets.py</code> holds <code>known_container_names(environment)</code>/<code>known_guest_ids(environment)</code> (moved here from <code>lanxang/intelligence/analyzer.py</code>, unchanged — pure functions over an already-collected environment dict, no Lanxang-internal imports). <code>lanxang/actions/registry.py</code> defines <code>ActionDefinition</code> (<code>type</code>, <code>command_template</code>, <code>known_targets</code>) and the <code>ACTIONS: dict[str, ActionDefinition]</code> singleton with all four entries. Still deliberately just a dataclass + dict, not a class hierarchy or plugin loader — four entries doesn't justify more machinery either, but it <em>is</em> now one place instead of three.</p>
+<p><strong><code>command_template</code> is a small callable (<code>Callable[[SuggestedAction], str]</code>), not a plain format string</strong> — forced by <code>resize_container</code>, the first action needing more than one substitution. The three older entries are one-line lambdas (<code>lambda a: f"lanxang restart {a.target}"</code>); <code>resize_container</code>'s conditionally includes <code>--cpus</code>/<code>--memory</code> only for whichever dimension was actually proposed, so a partial resize (just memory, just CPU) stays expressible rather than every suggestion being forced to restate both. Both CLI print sites (<code>lanxang analyze</code>, <code>lanxang chat</code>) call <code>definition.command_template(action)</code> directly now, passing the whole <code>SuggestedAction</code> rather than <code>.format(target=...)</code> — no per-action-type branching was added to the CLI to make this work, the callable already carries whatever each action needs. (<code>ActionDefinition</code> uses a <code>TYPE_CHECKING</code>-guarded string type hint for <code>SuggestedAction</code> to avoid a circular import — <code>lanxang.intelligence.providers.base</code> already imports <code>ACTIONS</code> from this module.)</p>
+<p><strong><code>lanxang analyze</code>/<code>lanxang chat</code> suggest actions</strong>, all driven by that one registry now. Each <code>Recommendation</code>/<code>ChatReply</code> can carry an optional <code>action: SuggestedAction | None</code> (<code>type</code>, <code>target</code>, <code>cpus</code>, <code>memory</code>) — schema-validated via a single shared <code>ACTION_SCHEMA</code> (an <code>anyOf</code> of the action object or <code>null</code>) that both <code>ANALYSIS_SCHEMA</code> and <code>CHAT_SCHEMA</code> reference by identity rather than each duplicating their own copy of the action-object shape. <code>cpus</code>/<code>memory</code> are required-but-nullable on <em>every</em> action type (same "structured output requires every key in <code>required</code> even when the value is nullable" reasoning <code>action</code> itself already needed) — meaningful only for <code>resize_container</code>/<code>resize_guest</code>, always <code>null</code> on the other four; <code>SuggestedAction(**action_data)</code> picks them up for free since they're just two more dataclass fields with <code>None</code> defaults, no special-casing needed in <code>recommendation_from_dict()</code>/<code>chat_reply_from_dict()</code>. <code>ACTION_SCHEMA</code>'s <code>type</code> enum is <code>list(ACTIONS.keys())</code> — derived, not hand-written, so the schema can't drift out of sync with what the analyzer/CLI actually know how to handle. <code>ACTION_INSTRUCTIONS</code> (shared by <code>SYSTEM_PROMPT</code> and <code>CHAT_SYSTEM_PROMPT</code>) still hand-writes the natural-language grounding rule per action (auto-generating that prose isn't worth it for four entries) and needs its own sentence added per new action — <code>resize_container</code>'s spells out that <code>cpus</code>/<code>memory</code> take a new-limit string or <code>null</code> to leave that dimension unchanged, and that at least one must be non-null. Before returning, <code>AtlasAnalyzer.analyze()</code>/<code>AtlasAgent.converse()</code> look up <code>ACTIONS.get(action.type)</code> and clear the action if the type isn't in the registry or the target isn't in <code>definition.known_targets(environment)</code> — a resize suggestion with both <code>cpus</code>/<code>memory</code> null isn't specially caught here (it would just render as <code>lanxang resize &lt;target&gt;</code> with no flags); <code>lanxang resize</code>'s own CLI validation is the actual safety net for that case, the same boundary that already has to validate its own inputs regardless of where a suggestion came from. <code>lanxang analyze</code>/<code>lanxang chat</code> only <em>print</em> a matching suggestion via <code>definition.command_template(action)</code>; neither executes it — that stays a separate, explicit invocation with its own approval gate. <strong>Adding a fifth action type now means one <code>ACTIONS</code> entry, one manager function, one CLI command, and one <code>ACTION_INSTRUCTIONS</code> sentence — not three separately-maintained dicts.</strong></p>
+<p><strong>Persistence.</strong> SQLite via SQLAlchemy, engine at <code>lanxang/database/engine.py</code> pointing at <code>inventory/atlas.db</code>. <code>lanxang/database/models.py</code> holds the ORM models (<code>EventRecord</code>, <code>EnvironmentRecord</code>, <code>AnalysisRecord</code>); <code>lanxang.database.initialize_database(engine=None)</code> runs <code>Base.metadata.create_all</code> (idempotent — only creates tables that don't exist yet) and also ensures <code>inventory/</code> exists whenever the engine being initialized is the default one (compared by identity against <code>lanxang.database.default_engine</code>, <strong>not</strong> <code>engine is None</code>). Every method on <code>KnowledgeStore</code> and <code>KnowledgeQueries</code> calls <code>initialize_database(engine)</code> — using its own module's locally-bound <code>engine</code> name — as its first line, so tables self-heal lazily at the moment of actual use. <strong>This has to be call-site, not <code>__init__</code>-site or <code>AtlasRuntime.__init__</code>-site</strong>: <code>DatabaseListener</code> (and therefore a <code>KnowledgeStore</code>) is constructed as part of the <code>AtlasApplication()</code> singleton at <em>module import time</em> (see above), using whatever the process's cwd happens to be then — for <code>pytest</code> run from the repo root, that's the real repo. Putting table-creation in any constructor in that chain silently mutates the committed <code>inventory/atlas.db</code> on every test run; this was caught and reverted while fixing the bug below. New tables just need a model added to <code>models.py</code> — no new wiring, since every call site already re-runs <code>create_all</code>. Reads and writes are split: <code>lanxang/knowledge/store.py</code> (<code>KnowledgeStore</code>) writes, <code>lanxang/knowledge/queries.py</code> (<code>KnowledgeQueries</code>) reads (<code>latest_environment()</code>, <code>latest_analysis()</code>, <code>recent_events()</code>). <code>inventory/atlas.db</code> is gitignored (not committed) — it grows a new row on every command run and now self-heals its own schema via <code>initialize_database()</code>, so there's nothing to seed; it was committed to git early in the project's life, which caused the bug described next, and was un-tracked once that was fixed.</p>
+<p><strong>The previously-committed <code>inventory/atlas.db</code> predated <code>AnalysisRecord</code> and was missing the <code>analysis</code> table</strong>, and nothing ever called <code>initialize_database()</code> automatically — so <code>lanxang analyze</code> would crash with <code>sqlite3.OperationalError: no such table: analysis</code> on first real use, for anyone, including against this exact repo. Fixed by the lazy per-call-site <code>initialize_database()</code> above; verified by copying the (then still committed) db into an isolated tempdir, confirming the missing table gets added with existing rows untouched.</p>
+<p><strong>A related directory-creation bug in that same fix went undetected until the Proxmox restart action needed it</strong>: the original <code>initialize_database()</code> only created the missing <code>inventory/</code> directory when called with <code>engine is None</code>, but no real call site ever calls it that way — <code>KnowledgeStore</code>/<code>KnowledgeQueries</code> always pass their own bound <code>engine</code> explicitly, which <em>is</em> <code>default_engine</code> in real usage but fails an <code>is None</code> check. This never surfaced because every prior manual verification happened to run <code>lanxang discover</code> first, and <code>save_inventory()</code> (a completely separate code path, for the YAML inventory file, not the database) incidentally creates <code>inventory/</code> as a side effect — masking the gap for any command run after it. It surfaced when testing <code>lanxang proxmox restart</code> from a truly empty directory with no prior <code>lanxang discover</code> call. Fixed by comparing identity against <code>default_engine</code> instead of <code>None</code>. Caught <strong>again</strong> while writing the regression test: a naive <code>isolated_cwd</code>-only test reusing the real <code>lanxang.database.engine.engine</code> singleton silently read/wrote the developer's actual local <code>inventory/atlas.db</code>, because SQLAlchemy's sqlite dialect resolves a relative database path to an absolute one once, at <code>create_engine()</code> time (module import, whatever cwd that happens to be), not per-connection like raw <code>sqlite3.connect()</code> does — so reusing that singleton across an in-process <code>chdir()</code> (exactly what <code>isolated_cwd</code> does) doesn't behave like a real second <code>lanxang</code> invocation. Not a product bug (a real CLI process never changes its own cwd mid-run), but a real test-safety hazard: the regression test (<code>tests/test_knowledge.py</code>) uses a fully separate, absolute-path engine instead, monkeypatching <code>lanxang.database.DATABASE_PATH</code>/<code>default_engine</code> directly rather than touching the shared singleton.</p>
+<p><strong><code>save_environment()</code> is insert-only.</strong> Every call adds a new <code>EnvironmentRecord</code> row (its own <code>created_at</code>); nothing ever updates one in place. So a full history of past snapshots already exists even though only <code>latest_environment()</code> (the newest row) is normally queried — <strong>check this before concluding a diffing/history feature needs new schema.</strong> Proxmox change detection (<code>lanxang/proxmox/changes.py</code>) is the only consumer so far: <code>lanxang proxmox scan</code> calls <code>latest_environment()</code> <em>before</em> saving its own results, so "latest" at that point is actually the previous scan — free baseline, no new table or query method. The roadmap previously claimed this exact feature needed "time-series storage" before anyone actually checked; it didn't.</p>
+<p><strong>Proxmox change detection.</strong> <code>diff_virtualization(previous, current)</code> (<code>lanxang/proxmox/changes.py</code>) is a pure function comparing two <code>{"nodes": [...], "guests": [...]}</code> dicts — nodes matched by <code>name</code>, guests matched by <code>vmid</code> (the stable Proxmox identifier; don't match guests by name, a rename would show as remove+add). Returns <code>[]</code> when <code>previous</code> is falsy (no baseline yet) rather than treating a first sighting as synthetic "added" noise. <code>format_change()</code> renders one change dict to a display string; <code>lanxang/cli/main.py</code>'s <code>scan()</code> only publishes <code>atlas.proxmox.changes_detected</code> when the list is non-empty, so a no-op scan doesn't add event-log noise.</p>
+<p><strong>Both <code>lanxang proxmox scan</code> and <code>lanxang proxmox restart</code> have now been run against a real Proxmox VE host</strong> (not just mocks) — scan correctly connected via API token and found the real node, then correctly detected a newly-created LXC guest as an addition on the next scan; restart then successfully restarted that real guest. Anthropic is partially verified (auth + error-handling path confirmed, full response deferred — see roadmap); Ollama and Prometheus status are also tracked there. Don't claim Proxmox discovery/restart are unverified going forward; they aren't anymore. Two real Proxmox-side gotchas surfaced getting <code>restart</code> working, both documented in <code>docs/deployment/index.md</code> rather than repeated here: <code>verify_ssl: true</code> fails against Proxmox's default self-signed cert, and the API token's <strong>Privilege Separation</strong> setting (on by default) means permissions granted to the <em>user</em> don't apply to the <em>token</em> unless separation is off or the grant targets the token identity directly.</p>
+<p><strong>Monitoring.</strong> <code>lanxang monitor</code> (<code>lanxang/cli/main.py</code>, backed by <code>lanxang/monitoring/</code>) queries an existing Prometheus server rather than Lanxang exposing its own <code>/metrics</code> endpoint — same "Lanxang reaches out on command" shape as <code>lanxang discover</code>/<code>lanxang proxmox scan</code>. <code>client.py</code>'s <code>query_prometheus(base_url, promql)</code> hits <code>/api/v1/query</code>; it <strong>raises</strong> <code>PrometheusUnavailableError</code> on connection failure or a non-success API response, but <strong>returns <code>None</code></strong> (not an error) when a query is simply empty — <code>collector.py</code>'s <code>collect_metrics()</code> relies on that distinction to set <code>available</code> (Prometheus reachable at all) independently of each metric being <code>None</code> (that specific query had no data, e.g. an exporter isn't running). The three default queries (<code>CPU_QUERY</code>/<code>MEMORY_QUERY</code>/<code>DISK_QUERY</code> in <code>collector.py</code>) assume standard <code>node_exporter</code> metric names — a second metric source means adding queries there, not inventing a new module, which is exactly what happened for cAdvisor container metrics (see below). Results land in <code>AtlasEnvironmentContext.monitoring</code> (added alongside <code>containers</code>/<code>virtualization</code> — remember <code>.update()</code> only sets attributes that already exist on the context, so a new top-level category needs the field added to <code>__init__</code>/<code>summary()</code> first, same as this one was). <strong>This integration has now been verified against a real Prometheus</strong> (Docker, <code>prom/prometheus</code> + <code>prom/node-exporter</code>, host networking) — all three default queries resolved against real metric names and returned real values, and the full <code>lanxang monitor</code> scan→save→print path worked end to end. Don't claim it's mock-only going forward; that was true earlier in the project but isn't anymore — see the roadmap's "Verification against real infrastructure" entry.</p>
+<p><strong>Threshold flagging.</strong> <code>collector.py</code>'s <code>evaluate_thresholds(metrics, thresholds)</code> is a pure function (<code>{metric_name: bool}</code>, <code>&gt;=</code> comparison) — a metric that's <code>None</code> or has no configured threshold is left out of the result entirely, not counted as "not exceeded"; those are genuinely different states and the CLI treats them differently (unavailable vs. green vs. yellow). Thresholds live on <code>MonitoringConfig</code> as <code>cpu_threshold</code>/<code>memory_threshold</code>/<code>disk_threshold</code>, <code>90.0</code> each by default — the same number <code>lanxang/health/checks.py</code> already uses for the local host's own memory/storage checks, reused deliberately rather than picking a new number. <code>monitor()</code> in <code>lanxang/cli/main.py</code> prints <code>✓</code>/<code>!</code> per metric (mirroring <code>lanxang doctor</code>'s convention) and publishes <code>atlas.monitoring.threshold_exceeded</code> only when <code>any(exceeded.values())</code> — same "don't log a no-op" rule as <code>atlas.proxmox.changes_detected</code>, not published on every scan regardless of outcome.</p>
+<p><strong>Container-level metrics (cAdvisor).</strong> cAdvisor is treated as a second exporter scraped by the same Prometheus <code>lanxang monitor</code> already queries, not a new integration — no new config section, just two more PromQL queries. <code>client.py</code>'s <code>query_prometheus()</code> only ever returned a single scalar (<code>result[0]</code>), which doesn't fit a query that returns one row per container; the shared request/parse logic moved into a private <code>_query()</code>, and a new <code>query_prometheus_vector(base_url, promql, label)</code> returns <code>{label_value: value}</code> for every row in the result, keyed by a caller-given Prometheus label (<code>"name"</code> for cAdvisor's container label). <code>collector.py</code>'s <code>collect_container_metrics()</code> runs two cAdvisor queries through it — CPU as percent of one core (<code>rate(container_cpu_usage_seconds_total[5m])*100</code>, the standard cAdvisor/Grafana convention) and memory as percent of host total memory (<code>container_memory_usage_bytes / scalar(node_memory_MemTotal_bytes) * 100</code>, deliberately the same unit as the host's own <code>memory_percent</code> so <code>evaluate_thresholds()</code> and the existing <code>cpu_threshold</code>/<code>memory_threshold</code> config work unchanged, called once per container). A container missing from one of the two queries still appears with <code>None</code> for that metric — same "no data yet, not an error" rule the host collector already follows. Results merge into the same <code>AtlasEnvironmentContext.monitoring</code> dict under a <code>containers</code> key, no new context field.</p>
+<p><strong>Monitoring change detection.</strong> <code>lanxang/monitoring/changes.py</code>'s <code>diff_monitoring(previous, current, thresholds)</code> mirrors <code>lanxang/proxmox/changes.py</code>'s <code>diff_virtualization()</code> shape (same <code>previous</code>-falsy → <code>[]</code> no-baseline rule) but diffs <em>threshold-exceeded state</em> rather than raw state: a metric — host or per-container — moving from under-threshold to over-threshold since the last scan is a <code>*_metric_crossed</code> change, the reverse a <code>*_metric_recovered</code>. Both snapshots are evaluated against the <em>current</em> thresholds, not whatever was configured when the previous snapshot was saved — threshold config isn't versioned per snapshot, so re-checking old data under today's config is the only comparison that means anything. <code>format_change()</code> is imported into <code>lanxang/cli/main.py</code> aliased as <code>format_monitoring_change</code>, since the unaliased name is already bound to the Proxmox version. <code>monitor()</code> fetches <code>KnowledgeQueries().latest_environment()</code> up front (same placement as <code>lanxang proxmox scan</code>) and publishes <code>atlas.monitoring.changes_detected</code> only when non-empty — a genuinely different event from the existing <code>atlas.monitoring.threshold_exceeded</code> (fires on "something is bad right now," every scan) versus this one firing on "something changed since last time."</p>
+<p><strong>Container resource-allocation visibility.</strong> <code>lanxang monitor</code> now also answers "is this container starved relative to what it was actually <em>allocated</em>," not just "is it busy" — <code>cpu_percent</code>/<code>memory_percent</code> are already percent-of-<em>host</em>; <code>collect_container_metrics()</code> gained two more optional per-container keys, <code>cpu_percent_of_limit</code>/<code>memory_percent_of_limit</code>, percent of the container's <em>own</em> configured limit. <strong>Deliberately no Docker-side collection</strong> — the original framing assumed this needed <code>docker.py</code>'s <code>container.attrs["HostConfig"]</code> cross-referenced against cAdvisor usage by name, but cAdvisor already exposes the configured limits themselves as their own metrics (<code>container_spec_cpu_quota</code>/<code>container_spec_cpu_period</code>, <code>container_spec_memory_limit_bytes</code>), so the whole thing is two more PromQL queries in <code>collector.py</code>, computing "percent of own limit" entirely server-side — no cross-collector join, <code>lanxang/docker/manager.py</code> untouched. Confirmed against real cAdvisor: an unconstrained container's <code>container_spec_cpu_quota</code> series doesn't exist at all (not zero — the query naturally returns no row, no special-casing needed), while <code>container_spec_memory_limit_bytes</code> <strong>does</strong> return a row at <code>0</code> for unconstrained containers, needing an explicit <code>&gt; 0</code> filter to treat as "no limit configured" the same way. <strong>A real PromQL bug, only caught by running against real cAdvisor, not by unit tests against mocks:</strong> <code>CONTAINER_CPU_LIMIT_PERCENT_QUERY</code> divides an aggregated <code>sum(...) by (name)</code> series (which strips every label except <code>name</code>) against the un-aggregated <code>container_spec_cpu_*</code> series (which still carry their full original label set) — Prometheus's default one-to-one vector matching requires identical label sets and silently returns <em>no rows</em> rather than an error when they don't match, so every container's <code>cpu_percent_of_limit</code> came back <code>None</code> even for the one with a real configured limit. Fixed with explicit <code>on(name)</code> matching on both operators. The memory query didn't need this — neither side of that division is aggregated, so both retain cAdvisor's full original label set and match by default. Verified end-to-end against a real <code>--cpus=0.5 --memory=256m</code> test container: <code>cpu_percent_of_limit</code> tracked <code>cpu_percent / 0.5</code> exactly across several live scans, and <code>cpu_allocation_threshold</code>/<code>memory_allocation_threshold</code> (two new <code>MonitoringConfig</code> fields, same 90.0-default convention as every other threshold) correctly flagged it with <code>!</code> once lowered below the real live percentage.</p>
+<p><strong>A second real correctness gap, found while tracing the display path, not by running anything:</strong> <code>lanxang monitor</code>'s per-container print loop calls <code>evaluate_thresholds(values, thresholds)</code>, and <code>evaluate_thresholds()</code> already correctly excludes a metric with no matching key in <code>thresholds</code> from its result. Without <code>cpu_allocation_threshold</code>/<code>memory_allocation_threshold</code> existing as literal keys the container-level call passes through, <code>cpu_percent_of_limit</code>/<code>memory_percent_of_limit</code> would print a real value but <strong>silently never show the yellow <code>!</code></strong>, even at 100% of allocation — not a crash, just a quiet false "healthy," since the <code>thresholds[name]</code> indexing that renders the threshold value only executes inside the <code>if exceeded:</code> branch, which a missing key means is never true. Fixed by building a second, container-only thresholds dict (<code>{**host_thresholds, "cpu_percent_of_limit": ..., "memory_percent_of_limit": ...}</code>) rather than adding the two new keys to the host-level dict, which stays exactly 3 keys. This same merged dict is what's now passed to <code>diff_monitoring()</code> too — <code>evaluate_thresholds()</code>'s existing "unknown key = not evaluated" behavior means the host-level evaluation inside <code>diff_monitoring()</code> is completely unaffected by the two extra keys being present.</p>
+<p><strong>Zero changes to <code>diff_monitoring()</code>, <code>evaluate_thresholds()</code>, or the <code>atlas.monitoring.changes_detected</code> event path</strong> — both are already generic over whatever keys appear in a container's metrics dict, so a container crossing 90% of its own limit between two scans produces a real <code>container_metric_crossed</code> change and publishes the existing event for free. Confirmed directly: not by re-deriving the logic, but by noting it's the exact same unmodified code path already real-verified for host/container <code>cpu_percent</code>/<code>memory_percent</code> in the original cAdvisor work. This is the third time this project has found "the thing we assumed needed new infrastructure didn't" — after Proxmox's insert-only history and the event-listener registration gap.</p>
+<p><strong>Both cAdvisor container metrics and monitoring change detection have now been verified against real infrastructure</strong> — a real cAdvisor container (Docker, host networking, <code>--privileged</code>) added as a second scrape job on the same test Prometheus used for the earlier monitoring verification. <code>lanxang monitor</code> correctly returned real per-container CPU/memory for all three actual containers running on the host, and lowering <code>cpu_threshold</code> below live CPU usage between two real scans produced a genuine <code>container_metric_crossed</code> change and <code>atlas.monitoring.changes_detected</code> event — while correctly <em>not</em> flagging the host CPU metric as changed, since re-evaluating the previous snapshot under the new threshold showed it was already over, exactly the "evaluate both snapshots against current thresholds" behavior described above working as intended on real data. Don't claim this is mock-only going forward.</p>
+<p><strong>Resource-usage trending (<code>lanxang trends</code>).</strong> <code>save_environment()</code> (<code>lanxang/knowledge/store.py</code>) is insert-only, so a full history of past snapshots already existed in the <code>environment</code> table — this is the fourth time this project has found "the thing we assumed needed new infrastructure didn't," after Proxmox's insert-only history, the event-listener registration gap, and the cAdvisor allocation-visibility work above. <code>KnowledgeQueries.environment_history(limit=20)</code> is a new method (same shape as <code>recent_events()</code>, right above it) returning parsed <code>{"created_at", "data"}</code> rows, most-recent-first (ordered by <code>created_at.desc(), id.desc()</code> — the <code>id</code> tiebreak matters, since two real snapshots can land in the same microsecond). <code>lanxang/monitoring/trends.py</code> (new, pure functions, same style as <code>lanxang/monitoring/changes.py</code>) turns that into chronological <code>(timestamp, value)</code> points per metric via <code>host_metric_trend()</code>/<code>container_metric_trend()</code>, plus <code>known_container_names()</code> to enumerate which containers appear anywhere in the window. <code>lanxang trends</code> prints one summary line per metric (latest/min/max/avg over N samples), no graphs — same plain-text convention every other command uses.</p>
+<p><strong>A real caveat that shaped the whole design, found by reading the actual save call sites, not assumed:</strong> <code>lanxang discover</code>, <code>lanxang proxmox scan</code>, and <code>lanxang monitor</code> all call <code>save_environment()</code>, but each CLI invocation is a separate process with its own fresh <code>AtlasEnvironmentContext()</code> — so <strong>every saved row only carries the categories that specific command populated</strong>, never a complete snapshot. A row from <code>lanxang monitor</code> has real <code>monitoring</code> data but empty <code>hardware</code>/<code>virtualization</code>; a row from <code>lanxang discover</code> is the reverse. <code>host_metric_trend()</code>/<code>container_metric_trend()</code> therefore explicitly skip any row missing <code>monitoring</code> entirely (not just a missing metric within it) rather than assuming every row is a full snapshot. This is also why the scope stayed to host + per-container metrics, both saved together by <code>lanxang monitor</code> in one row — merging in Proxmox guest usage would mean stitching together two independently-scheduled snapshot series and normalizing units (Proxmox's guest <code>cpu</code> is a 0–1 fraction, not a percent), deliberately deferred as its own follow-up rather than folded in here. Verified against real accumulated history: several real <code>lanxang monitor</code> runs against the existing test Prometheus + cAdvisor setup, then <code>lanxang trends</code> correctly reported genuine host and per-container trends for every real container, including <code>cpu_percent_of_limit</code>/<code>memory_percent_of_limit</code> trending correctly for the one container with a real configured limit and showing nothing for the unconstrained ones.</p>
+<p><strong><code>--json</code> output + cron-friendly exit codes (<code>lanxang doctor</code>/<code>lanxang monitor</code>/<code>lanxang trends</code>).</strong> All three commands gained a <code>--json</code> flag (Python parameter <code>json_output</code>, not <code>json</code>, so it doesn't shadow the stdlib module) printing a single machine-readable payload via plain <code>print(json.dumps(payload, indent=2))</code> — deliberately <strong>not</strong> <code>console.print()</code>, since Rich's terminal handling isn't the concern for output piped into <code>jq</code>/a cron log with no TTY attached. <strong>Exit codes are meaningful all the time, not gated behind <code>--json</code></strong> — <code>lanxang doctor</code>/<code>lanxang monitor</code> now <code>raise typer.Exit(code=1)</code> whenever something's actually wrong (an unhealthy check, an exceeded threshold, an unreachable Prometheus), regardless of output format, so a plain cron job can just check <code>$?</code> with no JSON parsing at all. This is a real, deliberate behavior change from the previous always-exit-0 behavior — confirmed nothing in this project depended on the old behavior before making the change. <code>lanxang doctor</code>'s <code>healthy</code> is <code>all(check["status"] for check in results)</code>, computed once and used for both the JSON payload's <code>"healthy"</code> key and the exit check, so they can never disagree. <code>lanxang monitor</code> distinguishes three states in its JSON shape — disabled (<code>{"enabled": false}</code>, exit 0, since disabled is an intentional state, same rule <code>lanxang doctor</code> already applies to every optional integration), unreachable (<code>{"enabled": true, "available": false}</code>, exit 1, since you configured and expected Prometheus and it's not there), and reachable (full payload with <code>metrics</code>/<code>thresholds</code>/<code>exceeded</code>/<code>containers</code>/<code>changes</code>/<code>healthy</code>, exit 1 iff any host or per-container metric exceeded its threshold) — every field reuses a variable the function already computes for the human-readable path, no new calculation. <code>lanxang trends</code> gets <strong>no</strong> exit-code logic — it has no health/threshold concept to signal (a trend report with zero samples is empty, not wrong), so only <code>--json</code> output was added there; needed one real restructuring, pulling the inline latest/min/max/avg/samples computation each print statement did directly into a shared <code>_trend_summary(points)</code> helper, so the human and JSON paths compute identical numbers from the same call instead of two parallel implementations. Verified against real infrastructure: <code>lanxang doctor --json</code>/<code>lanxang monitor --json</code>/<code>lanxang trends --json</code> all produced genuinely valid JSON (piped through <code>jq</code> against the real Docker/Prometheus/cAdvisor test setup, not just "didn't crash") with real live values matching the human-formatted output; <code>lanxang monitor</code>'s exit code was confirmed to actually flip from <code>0</code> to <code>1</code> and back by temporarily lowering <code>cpu_threshold</code> below the real live CPU percentage and then restoring it.</p>
+<p><strong>Discovery: built-in + plugins, unified in <code>lanxang discover</code>.</strong> <code>lanxang.discovery.run_discovery()</code> (<code>lanxang/discovery/__init__.py</code>) is the built-in, synchronous path — it directly calls <code>collect_system/hardware/storage/network</code> and returns a merged dict. Separately, <code>lanxang/plugins/</code> implements a plugin architecture (<code>AtlasPlugin</code> ABC with <code>initialize(runtime)</code> / <code>discover()</code>, <code>PluginManager.load_plugins()</code> auto-discovers via <code>lanxang/plugins/loader.py</code>, <code>discover_all()</code> runs every registered plugin). The <code>lanxang discover</code> CLI command (<code>lanxang/cli/main.py</code>) runs both in one pass: built-in results go through <code>AtlasEnvironmentContext.ingest_discovery()</code>, plugin results are grouped by each plugin's declared category (see below) and merged in, and both are saved to the knowledge store in a single <code>save_environment()</code> call before two separate events publish (<code>atlas.discovery.completed</code>, <code>atlas.plugins.discovery.completed</code>). There used to be a separate <code>lanxang discover-plugins</code> command; it was removed once its job was folded into <code>lanxang discover</code> — don't reintroduce it as a distinct command without a reason, the whole point was one discovery entry point. <code>lanxang plugins</code> (list registered plugins, no discovery) is unrelated and still exists.</p>
+<p><strong>The second plugin, <code>LibvirtPlugin</code>, forced a real generalization a single-plugin system had been quietly missing.</strong> Until now <code>lanxang discover</code> merged every plugin's output with a hardcoded <code>runtime.environment.update("containers", plugin_data)</code> — harmless with only <code>DockerPlugin</code>, but a plugin whose data isn't container-shaped would have been silently filed under the wrong context field rather than its own. Fixed by giving <code>AtlasPlugin</code> a <code>category</code> class attribute (<code>"unknown"</code> by default — deliberately invalid, since <code>AtlasEnvironmentContext.update()</code> already no-ops on a category it doesn't recognize via <code>hasattr()</code>, so a plugin that forgets to set this loses its data instead of clobbering someone else's category). <code>lanxang discover</code> now groups <code>manager.get_plugins()</code> by <code>plugin.category</code> before merging, one <code>update()</code> call per category. <code>DockerPlugin.category = "containers"</code>; <code>LibvirtPlugin.category = "virtualization"</code> — the same context field <code>lanxang proxmox scan</code> already writes to, but in a genuinely different shape: Proxmox's is flat (<code>{"nodes": [...], "guests": [...]}</code>, written directly by the <code>proxmox scan</code> CLI command, not a plugin), while a plugin-sourced category is always keyed by plugin name (<code>{"Docker": {"available": bool, "containers": [...]}}</code>, <code>{"Libvirt": {"available": bool, "guests": [...]}}</code>) — the same key-by-plugin-name convention <code>discover_all()</code>'s <code>{plugin.name: data}</code> return already established, just now also used for the <em>merged</em> context, not only the event payload. Any code reading <code>environment["virtualization"]</code> needs to handle both shapes depending which command produced that row (same "each row only has what that specific command populated" rule already governing every other category) — <code>lanxang/actions/targets.py</code>'s <code>known_libvirt_guest_names()</code> and <code>lanxang/web/render.py</code>'s guest-rendering both do this by checking <code>isinstance(virtualization.get("guests"), list)</code> for the flat Proxmox shape and falling back to per-plugin-dict iteration otherwise, rather than crashing on the shape they don't expect.</p>
+<p><strong><code>lanxang/libvirt/</code> shells out to the <code>virsh</code> CLI rather than the <code>libvirt-python</code> bindings</strong>, which need a compiled extension built against the host's libvirt C library — the first genuine "should this be a new dependency" call for a plugin, and it went the other way from Proxmox's <code>proxmoxer</code>/Docker's <code>docker-py</code>: both of those are pure-Python and don't need anything compiled against a system library, so adding either didn't compromise this project's install story on a fresh machine. <code>libvirt-python</code> would have. <code>get_client()</code> mirrors <code>lanxang.docker.manager.get_client()</code>'s availability-gate shape (<code>shutil.which("virsh")</code> or <code>None</code>, never raises), and every other function shells out via a shared <code>_run(virsh, *args)</code> (<code>subprocess.run(..., capture_output=True, text=True, timeout=5, check=True)</code>) so a hung or missing <code>virsh</code> can't hang Lanxang — the same reasoning <code>lanxang doctor</code>'s live reachability checks already established. <code>collect_guests()</code> (<code>virsh list --all --name</code>, then <code>domstate</code>/<code>domuuid</code> per guest) backs <code>LibvirtPlugin.discover()</code>; a per-guest lookup failure degrades that one guest to <code>state: "unknown"</code>/<code>uuid: ""</code> rather than dropping it or failing the whole scan.</p>
+<p><strong>Fifth action type: <code>restart_libvirt_guest</code></strong>, <code>LibvirtPlugin</code>'s first mutating action, added once discovery already existed — the same staged order Proxmox went through (<code>scan</code> shipped alone first; <code>restart</code>/<code>stop</code>/<code>resize</code> came later, one at a time). Scoped to just restart for this pass; stop/resize for libvirt guests are tracked separately in the roadmap, not bundled in. <code>restart_guest(name)</code> in <code>lanxang/libvirt/manager.py</code> sends an ACPI reboot request via <code>virsh reboot</code> — same no-automatic-force-fallback caveat already documented for Proxmox's <code>stop_guest</code> (a <code>shutdown</code>/ACPI-style request, not guaranteed if the guest OS isn't listening), stated in the CLI's confirmation text rather than assumed. Adding the entry to <code>ACTIONS</code> was exactly as cheap as the fourth action type's own note predicted: one <code>ActionDefinition</code> (<code>lanxang/actions/registry.py</code>), one new <code>known_libvirt_guest_names()</code> (<code>lanxang/actions/targets.py</code> — matches by guest <em>name</em>, not <code>known_guest_ids()</code>'s Proxmox <code>vmid</code>, since <code>virsh</code> operates on domain names and libvirt has no vmid-equivalent identifier), one <code>PLAN_STEP_EVENT_TYPES</code> entry, one <code>ACTION_INSTRUCTIONS</code> sentence (now action (7), explicit that it's distinct from Proxmox's <code>restart_guest</code> and takes a name, not a vmid). <code>ACTION_SCHEMA</code>'s <code>type</code> enum needed no manual edit at all, being derived from <code>list(ACTIONS.keys())</code>. The standalone command is a new <code>libvirt_app</code> Typer sub-app (<code>lanxang libvirt restart &lt;name&gt;</code>), mounted the same way as <code>proxmox_app</code>, with the same get-info-then-confirm-then-publish-event shape every other action command already follows — <code>lanxang/libvirt/manager.py</code>'s new <code>get_guest_info(name)</code> backs the pre-confirmation state display, same <code>{"found": bool, ...}</code> shape as Docker's/Proxmox's own <code>get_*_info()</code>.</p>
+<p><strong>Sixth+ action type: <code>stop_libvirt_guest</code>, plus a CLI-only <code>lanxang libvirt resize</code> that is deliberately <em>not</em> in <code>ACTIONS</code>.</strong> <code>stop_guest(name)</code> sends <code>virsh shutdown</code> (ACPI), not <code>virsh destroy</code> — despite the name, <code>destroy</code> is libvirt's hard power-off, not deletion; picking <code>shutdown</code> matches the same reasoning Proxmox's <code>stop_guest</code> already used (matches what "stop" means in Docker's own default), same no-force-fallback caveat. Wired into <code>ACTIONS</code> exactly like <code>restart_libvirt_guest</code> was — new <code>ActionDefinition</code>, reuses <code>known_libvirt_guest_names()</code>, one <code>PLAN_STEP_EVENT_TYPES</code> entry, one <code>ACTION_INSTRUCTIONS</code> sentence (now action (8)). <strong>Resize was scoped differently on purpose.</strong> <code>virsh setvcpus</code> takes an integer vCPU <em>count</em> (guest topology - how many vCPUs the guest OS sees), not the fractional core limit every other <code>resize_*</code> action's shared <code>SuggestedAction.cpus</code> string field means (Docker's <code>--cpus</code>, Proxmox's <code>cpulimit</code> - see the QEMU hotplug section above for why "how many CPUs the guest OS sees" and "a host-side usage cap" are already established as genuinely different concepts in this codebase). Reusing that one shared schema field for a third, incompatible meaning wasn't worth it just to make this CLI-only feature AI-suggestable, so <code>resize_libvirt_guest</code> was never added to <code>ACTIONS</code> at all - <code>lanxang libvirt resize &lt;name&gt; --vcpus/--memory</code> exists as a normal command (<code>typer.Option</code>s, the same "Specify --X and/or --Y" pre-check <code>lanxang proxmox resize</code>/<code>lanxang resize</code> already use) but has no action type, no <code>ACTION_INSTRUCTIONS</code> entry, and can't be suggested by <code>lanxang analyze</code>/<code>lanxang chat</code>. <code>resize_guest(name, vcpus=None, memory=None)</code> in <code>lanxang/libvirt/manager.py</code> makes up to two separate virsh calls - <code>setvcpus</code>/<code>setmem</code> are different subcommands, unlike Docker's single <code>update()</code> call or Proxmox's single resize endpoint - stopping after the first failure rather than attempting the second. Both calls are <code>--config</code> only (applies at next boot); a running guest needing this live would also need <code>--live</code>, which requires hotplug already configured on that specific guest - the same class of gotcha the QEMU memory-hotplug work above found real surprises in (enabling hotplug on an already-running VM doesn't retroactively grant it live-resize capability). Deliberately not attempted here rather than risk repeating that investigation for a guest type this project hasn't real-infrastructure-verified yet; the CLI's confirmation text says a restart may be needed instead, the same honesty <code>lanxang proxmox resize</code>'s own qemu-hotplug caveat already models. A shared <code>_run_command(virsh, *args)</code> helper (<code>lanxang/libvirt/manager.py</code>) now backs <code>restart_guest()</code>/<code>stop_guest()</code>/<code>resize_guest()</code> - the same never-raises, pure-result-dict conversion was being duplicated as each new mutating command was added, factored out once a third caller needed it (same "generalize once a third instance forces it" pattern as <code>lanxang/actions/</code> itself).</p>
+<p><strong><code>lanxang web</code>'s Containers/Virtualization Guests rendering had a pre-existing bug, surfaced (not introduced) by the plugin-category generalization above.</strong> <code>render_overview_page()</code>'s comment claimed <code>environment["containers"]</code> was "keyed by container name"; it never was — it's keyed by <em>plugin</em> name (confirmed by the CLI smoke test's own long-standing assertions), so the page rendered one row per plugin (<code>{"name": "Docker", "available": True, "containers": [...]}</code>) instead of one row per actual container. The "Proxmox Guests" section had the same class of gap for the <em>other</em> direction: it only ever handled <code>lanxang proxmox scan</code>'s flat shape, so a plugin-sourced <code>virtualization</code> entry (now: <code>LibvirtPlugin</code>'s) wouldn't render at all. Fixed by flattening each plugin's actual container/guest list (tagging each row with its source plugin) and, for guests, branching on <code>isinstance(virtualization.get("guests"), list)</code> the same way <code>known_libvirt_guest_names()</code> does — renamed the section "Virtualization Guests" since it's no longer Proxmox-only. Verified against a real running <code>lanxang web</code> server with seeded Docker container and Libvirt guest data: both now render as one row each, correctly attributed to their source plugin.</p>
+<p><strong>Multi-node / fleet view, v1: <code>lanxang fleet doctor</code>.</strong> Deliberately no daemon, no central server, no new schema — follows the same "Lanxang reaches out on command" shape every other integration already uses, just SSH instead of an HTTPS API. <code>lanxang/config/models.py</code> gained <code>FleetNode</code>/<code>FleetConfig</code> (same pydantic pattern as <code>ProxmoxConfig</code>); <code>lanxang/fleet/manager.py</code>'s <code>run_remote_doctor(node)</code> shells out to the system <code>ssh</code> binary — <code>paramiko</code> was rejected the same way <code>libvirt-python</code> was, a compiled/heavier dependency where a CLI shell-out already does the job — and runs <code>lanxang doctor --json</code> on the remote node, reusing that existing JSON payload rather than inventing a fleet-specific one. <code>-o BatchMode=yes</code> matters concretely: without it, an auth failure would sit waiting on a password prompt over stdin that will never arrive, hanging the whole fleet scan on one bad node; confirmed for real against this project's own dev machine (an intentionally-misconfigured SSH target returned "Permission denied" in under a second, not a hang). <code>-o ConnectTimeout=5</code> bounds the handshake; the outer <code>subprocess.run(timeout=20)</code> bounds the whole call, generous enough for the remote <code>lanxang doctor</code>'s own reachability checks (which can themselves take several seconds - see the doctor reachability work above) without being unbounded. <code>run_remote_doctor()</code> never raises: SSH connection failure, a remote <code>lanxang doctor</code> that ran and found something unhealthy (exits 1 but still prints valid JSON — a real "reachable but unhealthy" result, not treated as an SSH failure since <code>check=True</code> was deliberately not used here), and unparseable remote output are three distinct paths, all returning the same <code>{"reachable": bool, ...}</code> shape. The last two collapse into the same <code>"reachable": False</code> state for this first pass though — "connected fine but the remote lanxang doctor's own output couldn't be parsed" (not installed, wrong PATH) isn't distinguished from a real connection failure beyond the <code>error</code> message text, a deliberate simplification, not an oversight. <code>lanxang fleet doctor</code> (new <code>fleet_app</code>, mounted the same way as <code>proxmox_app</code>/<code>libvirt_app</code>) aggregates every configured node into one table plus a fleet-wide <code>healthy</code> bool, with <code>--json</code> and a meaningful exit code following <code>lanxang doctor</code>'s own cron-friendly convention exactly; no fleet nodes configured is treated as a valid, intentional state (exit 0), the same rule Proxmox/monitoring already follow when disabled. <strong>Deliberately narrower than "multi-node" could mean</strong>: no remote actions (<code>lanxang fleet restart &lt;node&gt; &lt;name&gt;</code>) — approval-gating a mutation over SSH is a real, separate problem, not bundled in; no persistence — this is a live fan-out per invocation, like <code>lanxang plugins</code>, not a saved snapshot, so there's no new <code>AtlasEnvironmentContext</code> field or <code>save_environment()</code> call anywhere in this feature.</p>
+<p><strong><code>lanxang fleet trends</code>, the second SSH-fan-out collector, forced the generalization <code>run_remote_doctor()</code> alone didn't need yet.</strong> <code>lanxang/fleet/manager.py</code>'s SSH/parse plumbing (build args, run with a bounded timeout, distinguish "SSH itself failed" from "connected but got unparseable output" from "connected and got valid JSON") moved into <code>_run_remote_json(node, *atlas_args, timeout=20)</code>, returning a plain <code>(reachable, payload, error)</code> tuple — <code>run_remote_doctor()</code> and the new <code>run_remote_trends()</code> are now both thin wrappers that just call it with different remote args (<code>"doctor", "--json"</code> vs <code>"trends", "--limit", str(limit), "--json"</code>) and shape the result dict differently. <code>run_remote_trends(node, limit=20)</code> reuses <code>lanxang trends --json</code>'s existing <code>{"host": {...}, "containers": {...}, "guests": {...}}</code> payload — same "don't invent a fleet-specific format" rule <code>run_remote_doctor</code> already established. <strong>No fleet-wide <code>healthy</code> in its output, unlike <code>fleet doctor</code></strong> — <code>lanxang trends</code> itself has no health/threshold concept to signal (established when <code>--json</code> first shipped on <code>trends</code> — see the cron-friendly-exit-codes entry above), so <code>lanxang fleet trends</code>'s exit code reflects only whether every node was reachable, nothing about the trend data itself. The CLI command reuses <code>_print_trend_summaries()</code> (already defined for the local <code>lanxang trends</code> command, just called once per node here) for its human-readable output, so the two commands can't render trend numbers differently from the same underlying function.</p>
+<p><strong><code>lanxang fleet report</code> was scoped out, not built, for a real structural reason — not just "less important."</strong> <code>lanxang doctor</code>/<code>lanxang trends</code> both already had a <code>--json</code> mode before fleet work touched them, which is <em>why</em> <code>run_remote_doctor</code>/<code>run_remote_trends</code> were cheap: reuse an existing payload, don't invent one. <code>lanxang report</code> has no <code>--json</code> at all — <code>report()</code> in <code>lanxang/cli/main.py</code> calls <code>generate_report(inventory)</code> and writes a Markdown file to disk, nothing to stdout as structured data. A fleet version would first need <code>lanxang report --json</code> to exist, and that's a real, separate design question (mirror the Markdown's content structurally, or just expose the raw inventory dict <code>generate_report()</code> already consumes) — deliberately not answered or half-built here just to keep <code>lanxang fleet report</code> moving.</p>
+<p><strong><code>lanxang report --json</code> answered that open question by dissolving it.</strong> <code>generate_report(inventory)</code> (<code>lanxang/reporting/generator.py</code>) never computes anything beyond <code>inventory</code> itself — every section is <code>str(inventory[key])</code> or a bullet list over <code>inventory["system"].items()</code>, no aggregation, no derived fields. So there was no real "mirror the Markdown structurally" option to weigh against "expose the raw dict" — they're the same data, the Markdown just formats it. <code>report()</code> in <code>lanxang/cli/main.py</code> gained a <code>json_output</code> param; when set, it prints <code>json.dumps(inventory, indent=2)</code> and returns immediately, <em>before</em> the "no inventory" check and before <code>generate_report()</code> is ever called — so <code>--json</code> never touches <code>reports/atlas-report.md</code>, matching <code>doctor</code>/<code>monitor</code>/<code>trends</code>'s established rule that <code>--json</code> replaces the human action rather than running alongside it. <code>inventory</code> being <code>None</code> (no <code>lanxang discover</code> yet) prints literal <code>null</code> — <code>load_inventory()</code>'s real Python value serialized as-is, not a special-cased <code>{}</code> invented for this. No exit-code logic was added, matching <code>lanxang trends</code>'s own precedent that a snapshot/inventory dump has no health concept to signal, unlike <code>doctor</code>/<code>monitor</code>. Verified against real discovered data on this machine (full valid JSON dump of actual system/hardware/storage/network) and confirmed <code>reports/</code> is never created in <code>--json</code> mode.</p>
+<p><strong><code>lanxang fleet report</code>, the third <code>_run_remote_json</code> consumer, surfaced a real edge case doctor/trends didn't have to handle: a valid, successful payload that's <code>null</code>.</strong> <code>run_remote_report(node)</code> runs <code>lanxang report --json</code> remotely; when the remote <code>inventory</code> is <code>None</code> (that node just hasn't run <code>lanxang discover</code> yet), <code>_run_remote_json</code> still returns <code>reachable=True</code> with <code>payload=None</code> - a legitimate result, not a JSON parse failure. <code>run_remote_report()</code> checks <code>payload is None</code> explicitly and returns <code>{"reachable": True, "inventory": None}</code>, distinct from both an unreachable node and a node with real data - <code>lanxang fleet report</code>'s CLI output branches on this to print "No inventory found - run lanxang discover on that node" rather than crashing on <code>payload.get(...)</code> against <code>None</code>. Same no-fleet-wide-<code>healthy</code> shape as <code>lanxang fleet trends</code> (<code>lanxang report</code> has no health concept either), exit code reflects reachability only.</p>
+<p><strong>Remote fleet actions (<code>--node</code> on <code>lanxang restart</code>/<code>stop</code>/<code>resize</code> and <code>lanxang libvirt restart</code>/<code>stop</code>/<code>resize</code>) retarget the local client's connection instead of SSH-invoking a remote <code>lanxang</code> command - the read-only fleet pattern (<code>_run_remote_json</code>) genuinely doesn't extend to mutations.</strong> A remote <code>lanxang restart &lt;name&gt;</code> still has its own <code>typer.confirm()</code>; piped through the same <code>capture_output=True</code> transport <code>run_remote_doctor</code>/<code>trends</code>/<code>report</code> use, that prompt hangs forever on stdin that will never arrive. Fixing it with a non-interactive flag on the remote command would mean adding the exact bypass flag this project rules out everywhere ("Lanxang always asks first... no bypass flag" - see Project philosophy). So the confirm() stays exactly where it already is, unchanged; only the <em>connection</em> moves. <code>lanxang/docker/manager.py</code>'s <code>get_client(node=None)</code> builds <code>docker.DockerClient(base_url=f"ssh://{node.user}@{node.host}:{node.port}", use_ssh_client=True)</code> when a <code>FleetNode</code> is given - <code>use_ssh_client=True</code> makes docker-py shell to the system <code>ssh</code> binary for the actual connection, but <code>paramiko</code> is still a hard, unconditional import the instant an <code>ssh://</code> base_url is used at all (confirmed by testing without paramiko installed - <code>DockerException: Install paramiko package to enable ssh:// support</code>, even with <code>use_ssh_client=True</code>), so it's a real new dependency (<code>pyproject.toml</code>), not avoided by that flag. <code>lanxang/libvirt/manager.py</code>'s <code>_run()</code>/<code>_run_command()</code> gained an optional <code>connect_uri</code>, passed as <code>-c qemu+ssh://user@host/system</code> - libvirt's own native remote transport, shells through the same system <code>ssh</code> already required elsewhere in <code>lanxang/fleet/</code>, no new dependency there. <strong>Proxmox needed zero changes</strong> - its API is already inherently remote/cluster-wide, one controller already reaches any guest in its configured cluster; "fleet" was never a gap for Proxmox. New <code>_resolve_fleet_node(node_name)</code> (<code>lanxang/cli/main.py</code>) looks up a <code>FleetNode</code> by name, shared by all six retargeted commands; every mutating manager function (<code>get_container_info</code>, <code>restart_container</code>, <code>stop_container</code>, <code>resize_container</code>, <code>get_guest_info</code>, <code>restart_guest</code>, <code>stop_guest</code>, <code>resize_guest</code>) gained an optional trailing <code>node=None</code> param - <code>collect_containers()</code>/<code>collect_guests()</code>/<code>get_container_logs()</code> deliberately weren't touched, out of scope for this pass. Deliberately not wired into <code>ACTIONS</code> - a suggested action has no concept of "which fleet node" yet. Verified end to end against this machine's real <code>ssh</code>/<code>virsh</code>: an unreachable node fails cleanly (visible real SSH auth retries, then "Docker unavailable"/"not found," no crash, no hang) on both paths, and an unconfigured <code>--node</code> name refuses before any connection attempt.</p>
+<p><strong><code>lanxang analyze --json</code>, added specifically to make the still-billing-blocked Anthropic verification scriptable, reuses the same "no bypass flag" reasoning as <code>--node</code>.</strong> <code>AnalysisResult</code>/<code>Recommendation</code>/<code>SuggestedPlan</code>/<code>PlanStep</code> (<code>lanxang/intelligence/providers/base.py</code>) are plain dataclasses with no non-serializable fields (<code>Severity</code> is a <code>Literal[str]</code>, not an enum), so <code>dataclasses.asdict(result)</code> serializes the whole tree directly - same "reuse what already exists" as <code>lanxang report --json</code>'s raw inventory dict. <code>analyze()</code> in <code>lanxang/cli/main.py</code> never calls <code>typer.confirm("Run this plan now?")</code> in <code>--json</code> mode - a suggested plan is reported in the payload, never executed non-interactively, the exact same reasoning that shaped <code>--node</code>'s design just above. Unlike <code>report</code>/<code>trends</code>, this <em>does</em> get an exit code (<code>AIProviderError</code> → 1, success → 0) - <code>lanxang analyze</code> has a real health concept those two don't, and an exit code is the actual point of making this scriptable. <code>save_analysis()</code>/<code>atlas.analysis.completed</code> still fire in <code>--json</code> mode regardless of success or failure path - passive recording, not an approval-gated action, same rule every other command already follows. No environment data yet prints <code>null</code>, exit 0, matching <code>lanxang report</code>'s precedent for the same not-ready state. Verified against a real local Ollama: hit a genuine <code>400 Bad Request</code> (a pre-existing model-compatibility issue, confirmed identical in plain-text <code>lanxang analyze</code> too, unrelated to this change) - <code>--json</code> correctly reported <code>{"error": ...}</code> and exited 1, confirming the failure path end to end on real infrastructure; the success-path payload shape is covered by mocked tests exercising the identical <code>AtlasAnalyzer.analyze()</code> code path already used by the real-Ollama-verified plain-text command.</p>
+<p><strong>Config.</strong> <code>lanxang/config/loader.py</code>'s <code>load_config()</code> reads <code>lanxang.yaml</code> from the current working directory (returns <code>AtlasConfig()</code> defaults if the file doesn't exist) and validates it against the pydantic models in <code>lanxang/config/models.py</code>. Config sections are added by adding a new pydantic <code>BaseModel</code> subclass and a field on <code>AtlasConfig</code>, following the existing <code>ProxmoxConfig</code>/<code>IntelligenceConfig</code> pattern. <code>lanxang/config/config.yaml</code>, a stray unused template fragment nothing ever read, was deleted once <code>lanxang init</code> (below) became the real answer to "how do I get a config file."</p>
+<p><strong><code>lanxang init</code></strong> (<code>lanxang/cli/main.py</code>) interactively builds an <code>AtlasConfig</code> and writes it via <code>lanxang/config/writer.py</code>'s <code>write_config(config, path=CONFIG_FILE)</code> — plain <code>yaml.safe_dump(config.model_dump())</code>, no prompting, reusing <code>config_file()</code> from <code>lanxang/config/local.py</code> (<code>lanxang.yaml</code>, or an existing <code>atlas.yaml</code> when only that exists) rather than redefining the path. Only prompts for fields that actually vary per deployment (name, Proxmox, AI provider, Prometheus) — <code>discovery</code>/<code>inventory</code> stay at their pydantic defaults, never asked about. All interaction (<code>typer.prompt</code>/<code>typer.confirm</code>) lives in the CLI command, same split as <code>lanxang restart</code>/<code>lanxang proxmox restart</code>: manager/config modules stay pure, the CLI layer owns stdin/stdout. <code>write_setup_log(lines, directory=Path("logs"))</code> writes a plain-text <code>lanxang-init-&lt;timestamp&gt;.log</code> (the CLI command builds up <code>lines</code> as a list of strings while prompting) — <code>logs/</code> was already gitignored before this, no <code>.gitignore</code> change needed. <strong>The log never contains secret values</strong> (<code>token_value</code>/<code>password</code>), only that one was set and which auth method was chosen (<code>auth=token</code>/<code>auth=password</code>) — deliberately a different exposure bar than <code>lanxang.yaml</code> itself, which already stores the Proxmox secret in plaintext (existing, pre-<code>init</code> precedent) since a log is the kind of file that tends to get pasted into a troubleshooting thread. <code>ANTHROPIC_API_KEY</code> is never prompted for or written anywhere, consistent with how it already worked — <code>init</code> just prints a reminder to set it as an environment variable. Overwriting an existing <code>lanxang.yaml</code> is gated behind <code>typer.confirm()</code> like every other mutating command in this codebase; declining aborts before anything is written or logged.</p>
+<p><strong>Found while building <code>lanxang init</code></strong>: the real local <code>lanxang.yaml</code> had <code>name: homelab</code> nested under a stray top-level <code>lanxang:</code> key that <code>AtlasConfig</code> doesn't define — pydantic's default <code>BaseModel</code> behavior silently ignores unrecognized top-level keys rather than erroring, so <code>name</code> had been quietly falling back to the default <code>"atlas-node"</code> the whole time <code>lanxang.yaml</code> existed. Not the kind of thing to hand-patch; a fresh <code>lanxang init</code> run naturally produces a correctly-shaped file going forward.</p>
+<p><strong><code>lanxang init</code>'s <code>hide_input=True</code> on the token/password prompts was removed</strong> after a real user report: some terminal environments don't render the erase sequence a canonical-mode TTY sends back for backspace correctly, showing duplicated/garbled characters while typing. Reproduced with <code>pexpect</code> (a real pty; piped <code>stdin</code> doesn't exercise this at all, since there's no line editing to get wrong) and confirmed the <em>parsed value</em> was always correct regardless — <code>typer.prompt(..., hide_input=True)</code> and plain <code>typer.prompt()</code> both process backspace correctly at the OS/readline level; what was broken was purely the terminal's own rendering of the echo, outside anything Lanxang's Python code controls. Since the destination is a local file that already stores these values in plaintext (see above), hiding keystrokes during entry wasn't earning much anyway, and removing it happens to sidestep the rendering bug's most confusing case (a secret) even though the same rendering issue can technically still affect any prompt. The actual fix for "did what I typed actually come through right" is the <strong>review screen</strong> added right before <code>write_config()</code>: it re-prints every field from the already-built <code>AtlasConfig</code> (never from the loose per-branch local variables, which don't all exist when a section was skipped) and gates on one final <code>typer.confirm()</code>. Secrets show as <code>"N characters entered"</code>, never the value, in the review — this is deliberately still visible in the terminal session's own output when using <code>runner.invoke()</code> in tests (that's the whole point of removing <code>hide_input</code>), just never in the setup log.</p>
+<p><strong>Health checks.</strong> <code>lanxang/health/checks.py</code>'s <code>run_checks()</code> (backing <code>lanxang doctor</code>) returns a flat list of <code>{"name", "status", "details"}</code> dicts — five environment checks (Python/memory/storage/Docker/inventory) plus three integration-readiness checks (<code>check_proxmox</code>, <code>check_intelligence</code>, <code>check_monitoring</code>), each taking the loaded <code>AtlasConfig</code> and reporting whether that integration is <em>configured</em> (host/credentials/API key/URL present), not whether it's actually <em>reachable</em> — no network calls, so <code>doctor</code> stays fast and can't hang. A disabled integration (<code>enabled: false</code>) reports <code>status: True</code> — disabled is a valid, intentional state, not something to flag red; only "enabled but missing what it needs" is unhealthy. Real reachability is still unverified until the integration is actually run — see the roadmap's "Verification against real infrastructure" entry.</p>
+<p><strong>AI providers.</strong> <code>lanxang/intelligence/providers/</code> defines an <code>AIProvider</code> ABC (<code>base.py</code>) returning a schema-shaped <code>AnalysisResult</code>/<code>Recommendation</code>; <code>AnthropicProvider</code> and <code>OllamaProvider</code> both use structured/schema-constrained output so responses never need free-text parsing. <code>get_provider(config.intelligence)</code> is the factory (provider implementations are imported lazily inside it so the <code>anthropic</code> import isn't required just to build the config or use the Ollama path). <code>AtlasAnalyzer</code> (<code>lanxang/intelligence/analyzer.py</code>) is a thin wrapper that just delegates to whichever provider it's given — put orchestration logic there, not in the CLI command.</p>
+<p><strong>Agent-based capabilities: tool-use + <code>lanxang chat</code>.</strong> <code>lanxang/intelligence/tools.py</code>'s <code>build_tools(config)</code> returns <code>{name: ToolDefinition}</code> — a small, deliberately <strong>read-only</strong> set (<code>get_containers</code>, <code>get_services</code>, <code>get_recent_events</code>, <code>get_last_analysis</code>, <code>get_container_logs</code>, plus <code>get_proxmox_status</code>/<code>get_monitoring</code> when those integrations are enabled), each just wrapping a function that already exists elsewhere (<code>collect_containers()</code>, <code>discover_resources()</code>, <code>collect_metrics()</code>, etc.) — no new data-collection code. <code>execute_tool()</code> is the shared dispatcher; an unknown tool name or a handler exception becomes <code>{"error": ...}</code> rather than raising, so a hallucinated tool call can't crash a session. No mutating tool exists here on purpose — restart/stop stay behind their own approval-gated commands, never reachable mid-analysis. <code>AIProvider.analyze()</code> gained an optional <code>tools</code> param (default <code>None</code>, so every existing no-tools call site is unchanged) and a new <code>converse(messages, tools) -&gt; ChatReply</code> method backing the new <code>lanxang chat</code> command; <code>converse()</code> is <strong>not</strong> <code>@abstractmethod</code> (raises <code>NotImplementedError</code> by default) so a provider or test double implementing only <code>analyze()</code> stays a valid <code>AIProvider</code>. <code>lanxang analyze</code> passes <code>build_tools(settings)</code> by default — no config flag, since unlike Prometheus/Proxmox this has no external dependency to gate against, only data Lanxang can already collect locally.</p>
+<p><strong><code>get_container_logs</code> was the first tool needing an argument, which exposed a real gap: <code>ToolDefinition.handler</code> was <code>Callable[[], dict]</code> and <code>execute_tool(tools, name, arguments)</code> never actually passed <code>arguments</code> to the handler</strong> — every existing tool got away with this since they all used <code>EMPTY_SCHEMA</code>. Both providers' tool-use loops were already correctly extracting real per-call arguments from the model (<code>block.input</code> in <code>anthropic_provider.py</code>, <code>function.get("arguments")</code> in <code>ollama_provider.py</code>) and passing them into <code>execute_tool()</code> — the plumbing existed one layer up, it just silently dead-ended at the dispatcher. Fixed by changing every handler's signature to <code>Callable[[dict], dict]</code> (the five existing zero-arg handlers just take and ignore <code>arguments</code> now, uniformly, rather than special-casing the one that needs it — same reasoning <code>command_template</code> becoming a callable for every action, not just <code>resize_container</code>, already established) and having <code>execute_tool()</code> call <code>definition.handler(arguments)</code>. <code>get_container_logs(container, tail)</code> wraps a new <code>get_container_logs()</code> in <code>lanxang/docker/manager.py</code> (same pure-result-dict, never-raises shape as <code>get_container_info</code>/<code>stop_container</code>, using <code>container.logs(tail=N, timestamps=False)</code>, decoded with <code>errors="replace"</code> since container output isn't guaranteed clean UTF-8). <code>tail</code> is model-controllable but server-side capped at 500 regardless of what's requested, so a runaway request can't dump excessive log volume into the conversation. No grounding logic needed here unlike a suggested action — a hallucinated or stale container name just comes back as a normal <code>{"found": False, "error": "No container named '&lt;x&gt;' found"}</code> tool result via Docker's own <code>NotFound</code> handling, the same path <code>get_container_info</code>/<code>restart_container</code>/<code>stop_container</code> already use.</p>
+<p><strong>The two providers' tool loops are deliberately not the same shape — this was forced by real testing, not a style choice.</strong> Anthropic sends <code>tools</code> and the schema-constrained <code>output_config.format</code> in the <em>same</em> request every turn (Anthropic's documented pattern); a <code>tool_use</code> stop reason means execute and loop, anything else means parse the final schema-shaped answer. <strong>Ollama never sends <code>tools</code> and <code>format</code> together</strong> — verified against a real local <code>llama3.1</code>: with both present, the model silently never emits <code>tool_calls</code> at all and just answers directly and ungrounded, no error, just quietly wrong (worse than a normal miss, since nothing signals it happened). The initial combined-request implementation passed every unit test against a mocked client and still had this bug — it only surfaced by actually running <code>lanxang chat</code> against the real model. Fixed by running Ollama's tool-gathering phase with <code>tools</code> but no <code>format</code> until the model stops asking for tools, then one dedicated finalize request with <code>format</code> and no <code>tools</code>. When no tools are offered at all, both providers collapse back to exactly one request — the original pre-tool-use behavior, unchanged.</p>
+<p><strong><code>lanxang chat</code></strong> (<code>lanxang/cli/main.py</code>) is the new interactive command: <code>messages</code> persists for the session's lifetime only, driving the provider — see below for how the transcript itself is now separately persisted. <code>AtlasAgent</code> (<code>lanxang/intelligence/agent.py</code>) is chat's counterpart to <code>AtlasAnalyzer</code>, applying the identical <code>ACTIONS.get(action.type)</code> + <code>known_targets(environment)</code> grounding check before ever surfacing a suggested action. The one real difference: chat has no guaranteed prior <code>lanxang discover</code> to ground against, so <code>AtlasAgent._live_environment()</code> builds a minimal grounding dict by calling live state through the <em>same</em> tool the model itself can call (<code>execute_tool(self.tools, "get_proxmox_status", {})</code>) rather than a second copy of the Proxmox connection logic. Stays strictly on-demand like every other command — no daemon, no scheduled mode.</p>
+<p><strong>Verified against a real local Ollama (<code>llama3.1</code>)</strong>: <code>lanxang chat</code> correctly called <code>get_containers</code> mid-conversation and reported the real, live set of Docker containers running on the host, not a stale snapshot or a hallucination — this is the run that caught the tools+format bug above.</p>
+<p><strong>Multi-step action plans.</strong> A <code>Recommendation</code>/<code>ChatReply</code>'s existing single <code>action</code> field only ever expressed one independent suggestion; <code>AnalysisResult</code>/<code>ChatReply</code> now also carry an optional <code>plan: SuggestedPlan | None</code> — <code>SuggestedPlan(summary, steps)</code>, each <code>PlanStep(action, rationale)</code> — for a genuine ordered sequence where later steps depend on earlier ones (e.g. stop the container holding a lock, then restart the one that was failing because of it). <strong>This is still suggest-only, the same as every single <code>action</code> before it</strong> — <code>lanxang analyze</code>/<code>lanxang chat</code> print the plan as a numbered list with each step's rationale and its <code>definition.command_template(step.action)</code>; nothing executes it. There's no <code>lanxang plan run</code>, no plan persistence (<code>KnowledgeStore.save_analysis()</code> is untouched and still only writes <code>summary</code>/<code>recommendations</code>), and no changes to how any action actually runs — each step is still run by literally typing the printed command yourself, one at a time, through its own existing approval gate. <code>PLAN_SCHEMA</code> (<code>lanxang/intelligence/providers/base.py</code>) reuses <code>ACTION_OBJECT_SCHEMA</code> (pulled out of <code>ACTION_SCHEMA</code> for this) for each step's action — unlike the standalone <code>action</code> field, a plan step's action isn't nullable, since a step without one doesn't mean anything. <code>PLAN_INSTRUCTIONS</code> (appended to both <code>SYSTEM_PROMPT</code> and <code>CHAT_SYSTEM_PROMPT</code>) tells the model to use a plan only for a genuine multi-step dependency, not as a container for several unrelated independent issues — those should stay separate <code>Recommendation</code>s, each with its own <code>action</code>. Grounding treats a plan as one coherent unit, not a bag of independent steps: <code>AtlasAnalyzer.analyze()</code>/<code>AtlasAgent.converse()</code> already null out any <code>Recommendation.action</code>/<code>ChatReply.action</code> whose target isn't in <code>definition.known_targets(environment)</code> (via the shared <code>is_action_grounded()</code> helper, factored out of both call sites into <code>lanxang/actions/registry.py</code> once this made it the third place doing the identical check); for a plan, one hallucinated step target drops the <strong>entire plan</strong>, not just that one step — running step 1 of a plan whose step 2 turns out to be fabricated could leave things worse off than either a complete plan or no plan at all.</p>
+<p><strong>Found only by running a real plan through a real local Ollama, not by any unit test</strong>: the model filled in <em>both</em> <code>plan</code> and the standalone <code>action</code> for the same suggestion — <code>action</code> came back as a copy of the plan's own first step, which would have printed a redundant "suggested action" line directly above the plan that repeats its own step 1. <code>PLAN_INSTRUCTIONS</code> was updated to tell the model not to do this, but — same reasoning as target grounding — a prompt instruction isn't enforcement, so <code>AtlasAgent.converse()</code> also nulls <code>reply.action</code> outright whenever <code>reply.plan</code> is present, after grounding. Re-ran the same live Ollama scenario (a genuine 3-step stop/restart/restart dependency chain across two real Docker containers) after the fix: the plan came back correctly grounded and ordered, and <code>action</code> came back <code>None</code>. A second live run — two containers with one simply exited, no real dependency between them — correctly produced two independent recommendations and left <code>plan</code> <code>None</code>, confirming the model isn't defaulting to a plan when a plan isn't warranted.</p>
+<p><strong>Plan execution.</strong> <code>lanxang analyze</code>/<code>lanxang chat</code> no longer just print a plan and stop — right after printing, both ask <code>"Run this plan now?"</code>, and if confirmed, run each step in order, each with its <strong>own</strong> <code>typer.confirm()</code> (not one blanket "run the whole plan" gate) via a new <code>execute_action(action) -&gt; dict</code> dispatcher in <code>lanxang/actions/registry.py</code>. <code>ActionDefinition</code> gained a fourth field, <code>executor: Callable[["SuggestedAction"], dict]</code>, alongside <code>command_template</code>/<code>known_targets</code> — <code>execute_action()</code> just does <code>ACTIONS[action.type].executor(action)</code>, the "generic runner that dispatches without hardcoded per-type branches" a much earlier deferred version of this idea called for. The four Docker executors are trivial one-line lambdas wrapping the same manager functions the standalone <code>lanxang restart</code>/<code>stop</code>/<code>resize</code> commands already call. The three Proxmox executors share a new <code>_execute_guest_action(action, manager_fn, **extra_kwargs)</code> helper that connects and calls <code>get_guest_info()</code> first — exactly what <code>restart_guest_command</code>/<code>stop_guest_command</code>/<code>resize_guest_command</code> already do inline, just factored into one place instead of three; this is the piece the original deferral called "materially harder," and it turned out to just be the same connect-then-lookup preamble every Proxmox CLI command already has. <code>lanxang/actions/registry.py</code> previously imported nothing beyond <code>lanxang.actions.targets</code>; it now imports <code>lanxang.docker</code>, <code>lanxang.proxmox</code>, and <code>lanxang.config</code> too (checked for circular imports first — none of the three import back from <code>lanxang.actions</code> or <code>lanxang.intelligence</code>, where <code>ACTIONS</code> is also imported).</p>
+<p><strong>Scope was deliberately narrower than the original deferred idea.</strong> That idea assumed plan persistence was needed for a separate <code>lanxang plan run</code> command. It isn't: the plan object already exists in memory the instant it's printed, so <code>lanxang analyze</code>/<code>lanxang chat</code> just offer to run it right there — no new command, no persisted "last plan" slot, no way to come back and run an old one later. This is also more consistent than the persisted version would have been: there's no "run my last suggestion" mechanism for a single suggested <code>action</code> either, so a plan not getting one keeps both codepaths following the same rule. A declined or failed step always stops the rest of the plan (never skip-and-continue) — a plan exists specifically for steps with a real dependency on each other, so running step 3 after step 2 didn't happen could leave things worse off than doing nothing. Each executed step publishes the <strong>exact same event type</strong> the matching standalone command already publishes (<code>atlas.action.container_restarted</code>, <code>atlas.action.guest_stopped</code>, etc., via a small <code>PLAN_STEP_EVENT_TYPES</code> lookup in <code>lanxang/cli/main.py</code>) so it shows up in <code>lanxang history</code> indistinguishable in effect from a manually-typed command — only <code>source="PlanStep"</code> (instead of <code>"RestartAction"</code>/<code>"ProxmoxStopAction"</code>/etc.) differs, preserving provenance. Deliberately <strong>no "current state" display before confirming a step</strong>, unlike every standalone command — replicating that would need a per-action-type info lookup inside the CLI's plan loop, exactly the branching this feature exists to avoid; the step's already-known rationale and exact templated command are what's shown instead, a real (accepted) trade-off, not an oversight.</p>
+<p><strong>Verified against a real local Ollama and the real Docker test containers, executing for real, not just printing:</strong> the same genuine 3-step dependency-chain scenario used to first verify multi-step plans (stop <code>atlas-test-prometheus</code>, restart <code>atlas-test-node-exporter</code>, restart <code>atlas-test-prometheus</code> again) — this time confirming "Run this plan now?" and every per-step prompt. All three steps executed for real; <code>docker ps</code> afterward showed both containers freshly up (seconds of uptime, not hours), and <code>lanxang history</code> showed all three <code>PlanStep</code>-sourced events with the correct event types and accurate <code>previous_status</code> values in each payload.</p>
+<p><strong>Persisting <code>lanxang chat</code> transcripts.</strong> <code>chat()</code> builds a second, separate <code>transcript</code> list alongside <code>messages</code> — <code>{"role": "user"/"assistant", "content": &lt;plain string&gt;}</code> pairs, appended at the same two points the loop already has <code>user_input</code>/<code>reply.text</code> on hand — and publishes it as one <code>atlas.chat.transcript_saved</code> event (<code>source="AtlasChat"</code>, <code>payload={"messages": transcript}</code>) after the loop ends, only if <code>transcript</code> is non-empty (an immediately-exited session doesn't add a no-op row, same rule Proxmox/monitoring change detection already follow). No new table, no new query method — this rides the same <code>DatabaseListener</code>-on-<code>"*"</code> path every other event already uses, and shows up in <code>lanxang history</code> for free since it just prints every event's raw JSON payload. <strong><code>transcript</code> deliberately isn't the same list as <code>messages</code>.</strong> <code>messages</code> is the list actually passed to <code>agent.converse()</code>, and both providers mutate it in place — Anthropic's <code>_run_loop()</code> appends <code>{"role": "assistant", "content": response.content}</code> mid-loop on every tool call, where <code>response.content</code> is a list of Anthropic SDK content-block objects, not plain dicts. <code>KnowledgeStore.save_event()</code> does a plain <code>json.dumps(event.payload)</code>, so publishing <code>messages</code> directly would crash on any session where a tool got called — the common case for <code>lanxang chat</code>, not an edge case. Found by reading <code>_run_loop()</code>, not by hitting the crash. Verified against a real local Ollama: a session that genuinely called <code>get_containers</code> mid-conversation exited cleanly, and <code>lanxang history</code> afterward showed the correct two-turn transcript with no serialization error. <code>messages</code> itself (the session history driving the conversation, separate from <code>transcript</code>) only ever holds plain <code>{"role", "content"}</code> dicts and appends the reply text itself after each turn, the same <code>lanxang/web/chat.py</code>'s <code>chat_turn()</code> already does — because <code>AtlasAgent.converse()</code> may hand the provider a copy (e.g. <code>_with_notes()</code> copies when notes are configured), so <code>messages</code> can't rely on having been mutated by the call.</p>
+<p><strong>Rich-based CLI conventions.</strong> Every <code>lanxang/cli/main.py</code> command uses a shared <code>Console()</code> and follows the same shape: print a bold header, do the work, print results with <code>rich</code> color tags (<code>[green]✓ ...</code>, <code>[yellow]! ...</code>, <code>[red]...</code>), and for commands with a data dependency (<code>report</code>, <code>intelligence</code>, <code>analyze</code>), print a "Run: lanxang discover" hint and return early rather than raising when no data exists yet.</p>
+<p><strong>Second-distro verification, and a real correction along the way.</strong> The roadmap's "verify on a second Linux distro" item turned out to be much closer to already-done than assumed — the machine this project has actually been developed and manually real-infra-tested on this whole time is Fedora Linux 44 Workstation (Python 3.14.6), not Ubuntu. README previously claimed Ubuntu was "the platform this project actually develops and tests against"; that was never true and has been corrected. What's actually accurate: Ubuntu is verified via CI (the full test suite genuinely runs and passes on real <code>ubuntu-latest</code> GitHub Actions runners, automated, every push/PR), and Fedora is verified via everything else — every Docker action, Proxmox connection, Prometheus/cAdvisor scrape, and Ollama call documented anywhere in this file happened on this real Fedora machine. Re-ran the full suite (308 passed) and a fresh <code>lanxang discover</code>/<code>lanxang report</code>/<code>lanxang doctor</code> pass here explicitly as the formal verification moment — <code>lanxang discover</code> correctly identified a real <code>btrfs</code>-formatted root filesystem (<code>distribution: Linux-7.1.5-200.fc44.x86_64-x86_64-with-glibc2.43</code>), a filesystem type Ubuntu's ext4-default setup never exercised, alongside an <code>ext4</code> <code>/boot</code> and <code>vfat</code> EFI partition on the same host — genuine evidence discovery's <code>psutil</code>/<code>platform</code>-only approach (no distro-specific code) holds up in practice, not just in theory.</p>
+<p><strong>Proxmox guest usage in <code>lanxang trends</code>.</strong> The last remaining item from resource-usage trending's original scoping — Proxmox guest CPU/memory is now trended alongside host and container metrics, reusing the exact "skip rows lacking the field" mechanism <code>host_metric_trend()</code>/<code>container_metric_trend()</code> already use for the monitor-vs-discover row split. <code>lanxang/proxmox/trends.py</code> (new, mirrors <code>lanxang/monitoring/trends.py</code>, kept as a separate Proxmox-domain module the same way <code>lanxang/proxmox/changes.py</code> mirrors <code>lanxang/monitoring/changes.py</code> rather than being folded in) reads <code>virtualization</code> (populated by <code>lanxang proxmox scan</code>, a completely independent save schedule from <code>lanxang monitor</code>'s <code>monitoring</code> field) — "stitching two independently-scheduled time series together," the phrase the original deferral used, turned out to need zero new machinery: the filter-and-skip pattern already there for exactly this reason extends unchanged. Two real unit-normalization decisions, made from what <code>/cluster/resources</code> actually provides (already saved in every <code>lanxang proxmox scan</code> snapshot, no new discovery): <code>cpu_percent = guest["cpu"] * 100</code> (percent of one core, the same convention host/container <code>cpu_percent</code> already use — not <code>/ maxcpu</code>, which would answer "percent of what this guest was allocated" instead); <code>memory_percent = (guest["mem"] / guest["maxmem"]) * 100</code>, which is a real, worth-documenting asymmetry with Docker — Proxmox's API gives no host-total comparison the way cAdvisor's separate <code>container_spec_memory_limit_bytes</code> query does, so a Proxmox guest's <code>memory_percent</code> means what Docker's <code>memory_percent_of_limit</code> means (percent of the guest's <em>own</em> allocation), not what Docker's host-relative <code>memory_percent</code> means, despite sharing the same field name. Guests are matched by vmid (string), never name, same stable-identifier principle <code>diff_virtualization()</code> already established. Along the way, fixed a real pre-existing gap the broadened check happened to expose: <code>lanxang trends</code>'s "no monitoring history found" early-return only ever checked for <code>monitoring</code> data, so a host that only ever ran <code>lanxang proxmox scan</code> (never <code>lanxang monitor</code>) would incorrectly hit that message even with real guest trend data available — the check now considers <code>virtualization</code> too. Verified against the real Proxmox VE host used for every other Proxmox verification in this project: started the real <code>atlas-test</code> LXC guest (normally kept stopped), ran several real <code>lanxang proxmox scan</code>s while it was running, and <code>lanxang trends</code>/<code>lanxang trends --json</code> both correctly showed real, non-zero, correctly-normalized CPU/memory trends for it (and a correct all-zero trend for the second real guest, <code>VM 101</code>, which stayed stopped throughout) — confirmed via <code>jq</code> that the JSON shape (<code>{"guests": {"100": {"name": "atlas-test", "cpu_percent": {...}, "memory_percent": {...}}}}</code>) is genuinely valid. Environment restored to its original resting state afterward.</p>
+<p><strong><code>lanxang web</code> — a lightweight read-only web view over existing data, the roadmap's last non-blocked open item.</strong> Scoped exactly as the roadmap described it: a view over <code>lanxang report</code>/<code>lanxang history</code>/<code>lanxang trends</code>'s existing <code>KnowledgeQueries</code> reads, no new write path, no new automation. Deliberately no new dependency — <code>lanxang/web/server.py</code> uses stdlib <code>http.server.ThreadingHTTPServer</code> + <code>BaseHTTPRequestHandler</code>, not Flask/FastAPI, matching this project's existing low-dependency posture (<code>pyproject.toml</code>'s <code>dependencies</code> list has never included a web framework). <code>AtlasWebHandler</code> defines only <code>do_GET</code> — there is no <code>do_POST</code>/<code>do_PUT</code>/<code>do_DELETE</code> anywhere in the class, so a write path isn't just avoided by convention, it doesn't exist to be reached; <code>tests/test_web_server.py::test_only_get_routes_exist_no_write_path</code> asserts this structurally, not just behaviorally, so a future edit can't silently add one without that test naming it. Three routes: <code>/</code> (system/hardware/storage/network/containers/Proxmox guests from <code>latest_environment()</code>, plus the latest AI analysis if one exists), <code>/history</code> (<code>recent_events()</code>, same data <code>lanxang history</code> prints), <code>/trends</code> (see below). <code>lanxang/web/render.py</code> holds pure HTML-rendering functions (data in, HTML string out, no I/O) - the same "pure function, unit-testable without touching real infra" shape <code>format_change()</code>/<code>_trend_summary()</code> already established elsewhere in this codebase. All interpolated values go through <code>html.escape()</code> (<code>_esc()</code>), including container names/labels - a real, if narrow, injection surface since that data ultimately comes from whatever's actually running on the host, not from Lanxang itself; confirmed via a dedicated escaping test rather than assumed safe because "it's local."</p>
+<p><strong><code>lanxang trends</code>'s JSON-payload logic was extracted into a new pure <code>build_trends_payload()</code> (<code>lanxang/reporting/trends.py</code>), not reimplemented for the web view.</strong> The CLI's <code>trends()</code> command previously interleaved "compute the payload" and "print it" in one pass, with <code>--json</code> and human-readable output each doing their own partial version of the same computation (the same shape <code>_trend_summary()</code> already existed to avoid at the per-metric level, just not yet at the whole-payload level). Pulling the whole <code>{"host", "containers", "guests"}</code> payload construction into its own pure function means <code>lanxang trends --json</code> and <code>lanxang web</code>'s <code>/trends</code> route now call the <em>identical</em> code path — they can't compute different numbers from the same underlying history, the same reasoning that already justified <code>_trend_summary</code>'s own extraction. <code>trends()</code> itself got smaller as a result: it now just calls <code>build_trends_payload(limit)</code> once and either prints the JSON or walks the returned dict for human output (a new small <code>_print_trend_summaries()</code> helper replaces three near-identical inline print blocks). Confirmed behavior-preserving before adding anything new: ran the full pre-existing test suite against this refactor alone and it passed unchanged, then added <code>tests/test_reporting_trends.py</code> as direct coverage of the extracted function.</p>
+<p><strong>Verified against a real running server, not just mocks or the CLI test suite.</strong> Started <code>lanxang web</code> for real (a genuine background process, not <code>CliRunner.invoke()</code>), seeded a real <code>inventory/atlas.db</code> in a scratch directory via <code>KnowledgeStore</code> (a discover-shaped environment row with real system/hardware/container data, plus a real <code>atlas.discovery.completed</code> event), and hit all three routes with real <code>curl</code> requests against the real bound socket: <code>/</code> correctly rendered the seeded hostname/CPU model/container name, <code>/history</code> correctly rendered the seeded event, <code>/trends</code> correctly rendered a seeded <code>cpu_percent</code> trend, and an unknown path correctly returned a real <code>404</code>. Along the way, seeded two <code>save_environment()</code> calls in sequence (a discover-shaped row, then a monitoring-only row) and initially misread the resulting "empty System/Hardware" overview as a bug — it wasn't: <code>latest_environment()</code> only ever returns the single most recent row, and per this project's own well-established "each row only has what that specific command populated" rule (see the trending caveat above), a monitoring-only row <em>correctly</em> has no system/hardware data. Re-seeded with a single representative discover-shaped row to confirm the overview page renders real data correctly once the input was actually realistic - the fix was to the test setup, not the code.</p>
+<h3 id="code-style-notes">Code style notes<a class="headerlink" href="#code-style-notes" title="Permanent link">&para;</a></h3>
+<p>The existing codebase (outside <code>lanxang/intelligence/providers/</code> and <code>tests/</code>, which are newer) is written with heavy vertical spacing — each function argument on its own line, a blank line after <code>def ...():</code> before the body, blank lines between most statements — and very few docstrings (mostly on classes, not functions). New code should generally match whatever file it's editing rather than importing a different style mid-file.</p>
+<h3 id="project-philosophy-from-contributingmd">Project philosophy (from CONTRIBUTING.md)<a class="headerlink" href="#project-philosophy-from-contributingmd" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Local-first</strong>: prefer self-hosted/local solutions where practical (e.g. the Ollama provider option alongside Anthropic).</li>
+<li><strong>Explainability</strong>: Lanxang should be able to explain what it's doing, why, the expected outcome, and any risk — reflected in both code and docs.</li>
+<li><strong>Safety</strong>: changes affecting real infrastructure should be observable, logged, reversible where possible, and gated behind user approval — Lanxang is meant to observe/recommend, not silently act.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "content.action.edit", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>

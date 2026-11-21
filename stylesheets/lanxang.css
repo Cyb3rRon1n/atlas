@@ -1,0 +1,4 @@
+@font-face { font-family:"Lexend"; src:url("../assets/fonts/Lexend.woff2") format("woff2"); font-weight:100 900; font-display:swap; }
+:root { --md-text-font:"Lexend"; --md-primary-fg-color:#0e1a19; --md-primary-fg-color--light:#16302c;
+        --md-primary-fg-color--dark:#08110f; --md-accent-fg-color:#c9a227; --md-typeset-a-color:#1e7f66; }
+[data-md-color-scheme="slate"] { --md-default-bg-color:#0e1a19; --md-typeset-a-color:#5ec2a4; --md-accent-fg-color:#e9b44c; }

@@ -1,0 +1,2701 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Self-hosted watchdog for your home network: every device, every cable, every change. Alerts included, cloud not required.">
+      
+      
+      
+        <link rel="canonical" href="https://cyb3rron1n.github.io/lanxang/configuration/">
+      
+      
+        <link rel="prev" href="../hardware/">
+      
+      
+        <link rel="next" href="../cli-reference/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/brand/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
+    
+    
+      
+        <title>Configuration - Lanxang</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/lanxang.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#configuration" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Lanxang" class="md-header__button md-logo" aria-label="Lanxang" data-md-component="logo">
+      
+  <img src="../images/brand/mark-dark.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Lanxang
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Configuration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Cyb3rRon1n/lanxang" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cyb3rRon1n/lanxang
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Lanxang" class="md-nav__button md-logo" aria-label="Lanxang" data-md-component="logo">
+      
+  <img src="../images/brand/mark-dark.svg" alt="logo">
+
+    </a>
+    Lanxang
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Cyb3rRon1n/lanxang" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cyb3rRon1n/lanxang
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hardware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Supported hardware
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        name
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        discovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        inventory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxmox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        proxmox
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#intelligence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        intelligence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        monitoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fleet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fleet
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        knowledge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jellyfin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        jellyfin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        health
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="health">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#host-health-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Host health alerts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disk-health-proxmox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disk health (Proxmox)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        access
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="scan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#weekly-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weekly summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daily-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Daily summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quiet-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quiet hours
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#display" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        display
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prometheus-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus metrics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alerts-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alerts page
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wiring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        wiring
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="wiring">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#traffic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traffic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cable-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cable health
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uptime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        uptime
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="uptime">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#heartbeats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Heartbeats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#internet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        internet
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns_filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dns_filter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#homeassistant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        homeassistant
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        nas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ups
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        security
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="security">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#open-port-watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open-port watch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#certificate-watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certificate watch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#internet-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internet view
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notify
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service-catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/design-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        name
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        discovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        inventory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxmox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        proxmox
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#intelligence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        intelligence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        monitoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fleet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fleet
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        knowledge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jellyfin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        jellyfin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        health
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="health">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#host-health-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Host health alerts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disk-health-proxmox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disk health (Proxmox)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        access
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="scan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#weekly-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weekly summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daily-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Daily summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quiet-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quiet hours
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#display" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        display
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prometheus-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus metrics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alerts-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alerts page
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wiring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        wiring
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="wiring">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#traffic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traffic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cable-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cable health
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uptime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        uptime
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="uptime">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#heartbeats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Heartbeats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#internet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        internet
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns_filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dns_filter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#homeassistant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        homeassistant
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        nas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ups
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        security
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="security">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#open-port-watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open-port watch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#certificate-watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certificate watch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#internet-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internet view
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notify
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Cyb3rRon1n/lanxang/edit/main/docs/configuration.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
+<p>Settings live in <code>lanxang.yaml</code> next to <code>docker-compose.yml</code>, and secrets in <code>.env</code>. Environment variables use the <code>LANXANG_</code> prefix. Coming from Atlas, see <a href="../getting-started/#upgrading-from-atlas">Upgrading from atlas</a>.</p>
+<p>Lanxang uses YAML configuration, loaded from <code>lanxang.yaml</code> in the current working directory. If the file doesn't exist, Lanxang runs on defaults (safe — no Proxmox connection is attempted, discovery is fully enabled, no AI model is used until you choose one).</p>
+<p><strong>Prefer a web page?</strong> The <strong>Setup</strong> tab sets up alerts (ntfy, webhooks, email), the AI model, managed switches (SNMPv3), a UniFi console and Proxmox, with a Test button for each. Tests are read-only: alerts send one test message, switches get one SNMP request, UniFi and Proxmox are signed in to and read. It saves to <code>inventory/settings.yaml</code> and keeps passwords in <code>inventory/secrets.json</code> (readable only by lanxang), both in the data volume. Anything you set in <code>lanxang.yaml</code> or <code>.env</code> wins and shows read-only there. Until alerts are on and every device has a name, the Home page shows a short <strong>Getting started</strong> list linking to each step.</p>
+<p>Run <code>lanxang init</code> to generate this file interactively instead of writing it by hand — it only prompts for the fields below that actually vary per deployment (Proxmox, AI provider, Prometheus), leaves <code>discovery</code>/<code>inventory</code> at their defaults, and logs the session to <code>logs/</code> for troubleshooting. The reference below is for editing the result by hand, or understanding what each field does.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">homelab</span>
+
+<span class="nt">discovery</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hardware</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">inventory</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">directory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inventory/generated</span>
+
+<span class="nt">proxmox</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.1.10</span>
+<span class="w">  </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">atlas@pve</span>
+<span class="w">  </span><span class="nt">token_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">atlas-token</span>
+<span class="w">  </span><span class="nt">token_value</span><span class="p">:</span><span class="w"> </span><span class="s">""</span>
+<span class="w">  </span><span class="c1"># password: ""</span>
+<span class="w">  </span><span class="nt">verify_ssl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="nt">intelligence</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-opus-5</span>
+<span class="w">  </span><span class="nt">ollama_host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:11434</span>
+
+<span class="nt">monitoring</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">prometheus_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:9090</span>
+
+<span class="nt">fleet</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">nodes</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">media-server</span>
+<span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.1.20</span>
+<span class="w">      </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lanxang</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">22</span>
+<span class="w">      </span><span class="nt">identity_file</span><span class="p">:</span><span class="w"> </span><span class="s">""</span>
+</code></pre></div>
+<h2 id="name"><code>name</code><a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
+<p>A label for this Lanxang instance. Defaults to <code>atlas-node</code>.</p>
+<h2 id="discovery"><code>discovery</code><a class="headerlink" href="#discovery" title="Permanent link">&para;</a></h2>
+<p>Toggles which discovery categories <code>lanxang discover</code> collects. All default to <code>true</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hardware</code></td>
+<td><code>true</code></td>
+<td>CPU and memory information</td>
+</tr>
+<tr>
+<td><code>storage</code></td>
+<td><code>true</code></td>
+<td>Disk partitions and usage</td>
+</tr>
+<tr>
+<td><code>network</code></td>
+<td><code>true</code></td>
+<td>Hostname and network addresses</td>
+</tr>
+</tbody>
+</table>
+<h2 id="inventory"><code>inventory</code><a class="headerlink" href="#inventory" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>directory</code></td>
+<td><code>inventory/generated</code></td>
+<td>Where <code>lanxang discover</code> writes <code>system-inventory.yaml</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="proxmox"><code>proxmox</code><a class="headerlink" href="#proxmox" title="Permanent link">&para;</a></h2>
+<p>See <a href="../deployment/">Deployment</a> for why a scoped API token is preferred over the account password.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td><code>false</code></td>
+<td>Must be <code>true</code> for <code>lanxang proxmox scan</code> to attempt a connection</td>
+</tr>
+<tr>
+<td><code>host</code></td>
+<td><code>""</code></td>
+<td>Proxmox host/IP</td>
+</tr>
+<tr>
+<td><code>user</code></td>
+<td><code>""</code></td>
+<td>Proxmox user, e.g. <code>atlas@pve</code></td>
+</tr>
+<tr>
+<td><code>token_name</code></td>
+<td><code>""</code></td>
+<td>API token name — <strong>preferred</strong> over <code>password</code></td>
+</tr>
+<tr>
+<td><code>token_value</code></td>
+<td><code>""</code></td>
+<td>API token value</td>
+</tr>
+<tr>
+<td><code>password</code></td>
+<td><code>""</code></td>
+<td>Fallback if not using a token</td>
+</tr>
+<tr>
+<td><code>verify_ssl</code></td>
+<td><code>false</code></td>
+<td>Verify the Proxmox host's TLS certificate</td>
+</tr>
+</tbody>
+</table>
+<p>If both a token and a password are configured, the token is used.</p>
+<p>Read access (the built-in <code>PVEAuditor</code> role) is enough for <code>lanxang proxmox scan</code>. <code>lanxang proxmox restart &lt;vmid&gt;</code> needs additional power-management permission on top of that — confirmed against a real Proxmox instance, granting the built-in <code>PVEVMUser</code> role (which includes <code>VM.PowerMgmt</code>) at path <code>/</code> is enough. If the token has <strong>Privilege Separation</strong> enabled (Proxmox's default), that permission has to be granted to the token identity itself (<code>user@realm!tokenid</code>), not just the user — see <a href="../deployment/">Deployment</a> for the exact gotcha and fix.</p>
+<h2 id="intelligence"><code>intelligence</code><a class="headerlink" href="#intelligence" title="Permanent link">&para;</a></h2>
+<p>Controls the AI backend behind <code>lanxang analyze</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>provider</code></td>
+<td><code>none</code></td>
+<td><code>none</code>, <code>ollama</code> or <code>anthropic</code></td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td><code>claude-opus-5</code></td>
+<td>The Claude model ID, or an Ollama model name (e.g. <code>llama3.1</code>) when <code>provider: ollama</code></td>
+</tr>
+<tr>
+<td><code>ollama_host</code></td>
+<td><code>http://localhost:11434</code></td>
+<td>Only used when <code>provider: ollama</code></td>
+</tr>
+<tr>
+<td><code>think</code></td>
+<td><code>false</code></td>
+<td>Only used when <code>provider: ollama</code>. Thinking models such as qwen3 reason silently before answering, which is much slower — <code>false</code> keeps replies fast. Set <code>null</code> if your Ollama or model rejects the field.</td>
+</tr>
+</tbody>
+</table>
+<p>Chat's read-only tools: <code>get_containers</code>, <code>get_services</code>, <code>get_recent_events</code>, <code>get_last_analysis</code>, <code>get_container_logs</code>, <code>get_posture</code>, <code>get_devices</code> (<code>filter</code>: all/new/quiet, at most 40), <code>get_alerts</code>, <code>get_disks</code>, <code>get_uptime</code>, plus <code>get_internet_view</code> when <code>posture.internet_view</code> is on. Lists are capped with a <code>more</code> count; a tool whose data isn't set up answers <code>not set up</code> with where to turn it on.</p>
+<p>The Anthropic provider reads its API key from the <code>ANTHROPIC_API_KEY</code> environment variable — it is never stored in <code>lanxang.yaml</code>.</p>
+<h2 id="monitoring"><code>monitoring</code><a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h2>
+<p>Controls <code>lanxang monitor</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td><code>false</code></td>
+<td>Must be <code>true</code> for <code>lanxang monitor</code> to attempt a connection</td>
+</tr>
+<tr>
+<td><code>prometheus_url</code></td>
+<td><code>http://localhost:9090</code></td>
+<td>Base URL of an existing Prometheus server</td>
+</tr>
+<tr>
+<td><code>cpu_threshold</code></td>
+<td><code>90.0</code></td>
+<td>CPU usage percentage at or above which <code>lanxang monitor</code> flags the metric</td>
+</tr>
+<tr>
+<td><code>memory_threshold</code></td>
+<td><code>90.0</code></td>
+<td>Memory usage percentage at or above which <code>lanxang monitor</code> flags the metric</td>
+</tr>
+<tr>
+<td><code>disk_threshold</code></td>
+<td><code>90.0</code></td>
+<td>Disk usage percentage at or above which <code>lanxang monitor</code> flags the metric</td>
+</tr>
+</tbody>
+</table>
+<p>The default metric queries assume <a href="https://github.com/prometheus/node_exporter"><code>node_exporter</code></a> is running on the monitored host and being scraped by Prometheus — install and configure it there for <code>lanxang monitor</code> to return real CPU/memory/disk figures. If Prometheus is reachable but <code>node_exporter</code> isn't set up yet, <code>lanxang monitor</code> still runs; each affected metric just reports as unavailable rather than failing the whole command.</p>
+<p>A metric at or above its threshold prints with a yellow <code>!</code> instead of a green <code>✓</code> (e.g. <code>! cpu_percent: 92.1% (threshold: 90.0%)</code>), and if anything crossed its threshold, <code>lanxang monitor</code> publishes <code>atlas.monitoring.threshold_exceeded</code> (visible via <code>lanxang history</code>) alongside the <code>atlas.monitoring.scan.completed</code> event every scan already publishes — so a no-op scan doesn't add event-log noise, only an actual threshold crossing does. A metric with no data (<code>node_exporter</code> not scraped, etc.) is never flagged either way — "unavailable" isn't "under the limit."</p>
+<h2 id="fleet"><code>fleet</code><a class="headerlink" href="#fleet" title="Permanent link">&para;</a></h2>
+<p>Controls <code>lanxang fleet doctor</code>. No daemon, no central server — each node just needs to be reachable over SSH with Lanxang already installed there; <code>lanxang fleet doctor</code> SSHes in and runs <code>lanxang doctor --json</code> remotely.</p>
+<p><code>nodes</code> is a list, each entry:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td><em>(required)</em></td>
+<td>A label for this node, shown in <code>lanxang fleet doctor</code>'s output</td>
+</tr>
+<tr>
+<td><code>host</code></td>
+<td><em>(required)</em></td>
+<td>Hostname or IP to SSH to</td>
+</tr>
+<tr>
+<td><code>user</code></td>
+<td><code>lanxang</code></td>
+<td>SSH user</td>
+</tr>
+<tr>
+<td><code>port</code></td>
+<td><code>22</code></td>
+<td>SSH port</td>
+</tr>
+<tr>
+<td><code>identity_file</code></td>
+<td><code>""</code></td>
+<td>Path to an SSH private key; empty uses your normal SSH agent/default key</td>
+</tr>
+</tbody>
+</table>
+<p>An empty <code>nodes</code> list (the default) means "no fleet nodes configured" — <code>lanxang fleet doctor</code> exits 0, the same way a disabled Proxmox/monitoring integration does, not an error state.</p>
+<h2 id="knowledge"><code>knowledge</code><a class="headerlink" href="#knowledge" title="Permanent link">&para;</a></h2>
+<p>Your own notes, for <code>lanxang chat</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>notes_paths</code></td>
+<td><code>[]</code></td>
+<td>Folders (or files) of Markdown, text and scripts (<code>.sh</code>, <code>.py</code>, <code>.yml</code>, unit files...) to search. Empty = no <code>search_notes</code> tool. Hidden folders (<code>.git</code>) are skipped.</td>
+</tr>
+<tr>
+<td><code>pinned_paths</code></td>
+<td><code>[]</code></td>
+<td>Short files (a host/IP map, conventions) attached to <strong>every</strong> chat question. Keep them small.</td>
+</tr>
+<tr>
+<td><code>auto_context</code></td>
+<td><code>3</code></td>
+<td>How many best-matching note sections are attached to every question automatically (0 = only when the model calls <code>search_notes</code>).</td>
+</tr>
+</tbody>
+</table>
+<p>Markdown is searched section by section; scripts whole (they document themselves in comments). Files under a folder named <code>incidents/</code> or <code>cases/</code> rank above general docs - keep one short file per solved problem there (symptom, cause, how it was found, fix) and Lanxang starts from it next time. Automatic attachment exists because small local models often skip optional lookups.</p>
+<h2 id="jellyfin"><code>jellyfin</code><a class="headerlink" href="#jellyfin" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td><code>false</code></td>
+<td>Offer <code>get_jellyfin_sessions</code> / <code>get_jellyfin_activity</code> / <code>get_jellyfin_plugins</code> to chat.</td>
+</tr>
+<tr>
+<td><code>url</code></td>
+<td><code>http://jellyfin:8096</code></td>
+<td>Jellyfin base URL as reachable from Lanxang.</td>
+</tr>
+<tr>
+<td><code>api_key</code></td>
+<td><code>""</code></td>
+<td>A Jellyfin API key (Dashboard &gt; API Keys) created for Lanxang.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="health"><code>health</code><a class="headerlink" href="#health" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>status_urls</code></td>
+<td><code>{}</code></td>
+<td><code>name: url</code> of JSON status feeds that <code>get_host_health</code> includes (e.g. a RAID-card watchdog).</td>
+</tr>
+<tr>
+<td><code>storage_paths</code></td>
+<td><code>{}</code></td>
+<td><code>label: path</code> whose disk usage the web home page's Storage &amp; RAID card shows - e.g. <code>media array: /media</code> with the array bind-mounted read-only into the container. Software-RAID (<code>/proc/mdstat</code>) and Proxmox ZFS pools are shown automatically.</td>
+</tr>
+<tr>
+<td><code>alerts</code></td>
+<td><code>true</code></td>
+<td>Host health alerts (below)</td>
+</tr>
+<tr>
+<td><code>temp_margin_c</code></td>
+<td><code>5.0</code></td>
+<td>Alert when a sensor is this close to its own "high" limit, two samples in a row</td>
+</tr>
+<tr>
+<td><code>memory_percent</code></td>
+<td><code>90</code></td>
+<td>Alert when memory use reaches this</td>
+</tr>
+<tr>
+<td><code>disk_percent</code></td>
+<td><code>90</code></td>
+<td>Alert when the root disk or any <code>storage_paths</code> entry reaches this</td>
+</tr>
+<tr>
+<td><code>disk_hot_hdd_c</code></td>
+<td><code>55</code></td>
+<td>Proxmox disk health: a spinning disk this hot (°C) at two scans in a row</td>
+</tr>
+<tr>
+<td><code>disk_hot_ssd_c</code></td>
+<td><code>70</code></td>
+<td>The same for SSDs and NVMe drives</td>
+</tr>
+<tr>
+<td><code>disk_life_percent</code></td>
+<td><code>10</code></td>
+<td>Alert when an SSD has this much of its life left, or less</td>
+</tr>
+</tbody>
+</table>
+<h3 id="host-health-alerts">Host health alerts<a class="headerlink" href="#host-health-alerts" title="Permanent link">&para;</a></h3>
+<p>Every atlas-scan pass (<code>lanxang sample</code>) checks the machine lanxang runs on and sends one alert when a problem starts and another when it clears:</p>
+<ul>
+<li>a temperature sensor within <code>temp_margin_c</code> of the limit the chip itself reports (CPUs and NVMe drives report one; sensors without a limit are skipped);</li>
+<li>memory, the root disk or a <code>storage_paths</code> disk above its limit;</li>
+<li>a container that crashed (stopped with an error code), keeps restarting, or fails its health check;</li>
+<li>a <code>status_urls</code> feed whose <code>state</code> is anything but <code>ok</code> (for example a RAID-card watchdog saying <code>warn</code>).</li>
+</ul>
+<p><strong>Containers that sleep on purpose are not problems.</strong> One that stopped cleanly (exit code 0), such as a game room an idle timer shuts down, shows as <em>Asleep</em> on the home page and never alerts. For an app that sleeps but exits with an error code, add the label <code>lanxang.on-demand=true</code> (the older <code>atlas.on-demand=true</code> still works). The <code>/api/summary</code> tile data counts them as <code>containers_asleep</code>.</p>
+<h3 id="disk-health-proxmox">Disk health (Proxmox)<a class="headerlink" href="#disk-health-proxmox" title="Permanent link">&para;</a></h3>
+<p>With Proxmox set up, every <code>lanxang proxmox scan</code> (every 15 minutes in atlas-scan) also reads each node's disks: the SMART result, how much life an SSD has left, its temperature and its bad-sector count (reallocated, pending and uncorrectable sectors; media errors on NVMe). Home's Storage &amp; RAID card gets one line per node (<em>13 disks · all healthy · warmest 48°C · lowest life left 92%</em>) and a line for each disk with a problem. One alert when a disk fails its SMART check, runs hot, or is nearly worn out, and one when that clears. Bad sectors alert each time the count goes <strong>up</strong>; a disk that has carried a few for years without change is fine. Needs nothing beyond the PVEAuditor token.</p>
+<p>A status feed only reachable from Docker's network can be read as a file instead: mount its directory read-only and use a <code>file://</code> URL (<code>raid card: file:///run/raid-watchdog/status.json</code>).</p>
+<h2 id="access"><code>access</code><a class="headerlink" href="#access" title="Permanent link">&para;</a></h2>
+<p>Who reaches the public services and from where (web <code>/access</code>). <code>lanxang access collect</code> (run by atlas-scan each cycle) reads new
+Traefik access-log lines and app sign-ins, and geolocates IPs locally with DB-IP's free City Lite database (CC BY 4.0,
+downloaded monthly) plus the posture ASN table - no visitor IP leaves the host.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td><code>false</code></td>
+<td>Turn collection on</td>
+</tr>
+<tr>
+<td><code>traefik_log</code></td>
+<td><code>/traefik-logs/access.log</code></td>
+<td>Traefik access log (mount it read-only into atlas-scan)</td>
+</tr>
+<tr>
+<td><code>geo_path</code></td>
+<td><code>inventory/dbip-city-lite.mmdb</code></td>
+<td>Where the monthly geo database is kept</td>
+</tr>
+<tr>
+<td><code>jellyfin_url</code> / <code>jellyfin_api_key</code></td>
+<td><code>""</code></td>
+<td>Read sign-ins and failed attempts from Jellyfin's activity log</td>
+</tr>
+<tr>
+<td><code>home_ips</code></td>
+<td><code>[]</code></td>
+<td>Your WAN IPs - shown as "home", not drawn on the map</td>
+</tr>
+<tr>
+<td><code>ignore_ips</code></td>
+<td><code>[]</code></td>
+<td>IPs to skip entirely (e.g. an uptime checker)</td>
+</tr>
+<tr>
+<td><code>retention_days</code></td>
+<td><code>30</code></td>
+<td>Older hits, sign-ins and IPs are deleted</td>
+</tr>
+</tbody>
+</table>
+<h2 id="map"><code>map</code><a class="headerlink" href="#map" title="Permanent link">&para;</a></h2>
+<p><code>hosts</code> lists other machines to draw on the network map (<code>lanxang map</code>, web <code>/map</code>). Lanxang only checks their TCP reachability - it never acts on them.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td><em>(required)</em></td>
+<td>Label on the map</td>
+</tr>
+<tr>
+<td><code>address</code></td>
+<td><em>(required)</em></td>
+<td>IP or hostname</td>
+</tr>
+<tr>
+<td><code>role</code></td>
+<td><code>""</code></td>
+<td>Short description</td>
+</tr>
+<tr>
+<td><code>ports</code></td>
+<td><code>[22]</code></td>
+<td>TCP ports to test (a machine is "up" if any accepts)</td>
+</tr>
+</tbody>
+</table>
+<p>A host whose address equals <code>proxmox.host</code> gets the Proxmox guests drawn under it; the one serving <code>intelligence.ollama_host</code> is labelled as the AI endpoint.</p>
+<h2 id="scan"><code>scan</code><a class="headerlink" href="#scan" title="Permanent link">&para;</a></h2>
+<p>Controls <code>lanxang scan</code>, whole-LAN device discovery. Sightings link into the device inventory shown by <code>lanxang devices</code> (see <a href="../cli-reference/">CLI Reference</a>).</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td><code>true</code></td>
+<td>Must be <code>true</code> for <code>lanxang scan</code> to run</td>
+</tr>
+<tr>
+<td><code>subnets</code></td>
+<td><code>[]</code></td>
+<td>CIDR subnets to scan; empty = the default-route interface's own networks</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td><code>0.5</code></td>
+<td>Per-address TCP connect timeout, in seconds</td>
+</tr>
+<tr>
+<td><code>discover</code></td>
+<td><code>true</code></td>
+<td>Ask devices their own name and model over mDNS/Bonjour and SSDP/UPnP (a few seconds per scan); shown as clues for new devices</td>
+</tr>
+</tbody>
+</table>
+<p>How often the <code>atlas-scan</code> container loops <code>lanxang scan; lanxang discover; lanxang proxmox scan; lanxang map</code> is controlled by the <code>LANXANG_SCAN_MINUTES</code> environment variable (<code>docker-compose.yml</code>), default <code>15</code> - not a <code>lanxang.yaml</code> field, since it's a property of the compose service's loop, not of scanning itself.</p>
+<p><code>lanxang scan</code> never pings and never opens a raw socket: it TCP-connects to port 9 on every address in scope, which makes the kernel ARP-resolve each live host, then reads <code>/proc/net/arp</code> for the resulting IP-to-MAC table (only complete entries count — an address nobody answered for isn't in it) and does a best-effort reverse DNS lookup for a hostname. This needs host networking (<code>network_mode: host</code>) but no extra capabilities. With <code>discover</code> on it also sends one mDNS question and one SSDP search to the LAN and reads each answering UPnP device's own description - read-only, and nothing leaves the network. The maker of each MAC address comes from the IEEE's public list (<code>inventory/oui.csv</code>, downloaded monthly; without internet it is skipped). A scan refuses to run over more than 1024 addresses at once — narrow <code>subnets</code> if your LAN is bigger than that.</p>
+<h3 id="weekly-summary">Weekly summary<a class="headerlink" href="#weekly-summary" title="Permanent link">&para;</a></h3>
+<p>Every Sunday from 18:00 (in <code>notify.timezone</code>; UTC when empty) the next <code>lanxang scan</code> sends one message on how the
+week went: internet outages, services below 100%, new devices and how many wait for a name, open alerts,
+heartbeats, disks and the UPS - only the parts you use. Getting it also tells you lanxang itself is alive.
+<code>notify.weekly_summary: false</code> turns it off; quiet hours over Sunday evening hold it.</p>
+<h3 id="daily-summary">Daily summary<a class="headerlink" href="#daily-summary" title="Permanent link">&para;</a></h3>
+<p>Set <code>notify.daily_summary</code> to a time (<code>"08:00"</code>, 24 h, in <code>notify.timezone</code> - the alert time zone, not the display
+one; UTC when empty) and the first <code>lanxang scan</code> after it sends one message on what changed in the last 24 hours:
+the Activity page's "What changed" items (new devices, alerts that started or cleared, Proxmox and container
+changes), public routes added or removed since the snapshot a day earlier, and known devices that went quiet. A day
+with nothing to tell sends nothing. Empty (the default) is off; the Setup page's Daily summary card sets it. Quiet
+hours and <strong>Pause alerts</strong> hold it until the next scan after they end. A time close to midnight (say <code>"23:55"</code>) is
+skipped on a day when no scan runs between it and midnight, so pick one at least one scan interval before midnight.
+After the summary has been off for more than two days, the next one doesn't list devices as "gone quiet" (it can't
+tell which ones went quiet yesterday); it starts tracking again from that day.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">notify</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">timezone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">America/Detroit</span>
+<span class="w">  </span><span class="nt">daily_summary</span><span class="p">:</span><span class="w"> </span><span class="s">"08:00"</span>
+</code></pre></div>
+<h3 id="quiet-hours">Quiet hours<a class="headerlink" href="#quiet-hours" title="Permanent link">&para;</a></h3>
+<p>A weekly schedule when no alert messages go out - the night, or the Sunday update window. Problems still show on the Alerts page; only the messages are held, the same as <strong>Pause alerts</strong>. Add them on the Alerts page (times in your browser's time zone, which is saved as <code>notify.timezone</code>) or in <code>lanxang.yaml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">notify</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">timezone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">America/Detroit</span><span class="w">       </span><span class="c1"># an IANA name; UTC when empty</span>
+<span class="w">  </span><span class="nt">quiet_hours</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">start</span><span class="p">:</span><span class="w"> </span><span class="s">"23:00"</span><span class="p p-Indicator">,</span><span class="nt"> end</span><span class="p">:</span><span class="w"> </span><span class="s">"07:00"</span><span class="p p-Indicator">}</span><span class="w">                 </span><span class="c1"># every night (ends next morning)</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">start</span><span class="p">:</span><span class="w"> </span><span class="s">"03:00"</span><span class="p p-Indicator">,</span><span class="nt"> end</span><span class="p">:</span><span class="w"> </span><span class="s">"06:00"</span><span class="p p-Indicator">,</span><span class="nt"> days</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sun</span><span class="p p-Indicator">]}</span><span class="w">     </span><span class="c1"># Sunday updates</span>
+</code></pre></div>
+<p>A window that ends before it starts runs over midnight and belongs to the day it starts. A schedule lanxang can't read never silences anything.</p>
+<h2 id="display"><code>display</code><a class="headerlink" href="#display" title="Permanent link">&para;</a></h2>
+<p>How times read everywhere: every web page, alert messages, the test alert and the weekly summary. Usually set from
+the web UI (<strong>Preferences &gt; Time &amp; date</strong>, saved to <code>inventory/settings.yaml</code>); a value set here wins.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">display</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clock</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">24h</span><span class="w">               </span><span class="c1"># or 12h</span>
+<span class="w">  </span><span class="nt">time_zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">browser</span><span class="w">       </span><span class="c1"># browser (each viewer's own), UTC, or an IANA name like America/New_York</span>
+<span class="w">  </span><span class="nt">date_format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">iso</span><span class="w">         </span><span class="c1"># iso 2026-11-19, dmy 19/11/2026, mdy 11/19/2026</span>
+</code></pre></div>
+<p>With <code>browser</code>, pages show each viewer's own time zone; messages have no viewer, so they use UTC and say so.</p>
+<p>Home's <strong>Since you were here</strong> remembers your last visit in a <code>lanxang-seen</code> cookie: two times in UTC (when the
+current visit's window starts and when you last loaded Home), nothing else. Lanxang sets it on each Home load
+(HttpOnly, SameSite=Lax, kept a year); it is read only by your own Lanxang server and never sent anywhere else. A
+visit ends after 30 minutes away; without the cookie Home shows the last 24 hours, and never more than 7 days.
+Home reads <strong>No recent scan</strong> when the newest scan is older than three scan intervals (<code>LANXANG_SCAN_MINUTES</code>,
+see <a href="#scan"><code>scan</code></a>); set it in <code>.env</code> so the web container sees the same value as <code>atlas-scan</code>.</p>
+<h2 id="prometheus-metrics">Prometheus metrics<a class="headerlink" href="#prometheus-metrics" title="Permanent link">&para;</a></h2>
+<p><code>/metrics</code> serves what lanxang already knows in Prometheus format, for Grafana or any Prometheus-compatible
+scraper: uptime checks (including Internet, Router and DNS) and their response times, device counts by state,
+open alerts, disk temperature / SMART / life left (Proxmox, TrueNAS, Synology), UPS charge and battery state,
+heartbeats, and Pi-hole / AdGuard Home totals. Nothing is measured on request; a source that isn't set up is
+left out. Sign in, or send the read-only API token (<code>lanxang auth token</code>) as a Bearer token:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">scrape_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lanxang</span>
+<span class="w">    </span><span class="nt">scrape_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60s</span>
+<span class="w">    </span><span class="nt">authorization</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="nv">&lt;lanxang auth token&gt;</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[{</span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"atlas.example:8420"</span><span class="p p-Indicator">]}]</span>
+</code></pre></div>
+<h2 id="alerts-page">Alerts page<a class="headerlink" href="#alerts-page" title="Permanent link">&para;</a></h2>
+<p>The web page's <strong>Alerts</strong> tab lists everything the checks below find: <em>Needs action</em> (problems: these also go to every <code>notify:</code> channel), <em>Watching</em> (shown on the page only) and <em>Resolved in the last 7 days</em>. Each item links to the page where you can investigate it, and resolves by itself once the check no longer sees it. One-off findings, such as a newly opened port, stay under <em>Needs action</em> for 7 days. Resolved items are kept for 30 days.</p>
+<ul>
+<li><strong>Acknowledge</strong>: you've seen it. It moves down the list and off the Home page; a one-off finding is cleared.</li>
+<li><strong>Mute this alert / this device</strong> (1 day, 7 days or always): no more messages about it - when the alert is about a device, about anything on that device - but it stays listed. <em>Muted</em> at the top of the page lists them, each with <em>Unmute</em>.</li>
+<li><strong>Pause alerts</strong> (1 hour, 4 hours or a day) for maintenance: nothing is sent, problems are still recorded, and a banner shows until <em>Resume now</em> or the time runs out.</li>
+</ul>
+<p><strong>One alert per outage.</strong> When a switch or access point on the cabling map goes offline, the offline devices wired behind it fold under it: one alert ("core-switch is offline - 12 devices behind it unreachable") and one message, instead of one per device. Only the topmost offline box counts, so a dead core switch doesn't also report the edge switch behind it. Switches and APs are matched to inventory devices by MAC, then IP; muting the switch mutes its outage. Without a cabling map, every important device alerts on its own as before.</p>
+<h2 id="wiring"><code>wiring</code><a class="headerlink" href="#wiring" title="Permanent link">&para;</a></h2>
+<p>The cabling map (web <code>/cabling</code>): every switch port, what's plugged into it, patch panels, and cable health. Read-only: lanxang reads your switches over SNMPv3 and, optionally, a UniFi console, and never changes their settings. The atlas-scan container refreshes it every cycle; the page's <strong>Refresh map</strong> button does it on demand.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">wiring</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">switches</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">core-switch</span><span class="w">          </span><span class="c1"># secrets in .env: LANXANG_SNMP_CORE_SWITCH_AUTH / _PRIV</span>
+<span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.1.2</span>
+<span class="w">      </span><span class="nt">priv</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aes</span><span class="w">                  </span><span class="c1"># des only for old gear that offers nothing else</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nas</span><span class="w">                  </span><span class="c1"># SNMPv2c: read-only community in .env as LANXANG_SNMP_NAS_COMMUNITY</span>
+<span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.1.20</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2c</span>
+<span class="w">  </span><span class="nt">unifi</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                </span><span class="c1"># a local View Only account: LANXANG_UNIFI_USER / LANXANG_UNIFI_PASS in .env</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://192.168.1.1</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>switches</code></td>
+<td><code>[]</code></td>
+<td>Switches, routers and NAS boxes that speak the standard MIBs (IF-MIB, LLDP-MIB, BRIDGE-MIB). <code>version: "3"</code> (default, authPriv; <code>snmp_user</code> defaults to <code>lanxang</code>) or <code>"2c"</code> with a read-only community - unencrypted, so only when the device offers nothing else. See <a href="../hardware/">Supported hardware</a></td>
+</tr>
+<tr>
+<td><code>unifi</code></td>
+<td>off</td>
+<td>Adds UniFi gateway/AP/switch ports and their uplinks, which SNMP can't see</td>
+</tr>
+<tr>
+<td><code>cabling_file</code></td>
+<td><code>cabling.yaml</code></td>
+<td>Patch panels and wall jacks, by hand (see <code>cabling.example.yaml</code>)</td>
+</tr>
+<tr>
+<td><code>not_managed</code></td>
+<td><code>[]</code></td>
+<td>Addresses never suggested for a login (the Setup tab's <em>Don't ask</em> adds them)</td>
+</tr>
+<tr>
+<td><code>keep_snapshots</code></td>
+<td><code>30</code></td>
+<td>Scans kept for "changes since the last scan" and cable health history</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td><code>10</code></td>
+<td>Seconds per SNMP or UniFi request</td>
+</tr>
+</tbody>
+</table>
+<h3 id="traffic">Traffic<a class="headerlink" href="#traffic" title="Permanent link">&para;</a></h3>
+<p>Each scan compares every port's byte counters (64-bit <code>ifHCInOctets</code>/<code>ifHCOutOctets</code> over SNMP; UniFi's port table) with the scan before, giving the average traffic over that gap - 15 minutes with the default scan interval, so short bursts are smoothed out. Nothing extra is polled. On the map, a cable over half its link speed is drawn thick orange and over 80% red, and its label shows the rate. The <strong>Port map</strong> has a <em>Traffic (24 h)</em> column with a small graph per port; hover it for now, in/out and the peak. Rates are kept 7 days. A counter reset (switch reboot) skips one point instead of showing a spike.</p>
+<h3 id="cable-health">Cable health<a class="headerlink" href="#cable-health" title="Permanent link">&para;</a></h3>
+<p>Each scan compares every connected port's counters with the scan before it, so only new errors count. A switch reboot that resets the counters is recognised and ignored.</p>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Level</th>
+<th>What it usually means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CRC / alignment errors growing (10 or more per scan, above 0.01% of packets; 0.1% = problem)</td>
+<td>watch → problem</td>
+<td>A damaged cable, a bad jack or a worn patch lead</td>
+</tr>
+<tr>
+<td>Half duplex, or late collisions</td>
+<td>problem</td>
+<td>Duplex mismatch: one end is set to a fixed speed</td>
+</tr>
+<tr>
+<td>Link slower than the port ran before (e.g. 100 Mbit/s instead of 1 Gbit/s)</td>
+<td>watch</td>
+<td>A damaged wire pair or bad jack, or simply a computer asleep</td>
+</tr>
+<tr>
+<td>Link went down and up since the last scan</td>
+<td>watch</td>
+<td>Unplugged, rebooted, or a loose connector</td>
+</tr>
+<tr>
+<td>Output errors growing</td>
+<td>watch</td>
+<td>Congestion or a failing port</td>
+</tr>
+<tr>
+<td>PoE fault: a powered device detected but not powered</td>
+<td>problem</td>
+<td>A bad cable, or the device needs more power than the port gives</td>
+</tr>
+<tr>
+<td>PoE budget 90% or more used</td>
+<td>watch</td>
+<td>Another powered device (camera, access point) may not start</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Finding switches to add:</strong> lanxang notices network gear it can't read yet: devices that answer SNMPv3 discovery (the maker comes from the answer, e.g. Cisco, Netgear, MikroTik) and devices a mapped switch hears announcing themselves as a bridge, router or access point over LLDP. NAS and Linux SNMP agents are left out. The Cabling page then says how many devices could show their ports with a login, the device's own page links to the Setup tab with the address filled in, and the Switches card lists them under <em>Found on your network</em> with <strong>Use</strong> and <strong>Don't ask</strong>. Lanxang never tries passwords: you give the SNMPv3 login, press Test, then Save.</p>
+<p><strong>PoE:</strong> ports powering a device show ⚡ on the faceplate, ports that can supply PoE but aren't have a dashed outline, and each device's line shows its PoE use and budget ("PoE 6.5 W of 30 W"). Hover a port for the PoE class, mode and watts. Switches report this over SNMP (the standard POWER-ETHERNET-MIB; per-port watts only come from UniFi), UniFi devices through the console. "Started/stopped delivering PoE" appears with the other changes since the last scan.</p>
+<p><strong>Spanning tree, link bundles and VLANs:</strong> when two or more cables join the same two switches or routers, the map checks spanning tree. If all but one cable is blocked, the spare shows as a grey dotted <em>standby</em> line, with a quiet note saying which port is idle. If more than one cable carries traffic, that's a <strong>loop risk</strong>: a warning at the top of the page and one alert (plus another when it's fixed). Cables bundled with LACP draw thicker and are labelled with the bundle name (for example <code>Po1</code>), with no warning. Hover a port to see its bundle, spanning-tree state and VLANs ("VLAN 1, tagged 20, 30"). When the switches carry more than one VLAN, a <strong>VLAN</strong> picker above the faceplates dims every port not on the chosen VLAN. The switch model (from <code>sysDescr</code>) shows next to its name. All of this uses standard MIBs (BRIDGE-MIB spanning tree, IEEE 802.3ad LAG-MIB, Q-BRIDGE-MIB VLANs). UniFi devices report their spanning-tree state and bundles through the console. A switch that lacks one of these tables just shows nothing for it.</p>
+<p>Problems turn the port red on the faceplate, appear in <strong>Cable health</strong> and send one alert to every <code>notify:</code> channel, plus another alert when they clear. "Watch" findings are shown on the page only, because they have harmless causes too often to send alerts about. Switches without the EtherLike counters fall back to plain input errors, and UniFi ports use the console's own error counts.</p>
+<h2 id="uptime"><code>uptime</code><a class="headerlink" href="#uptime" title="Permanent link">&para;</a></h2>
+<p>Is each service you care about answering? Add checks on the web page (<strong>Servers → Uptime</strong>: name, address, <em>Add</em>; your public hostnames are offered as one-click suggestions) or here. The atlas-scan container tries every check once a minute.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">uptime</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">fail_after</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w">                 </span><span class="c1"># failures in a row before a check counts as down</span>
+<span class="w">  </span><span class="nt">checks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Media server</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://media.example.org</span><span class="w">     </span><span class="c1"># up when it answers below HTTP 500 - a login page counts</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NAS (SMB)</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.0.2.20:445</span><span class="w">                </span><span class="c1"># up when the port accepts a connection</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w">                            </span><span class="c1"># seconds, default 10</span>
+</code></pre></div>
+<p>A check that fails <code>fail_after</code> times in a row is <strong>down</strong>: one alert ("Media server is down"), listed on the Alerts page, and one "back up" message saying how long it was down. Mute or pause it from the Alerts page like any other alert. The page shows each check's response time over 24 hours and its uptime over 24 hours, 7 days and 30 days; results are kept 30 days. Certificates aren't verified here - expiry and trust are the certificate watch's job (<code>security.cert_watch</code>). A list set in lanxang.yaml wins over the page and makes the page read-only.</p>
+<h3 id="heartbeats">Heartbeats<a class="headerlink" href="#heartbeats" title="Permanent link">&para;</a></h3>
+<p>For jobs lanxang can't check from outside, such as a nightly backup or a cron job: add one on Servers → Uptime (or under <code>uptime.heartbeats</code>), then have the job call its address when it finishes. Add <code>/fail</code> when it failed.</p>
+<div class="highlight"><pre><span></span><code>your-backup-command<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>curl<span class="w"> </span>-fsS<span class="w"> </span>-m<span class="w"> </span><span class="m">10</span><span class="w"> </span>http://atlas.example:8420/ping/&lt;token&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">                    </span><span class="o">||</span><span class="w"> </span>curl<span class="w"> </span>-fsS<span class="w"> </span>-m<span class="w"> </span><span class="m">10</span><span class="w"> </span>http://atlas.example:8420/ping/&lt;token&gt;/fail
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="nt">uptime</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">heartbeats</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Nightly backup</span>
+<span class="w">      </span><span class="nt">every_minutes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1440</span><span class="w">   </span><span class="c1"># how often it runs</span>
+<span class="w">      </span><span class="nt">grace_minutes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span><span class="w">     </span><span class="c1"># how late it may be</span>
+</code></pre></div>
+<p>A heartbeat that hasn't pinged within <code>every_minutes</code> + <code>grace_minutes</code> is <strong>late</strong>: one alert, and one when it pings again. A <code>/fail</code> ping alerts within a minute. Nothing is said before the first ping. The address needs no sign-in (the token in it is the password), so if lanxang sits behind a sign-in proxy, ping it on its own network address. Renaming a heartbeat changes its address.</p>
+<h2 id="internet"><code>internet</code><a class="headerlink" href="#internet" title="Permanent link">&para;</a></h2>
+<p>Internet health, checked with the uptime checks once a minute (<code>lanxang uptime check</code>, run by atlas-scan). Lanxang
+opens a TCP connection to each target and to your default gateway (the router); no ping, so no extra
+privileges. Results show on Servers → Uptime and as a tile on Home.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td><code>true</code></td>
+<td><code>false</code> turns the check off</td>
+</tr>
+<tr>
+<td><code>targets</code></td>
+<td><code>["1.1.1.1:443", "8.8.8.8:443", "9.9.9.9:443"]</code></td>
+<td><code>host:port</code> to reach; the internet is up when any answers</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td><code>3.0</code></td>
+<td>Seconds to wait for each</td>
+</tr>
+<tr>
+<td><code>dns_name</code></td>
+<td><code>example.com</code></td>
+<td>Looked up each minute to check name lookups work; <code>""</code> turns that off</td>
+</tr>
+<tr>
+<td><code>dns_servers</code></td>
+<td><code>[]</code></td>
+<td>Ask these directly (your router, Pi-hole...), one row each; empty = this machine's own resolver</td>
+</tr>
+<tr>
+<td><code>speed_test</code></td>
+<td><code>false</code></td>
+<td>A daily speed test after 04:00 (<code>notify.timezone</code>), shown on Home; see below</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Speed test:</strong> with <code>speed_test: true</code>, <code>lanxang internet speed</code> (run by atlas-scan every pass) measures download,
+upload and ping once a day, on the first pass after 04:00 local time so it doesn't slow anyone's evening. It uses
+Cloudflare's public speed test (<code>speed.cloudflare.com</code>), four streams at once, about 260 MB per run; nothing about you
+is sent. Home shows the last result and the slowest download of the past 30 days. There is no alert: one slow
+result usually means the line was busy, not broken. <code>lanxang internet speed --force</code> runs one now; so does Test on the
+Setup tab's <em>Internet speed test</em> card.</p>
+<p><strong>Name lookups (DNS):</strong> a working connection with a broken DNS server still means no websites. Lanxang looks up
+<code>dns_name</code> once a minute and shows it under Internet. After <code>uptime.fail_after</code> failed minutes in a row - while
+the internet itself answers - you get one alert, and one when lookups work again.</p>
+<p>The internet counts as down after <code>uptime.fail_after</code> failed minutes in a row. The alert for the drop only
+arrives if your alert service works without the internet (ntfy on your own network, for example); the one when
+it's back always does, with how long it lasted. The outage list says whether the router kept answering - then
+the problem was on the provider's side.</p>
+<h2 id="dns_filter"><code>dns_filter</code><a class="headerlink" href="#dns_filter" title="Permanent link">&para;</a></h2>
+<p>Pi-hole (version 6) or AdGuard Home, read with every <code>lanxang scan</code> (or <code>lanxang dns check</code>). Easiest from Setup →
+<em>Pi-hole or AdGuard Home</em>. Read-only: lanxang never changes blocking or lists.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td><code>false</code></td>
+<td>Turn the watch on</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td><code>pihole</code></td>
+<td><code>pihole</code> or <code>adguard</code></td>
+</tr>
+<tr>
+<td><code>url</code></td>
+<td><code>""</code></td>
+<td>Its web address, e.g. <code>http://192.168.1.53</code></td>
+</tr>
+<tr>
+<td><code>user</code></td>
+<td><code>""</code></td>
+<td>AdGuard Home's username (Pi-hole has none)</td>
+</tr>
+<tr>
+<td><code>verify_ssl</code></td>
+<td><code>false</code></td>
+<td>Check the certificate on an <code>https://</code> address</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td><code>5.0</code></td>
+<td>Seconds to wait</td>
+</tr>
+</tbody>
+</table>
+<p>The password goes in the <code>LANXANG_DNS_PASSWORD</code> secret (Setup stores it for you). For Pi-hole, an <em>app password</em>
+(Settings → Web interface / API) works too and is the one to use with two-factor sign-in on. Lanxang signs out of
+Pi-hole after every read, so it never uses up Pi-hole's session slots. Ad blocking off at two checks in a row
+sends one alert, and one more when it's back on - a short pause doesn't.</p>
+<h2 id="homeassistant"><code>homeassistant</code><a class="headerlink" href="#homeassistant" title="Permanent link">&para;</a></h2>
+<p>Home Assistant, read with every <code>lanxang scan</code> (and <code>lanxang ha check</code>) through its REST API. Set it up in Setup →
+<em>Home Assistant</em>. Off by default.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td><code>false</code></td>
+<td>Turn it on</td>
+</tr>
+<tr>
+<td><code>url</code></td>
+<td></td>
+<td>Home Assistant's address, like <code>http://homeassistant.local:8123</code></td>
+</tr>
+<tr>
+<td><code>verify_ssl</code></td>
+<td><code>false</code></td>
+<td>Check its certificate</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td><code>15</code></td>
+<td>Seconds to wait</td>
+</tr>
+<tr>
+<td><code>offline_hours</code></td>
+<td><code>6</code></td>
+<td>A device counts as dropped out when all its sensors, cameras, locks, switches, lights... have been unavailable this long</td>
+</tr>
+<tr>
+<td><code>battery_percent</code></td>
+<td><code>20</code></td>
+<td>A battery at or under this is low</td>
+</tr>
+</tbody>
+</table>
+<p>The long-lived access token (Home Assistant: your profile → Security → Long-lived access tokens) is the
+<code>LANXANG_HA_TOKEN</code> secret. Home shows a <em>Smart home</em> tile and card: devices that dropped out, low batteries and
+updates waiting. TVs, media players, remotes and phones are left out of "dropped out" - they go unavailable
+whenever they're switched off. Alerts: Home Assistant not answering (two checks in a row), a device dropping out,
+a low battery - once each, and once when it's fine again. Updates are listed to watch, never messaged.</p>
+<h2 id="nas"><code>nas</code><a class="headerlink" href="#nas" title="Permanent link">&para;</a></h2>
+<p>TrueNAS or Synology disk and pool health, read with every <code>lanxang scan</code> (and <code>lanxang nas check</code>). Set it up in Setup → <em>TrueNAS or Synology</em>. Off by default.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td><code>false</code></td>
+<td>Turn it on</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td><code>truenas</code></td>
+<td><code>truenas</code> or <code>synology</code></td>
+</tr>
+<tr>
+<td><code>url</code></td>
+<td></td>
+<td>The web address: <code>https://192.0.2.20</code> (TrueNAS, https only), <code>https://192.0.2.20:5001</code> (Synology)</td>
+</tr>
+<tr>
+<td><code>user</code></td>
+<td></td>
+<td>TrueNAS: the user the API key belongs to. Synology: the account lanxang signs in with</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td></td>
+<td>What to call it on Home and in alerts; the address's host name when empty</td>
+</tr>
+<tr>
+<td><code>verify_ssl</code></td>
+<td><code>false</code></td>
+<td>Check its certificate (leave off for the usual self-signed one)</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td><code>10</code></td>
+<td>Seconds to wait</td>
+</tr>
+</tbody>
+</table>
+<p>The API key (TrueNAS) or password (Synology) is the <code>LANXANG_NAS_PASSWORD</code> secret.</p>
+<ul>
+<li><strong>TrueNAS</strong> (24.10 and newer) is read over its JSON-RPC websocket API, the one that replaces the REST API TrueNAS is removing. Make an API key for a user with the read-only admin role. lanxang only uses https: TrueNAS revokes a key sent without encryption.</li>
+<li><strong>Synology</strong> (DSM 7): DSM only lets administrators read storage, so make an admin account for lanxang, deny it every shared folder and application, and leave two-factor off for it. lanxang signs out after every read.</li>
+</ul>
+<p>Home's Storage &amp; RAID card shows each pool or volume (health, how full) and the disks the same way as Proxmox ones (see <em>Disk health</em> under <code>health</code>). Alerts: one when a pool or volume isn't healthy and one when it is again; disk alerts use the same <code>health.disk_*</code> limits. Built from the vendors' API documentation and not yet checked against real hardware - if something reads wrong on yours, please open an issue.</p>
+<h2 id="ups"><code>ups</code><a class="headerlink" href="#ups" title="Permanent link">&para;</a></h2>
+<p>Alerts on a power cut, a low battery, and when power is back, read from a NUT server (Network UPS Tools, TCP 3493). The computer the UPS's USB cable goes into usually runs one: <code>nut-server</code> on Linux, or the <em>network UPS server</em> option on Synology, QNAP, Unraid and TrueNAS (add lanxang's address to its allowed list). Set it up on <strong>Setup → UPS</strong> or here. atlas-scan reads it once a minute; only <code>LIST</code> commands are sent, so no login is needed.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">ups</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.1.20</span>
+<span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3493</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">""</span><span class="w">          </span><span class="c1"># blank = every UPS that server lists (Synology calls its UPS "ups")</span>
+</code></pre></div>
+<p>The UPS status (charge, time left on battery, load) is shown at the top of <strong>Servers → Uptime</strong>. If the server can't be read, the last known state is kept and the Alerts page shows it under <em>Watching</em> - a hiccup reading it never counts as a power change.</p>
+<h2 id="security"><code>security</code><a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
+<p>LAN watch: <code>lanxang lan check</code> looks for a second DHCP server and for something impersonating your router. atlas-scan runs it after every device scan, and the result shows as the <strong>LAN</strong> tile on the Security tab (Exposure).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">security</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dhcp_servers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">192.168.1.5</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># only if something besides the router hands out addresses (Pi-hole, a second router)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dhcp_probe</code></td>
+<td><code>true</code></td>
+<td>Send one DHCP discover per run and list every server that answers. It never asks for or takes an address</td>
+</tr>
+<tr>
+<td><code>dhcp_timeout</code></td>
+<td><code>3.0</code></td>
+<td>Seconds to wait for answers</td>
+</tr>
+<tr>
+<td><code>dhcp_servers</code></td>
+<td><code>[]</code></td>
+<td>DHCP servers you expect besides the default gateway</td>
+</tr>
+<tr>
+<td><code>port_watch</code></td>
+<td><code>true</code></td>
+<td><code>lanxang ports check</code>: alert on newly open ports (below)</td>
+</tr>
+<tr>
+<td><code>snmp_discovery</code></td>
+<td><code>true</code></td>
+<td>During <code>lanxang ports check</code>, send each device online the standard SNMPv3 discovery message (no user name, no password, so never a failed login) to find switches and routers that could show their ports</td>
+</tr>
+<tr>
+<td><code>port_timeout</code></td>
+<td><code>0.5</code></td>
+<td>Seconds per port connect</td>
+</tr>
+<tr>
+<td><code>extra_ports</code></td>
+<td><code>[]</code></td>
+<td>Ports to watch besides the ~25 common service ports</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Level</th>
+<th>What it usually means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A DHCP server that is neither the gateway nor listed</td>
+<td>problem</td>
+<td>A router plugged in backwards, a VM or container running DHCP by mistake, or an attacker handing out their own gateway</td>
+</tr>
+<tr>
+<td>No DHCP server answered two runs in a row (after answering before)</td>
+<td>problem</td>
+<td>DHCP is down: new devices and renewing ones can't get an address</td>
+</tr>
+<tr>
+<td>No DHCP server has ever answered</td>
+<td>watch</td>
+<td>Usually this host's firewall dropping the answers: allow incoming UDP port 68 (on firewalld: <code>firewall-cmd --add-port=68/udp --permanent</code>, then <code>--reload</code>)</td>
+</tr>
+<tr>
+<td>The gateway's IP answers from a different MAC than the one learned on the first run</td>
+<td>problem</td>
+<td>ARP spoofing (a man in the middle), or you replaced the router: run <code>lanxang lan check --trust-gateway</code> to accept the new MAC</td>
+</tr>
+<tr>
+<td>A wired UniFi client using the gateway's IP</td>
+<td>problem</td>
+<td>Something claiming to be the router (needs <code>wiring.unifi</code>)</td>
+</tr>
+<tr>
+<td>The gateway's MAC also answers for another address</td>
+<td>watch</td>
+<td>Usually harmless (proxy ARP, a router with two addresses)</td>
+</tr>
+<tr>
+<td>One IP on two wired UniFi clients</td>
+<td>watch</td>
+<td>An address conflict, or a recent DHCP reassignment</td>
+</tr>
+</tbody>
+</table>
+<p>Problems send one alert to every <code>notify:</code> channel and another when they clear. The ARP checks see what the lanxang host sees; UniFi's client list (when <code>wiring.unifi</code> is set) widens that to the rest of the wired network. Hearing DHCP answers needs UDP port 68: the Docker image ships <code>lanxang-dhcp-python</code>, an interpreter copy holding only that one permission. Run outside Docker as a normal user, the probe reports that it can't listen and the ARP checks still run.</p>
+<h3 id="open-port-watch">Open-port watch<a class="headerlink" href="#open-port-watch" title="Permanent link">&para;</a></h3>
+<p><code>lanxang ports check</code> (run by atlas-scan after every device scan) looks at three things, all read-only:</p>
+<ul>
+<li><strong>LAN devices:</strong> a plain TCP connect to about 25 common service ports (SSH, telnet, web, file sharing, remote desktop, VNC, databases, camera streams, MQTT, printers) on every device that is online, within your scan subnets. It never sends data or logs in.</li>
+<li><strong>This host:</strong> sockets listening for other machines (loopback-only ones are left out).</li>
+<li><strong>The router:</strong> port forwards and the UPnP switch from the UniFi console when <code>wiring.unifi</code> is set, and the standard UPnP port-mapping list that most home routers answer (only the default gateway is asked).</li>
+</ul>
+<p>The first run learns what is normal and sends nothing. After that every newly open port sends one alert (risky ones such as telnet, SMB, remote desktop or databases say so), a new port forward or UPnP mapping alerts as "opened to the internet", and UPnP being switched on alerts. A port that closes and opens again later doesn't alert twice. Each device's page lists its open ports; the Security tab (Exposure)'s <strong>Public exposure</strong> tab shows the router's forwards, UPnP and the latest new ports.</p>
+<h3 id="certificate-watch">Certificate watch<a class="headerlink" href="#certificate-watch" title="Permanent link">&para;</a></h3>
+<p><code>lanxang certs check</code> (run by atlas-scan, but only once a day) opens a TLS connection to every hostname in your Traefik routes, plus any you list, the same way a browser would, and reads each certificate's expiry date. Nothing is changed and no login is needed. Behind Cloudflare (or any proxy) that is the certificate visitors actually get.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">security</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cert_watch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">          </span><span class="c1"># false turns it off</span>
+<span class="w">  </span><span class="nt">cert_hosts</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">            </span><span class="c1"># more hostnames to check, e.g. a router or NAS with its own certificate</span>
+<span class="w">  </span><span class="nt">cert_warn_days</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">14</span><span class="w">        </span><span class="c1"># first alert</span>
+<span class="w">  </span><span class="nt">cert_urgent_days</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">       </span><span class="c1"># second, red alert (also sent once it has expired)</span>
+<span class="w">  </span><span class="nt">cert_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+</code></pre></div>
+<p>One alert per hostname each time things get worse (14 days left, then 3 days or expired), one when a browser would refuse the certificate (wrong name, untrusted issuer), and a "Resolved" once it is renewed. A hostname that can't be reached is only shown, not alerted: outages are the health checks' job. The Posture page's <strong>Public exposure</strong> tab shows days left next to each route, yellow inside the warning window and red when urgent or untrusted. <code>lanxang certs check --force</code> checks right away.</p>
+<h3 id="internet-view">Internet view<a class="headerlink" href="#internet-view" title="Permanent link">&para;</a></h3>
+<p><code>lanxang internet check</code> (run by atlas-scan, but only once a day, or sooner when your public IP changes) asks
+Shodan's free <a href="https://internetdb.shodan.io">InternetDB</a> what it last saw on your home's public IP: open ports and
+any CVEs it reports for that IP. The IP is the one posture collection already reads, so <code>posture.enabled</code> must be on.
+No account or key is needed.</p>
+<p><strong>Privacy:</strong> this sends your home IP to Shodan once a day, so it is off until you turn it on (here, or on the Setup
+page's <strong>Internet view</strong> card).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">posture</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">internet_view</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">       </span><span class="c1"># off by default</span>
+<span class="w">  </span><span class="nt">expected_ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">80</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">443</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="c1"># open ports that don't alert (port numbers, any protocol)</span>
+<span class="w">  </span><span class="nt">internet_view_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://internetdb.shodan.io/{ip}</span>
+</code></pre></div>
+<p>Each open port that isn't in <code>expected_ports</code> raises one alert ("Port 22 is open to the internet"), cleared with
+one more message when Shodan no longer sees it or when you add the port to <code>expected_ports</code> (saving the Setup card
+rechecks the last answer straight away, without asking Shodan again); each reported CVE raises one alert too. The Security page's <strong>Public exposure</strong> tab shows
+<strong>What the internet sees</strong>: each port marked expected or not, the CVEs, the software Shodan detected, and when Shodan was last asked. This is
+Shodan's last scan, not a live test: a port you just closed can still show for a while. A failed lookup keeps the
+last answer and the open alerts, and so does an empty answer from Shodan after it had data for your IP (shown as
+"Shodan has no current data for this IP"); a failed lookup is tried again an hour later rather than the next day.
+A new public IP starts from nothing. <code>lanxang internet check --force</code>
+looks up right away.</p>
+<h2 id="notify"><code>notify</code><a class="headerlink" href="#notify" title="Permanent link">&para;</a></h2>
+<p>Where alerts go: new devices, important devices gone offline, VPN/torrent clients disconnected, and sign-ins from new places. Set any number of channels — every one that is set gets each alert, and one failing never stops the others. Check your setup with <code>lanxang notify test</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">notify</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ntfy</span><span class="p">:</span><span class="w">                              </span><span class="c1"># free phone app (ntfy.sh, or your own server)</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://ntfy.sh</span>
+<span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-homelab-a8f3k2</span><span class="w">         </span><span class="c1"># pick something hard to guess on the public server</span>
+<span class="w">  </span><span class="nt">webhooks</span><span class="p">:</span><span class="w">                          </span><span class="c1"># Discord / Slack webhook URLs, or any URL that takes JSON</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://discord.com/api/webhooks/123/abc</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://homeassistant.local:8123/api/webhook/lanxang</span>
+<span class="w">  </span><span class="nt">email</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">smtp.example.com</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">587</span>
+<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">atlas@example.com</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">me@example.com</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">apprise</span><span class="p">:</span><span class="w">                           </span><span class="c1"># 100+ more services, see the Apprise wiki</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tgram://bottoken/ChatID</span>
+<span class="w">  </span><span class="nt">signal</span><span class="p">:</span><span class="w">                            </span><span class="c1"># signal-cli-rest-api</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://signal-cli:8080</span>
+<span class="w">    </span><span class="nt">number</span><span class="p">:</span><span class="w"> </span><span class="s">"+15551234567"</span>
+<span class="w">    </span><span class="nt">recipients</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"+15559876543"</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Fields</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ntfy</code></td>
+<td><code>url</code>, <code>topic</code>, <code>token</code></td>
+<td>Markdown messages with a title. <code>token</code> (or <code>LANXANG_NTFY_TOKEN</code> in <code>.env</code>) for a protected server</td>
+</tr>
+<tr>
+<td><code>webhooks</code></td>
+<td>list of URLs</td>
+<td><code>discord.com/api/webhooks/...</code> and <code>hooks.slack.com/...</code> get their own format; any other URL gets <code>{"title", "text", "source": "lanxang"}</code> as JSON</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td><code>host</code>, <code>port</code> (587), <code>starttls</code> (true), <code>user</code>, <code>password</code>, <code>sender</code>, <code>to</code></td>
+<td>Port 465 uses implicit TLS. Put the password in <code>.env</code> as <code>LANXANG_SMTP_PASSWORD</code> rather than here</td>
+</tr>
+<tr>
+<td><code>apprise</code></td>
+<td>list of <a href="https://github.com/caronc/apprise/wiki">Apprise URLs</a></td>
+<td>Telegram, Pushover, Gotify, Matrix, Teams and more. Needs the <code>apprise</code> package — the Docker image has it; with pip, <code>pip install "lanxang[alerts]"</code></td>
+</tr>
+<tr>
+<td><code>signal</code></td>
+<td><code>url</code>, <code>number</code>, <code>recipients</code></td>
+<td>Through <a href="https://github.com/bbernhard/signal-cli-rest-api">signal-cli-rest-api</a>. <code>recipients</code> can be numbers or group IDs</td>
+</tr>
+</tbody>
+</table>
+<p>Beside the channels: <code>timezone</code> (the alert time zone, an IANA name; UTC when empty) for <code>quiet_hours</code> and the
+summaries, <code>weekly_summary</code> (true) and <code>daily_summary</code> (<code>"HH:MM"</code>, empty = off) - see
+<a href="#weekly-summary">Weekly summary</a> and <a href="#daily-summary">Daily summary</a>.</p>
+<p>An alert counts as delivered when at least one channel took it; if every channel fails it stays queued and is retried on the next run.</p>
+<p>The first successful run of each source (<code>lan</code>, <code>proxmox</code>, ...) is a baseline — it never generates new-device alerts by itself. After that, new-device alerts roll up: if one was already sent in the last 24 hours, further new devices are held and folded into the next message instead of each firing its own alert. An important device going quiet (missed the last 2 successful runs of every source) alerts once per episode, not on every scan it stays quiet. </p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "content.action.edit", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>

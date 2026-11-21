@@ -11,6 +11,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from lanxang.database.models import PortTrafficRecord
+from lanxang.wiring.build import INFRA
 from lanxang.wiring.health import _delta, _ports
 from lanxang.clock import utcnow
 
@@ -71,6 +72,32 @@ def history(engine, since=None):
         found.setdefault((row.device, row.port), []).append((row.taken_at, row.in_bps, row.out_bps))
 
     return found
+
+
+def top_users(history, snapshot, n=5):
+    """[(name, bytes)] for what is plugged into each port, summed over history(), busiest first. Switches, the gateway
+    and access points are left out (their ports carry everyone's traffic); Wi-Fi clients sit behind their access point,
+    so this is wired devices only."""
+
+    nodes = {node["id"]: node for node in (snapshot or {}).get("nodes") or []}
+    ids = {node.get("name") or node_id: node_id for node_id, node in nodes.items()}
+    ends = {}
+    for link in (snapshot or {}).get("links") or []:
+        ends.setdefault((link.get("a"), link.get("a_port")), link.get("b"))
+        ends.setdefault((link.get("b"), link.get("b_port")), link.get("a"))
+    totals = {}
+    for (device, port), points in history.items():
+        node = nodes.get(ends.get((ids.get(device), port)))
+        if not node or node.get("kind") in INFRA:
+            continue
+        # each rate is the average since the scan before, so it covers the gap back to the previous point (capped
+        # at 2 h so a stretch with the scanner off isn't filled in with a guess)
+        done = sum((a + b) / 8 * min((at - before[0]).total_seconds(), 7200)
+                   for before, (at, a, b) in zip(points, points[1:]))
+        name = node.get("name") or node["id"]
+        totals[name] = totals.get(name, 0) + done
+
+    return sorted(((name, done) for name, done in totals.items() if done > 0), key=lambda pair: -pair[1])[:n]
 
 
 def text(bps):

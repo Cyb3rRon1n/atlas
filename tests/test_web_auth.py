@@ -246,3 +246,21 @@ def test_sign_in_and_setup_pages_carry_the_brand():
     for page in (render_login_page(), render_setup_page()):
         assert 'class="brand"' in page and "Lanxang<small" in page and "ລ້ານຊ້າງ" in page and page.count("<svg") == 2
         assert '<svg width="44" height="44" aria-hidden="true"' in page                  # the text names it
+
+
+def test_old_failures_are_forgotten(tmp_path):
+
+    auth = Auth(tmp_path / "auth.json")
+    auth.set_password("the password")
+    for i in range(50):
+        auth.login("bad", f"10.0.0.{i}", now=100)
+    auth.login("bad", "10.0.1.1", now=100 + 301)
+    assert list(auth._fails) == ["10.0.1.1"]
+
+
+def test_pages_cannot_be_framed(secured):
+
+    base, _ = secured
+    with OPENER.open(base + "/static/fonts/Lexend.woff2", timeout=5) as response:
+        assert response.headers["X-Frame-Options"] == "DENY"
+        assert response.headers["Content-Security-Policy"] == "frame-ancestors 'none'"

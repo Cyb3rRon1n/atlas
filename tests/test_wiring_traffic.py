@@ -64,3 +64,26 @@ def test_page_shows_busy_cable_and_graph(temp_db, tmp_path):
     assert "480 Mb/s</td>" in page
     plain = render_cabling_page(copy.deepcopy(latest), [], True, now=start + timedelta(hours=1))
     assert 'class="spark' not in plain                              # no history: no graph, page still renders
+
+
+def test_top_users_names_wired_devices_by_data_moved():
+
+    snapshot = {"nodes": [{"id": "s:core", "name": "core", "kind": "switch"}, {"id": "h:pc", "name": "Desk PC", "kind": "host"},
+                          {"id": "h:nas", "name": "NAS", "kind": "host"}, {"id": "a:ap", "name": "Hall AP", "kind": "ap"}],
+                "links": [{"a": "s:core", "a_port": "gi1", "b": "h:pc", "b_port": ""},
+                          {"a": "s:core", "a_port": "gi2", "b": "h:nas", "b_port": ""},
+                          {"a": "s:core", "a_port": "gi3", "b": "h:nas", "b_port": ""},
+                          {"a": "s:core", "a_port": "gi4", "b": "a:ap", "b_port": ""}]}
+    t = datetime(2026, 11, 20, 12, 0)
+    later = t + timedelta(minutes=15)
+    history = {("core", "gi1"): [(t, 0, 0), (later, 8e6, 0)],                 # 1 MB/s for 900 s
+               ("core", "gi2"): [(t, 0, 0), (later, 8e6, 8e6)],               # a two-port bond: both count
+               ("core", "gi3"): [(t, 0, 0), (later, 8e6, 0)],
+               ("core", "gi4"): [(t, 0, 0), (later, 8e9, 0)],                 # an access point carries everyone
+               ("core", "gi9"): [(t, 0, 0), (later, 8e9, 0)],                 # nothing known on this port
+               ("core", "gi1x"): [(t, 0, 0)]}
+    top = traffic.top_users(history, snapshot)
+    assert top == [("NAS", 2.7e9), ("Desk PC", 9e8)]
+    assert traffic.top_users(history, snapshot, n=1) == [("NAS", 2.7e9)]
+    gap = {("core", "gi1"): [(t, 0, 0), (t + timedelta(hours=6), 8e6, 0)]}    # scanner off for hours: capped at 2 h
+    assert traffic.top_users(gap, snapshot) == [("Desk PC", 7.2e9)]

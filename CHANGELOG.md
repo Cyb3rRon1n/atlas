@@ -3,7 +3,20 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
-## Unreleased
+## 1.5.2 - 2026-11-21
+
+### Added
+- A daily internet speed test (opt-in: `internet.speed_test`, or the Setup tab's *Internet speed test* card):
+  download, upload and ping against Cloudflare's public speed test after 04:00 local time, shown on Home with the
+  slowest download of the last 30 days. `lanxang internet speed --force` runs one now.
+- Home shows the wired devices that moved the most data in the last 24 hours, from the switch port counters the
+  cabling map already reads.
+
+### Security
+- Every page now tells browsers not to show it inside another site's frame (`X-Frame-Options: DENY`,
+  `frame-ancestors 'none'`), so a hidden Approve button can't be placed under a decoy page.
+- The built-in sign-in forgets failed attempts once they are older than five minutes, so guesses from many addresses
+  can't keep growing its memory.
 
 ### Fixed
 - The weak Wi-Fi row only suggests 5 GHz when one of the devices is on 2.4 GHz.

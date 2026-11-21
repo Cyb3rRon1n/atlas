@@ -415,6 +415,14 @@ privileges. Results show on Servers → Uptime and as a tile on Home.
 | `timeout` | `3.0` | Seconds to wait for each |
 | `dns_name` | `example.com` | Looked up each minute to check name lookups work; `""` turns that off |
 | `dns_servers` | `[]` | Ask these directly (your router, Pi-hole...), one row each; empty = this machine's own resolver |
+| `speed_test` | `false` | A daily speed test after 04:00 (`notify.timezone`), shown on Home; see below |
+
+**Speed test:** with `speed_test: true`, `lanxang internet speed` (run by atlas-scan every pass) measures download,
+upload and ping once a day, on the first pass after 04:00 local time so it doesn't slow anyone's evening. It uses
+Cloudflare's public speed test (`speed.cloudflare.com`), four streams at once, about 260 MB per run; nothing about you
+is sent. Home shows the last result and the slowest download of the past 30 days. There is no alert: one slow
+result usually means the line was busy, not broken. `lanxang internet speed --force` runs one now; so does Test on the
+Setup tab's *Internet speed test* card.
 
 **Name lookups (DNS):** a working connection with a broken DNS server still means no websites. Lanxang looks up
 `dns_name` once a minute and shows it under Internet. After `uptime.fail_after` failed minutes in a row - while

@@ -645,7 +645,7 @@ app.add_typer(
 
 internet_app = typer.Typer(
     name="internet",
-    help="What Shodan sees on your public IP: open ports and reported CVEs (opt-in)"
+    help="What Shodan sees on your public IP (opt-in), and a daily speed test (opt-in)"
 )
 
 
@@ -689,6 +689,28 @@ def internet_check(
     for cve in detail["vulns"]:
         console.print(f"[yellow]{cve}[/yellow]")
     console.print(f"[green]{detail['ip']} checked {detail['checked_at']}, {len(texts)} alert(s)[/green]")
+
+
+@internet_app.command("speed")
+def internet_speed(force: bool = typer.Option(False, "--force", help="Test now, not just once a day after 04:00")):
+    """
+    Download, upload and ping against speed.cloudflare.com (about 260 MB). Off unless internet.speed_test is true;
+    atlas-scan runs it every pass and it tests once a day, after 04:00 in notify.timezone.
+    """
+
+    from lanxang.monitoring.speedtest import run
+    from lanxang.posture.store import PostureStore
+
+    settings = load_config()
+    if not settings.internet.speed_test and not force:
+        console.print(f"The speed test is off (internet.speed_test: false in {config_name()}); --force runs one anyway.")
+        return
+    detail = run(settings, PostureStore(), utcnow(), force=force)
+    if detail.get("error"):
+        console.print(f"[red]Speed test failed: {detail['error']}[/red]")
+    elif detail.get("down") is not None:
+        console.print(f"[green]Download {detail['down']} Mb/s, upload {detail['up']} Mb/s, ping {detail['ping']} ms "
+                      f"({detail['at']})[/green]")
 
 
 app.add_typer(

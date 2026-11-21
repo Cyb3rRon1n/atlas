@@ -352,6 +352,33 @@ def test_day_states_find_outages_per_day():
     assert day_states([fine, fine], 2, NOW)[5] == "ok"
 
 
+def test_day_states_count_an_outage_across_midnight():
+    from lanxang.web.home_page import day_states
+
+    midnight = datetime(2026, 11, 19)                       # NOW's day starts here (UTC display)
+    rows = [(midnight + timedelta(minutes=m), m >= 2) for m in (-2, -1, 0, 1, 2)]   # 4 failures, 2 each side
+    assert day_states([rows], 3, NOW)[-2:] == ["bad", "bad"]
+    assert day_states([rows], 5, NOW)[-2:] == ["ok", "ok"]
+
+
+def test_weak_wifi_row():
+    from lanxang.web.home_page import _wifi, weak_wifi
+
+    def device(i, name, signal, status="seen", state="known"):
+        wifi = {"signal": signal, "band": "2.4 GHz", "ap": "Hall AP"}
+        return {"id": i, "name": name, "status": status, "state": state,
+                "sightings": [{"detail": {"unifi": {"wifi": wifi}}, "mac": None}]}
+
+    devices = [device(1, "Tablet", -75), device(2, "TV", -60), device(3, "Old phone", -80, status="quiet"),
+               device(4, "Plug", -82, state="ignored"), device(5, "Laptop", -71)]
+    weak = weak_wifi(devices)
+    assert [d["name"] for d in weak] == ["Tablet", "Laptop"]
+    html = _wifi(weak)
+    assert "2 devices have a weak Wi-Fi signal" in html and "Tablet -75 dBm, 2.4 GHz on Hall AP" in html
+    assert 'href="/devices/1"' in _wifi(weak[:1]) and "Tablet has a weak Wi-Fi signal" in _wifi(weak[:1])
+    assert _wifi([]) == "" and weak_wifi([device(6, "Ok", None)]) == []
+
+
 def test_day_states_follow_the_viewer_zone():
     from lanxang.config.models import DisplayConfig
     from lanxang.web.home_page import day_states

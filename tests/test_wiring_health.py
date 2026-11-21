@@ -80,3 +80,14 @@ def test_alerts_once_per_problem_and_on_recovery():
     assert len(first) == 1 and "Duplex mismatch: core-switch gi5" in first[0]
     assert alerts(bad, bad) == []                                # still bad: no repeat
     assert "healthy again" in alerts(bad, [])[0]
+
+
+def test_issues_name_what_is_plugged_in():
+    from lanxang.wiring.health import name_attached, where
+
+    snapshot = {"nodes": [{"id": "s:core-switch", "name": "core-switch"}, {"id": "h:aa", "name": "Desk PC"}],
+                "links": [{"a": "s:core-switch", "a_port": "gi5", "b": "h:aa", "b_port": ""}]}
+    issues = name_attached(assess(scan(duplex="half"), []) + assess(scan(port="gi6", duplex="half"), []), snapshot)
+    assert [where(i) for i in issues] == ["Desk PC (core-switch gi5)", "core-switch gi6"]
+    assert "Duplex mismatch: Desk PC (core-switch gi5)" in alerts([], issues[:1])[0]
+    assert "Desk PC (core-switch gi5) is healthy again" in alerts(issues[:1], [])[0]

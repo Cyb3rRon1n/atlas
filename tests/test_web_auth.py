@@ -181,6 +181,21 @@ def test_sign_in_sign_out_and_api_token(secured):
     assert _call(base + "/", headers={"Cookie": cookie})[0] in (302, 303, 401)
 
 
+def test_behind_a_proxy_wrong_passwords_count_per_visitor(secured):
+
+    base, auth = secured
+    auth.set_password("a good password")
+
+    def login(password, visitor):
+        fields = urllib.parse.urlencode({"password": password}).encode()
+        return _call(base + "/login", fields, {"Origin": base, "X-Forwarded-For": f"203.0.113.9, {visitor}",
+                                               "Content-Type": "application/x-www-form-urlencoded"})[0]
+
+    assert [login("nope", "198.51.100.7") for _ in range(6)][-1] == 429     # the guesser is limited ...
+    assert login("a good password", "192.0.2.20") == 303                    # ... the owner behind the same proxy isn't
+    assert login("a good password", "not an address") == 303                # junk header: counted as the proxy itself
+
+
 def test_proxy_mode_is_unchanged(running_server_open):
 
     status, _, body = _call(running_server_open + "/api/summary")

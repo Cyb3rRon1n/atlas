@@ -3,6 +3,24 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
+## 1.5.1 - 2026-11-20
+
+### Added
+- Home shows a row when devices have a weak Wi-Fi signal (-70 dBm or worse, from UniFi or the router): each one's
+  signal, band and access point. It is information only and never turns Home amber.
+
+### Changed
+- Cable problems name what is plugged into the port: "Link went down and up: Desk PC (core-switch gi5)" in alerts,
+  on Home and on the Cabling page.
+- Removed `requirements.txt`. Nothing installed from it; `pip install -e .` (or the Docker image) is the way.
+
+### Fixed
+- Behind a reverse proxy, the built-in sign-in counted every visitor's wrong passwords as one, so five wrong guesses
+  from anyone locked everyone out for five minutes. Requests from a private address now count the address in the
+  proxy's `X-Forwarded-For`.
+- Home's Services strip missed an outage that crossed midnight (failures split between two days never reached the
+  limit on either). A run of failures now counts across midnight and marks both days.
+
 ## 1.5.0 - 2026-11-20
 
 A design pass: Home becomes a briefing of what's wrong and what changed since your last visit, Coverage says whether you can trust the device list and how to see more, and Overview and Uptime get trend lines and a status line.

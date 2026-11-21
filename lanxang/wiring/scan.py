@@ -13,7 +13,7 @@ from lanxang.alerts import Text
 from lanxang.wiring import WiringError, traffic
 from lanxang.wiring.build import build_wiring
 from lanxang.wiring.cabling import load_cabling
-from lanxang.wiring.health import alerts, assess, poe_ports
+from lanxang.wiring.health import alerts, assess, name_attached, poe_ports, where
 from lanxang.wiring.snmp import collect_switch
 from lanxang.wiring.unifi import fetch_unifi
 from lanxang.clock import utcnow
@@ -87,7 +87,7 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
         stale = {name for name, source in sources.items() if not source["ok"]}
         if "unifi" in stale:
             stale |= {d.get("name") for d in ((raw["unifi"] or {}).get("devices") or [])}
-        snapshot["health"] = assess(raw, [h["raw"] for h in history], stale)
+        snapshot["health"] = name_attached(assess(raw, [h["raw"] for h in history], stale), snapshot)
         snapshot["poe"] = poe_ports(raw)
         taken_at = now or utcnow()
         if previous:                                # per-port traffic since the last scan, for the map and graphs
@@ -106,7 +106,7 @@ def run_scan(settings, store, devices, env=None, now=None, collect=collect_switc
                 _send(settings, Text(f"**✅ Resolved: loop between {pair}**\n• only one cable carries traffic now",
                                      f"wiring:loop:{pair}"), send, store)
         from lanxang.alerts import issue, report
-        found = [issue(f"cable:{i['kind']}", f"{i['device']}:{i['port']}", f"{i['reason']}: {i['device']} {i['port']}",
+        found = [issue(f"cable:{i['kind']}", f"{i['device']}:{i['port']}", f"{i['reason']}: {where(i)}",
                        i["detail"], "problem" if i["level"] == "bad" else "watch", "/cabling")
                  for i in snapshot["health"]]
         found += [issue("loop", pair, f"Possible network loop: {pair}",

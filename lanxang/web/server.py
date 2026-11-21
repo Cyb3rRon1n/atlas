@@ -37,7 +37,7 @@ from lanxang.web.hosts_page import build_history, render_hosts_summary
 from lanxang.access.store import AccessStore
 from lanxang.web.access_page import WINDOWS as ACCESS_WINDOWS, render_access_page
 from lanxang.web.home_page import (build_hosts, build_storage, build_vitals, day_states, interesting_events, parse_mdstat,
-                                 render_home_page, scan_state, setup_steps, since_window, storage_trend)
+                                 render_home_page, scan_state, setup_steps, since_window, storage_trend, weak_wifi)
 from lanxang.web.posture_page import render_posture_page
 from lanxang.web.graph import build_graph
 from lanxang.web.network_page import render_network_page
@@ -148,6 +148,22 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
                 "changes": lambda since: [(at, kind, payload) for kind in changes_feed.CHANGE_EVENTS
                                           for at, payload in query.events_since([kind], since)]}
 
+    def _client(self):
+        """Who is signing in, for the wrong-password limit: behind a reverse proxy on a private address every request
+        comes from the proxy, so count the address the proxy says it served (the last X-Forwarded-For entry) instead.
+        From a public address the header is ignored - anyone could write it."""
+
+        import ipaddress
+
+        client = self.client_address[0]
+        forwarded = (self.headers.get("X-Forwarded-For") or "").split(",")[-1].strip()
+        try:
+            if forwarded and ipaddress.ip_address(client).is_private:
+                return str(ipaddress.ip_address(forwarded))
+        except ValueError:
+            pass
+        return client
+
     def _token_ok(self):
 
         header = self.headers.get("Authorization") or ""
@@ -207,7 +223,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
         """POST /login, /setup, /logout (urlencoded forms from the pages above)."""
 
         field = lambda name: (form.get(name) or [""])[0]
-        client = self.client_address[0]
+        client = self._client()
 
         if path == "/logout":
             if self._session_ok():          # only a signed-in browser can sign everyone out
@@ -370,6 +386,7 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             access_reviews=safe("access reviews", lambda: AccessStore().places("review"), "sign-ins") or [],
             open_alerts=safe("alerts", lambda: AlertStore().listing(now)["open"], "alerts") or [],
             steps=safe("setup steps", lambda: setup_steps(settings, devices or [])) if settings else None,
+            wifi=safe("wifi", lambda: weak_wifi(devices or [])) or [],
             failed=failed)
 
     def do_GET(self):

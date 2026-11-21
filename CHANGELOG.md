@@ -3,6 +3,11 @@
 All notable changes to Lanxang. Versions follow [semantic versioning](https://semver.org); the
 Docker image is published as `ghcr.io/cyb3rron1n/lanxang:<version>` for every release.
 
+## Unreleased
+
+### Fixed
+- The speed test card labels its low point "Slowest, 30 days" (it counted tests, not days).
+
 ## 1.5.2 - 2026-11-21
 
 ### Added

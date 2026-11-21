@@ -19,6 +19,7 @@ from lanxang.web.render import _esc, plural, render_page
 from lanxang.wiring import traffic
 from lanxang.wiring.build import IDLE
 from lanxang.wiring.faceplate import physical_layout
+from lanxang.wiring.health import where
 from lanxang.clock import utcnow
 
 
@@ -588,7 +589,7 @@ def _health(snapshot):
     else:
         body = "<ul>" + "".join(
             f'<li class="{i["level"]}"><span class="lvl">{"Problem" if i["level"] == "bad" else "Watch"}</span>'
-            f'<b>{_esc(i["device"])} {_esc(i["port"])}</b> · {_esc(i["reason"])}: {_esc(i["detail"])}</li>'
+            f'<b>{_esc(where(i))}</b> · {_esc(i["reason"])}: {_esc(i["detail"])}</li>'
             for i in issues) + "</ul>"
 
     return ('<section id="health"><h2>Cable health</h2>' + body +

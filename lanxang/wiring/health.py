@@ -156,6 +156,31 @@ def assess(current, history, stale=()):
     return issues
 
 
+def name_attached(issues, snapshot):
+    """Add "attached" (the name of what is plugged into that port, from the map's links) to each issue that has one."""
+
+    names = {node["id"]: node.get("name") or node["id"] for node in snapshot.get("nodes") or []}
+    ids = {name: node_id for node_id, name in names.items()}
+    ends = {}
+    for link in snapshot.get("links") or []:
+        ends.setdefault((link.get("a"), link.get("a_port")), link.get("b"))
+        ends.setdefault((link.get("b"), link.get("b_port")), link.get("a"))
+    for issue in issues:
+        other = ends.get((ids.get(issue["device"]), issue["port"])) if issue["port"] else None
+        if other in names:
+            issue["attached"] = names[other]
+
+    return issues
+
+
+def where(issue):
+    """ "MSI laptop (core-switch gi28)" when the port's device is known, else "core-switch gi28". """
+
+    port = f"{issue['device']} {issue['port']}".strip()
+
+    return f"{issue['attached']} ({port})" if issue.get("attached") else port
+
+
 def _key(issue):
 
     return (issue["device"], issue["port"], issue["kind"])
@@ -170,12 +195,12 @@ def alerts(previous_issues, issues):
 
     for key, issue in new.items():
         if key not in old:
-            texts.append(Text(f"**🔌 {issue['reason']}: {issue['device']} {issue['port']}**\n"
+            texts.append(Text(f"**🔌 {issue['reason']}: {where(issue)}**\n"
                               f"• {issue['detail']}\n\nSee Lanxang → Network → Cabling.",
                               f"wiring:cable:{issue['kind']}:{issue['device']}:{issue['port']}"))
     for key, issue in old.items():
         if key not in new:
-            texts.append(Text(f"**✅ {issue['device']} {issue['port']} is healthy again**\n"
+            texts.append(Text(f"**✅ {where(issue)} is healthy again**\n"
                               f"• no more {issue['reason'].lower()}",
                               f"wiring:cable:{issue['kind']}:{issue['device']}:{issue['port']}"))
 

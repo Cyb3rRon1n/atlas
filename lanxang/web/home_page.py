@@ -518,7 +518,8 @@ def since_window(value, now):
 def day_states(histories, fail_after, now, days=7, display=None):
     """
     One "ok" / "bad" / "none" per day in the display zone (display: home_display()), oldest first, ending today, from
-    [(checked_at, ok)] lists (one per check): bad when any check failed fail_after times in a row that day; ok only
+    [(checked_at, ok)] lists (one per check): bad when any check failed fail_after times in a row touching that day (a
+    run that crosses midnight marks both days); ok only
     when every check has results that day and none had an outage; otherwise none (a silent check is no data).
     """
 
@@ -526,18 +527,18 @@ def day_states(histories, fail_after, now, days=7, display=None):
     reported, bad = [0] * days, [False] * days
 
     for rows in histories:
-        by_day = {}
-        for at, ok in rows:
+        seen, run = set(), []                  # run: day indexes of the failures in a row so far, across midnight
+        for at, ok in sorted(rows, key=lambda row: row[0]):
             index = (clock.local(at, display)[0].date() - first).days
+            seen.add(index)
+            run = [] if ok else (run if run and index - run[-1] <= 1 else []) + [index]   # next day at most
+            if len(run) >= max(1, fail_after):
+                for day in run:
+                    if 0 <= day < days:
+                        bad[day] = True
+        for index in seen:
             if 0 <= index < days:
-                by_day.setdefault(index, []).append(ok)
-        for index, results in by_day.items():
-            run = longest = 0
-            for ok in results:
-                run = 0 if ok else run + 1
-                longest = max(longest, run)
-            reported[index] += 1
-            bad[index] = bad[index] or longest >= max(1, fail_after)
+                reported[index] += 1
 
     return ["bad" if bad[i] else "ok" if histories and reported[i] == len(histories) else "none" for i in range(days)]
 
@@ -685,6 +686,43 @@ def _ha_card(ha):
     return f'<div id="homeassistant" style="display:contents">{_card("/settings#homeassistant", "Smart home", state, inner)}</div>'
 
 
+WEAK_DBM = -70      # at or below this, Wi-Fi resends a lot and feels slow even when a speed test looks fine
+
+
+def weak_wifi(devices):
+    """[{name, id, signal, band, ap}] for devices on Wi-Fi now (seen, not ignored) at WEAK_DBM or worse, weakest first."""
+
+    from lanxang.devices.identify import clues
+
+    found = []
+    for device in devices:
+        if device.get("state") == "ignored" or device.get("status") != "seen":
+            continue
+        wifi = clues(device, {}).get("wifi") or {}
+        signal = wifi.get("signal")
+        if isinstance(signal, int) and not isinstance(signal, bool) and signal <= WEAK_DBM:
+            found.append({"name": device["name"], "id": device["id"], "signal": signal, "band": wifi.get("band"),
+                          "ap": wifi.get("ap")})
+
+    return sorted(found, key=lambda d: d["signal"])
+
+
+def _wifi(weak):
+    """One info row (it never turns Home amber - a weak signal is often just where a phone was left)."""
+
+    if not weak:
+        return ""
+    each = ["{} {} dBm{}{}".format(d["name"], d["signal"], f', {d["band"]}' if d.get("band") else "",
+                                   f' on {d["ap"]}' if d.get("ap") else "") for d in weak[:4]]
+    more = f" and {len(weak) - 4} more" if len(weak) > 4 else ""
+    title = (f"{weak[0]['name']} has a weak Wi-Fi signal" if len(weak) == 1
+             else f"{len(weak)} devices have a weak Wi-Fi signal")
+    href = f"/devices/{weak[0]['id']}" if len(weak) == 1 else "/devices"
+    return ('<section class="panel wifi" aria-label="Wi-Fi">'
+            + check_row("wifi", title, " · ".join(each) + more + " - pages load slowly at this strength; move closer to "
+                        "an access point or use 5 GHz.", ("Details", href), "info") + "</section>")
+
+
 def _headline(items):
 
     if not items:
@@ -763,7 +801,7 @@ def _since(changes, since, now, display):
 
 def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=(),
                      steps=None, open_alerts=(), dns=None, names=None, ha=None, changes=None, since=None, vitals=None,
-                     last_scan=None, scan_minutes=15, viewer_zone=None, scans_failing=False, failed=()):
+                     last_scan=None, scan_minutes=15, viewer_zone=None, scans_failing=False, failed=(), wifi=()):
     """
     posture: render._posture_block() output or None; hosts: build_hosts() output; events: interesting_events()
     pairs; storage: build_storage() output; trends: posture.model.build_trends() output or None; analysis:
@@ -771,6 +809,7 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
     Since you were here out); vitals: build_vitals() tiles; last_scan, scans_failing: scan_state() of the source runs;
     failed: the parts that couldn't be read (["posture", "alerts"]), so an empty problem list isn't called healthy;
     viewer_zone: the zone the browser reported (lanxang-tz), used when the display time zone is "browser".
+    wifi: weak_wifi() of the devices.
     """
 
     display = home_display(viewer_zone)
@@ -780,7 +819,7 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
     items = attention_items(posture, hosts, storage, access_reviews, open_alerts)
     flagged = {card for card, *_ in items}
 
-    body = (HOME_STYLE + _hero(items, last_scan, scan_minutes, now, scans_failing, failed) + _problems(items) + _checklist(steps)
+    body = (HOME_STYLE + _hero(items, last_scan, scan_minutes, now, scans_failing, failed) + _problems(items) + _checklist(steps) + _wifi(wifi)
             + _since(changes, since, now, display)
             + (f'<section class="vitals" aria-label="Vitals">{"".join(vitals)}</section>' if vitals else "")
             + '<div class="cards">'

@@ -155,7 +155,7 @@ source .venv/bin/activate
 Install lanxang with its development extras, then run the tests (CI runs them on Python 3.11 and 3.12):
 
 ```bash
-pip install -e ".[dev]"            # not `pip install -r requirements.txt` - that is a pip-freeze lockfile
+pip install -e ".[dev]"
 python -m pytest tests/
 python -m lanxang.cli.main <command> # the CLI from source; `lanxang web` serves the pages
 ```

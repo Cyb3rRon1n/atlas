@@ -128,6 +128,9 @@ CARDS = {
                       Field("password", "Password or app password", "secret", None, "LANXANG_DNS_PASSWORD"),
                       Field("verify_ssl", "Check its certificate (off for a self-signed one)", "bool",
                             ("dns_filter", "verify_ssl"))]),
+    "speedtest": ("Internet speed test", "Once a day at 04:00 (your alert time zone), measures download, upload and "
+                  "ping against Cloudflare's public speed test and shows the result on Home. Uses about 260 MB each "
+                  "time; nothing about you is sent. Test runs one now (a few seconds).", []),
     "internet": ("Internet view (Shodan)", "Once a day, asks Shodan's free InternetDB what it last saw on your "
                  "home's public IP: open ports and reported vulnerabilities. Alerts on a port you don't expect to be "
                  "open. Sends your home IP to Shodan once a day. Needs posture collection on (posture.enabled), "
@@ -195,7 +198,7 @@ def _gear_html(chosen, detected):
 ENABLES = {"unifi": [("wiring", "unifi", "enabled")], "proxmox": [("proxmox", "enabled")], "ups": [("ups", "enabled")],
            "dnsfilter": [("dns_filter", "enabled")], "nas": [("nas", "enabled")],
            "homeassistant": [("homeassistant", "enabled")], "router": [("router", "enabled")],
-           "internet": [("posture", "internet_view")]}
+           "internet": [("posture", "internet_view")], "speedtest": [("internet", "speed_test")]}
 WIRING_CARDS = ("switches", "unifi")
 
 ACTIONS = re.compile(r"^/api/settings/([a-z]+)/(test|save|off|dismiss)$")
@@ -496,6 +499,13 @@ def _test(card, body):
         unhealthy = [p["name"] for p in info["pools"] if p["health"] not in ("ONLINE", "NORMAL")]
         return True, (f"Connected: {info['kind']}, {len(info['pools'])} pool(s), {len(info['disks'])} disk(s)"
                       + (f"; not healthy: {', '.join(unhealthy)}." if unhealthy else ", all pools healthy."))
+    if card == "speedtest":
+        from lanxang.monitoring.speedtest import measure
+        try:
+            result = measure()
+        except (OSError, ValueError) as error:
+            return False, f"Couldn't reach Cloudflare's speed test: {error}"
+        return True, f"Download {result['down']} Mb/s, upload {result['up']} Mb/s, ping {result['ping']} ms."
     if card == "internet":
         from lanxang.posture.internet_view import lookup
         from lanxang.posture.store import PostureStore
@@ -693,7 +703,7 @@ def _on(card, config):
             "unifi": config.wiring.unifi.enabled, "proxmox": config.proxmox.enabled, "ups": config.ups.enabled,
             "dnsfilter": config.dns_filter.enabled, "nas": config.nas.enabled,
             "homeassistant": config.homeassistant.enabled, "router": config.router.enabled,
-            "internet": config.posture.internet_view}[card]
+            "internet": config.posture.internet_view, "speedtest": config.internet.speed_test}[card]
 
 
 SCRIPT = """

@@ -171,5 +171,7 @@ class Auth:
                 self._fails.pop(client, None)
             return self.session(now)
         with self._lock:
+            # drop clients whose failures have all aged out, so a stream of guesses from many addresses can't grow this
+            self._fails = {c: times for c, times in self._fails.items() if times and now - times[-1] < FAIL_WINDOW}
             self._fails.setdefault(client, []).append(now)
         return None

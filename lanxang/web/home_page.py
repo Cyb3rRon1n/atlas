@@ -661,6 +661,36 @@ def _dns_card(dns, names):
     return f'<div id="dns" style="display:contents">{_card("/settings#dnsfilter", info.get("kind") or "Ad blocking", state, inner)}</div>'
 
 
+def _traffic_card(top):
+    """The wired devices that moved the most data in the last 24 h (traffic.top_users()), from the switch counters."""
+
+    if not top:
+        return ""
+    inner = "".join(f'<div class="row"><span>{_esc(name)}</span><span class="muted">{_size(done)}</span></div>'
+                    for name, done in top)
+    return _card("/cabling", "Busiest wired devices, 24 h", "ok", inner)
+
+
+def _speed_card(speed, now):
+    """The daily speed test (monitoring.speedtest): the last result, its age, and the slowest download of the month."""
+
+    if not speed or not speed.get("at"):
+        return ""
+    from datetime import datetime
+    hours = max(0, round((now - datetime.fromisoformat(speed["at"])).total_seconds() / 3600))
+    rows = []
+    if speed.get("down") is not None:
+        rows = [("Download", f'{speed["down"]:g} Mb/s'), ("Upload", f'{speed["up"]:g} Mb/s'), ("Ping", f'{speed["ping"]} ms')]
+    downs = [h["down"] for h in speed.get("history") or []]
+    if len(downs) > 1:
+        rows.append((f"Slowest of {len(downs)} days", f"{min(downs):g} Mb/s"))
+    rows.append(("Tested", "just now" if hours == 0 else f"{hours} h ago"))
+    inner = "<dl>" + "".join(f"<dt>{_esc(k)}</dt><dd>{_esc(v)}</dd>" for k, v in rows) + "</dl>"
+    if speed.get("error"):
+        inner += f'<p class="bad">{_esc(speed["error"])}</p>'
+    return _card("/settings#speedtest", "Internet speed", "warn" if speed.get("error") else "ok", inner)
+
+
 def _ha_card(ha):
     """Home Assistant: version, devices that dropped out, low batteries, updates waiting."""
 
@@ -802,7 +832,7 @@ def _since(changes, since, now, display):
 
 def render_home_page(posture, hosts, events, storage=None, trends=None, analysis=None, now=None, access_reviews=(),
                      steps=None, open_alerts=(), dns=None, names=None, ha=None, changes=None, since=None, vitals=None,
-                     last_scan=None, scan_minutes=15, viewer_zone=None, scans_failing=False, failed=(), wifi=()):
+                     last_scan=None, scan_minutes=15, viewer_zone=None, scans_failing=False, failed=(), wifi=(), top=(), speed=None):
     """
     posture: render._posture_block() output or None; hosts: build_hosts() output; events: interesting_events()
     pairs; storage: build_storage() output; trends: posture.model.build_trends() output or None; analysis:
@@ -810,7 +840,8 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
     Since you were here out); vitals: build_vitals() tiles; last_scan, scans_failing: scan_state() of the source runs;
     failed: the parts that couldn't be read (["posture", "alerts"]), so an empty problem list isn't called healthy;
     viewer_zone: the zone the browser reported (lanxang-tz), used when the display time zone is "browser".
-    wifi: weak_wifi() of the devices.
+    wifi: weak_wifi() of the devices; top: traffic.top_users() of the last 24 h;
+    speed: the speedtest status detail, or None when the speed test is off.
     """
 
     display = home_display(viewer_zone)
@@ -825,7 +856,7 @@ def render_home_page(posture, hosts, events, storage=None, trends=None, analysis
             + (f'<section class="vitals" aria-label="Vitals">{"".join(vitals)}</section>' if vitals else "")
             + '<div class="cards">'
             + _posture_card(posture, "posture" in flagged) + _hosts_card(hosts, "hosts" in flagged)
-            + _storage_card(storage, "storage" in flagged) + _dns_card(dns, names or {}) + _ha_card(ha)
+            + _storage_card(storage, "storage" in flagged) + _dns_card(dns, names or {}) + _speed_card(speed, now) + _traffic_card(top) + _ha_card(ha)
             + _trends_card(trends, display) + _analysis_card(analysis, now)
             + _activity_card(events) + "</div>")
 

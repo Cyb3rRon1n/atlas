@@ -90,6 +90,7 @@ services:
           lanxang ports check >/dev/null 2>&1      # new open ports: LAN devices, this host, router forwards/UPnP
           lanxang certs check >/dev/null 2>&1      # daily: TLS expiry of public hostnames (Posture page)
           lanxang internet check >/dev/null 2>&1      # daily, opt-in: what Shodan sees on your public IP
+          lanxang internet speed >/dev/null 2>&1      # daily after 04:00, opt-in: download/upload/ping
           lanxang discover >/dev/null 2>&1
           lanxang proxmox scan >/dev/null 2>&1
           lanxang map >/dev/null 2>&1 && echo "$$(date -u +%FT%TZ) map refreshed"

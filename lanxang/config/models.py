@@ -288,6 +288,7 @@ class InternetConfig(BaseModel):
     timeout: float = 3.0
     dns_name: str = "example.com"   # looked up each minute to check name lookups work ("" = off)
     dns_servers: list[str] = []     # ask these (your router, Pi-hole...) directly; empty = this machine's resolver
+    speed_test: bool = False        # daily at 04:00 (notify.timezone) against speed.cloudflare.com, ~260 MB each time
 
 
 class DnsFilterConfig(BaseModel):

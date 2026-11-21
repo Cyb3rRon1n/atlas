@@ -444,3 +444,19 @@ def test_scan_state():
     assert scan_state([run("lan", "11:00", True), run("lan", "11:15", False), run("dhcp", "11:20", False)]) == (
         datetime(2026, 11, 19, 11, 0), True)
     assert scan_state([run("lan", "11:15", False), run("dhcp", "11:20", True)]) == (datetime(2026, 11, 19, 11, 20), False)
+
+
+def test_speed_and_busiest_device_cards():
+    from lanxang.web.home_page import _speed_card, _traffic_card
+
+    now = datetime(2026, 11, 20, 15, 0)
+    speed = {"at": "2026-11-20T09:05:00", "down": 1880.5, "up": 940.0, "ping": 9, "error": None,
+             "history": [{"down": 1880.5}, {"down": 1210.0}]}
+    html = _speed_card(speed, now)
+    assert "1880.5 Mb/s" in html and "940 Mb/s" in html and "9 ms" in html and "6 h ago" in html
+    assert "Slowest of 2 days" in html and "1210 Mb/s" in html and 'href="/settings#speedtest"' in html
+    failed = _speed_card({**speed, "down": None, "up": None, "ping": None, "error": "timed out", "history": []}, now)
+    assert "timed out" in failed and "hcard warn" in failed and "Download" not in failed
+    assert _speed_card(None, now) == "" and _speed_card({}, now) == ""
+    card = _traffic_card([("NAS", 2.7e9), ("Desk PC", 9e8)])
+    assert "NAS" in card and "2.7 GB" in card and "900.0 MB" in card and _traffic_card([]) == ""

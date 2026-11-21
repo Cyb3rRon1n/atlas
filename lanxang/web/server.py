@@ -68,6 +68,14 @@ def _latest_wiring():
         return None
 
 
+def _top_users(now):
+
+    from lanxang.wiring import traffic
+    from lanxang.wiring.store import WiringStore
+    snapshot = _latest_wiring()
+    return traffic.top_users(traffic.history(WiringStore().engine, now - timedelta(hours=24)), snapshot) if snapshot else []
+
+
 def same_origin(headers):
     """
     Cross-site request forgery guard for the write routes: Authelia's cookie rides along
@@ -387,6 +395,9 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             open_alerts=safe("alerts", lambda: AlertStore().listing(now)["open"], "alerts") or [],
             steps=safe("setup steps", lambda: setup_steps(settings, devices or [])) if settings else None,
             wifi=safe("wifi", lambda: weak_wifi(devices or [])) or [],
+            top=safe("traffic", lambda: _top_users(now)) or [],
+            speed=safe("speed", lambda: (PostureStore().statuses().get("speedtest") or {}).get("detail"))
+            if settings and settings.internet.speed_test else None,
             failed=failed)
 
     def do_GET(self):
@@ -714,6 +725,12 @@ class AtlasWebHandler(BaseHTTPRequestHandler):
             return
         ping(PostureStore(), beat.name, utcnow(), failed=failed)
         self._send(200, "text/plain; charset=utf-8", "ok")
+
+    def end_headers(self):
+        # No other site may show these pages inside a frame (clickjacking: a hidden Approve button under a decoy).
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Content-Security-Policy", "frame-ancestors 'none'")
+        super().end_headers()
 
     def _send(self, status, content_type, body, headers=()):
 

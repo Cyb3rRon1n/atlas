@@ -377,6 +377,7 @@ def test_weak_wifi_row():
     assert "2 devices have a weak Wi-Fi signal" in html and "Tablet -75 dBm, 2.4 GHz on Hall AP" in html
     assert 'href="/devices/1"' in _wifi(weak[:1]) and "Tablet has a weak Wi-Fi signal" in _wifi(weak[:1])
     assert _wifi([]) == "" and weak_wifi([device(6, "Ok", None)]) == []
+    assert "or use 5 GHz" in html and "or use 5 GHz" not in _wifi([{**weak[0], "band": "5 GHz"}])
 
 
 def test_day_states_follow_the_viewer_zone():
